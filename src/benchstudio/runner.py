@@ -76,7 +76,7 @@ def run_episodes(
     try:
         for index in range(config.episodes):
             result, _events = _run_episode(
-                policy, simulator, config, index, emit=trace_writer.write
+                policy, simulator, config, index, emit=trace_writer.write, retain_events=False
             )
             episode_results.append(result)
             if result.status not in {"success", "failure"}:
@@ -120,6 +120,7 @@ def _run_episode(
     config: RunConfig,
     index: int,
     emit: Callable[[dict[str, Any]], None] | None = None,
+    retain_events: bool = True,
 ) -> tuple[EpisodeResult, list[dict[str, Any]]]:
     episode_id = f"episode-{index:04d}"
     seed = config.seed + index
@@ -128,7 +129,8 @@ def _run_episode(
     events: list[dict[str, Any]] = []
 
     def record(event: dict[str, Any]) -> None:
-        events.append(event)
+        if retain_events:
+            events.append(event)
         if emit is not None:
             emit(event)
 

@@ -12,10 +12,13 @@ from .analysis import (
 from .campaigns import (
     AttemptKey,
     AttemptLedger,
+    CampaignExecutionSummary,
+    CampaignExecutor,
     CampaignPlanner,
     CounterfactualCell,
     FrozenCampaignPlan,
     Intervention,
+    compile_campaign_spec,
     validate_counterfactual_pair,
 )
 from .compare import build_comparison_report
@@ -53,6 +56,9 @@ __all__ = [
     "AttemptKey",
     "AttemptLedger",
     "CampaignPlanner",
+    "CampaignExecutionSummary",
+    "CampaignExecutor",
+    "compile_campaign_spec",
     "CounterfactualCell",
     "Dependency",
     "NdjsonWriter",

@@ -35,6 +35,12 @@ These layers keep campaign methodology and evidence ownership in BenchStudio
 while leaving physics engines, dataset conversion, hardware control, and
 official benchmark scoring in their source repositories.
 
+`CampaignExecutor` now makes a frozen plan authoritative: every planned
+attempt is executed once, committed with its plan digest, and skipped safely on
+resumption when already recorded. Existing partial attempt directories are
+refused rather than silently retried. Declarative `benchstudio.campaign.v1`
+maps compile into the same immutable plan format.
+
 ## Scope
 
 The current release includes mock adapters for deterministic development. The
