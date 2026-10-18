@@ -27,7 +27,9 @@ def compile_campaign_spec(spec: dict[str, Any]) -> FrozenCampaignPlan:
         raise ValueError("task.task_id is required")
     seeds = evaluation.get("seeds")
     conditions = evaluation.get("conditions")
-    if not isinstance(seeds, list) or not all(isinstance(seed, int) for seed in seeds):
+    if not isinstance(seeds, list) or not all(
+        isinstance(seed, int) and not isinstance(seed, bool) for seed in seeds
+    ):
         raise ValueError("evaluation.seeds must be a list of integers")
     if (
         not isinstance(conditions, list)

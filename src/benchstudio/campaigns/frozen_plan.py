@@ -159,7 +159,7 @@ class CampaignPlanner:
         self.run_id = run_id
         self.scenario_id = scenario_id
         self.conditions = tuple(dict(condition) for condition in conditions)
-        self.seeds = tuple(int(seed) for seed in seeds)
+        self.seeds = tuple(seeds)
         self.repetitions = repetitions
         self.scenario_pack_digest = scenario_pack_digest
         self.source_spec_sha256 = source_spec_sha256
@@ -167,6 +167,8 @@ class CampaignPlanner:
         self.protocol = dict(protocol) if protocol is not None else None
         if not self.conditions or not self.seeds:
             raise ValueError("conditions and seeds must not be empty")
+        if any(isinstance(seed, bool) or not isinstance(seed, int) for seed in self.seeds):
+            raise ValueError("seeds must contain integers")
         condition_ids = [_identity(condition) for condition in self.conditions]
         if len(set(condition_ids)) != len(condition_ids):
             raise ValueError("conditions must have unique identities")

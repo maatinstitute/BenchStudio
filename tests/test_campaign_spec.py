@@ -110,6 +110,24 @@ def test_campaign_spec_rejects_invalid_repetition_counts(repetitions):
         )
 
 
+@pytest.mark.parametrize("seeds", [[True], [1.5], ["1"]])
+def test_campaign_spec_rejects_non_integer_seeds(seeds):
+    with pytest.raises(ValueError, match="evaluation.seeds"):
+        compile_campaign_spec(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "invalid-seeds"},
+                "task": {"task_id": "task"},
+                "environments": [{"id": "sim", "kind": "simulator"}],
+                "evaluation": {
+                    "seeds": seeds,
+                    "paired": True,
+                    "conditions": [{"x": 1}],
+                },
+            }
+        )
+
+
 def test_campaign_spec_rejects_non_frozen_confirmation_or_imputed_missingness():
     base = {
         "schema": "benchstudio.campaign.v1",

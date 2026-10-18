@@ -56,6 +56,17 @@ def test_campaign_planner_rejects_invalid_repetition_counts(repetitions):
         )
 
 
+@pytest.mark.parametrize("seeds", [[True], [1.5], ["1"]])
+def test_campaign_planner_rejects_non_integer_seeds(seeds):
+    with pytest.raises(ValueError, match="seeds must contain integers"):
+        CampaignPlanner(
+            run_id="invalid-seeds",
+            scenario_id="task",
+            conditions=[{"budget": 2}],
+            seeds=seeds,
+        )
+
+
 def test_frozen_campaign_plan_round_trips_through_independent_loader(tmp_path):
     plan = CampaignPlanner(
         run_id="round-trip", scenario_id="task", conditions=[{"x": 1}], seeds=[1], repetitions=2
