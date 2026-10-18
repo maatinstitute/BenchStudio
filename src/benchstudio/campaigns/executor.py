@@ -101,13 +101,30 @@ class CampaignExecutor:
             self.plan.write(plan_path)
         self.ledger = AttemptLedger(self.output / "attempt-results.jsonl", plan)
 
-    def run(self) -> CampaignExecutionSummary:
+    def run(self, attempt_ids: Iterable[str] | None = None) -> CampaignExecutionSummary:
+        """Execute all attempts or an explicit frozen subset.
+
+        A subset is useful when an external scheduler assigns attempts to
+        container or GPU workers. The subset is still checked against the
+        frozen plan, and the shared ledger remains the authority for recovery.
+        """
+        selected_ids = (
+            {attempt.key.attempt_id for attempt in self.plan.attempts}
+            if attempt_ids is None
+            else set(attempt_ids)
+        )
+        planned_ids = {attempt.key.attempt_id for attempt in self.plan.attempts}
+        unknown = selected_ids - planned_ids
+        if unknown:
+            raise ValueError(f"attempt_ids are outside the frozen plan: {sorted(unknown)}")
         committed: list[str] = []
         skipped: list[str] = []
         leased_out: list[str] = []
         cancelled: list[str] = []
         for attempt in self.plan.attempts:
             attempt_id = attempt.key.attempt_id
+            if attempt_id not in selected_ids:
+                continue
             if self.ledger.contains(attempt_id):
                 attempt_dir = self.output / "attempts" / attempt_id
                 self._verify_runtime_receipt(attempt, attempt_dir)

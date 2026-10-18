@@ -7,7 +7,7 @@ has been evaluated.
 
 | Capability | Current status | Evidence / boundary |
 | --- | --- | --- |
-| Frozen campaign execution | Verified | `CampaignExecutor`, append-only `AttemptLedger`, atomic cross-worker ledger commits, leases, cancellation, resumable evidence, and 196 tests. |
+| Frozen campaign execution | Verified | `CampaignExecutor`, append-only `AttemptLedger`, atomic cross-worker ledger commits, leases, cancellation, resumable evidence, and 198 tests. |
 | Stable paired identities | Verified | `pair_id` is shared across enabled environments; `environment_id` is frozen in `AttemptKey` and manifests. |
 | Declarative protocol | Verified | `benchstudio.campaign.v1` compiles into a plan carrying the frozen `(P,M,S,X,D,O,R)` envelope and source digest. |
 | Scenario identity | Verified | `ScenarioPack` and deterministic content-addressed archives bind task revisions, assets, initial conditions, and success criteria. |
@@ -39,6 +39,7 @@ has been evaluated.
 | Audited evaluation reports | Implemented | Reports can serialize campaign audit decisions, outcome provenance, and paired uncertainty together, preserving qualified/unsupported claim context offline. |
 | Distributed lease recovery | Implemented for filesystem workers | Expired leases are reclaimable by the next worker, active leases can be renewed by their owner, ownership checks remain enforced, and ledger commits are serialized with a cross-process file lock so stale worker state cannot duplicate an attempt. Physical jobs still require explicit no-retry policy. |
 | Multi-worker campaign execution | Implemented | `CampaignExecutor.run_parallel()` assigns frozen attempts through filesystem leases and returns a plan-ordered aggregate after all workers refresh the shared ledger. |
+| Scheduler batch dispatch | Implemented | `CampaignExecutor.run(attempt_ids=...)` accepts only IDs from the frozen plan, enabling external GPU/container schedulers to dispatch explicit batches while retaining ledger recovery and evidence checks. |
 | Checkpoint provenance | Implemented | Frozen checkpoint digests, model adapters, architectures, and robot profiles are copied into attempt manifests without copying private adapter configuration paths. |
 | Campaign evidence bundles | Implemented | Deterministic, content-addressed ZIP bundles include frozen plans, ledgers, manifests, and attempt evidence; extraction rejects symlinks and traversal paths. |
 | Artifact publication | Implemented | `ArtifactStore`, `LocalArtifactStore`, and vendor-neutral `HttpArtifactStore` publish deterministic campaign bundles by digest with atomic local writes and idempotent retry behavior; cloud credentials and authorization remain external. |

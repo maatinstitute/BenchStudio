@@ -71,6 +71,34 @@ def test_campaign_executor_can_run_pending_attempts_with_multiple_workers(tmp_pa
     assert len(records) == len(plan.attempts)
 
 
+def test_campaign_executor_can_run_an_explicit_frozen_attempt_batch(tmp_path):
+    plan = CampaignPlanner(
+        run_id="batch-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1, 2]
+    ).freeze()
+    output = tmp_path / "campaign"
+    first = CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()).run(
+        attempt_ids=["attempt-000000"]
+    )
+    assert first.committed_attempt_ids == ("attempt-000000",)
+    assert first.missing_attempt_ids == ("attempt-000001",)
+    second = CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()).run(
+        attempt_ids=["attempt-000001"]
+    )
+    assert second.committed_attempt_ids == ("attempt-000001",)
+    assert second.missing_attempt_ids == ()
+
+
+def test_campaign_executor_rejects_attempts_outside_frozen_batch(tmp_path):
+    plan = CampaignPlanner(
+        run_id="batch-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    executor = CampaignExecutor(
+        plan, tmp_path / "campaign", lambda _: MockPolicy(), lambda _: MockSimulator()
+    )
+    with pytest.raises(ValueError, match="outside the frozen plan"):
+        executor.run(attempt_ids=["not-planned"])
+
+
 def test_campaign_executor_rejects_a_different_plan_at_existing_output(tmp_path):
     first = CampaignPlanner(
         run_id="run-1", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
