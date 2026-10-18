@@ -57,6 +57,8 @@ from .responsiveness import score as score_selective_responsiveness
 from .responsiveness import split_for as responsiveness_split_for
 from .responsiveness import summarize as summarize_selective_responsiveness
 from .responsiveness import validate as validate_selective_responsiveness
+from .result_metrics import completed_outcomes
+from .result_metrics import summarize as summarize_refinement_results
 from .score_coverage import ScoreCoverage, audit_score_coverage
 from .transfer import (
     TransferFidelityReport,
@@ -127,4 +129,6 @@ __all__ = [
     "summarize_selective_responsiveness",
     "validate_selective_responsiveness",
     "responsiveness_split_for",
+    "completed_outcomes",
+    "summarize_refinement_results",
 ]

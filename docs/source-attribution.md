@@ -18,6 +18,14 @@ the following projects. Product runtimes are not vendored into this repository.
   schedule digest, external gates, and exclusive-write semantics; it then
   converts that exact schedule into `FrozenCampaignPlan`. The heavy
   CUDA/LeRobot runtime remains external.
+- Refinement/Refresh result analysis: `benchstudio.analysis.result_metrics`
+  is a direct port of `experiments/real_smolvla/result_metrics.py` from the
+  same upstream commit. The source digest is
+  `1b493b3643c89831757f7a3a5c75632b43512390d8eac12e6b1ce4960756d867`, and
+  its regression-test digest is
+  `f5fa8606d93263f5af0bd8799c640b62c83c2b139ea68da2598d227d96e06698`.
+  The port preserves completed-outcome reconciliation, task/group identity
+  checks, ledger-version timing provenance, and control-to-neural accounting.
 - RoboPAD: `benchstudio.analysis.responsiveness` is a source-backed port of
   `experiments/metrics.py`, and `benchstudio.campaigns.outcome_plan` is a
   source-backed port of `experiments/outcome_plan.py`, from upstream commit
