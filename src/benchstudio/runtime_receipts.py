@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 from pathlib import Path
 from typing import Any
+
+from .evidence import sha256_file
 
 
 def build_runtime_receipt(
@@ -97,6 +100,80 @@ def verify_runtime_receipt(receipt: dict[str, Any] | Path) -> dict[str, Any]:
     return {"valid": True, "reason": "ok", "receipt_digest_sha256": digest}
 
 
+def sign_runtime_receipt(
+    receipt_path: Path,
+    private_key_pem: bytes,
+    signature_path: Path,
+    *,
+    key_id: str | None = None,
+) -> dict[str, Any]:
+    """Write a detached Ed25519 signature over a runtime receipt file."""
+    from .evidence_signing import _crypto
+
+    serialization, _ = _crypto()
+    receipt = load_runtime_receipt(receipt_path)
+    verification = verify_runtime_receipt(receipt)
+    if not verification["valid"]:
+        raise ValueError(f"cannot sign invalid runtime receipt: {verification['reason']}")
+    private_key = serialization.load_pem_private_key(private_key_pem, password=None)
+    receipt_sha256 = sha256_file(receipt_path)
+    signature = private_key.sign(_receipt_signature_payload(receipt_sha256))
+    record: dict[str, Any] = {
+        "schema": "benchstudio_runtime_receipt_signature_v1",
+        "algorithm": "ed25519",
+        "receipt_sha256": receipt_sha256,
+        "signature_base64": base64.b64encode(signature).decode("ascii"),
+    }
+    if key_id is not None:
+        if not key_id:
+            raise ValueError("key_id must not be empty")
+        record["key_id"] = key_id
+    signature_path.parent.mkdir(parents=True, exist_ok=True)
+    signature_path.write_text(
+        json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8"
+    )
+    return record
+
+
+def verify_runtime_receipt_signature(
+    receipt_path: Path,
+    signature_path: Path,
+    public_key_pem: bytes,
+) -> dict[str, Any]:
+    """Verify a detached receipt signature against an external public key."""
+    from .evidence_signing import _crypto
+
+    serialization, _ = _crypto()
+    try:
+        record = json.loads(signature_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"valid": False, "reason": f"signature_read_error: {exc}"}
+    receipt_verification = verify_runtime_receipt(receipt_path)
+    if not receipt_verification["valid"]:
+        return {"valid": False, "reason": "runtime_receipt_invalid"}
+    actual_digest = sha256_file(receipt_path)
+    if record.get("schema") != "benchstudio_runtime_receipt_signature_v1":
+        return {"valid": False, "reason": "signature_schema_mismatch"}
+    if record.get("algorithm") != "ed25519":
+        return {"valid": False, "reason": "signature_algorithm_mismatch"}
+    if record.get("receipt_sha256") != actual_digest:
+        return {"valid": False, "reason": "signed_receipt_digest_mismatch"}
+    try:
+        signature = base64.b64decode(record["signature_base64"], validate=True)
+        public_key = serialization.load_pem_public_key(public_key_pem)
+        public_key.verify(signature, _receipt_signature_payload(actual_digest))
+    except Exception as exc:
+        return {"valid": False, "reason": f"signature_verification_failed: {type(exc).__name__}"}
+    result: dict[str, Any] = {
+        "valid": True,
+        "algorithm": record["algorithm"],
+        "receipt_sha256": actual_digest,
+    }
+    if "key_id" in record:
+        result["key_id"] = record["key_id"]
+    return result
+
+
 def _digest(value: Any) -> str:
     return hashlib.sha256(
         json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
@@ -110,3 +187,14 @@ def _require_sha256(value: str, field: str) -> None:
         or any(character not in "0123456789abcdef" for character in value)
     ):
         raise ValueError(f"{field} must be a lowercase SHA-256 hex digest")
+
+
+def _receipt_signature_payload(receipt_sha256: str) -> bytes:
+    return json.dumps(
+        {
+            "schema": "benchstudio_runtime_receipt_signature_v1",
+            "receipt_sha256": receipt_sha256,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")

@@ -11,7 +11,7 @@ has been evaluated.
 | Stable paired identities | Verified | `pair_id` is shared across enabled environments; `environment_id` is frozen in `AttemptKey` and manifests. |
 | Declarative protocol | Verified | `benchstudio.campaign.v1` compiles into a plan carrying the frozen `(P,M,S,X,D,O,R)` envelope and source digest. |
 | Scenario identity | Verified | `ScenarioPack` and deterministic content-addressed archives bind task revisions, assets, initial conditions, and success criteria. |
-| Evidence integrity | Verified locally | Artifact manifests, sibling anchors, external digest verification, optional detached Ed25519 signatures, and safe archive extraction are implemented. Key custody and any remote trust service remain external. |
+| Evidence integrity | Verified locally | Artifact manifests, sibling anchors, external digest verification, optional detached Ed25519 signatures for manifests and runtime receipts, and safe archive extraction are implemented. Key custody and any remote trust service remain external. |
 | Runtime execution receipts | Implemented | Each run writes a digest-verifiable receipt recording the frozen run/attempt/plan identity, worker, backend, clock domain, execution interval, and environment fingerprint; receipts are included in artifact manifests. |
 | Policy lifecycle and timing | Verified as contracts | Lifecycle, action semantics, clock domains, queue/drop/deadline, and replay conformance validators are tested. |
 | Model capability declarations | Verified as data contracts and evidence | VLA, planner, world-model, monitor, timing, memory, streaming, and caching fields are represented, validated before execution, and persisted in registry-backed run manifests. |

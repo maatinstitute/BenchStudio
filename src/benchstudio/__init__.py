@@ -154,7 +154,9 @@ from .runner import EpisodeResult, RunConfig, run_episodes
 from .runtime_receipts import (
     build_runtime_receipt,
     load_runtime_receipt,
+    sign_runtime_receipt,
     verify_runtime_receipt,
+    verify_runtime_receipt_signature,
     write_runtime_receipt,
 )
 from .scenarios import (
@@ -286,7 +288,9 @@ __all__ = [
     "sample_resources",
     "build_runtime_receipt",
     "load_runtime_receipt",
+    "sign_runtime_receipt",
     "verify_runtime_receipt",
+    "verify_runtime_receipt_signature",
     "write_runtime_receipt",
     "delta_resources",
     "load_scenario_pack",

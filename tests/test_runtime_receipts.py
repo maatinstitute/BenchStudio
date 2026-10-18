@@ -2,7 +2,14 @@ from __future__ import annotations
 
 import json
 
-from benchstudio import build_runtime_receipt, verify_runtime_receipt, write_runtime_receipt
+from benchstudio import (
+    build_runtime_receipt,
+    generate_ed25519_keypair,
+    sign_runtime_receipt,
+    verify_runtime_receipt,
+    verify_runtime_receipt_signature,
+    write_runtime_receipt,
+)
 
 
 def test_runtime_receipt_is_digest_verifiable_and_persisted(tmp_path):
@@ -38,3 +45,34 @@ def test_runtime_receipt_detects_tampering():
     tampered = {**receipt, "status": "failed"}
     result = verify_runtime_receipt(tampered)
     assert result == {"valid": False, "reason": "receipt_digest_mismatch"}
+
+
+def test_runtime_receipt_signature_is_independently_verifiable(tmp_path):
+    receipt = build_runtime_receipt(
+        run_id="run",
+        attempt_id="attempt-1",
+        plan_digest_sha256=None,
+        worker_id="worker-1",
+        status="completed",
+        started_monotonic_ns=1,
+        completed_monotonic_ns=2,
+        backend_id="mock",
+        environment={},
+    )
+    receipt_path = tmp_path / "receipt.json"
+    signature_path = tmp_path / "receipt.sig"
+    write_runtime_receipt(receipt_path, receipt)
+    private_key, public_key = generate_ed25519_keypair()
+    sign_runtime_receipt(receipt_path, private_key, signature_path, key_id="worker-key")
+    result = verify_runtime_receipt_signature(receipt_path, signature_path, public_key)
+    assert result["valid"] is True
+    assert result["key_id"] == "worker-key"
+
+    receipt_path.write_text(
+        receipt_path.read_text().replace(
+            '"completed_monotonic_ns": 2', '"completed_monotonic_ns": 3'
+        )
+    )
+    assert (
+        verify_runtime_receipt_signature(receipt_path, signature_path, public_key)["valid"] is False
+    )
