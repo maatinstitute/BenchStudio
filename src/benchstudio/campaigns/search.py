@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any, Callable, Iterable
 
 
@@ -38,6 +39,12 @@ class FrozenSearchPlan:
             "cases": [asdict(case) for case in self.cases],
             "plan_digest_sha256": self.plan_digest_sha256,
         }
+
+    def write(self, path: Path) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(self.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
 
 
 @dataclass(frozen=True)
@@ -121,6 +128,27 @@ def minimize_counterexample(
                 changed = True
                 break
     return MinimizedCounterexample(current, tested, changed, True)
+
+
+def validate_search_plan(plan: FrozenSearchPlan) -> list[str]:
+    """Validate a serialized or transported search plan before execution."""
+    issues: list[str] = []
+    if not plan.run_id:
+        issues.append("run_id is required")
+    if not plan.scenario_id:
+        issues.append("scenario_id is required")
+    case_ids = [case.case_id for case in plan.cases]
+    if len(set(case_ids)) != len(case_ids):
+        issues.append("search case IDs must be unique")
+    for case in plan.cases:
+        if case.scenario_id != plan.scenario_id:
+            issues.append(f"case {case.case_id}: scenario_id differs from plan")
+        if not case.case_id or not case.base_condition_id:
+            issues.append(f"case {case.case_id}: identity fields are required")
+    expected = _digest([asdict(case) for case in plan.cases])
+    if expected != plan.plan_digest_sha256:
+        issues.append("plan_digest_sha256 does not match cases")
+    return issues
 
 
 def _digest(value: Any) -> str:

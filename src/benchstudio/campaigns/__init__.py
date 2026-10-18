@@ -35,6 +35,7 @@ from .search import (
     SearchCase,
     compile_search_plan,
     minimize_counterexample,
+    validate_search_plan,
 )
 from .spec import compile_campaign_spec
 from .worker import WorkerLease, WorkerLeaseManager
@@ -75,4 +76,5 @@ __all__ = [
     "MinimizedCounterexample",
     "compile_search_plan",
     "minimize_counterexample",
+    "validate_search_plan",
 ]

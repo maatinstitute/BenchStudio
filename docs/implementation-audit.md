@@ -19,6 +19,7 @@ has been evaluated.
 | Sim-to-real fidelity | Analysis-ready | Transfer gaps, failure-category agreement, observation-age summaries, and ranking concordance are implemented; physical data is not present. |
 | Robustness and recovery | Analysis-ready | Counterfactual pairing, confirmation plans, missing-outcome bounds, and recovery summaries are implemented; no disturbance campaign has been run. |
 | Frozen counterfactual plans | Implemented | Nominal and intervention branches share frozen pair identities, receive deterministic branch IDs, and carry a separately validated counterfactual plan digest. |
+| Counterexample search integrity | Implemented | Search plans can be serialized and independently validated for case identity, scenario consistency, and digest integrity before confirmation. |
 | WorldEpisode binding | Boundary verified | The optional reference validator is used when installed; the strict local fallback reports missing canonical metadata instead of fabricating it. |
 | RoboChallenge integration | Observe-only verified | Opaque observation/action digests and acknowledgments are validated; safety, execution, and official scoring remain external. |
 | AlpaBridge integration | Telemetry verified | Driver telemetry schema and deadline/load-failure audits are dependency-free; AlpaSim serving remains external. |

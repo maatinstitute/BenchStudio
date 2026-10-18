@@ -6,6 +6,7 @@ from benchstudio.campaigns import (
     PerturbationDimension,
     compile_search_plan,
     minimize_counterexample,
+    validate_search_plan,
 )
 
 
@@ -58,3 +59,19 @@ def test_search_plan_rejects_duplicate_dimension_names():
             ),
             seeds=[1],
         )
+
+
+def test_search_plan_can_be_written_and_validated_before_confirmation(tmp_path):
+    plan = compile_search_plan(
+        run_id="search",
+        scenario_id="task",
+        base_condition_id="base",
+        dimensions=(PerturbationDimension("x", (0, 1)),),
+        seeds=[1],
+    )
+    path = tmp_path / "search-plan.json"
+    plan.write(path)
+    assert path.is_file()
+    assert validate_search_plan(plan) == []
+    tampered = type(plan)(plan.run_id, plan.scenario_id, plan.cases[:-1], plan.plan_digest_sha256)
+    assert "plan_digest_sha256 does not match cases" in validate_search_plan(tampered)
