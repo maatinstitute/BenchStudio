@@ -11,6 +11,14 @@ def test_default_registry_is_ready_without_optional_simulators():
     assert readiness["ready"] is True
 
 
+def test_trace_replay_backend_is_registered_and_instantiable():
+    registry = default_registry()
+    readiness = registry.readiness("trace_replay")
+    assert readiness["ready"] is True
+    simulator = registry.create("trace_replay", steps=2)
+    assert simulator.simulator_id == "trace_replay_simulator"
+
+
 def test_registry_reports_missing_dependency_without_importing_backend():
     registry = AdapterRegistry()
     registry.register(

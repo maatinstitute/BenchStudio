@@ -89,6 +89,7 @@ def module_available(import_name: str) -> bool:
 
 def default_registry() -> AdapterRegistry:
     from .mock import MockSimulator
+    from .replay import ReplaySimulator
 
     registry = AdapterRegistry()
     registry.register(
@@ -96,6 +97,13 @@ def default_registry() -> AdapterRegistry:
             simulator_id="mock",
             label="Deterministic mock simulator",
             factory=MockSimulator,
+        )
+    )
+    registry.register(
+        AdapterDescriptor(
+            simulator_id="trace_replay",
+            label="URDF Studio-style trace replay facade",
+            factory=ReplaySimulator,
         )
     )
     return registry
