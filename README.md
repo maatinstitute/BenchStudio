@@ -174,6 +174,14 @@ Pass `--recovery-plan counterfactual-plan.json` to validate every recorded
 branch against the frozen nominal/intervention plan; mismatched or missing
 lineage fails closed.
 
+Serialized counterexample discovery and confirmation plans can be checked
+independently before use:
+
+```bash
+python -m benchstudio.cli --validate-search-plan search-plan.json
+python -m benchstudio.cli --validate-confirmation-plan confirmation-plan.json
+```
+
 Recorded policy traces can be used as a fail-closed parity reference. The
 `benchstudio.integrations.TracePolicy` adapter binds each action to its expected
 observation digest, so altered preprocessing or state cannot silently reuse the

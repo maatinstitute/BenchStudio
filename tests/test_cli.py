@@ -32,6 +32,41 @@ def test_cli_compiles_campaign_spec(monkeypatch, tmp_path, capsys):
     assert "compiled_plan=" in capsys.readouterr().out
 
 
+def test_cli_validates_serialized_search_plan(monkeypatch, tmp_path, capsys):
+    from benchstudio.campaigns import PerturbationDimension, compile_search_plan
+
+    path = tmp_path / "search-plan.json"
+    compile_search_plan(
+        run_id="search",
+        scenario_id="task",
+        base_condition_id="base",
+        dimensions=(PerturbationDimension("x", (0, 1)),),
+        seeds=[1],
+    ).write(path)
+    monkeypatch.setattr("sys.argv", ["benchstudio-run", "--validate-search-plan", str(path)])
+    assert main() == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["valid"] is True
+    assert report["case_count"] == 2
+
+
+def test_cli_validates_serialized_confirmation_plan(monkeypatch, tmp_path, capsys):
+    from benchstudio.campaigns import SearchCandidate, compile_confirmation_plan
+
+    path = tmp_path / "confirmation-plan.json"
+    compile_confirmation_plan(
+        run_id="confirmation",
+        source_search_digest_sha256="a" * 64,
+        candidates=[SearchCandidate("candidate", "task", "state", "search", 1, "b" * 64)],
+        confirmation_seeds=[2],
+    ).write(path)
+    monkeypatch.setattr("sys.argv", ["benchstudio-run", "--validate-confirmation-plan", str(path)])
+    assert main() == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["valid"] is True
+    assert report["case_count"] == 1
+
+
 def test_campaign_document_loader_rejects_non_mapping_json(tmp_path):
     path = tmp_path / "campaign.json"
     path.write_text("[]", encoding="utf-8")

@@ -149,6 +149,16 @@ def main() -> int:
     parser.add_argument("--recovery-output", type=Path)
     parser.add_argument("--recovery-plan", type=Path)
     parser.add_argument(
+        "--validate-search-plan",
+        type=Path,
+        help="Load and validate a serialized counterexample-search plan.",
+    )
+    parser.add_argument(
+        "--validate-confirmation-plan",
+        type=Path,
+        help="Load and validate a serialized independent confirmation plan.",
+    )
+    parser.add_argument(
         "--claim-type",
         choices=[claim.value for claim in ClaimType],
         default=ClaimType.SINGLE_RUN_OUTCOME.value,
@@ -200,6 +210,36 @@ def main() -> int:
         help="PEM public key used to verify --manifest-signature.",
     )
     args = parser.parse_args()
+    if args.validate_search_plan is not None and args.validate_confirmation_plan is not None:
+        parser.error("plan validation options are mutually exclusive")
+    if args.validate_search_plan is not None:
+        from .campaigns import load_search_plan
+
+        plan = load_search_plan(args.validate_search_plan)
+        payload = {
+            "schema": "benchstudio.counterexample_search_validation_v1",
+            "run_id": plan.run_id,
+            "scenario_id": plan.scenario_id,
+            "case_count": len(plan.cases),
+            "plan_digest_sha256": plan.plan_digest_sha256,
+            "valid": True,
+        }
+        print(json.dumps(payload, sort_keys=True))
+        return 0
+    if args.validate_confirmation_plan is not None:
+        from .campaigns import load_confirmation_plan
+
+        plan = load_confirmation_plan(args.validate_confirmation_plan)
+        payload = {
+            "schema": "benchstudio.confirmation_validation_v1",
+            "run_id": plan.run_id,
+            "case_count": len(plan.cases),
+            "source_search_digest_sha256": plan.source_search_digest_sha256,
+            "plan_digest_sha256": plan.plan_digest_sha256,
+            "valid": True,
+        }
+        print(json.dumps(payload, sort_keys=True))
+        return 0
     if args.compare_policy_traces is not None:
         reference, instrumented = map(Path, args.compare_policy_traces)
         report = compare_policy_trace_files(reference, instrumented)
