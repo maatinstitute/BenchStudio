@@ -62,11 +62,16 @@ class AdapterRegistry:
         dependencies = []
         for dependency in descriptor.dependencies:
             available = module_available(dependency.import_name)
+            try:
+                version = metadata.version(dependency.name)
+            except metadata.PackageNotFoundError:
+                version = None
             dependencies.append(
                 {
                     "name": dependency.name,
                     "import_name": dependency.import_name,
                     "available": available,
+                    "version": version,
                     "required": dependency.required,
                     "scope": dependency.scope,
                 }

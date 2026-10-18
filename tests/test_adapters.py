@@ -54,6 +54,24 @@ def test_registry_reports_missing_dependency_without_importing_backend():
         registry.create("missing")
 
 
+def test_registry_readiness_reports_dependency_version(monkeypatch):
+    import benchstudio.adapters as adapters
+
+    monkeypatch.setattr(adapters.metadata, "version", lambda _name: "9.8.7")
+    registry = AdapterRegistry()
+    registry.register(
+        AdapterDescriptor(
+            simulator_id="versioned",
+            label="Versioned backend",
+            factory=MockSimulator,
+            dependencies=(Dependency("json", "json"),),
+        )
+    )
+    readiness = registry.readiness("versioned")
+    assert readiness["ready"] is True
+    assert readiness["dependencies"][0]["version"] == "9.8.7"
+
+
 def test_duplicate_adapter_registration_is_rejected():
     registry = default_registry(discover_external=False)
     with pytest.raises(ValueError, match="already registered"):
