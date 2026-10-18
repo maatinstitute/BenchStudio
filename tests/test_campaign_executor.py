@@ -314,6 +314,21 @@ def test_campaign_executor_exposes_frozen_plan_audit(tmp_path):
     assert audit.claim.status == "supported"
 
 
+def test_campaign_executor_audit_rechecks_runtime_evidence(tmp_path):
+    plan = CampaignPlanner(
+        run_id="audit-receipt-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    output = tmp_path / "campaign"
+    executor = CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator())
+    executor.run()
+    (output / "attempts" / "attempt-000000" / "runtime-receipt.json").unlink()
+    audit = executor.audit(
+        evidence={"authoritative_scorer_declared": True},
+    )
+    assert audit.evidence_verified is False
+    assert "runtime-receipt.json" in " ".join(audit.evidence_issues)
+
+
 def test_campaign_executor_audit_reads_persisted_authoritative_outcomes(tmp_path):
     plan = CampaignPlanner(
         run_id="outcome-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]

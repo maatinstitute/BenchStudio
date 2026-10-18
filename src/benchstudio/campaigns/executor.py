@@ -383,13 +383,41 @@ class CampaignExecutor:
             claim_type = ClaimType.SINGLE_RUN_OUTCOME
         if outcome_records is None and (self.output / "outcomes.jsonl").is_file():
             outcome_records = self.outcome_ledger().records
+        evidence_issues = self._audit_evidence_issues()
+        claim_evidence = dict(evidence or {})
+        claim_evidence["trusted_artifacts"] = (
+            claim_evidence.get("trusted_artifacts", True) is not False and not evidence_issues
+        )
         return audit_campaign(
             self.plan,
             self.ledger.records,
             claim_type=claim_type,
-            evidence=evidence,
+            evidence=claim_evidence,
             outcome_records=outcome_records,
+            evidence_issues=evidence_issues,
         )
+
+    def _audit_evidence_issues(self) -> tuple[str, ...]:
+        records = {record.get("attempt_id"): record for record in self.ledger.records}
+        issues: list[str] = []
+        for attempt in self.plan.attempts:
+            attempt_id = attempt.key.attempt_id
+            record = records.get(attempt_id)
+            if record is None or record.get("status") == "cancelled":
+                continue
+            attempt_dir = self.output / "attempts" / attempt_id
+            verification = verify_artifact_manifest(attempt_dir)
+            if not verification["valid"]:
+                issues.append(
+                    f"{attempt_id}: artifact manifest is invalid: "
+                    f"{verification.get('mismatches', ())}"
+                )
+                continue
+            try:
+                self._verify_runtime_receipt(attempt, attempt_dir)
+            except RuntimeError as exc:
+                issues.append(str(exc))
+        return tuple(issues)
 
     def outcome_ledger(self) -> Any:
         """Open the plan-bound scorer outcome ledger for this campaign."""

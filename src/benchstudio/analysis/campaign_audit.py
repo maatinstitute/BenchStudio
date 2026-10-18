@@ -26,6 +26,7 @@ class CampaignAudit:
     outcome_provenance: OutcomeProvenanceAudit | None = None
     calibration_issues: tuple[str, ...] = ()
     benchmark_validity: BenchmarkValidityAudit | None = None
+    evidence_issues: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -37,6 +38,7 @@ class CampaignAudit:
             "status_counts": dict(self.status_counts),
             "attempts_complete": self.attempts_complete,
             "evidence_verified": self.evidence_verified,
+            "evidence_issues": list(self.evidence_issues),
             "claim": self.claim.to_dict(),
             "outcome_provenance": (
                 self.outcome_provenance.to_dict() if self.outcome_provenance is not None else None
@@ -56,6 +58,7 @@ def audit_campaign(
     claim_type: ClaimType,
     evidence: dict[str, Any] | None = None,
     outcome_records: Iterable[OutcomeRecord] | None = None,
+    evidence_issues: Iterable[str] = (),
 ) -> CampaignAudit:
     """Audit frozen-plan accounting and derive claim prerequisites."""
     rows = list(records)
@@ -82,7 +85,13 @@ def audit_campaign(
         and all(status in _FINAL_STATUSES for status in statuses)
         and len(rows) == len(planned_ids)
     )
-    trusted = bool(rows) and all(row.get("evidence_verified") is True for row in rows)
+    evidence_issue_rows = tuple(evidence_issues)
+    trusted = (
+        bool(rows)
+        and all(row.get("evidence_verified") is True for row in rows)
+        and not evidence_issue_rows
+        and (evidence or {}).get("trusted_artifacts", True) is not False
+    )
     outcome_list = list(outcome_records) if outcome_records is not None else None
     outcome_audit = audit_outcome_provenance(outcome_list) if outcome_list is not None else None
     claim_evidence = dict(evidence or {})
@@ -125,6 +134,7 @@ def audit_campaign(
         outcome_audit,
         tuple(calibration_issues),
         benchmark_validity,
+        evidence_issue_rows,
     )
 
 
