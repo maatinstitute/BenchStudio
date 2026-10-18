@@ -59,6 +59,20 @@ def test_observation_parity_compares_payload_identity_and_missing_sequences():
     assert {item["sequence"] for item in report.mismatches} == {0, 1}
 
 
+def test_observation_parity_rejects_reused_sequence_ids():
+    reference = [Observation(0, 0.0, payload={"camera": 1})]
+    instrumented = [
+        Observation(0, 0.0, payload={"camera": 1}),
+        Observation(0, 0.0, payload={"camera": 1}),
+    ]
+    report = compare_observation_streams(reference, instrumented)
+    assert report.equivalent is False
+    assert report.duplicate_sequences == (0,)
+    assert report.mismatches == (
+        {"sequence": 0, "kind": "duplicate_sequence", "expected_count": 1, "actual_count": 2},
+    )
+
+
 def test_robochallenge_adapter_preserves_opaque_payload_digests():
     records: list[dict[str, object]] = []
     adapter = RoboChallengeObserveOnlyAdapter(records.append)

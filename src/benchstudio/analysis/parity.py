@@ -24,6 +24,7 @@ class ObservationParityReport:
     checked_observations: int
     identical_observations: int
     mismatches: tuple[dict[str, object], ...]
+    duplicate_sequences: tuple[int, ...] = ()
 
     @property
     def equivalent(self) -> bool:
@@ -77,15 +78,38 @@ def compare_observation_streams(
     reference: Iterable[Observation], instrumented: Iterable[Observation]
 ) -> ObservationParityReport:
     """Compare observation identity and payloads before output parity."""
-    expected = {observation.sequence: observation for observation in reference}
-    actual = {observation.sequence: observation for observation in instrumented}
+    expected: dict[int, list[Observation]] = {}
+    actual: dict[int, list[Observation]] = {}
+    for observation in reference:
+        expected.setdefault(observation.sequence, []).append(observation)
+    for observation in instrumented:
+        actual.setdefault(observation.sequence, []).append(observation)
     mismatches: list[dict[str, object]] = []
     identical = 0
+    duplicates = tuple(
+        sorted(
+            sequence
+            for sequence in set(expected) | set(actual)
+            if len(expected.get(sequence, ())) > 1 or len(actual.get(sequence, ())) > 1
+        )
+    )
+    checked = 0
     for sequence in sorted(set(expected) | set(actual)):
-        left = expected.get(sequence)
-        right = actual.get(sequence)
-        left_digest = _observation_digest(left) if left is not None else None
-        right_digest = _observation_digest(right) if right is not None else None
+        left = expected.get(sequence, [])
+        right = actual.get(sequence, [])
+        checked += max(len(left), len(right))
+        if sequence in duplicates:
+            mismatches.append(
+                {
+                    "sequence": sequence,
+                    "kind": "duplicate_sequence",
+                    "expected_count": len(left),
+                    "actual_count": len(right),
+                }
+            )
+            continue
+        left_digest = _observation_digest(left[0]) if left else None
+        right_digest = _observation_digest(right[0]) if right else None
         if left_digest == right_digest:
             identical += 1
         else:
@@ -96,7 +120,7 @@ def compare_observation_streams(
                     "actual_sha256": right_digest,
                 }
             )
-    return ObservationParityReport(len(set(expected) | set(actual)), identical, tuple(mismatches))
+    return ObservationParityReport(checked, identical, tuple(mismatches), duplicates)
 
 
 def _digest(action: ActionChunk) -> str:
