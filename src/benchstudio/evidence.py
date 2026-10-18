@@ -62,13 +62,26 @@ def write_manifest_trust_anchor(manifest_path: Path, anchor_path: Path) -> dict[
     return {"path": str(anchor_path), "sha256": digest}
 
 
-def verify_artifact_manifest(root: Path, trust_anchor_path: Path | None = None) -> dict[str, Any]:
-    """Verify every file bound by an artifact manifest and report mismatches."""
+def verify_artifact_manifest(
+    root: Path,
+    trust_anchor_path: Path | None = None,
+    trusted_manifest_sha256: str | None = None,
+) -> dict[str, Any]:
+    """Verify bound files and, optionally, an independently supplied digest.
+
+    The generated sibling anchor is useful for accidental tampering. A digest
+    supplied by a separate store or verifier is the stronger trust reference
+    and is checked independently when provided.
+    """
     manifest_path = root / "artifact-manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     mismatches: list[dict[str, Any]] = []
     anchor = trust_anchor_path or root.parent / f"{root.name}.artifact-manifest.sha256"
-    trust_anchor: dict[str, Any] = {"path": str(anchor), "checked": anchor.is_file()}
+    trust_anchor: dict[str, Any] = {
+        "path": str(anchor),
+        "checked": anchor.is_file(),
+        "external_reference_supplied": trusted_manifest_sha256 is not None,
+    }
     if not anchor.is_file():
         mismatches.append({"file": manifest_path.name, "reason": "trust_anchor_missing"})
     else:
@@ -78,6 +91,14 @@ def verify_artifact_manifest(root: Path, trust_anchor_path: Path | None = None) 
         trust_anchor.update({"expected_sha256": expected_digest, "actual_sha256": actual_digest})
         if expected_digest != actual_digest:
             mismatches.append({"file": manifest_path.name, "reason": "trust_anchor_mismatch"})
+    if trusted_manifest_sha256 is not None:
+        actual_digest = sha256_file(manifest_path)
+        trust_anchor["trusted_manifest_sha256"] = trusted_manifest_sha256
+        trust_anchor["actual_sha256"] = actual_digest
+        if trusted_manifest_sha256 != actual_digest:
+            mismatches.append(
+                {"file": manifest_path.name, "reason": "external_trust_reference_mismatch"}
+            )
     bound_names = set(manifest.get("files", {}))
     for name, expected in manifest.get("files", {}).items():
         path = root / name

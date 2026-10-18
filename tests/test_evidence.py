@@ -96,3 +96,16 @@ def test_artifact_manifest_requires_external_trust_anchor(tmp_path):
     result = verify_artifact_manifest(run_dir)
     assert result["valid"] is False
     assert {item["reason"] for item in result["mismatches"]} == {"trust_anchor_missing"}
+
+
+def test_artifact_manifest_can_check_independent_trusted_digest(tmp_path):
+    run_dir = tmp_path / "run"
+    run_episodes(MockPolicy(), MockSimulator(), RunConfig(episodes=1), run_dir)
+    from benchstudio.evidence import sha256_file
+
+    digest = sha256_file(run_dir / "artifact-manifest.json")
+    result = verify_artifact_manifest(run_dir, trusted_manifest_sha256=digest)
+    assert result["valid"] is True
+    result = verify_artifact_manifest(run_dir, trusted_manifest_sha256="0" * 64)
+    assert result["valid"] is False
+    assert "external_trust_reference_mismatch" in {item["reason"] for item in result["mismatches"]}
