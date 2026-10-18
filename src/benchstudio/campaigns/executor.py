@@ -88,6 +88,7 @@ class CampaignExecutor:
                 raise ValueError(
                     "campaign model requirements are not satisfied: " + "; ".join(issues)
                 )
+        _validate_execution_safety(plan)
         planned_ids = {attempt.key.attempt_id for attempt in plan.attempts}
         unknown = self.cancelled_attempts - planned_ids
         if unknown:
@@ -506,6 +507,43 @@ class CampaignExecutor:
         from .artifacts import publish_campaign_archive
 
         return publish_campaign_archive(self.output, store).to_dict()
+
+
+def _validate_execution_safety(plan: FrozenCampaignPlan) -> None:
+    """Recheck hardware safety invariants at the execution boundary.
+
+    Plans may be loaded or constructed without passing through the declarative
+    compiler. Physical environments therefore need the same authorization and
+    no-automatic-retry checks before a worker can instantiate an adapter.
+    """
+    protocol = plan.protocol or {}
+    section = protocol.get("S", {})
+    environments = section.get("environments", []) if isinstance(section, dict) else []
+    if not isinstance(environments, list):
+        raise ValueError("frozen plan environment declarations must be a list")
+    for index, environment in enumerate(environments):
+        if not isinstance(environment, dict):
+            raise ValueError(f"frozen plan environment {index} must be a mapping")
+        if environment.get("kind") != "physical":
+            continue
+        enabled = environment.get("enabled", False)
+        if not isinstance(enabled, bool):
+            raise ValueError(
+                f"physical environment {environment.get('id', index)} enabled must be boolean"
+            )
+        if not enabled:
+            continue
+        environment_id = environment.get("id", index)
+        if environment.get("requires_authorization") is not True:
+            raise ValueError(
+                f"physical environment {environment_id} requires explicit authorization"
+            )
+        if environment.get("retry_policy", "none") != "none" or environment.get(
+            "auto_retry", False
+        ):
+            raise ValueError(
+                f"physical environment {environment_id} must disable automatic retries"
+            )
 
 
 def _resource_budget(plan: FrozenCampaignPlan) -> ResourceBudget | None:

@@ -107,6 +107,34 @@ def test_campaign_executor_rejects_attempts_outside_frozen_batch(tmp_path):
         executor.run(attempt_ids=["not-planned"])
 
 
+@pytest.mark.parametrize(
+    "environment_update, message",
+    [
+        ({"enabled": True}, "authorization"),
+        (
+            {"enabled": True, "requires_authorization": True, "retry_policy": "automatic"},
+            "automatic retries",
+        ),
+    ],
+)
+def test_campaign_executor_rechecks_physical_safety_for_frozen_plans(
+    tmp_path, environment_update, message
+):
+    environment = {"id": "robot", "kind": "physical", **environment_update}
+    plan = CampaignPlanner(
+        run_id="physical-safety",
+        scenario_id="task",
+        conditions=[{"x": 1}],
+        seeds=[1],
+        environment_ids=("robot",),
+        protocol={"S": {"environments": [environment]}},
+    ).freeze()
+    with pytest.raises(ValueError, match=message):
+        CampaignExecutor(
+            plan, tmp_path / "campaign", lambda _: MockPolicy(), lambda _: MockSimulator()
+        )
+
+
 def test_campaign_executor_commits_infrastructure_failure_and_does_not_retry(tmp_path):
     plan = CampaignPlanner(
         run_id="failure-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
