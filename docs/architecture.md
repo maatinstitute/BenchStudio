@@ -62,6 +62,12 @@ simulation result cannot become a real-world-transfer claim without physical
 evidence and a declared transfer protocol; unsupported prerequisites are
 reported rather than inferred.
 
+Distributed workers use exclusive attempt leases and durable ledger commits.
+The policy parity harness compares canonical action-chunk digests across a
+reference and instrumented adapter. The RoboChallenge integration is
+observe-only: it validates opaque message digests and records acknowledgments,
+while execution, safety, and official scoring remain external.
+
 Simulator implementations register an `AdapterDescriptor`. Optional simulator
 dependencies are probed only when readiness is requested; the mock adapter
 therefore remains usable in a clean Python environment.

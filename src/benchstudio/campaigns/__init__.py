@@ -5,10 +5,13 @@ from .executor import CampaignExecutionSummary, CampaignExecutor
 from .frozen_plan import AttemptKey, CampaignPlanner, FrozenCampaignPlan, PlannedAttempt
 from .ledger import AttemptLedger
 from .spec import compile_campaign_spec
+from .worker import WorkerLease, WorkerLeaseManager
 
 __all__ = [
     "AttemptKey",
     "AttemptLedger",
+    "WorkerLease",
+    "WorkerLeaseManager",
     "CampaignPlanner",
     "CampaignExecutionSummary",
     "CampaignExecutor",
