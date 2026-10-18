@@ -199,6 +199,23 @@ def test_robochallenge_adapter_rejects_duplicate_and_reordered_messages():
     assert adapter.audit().event_count == 2
 
 
+def test_robochallenge_adapter_audits_rejected_message_failures():
+    records: list[dict[str, object]] = []
+    adapter = RoboChallengeObserveOnlyAdapter(records.append)
+    with pytest.raises(ValueError, match="payload digest"):
+        adapter.observe(RoboChallengeObservation("bad-obs", 1, b"payload", "0" * 64))
+    with pytest.raises(ValueError, match="execution timestamp"):
+        adapter.action_acknowledged(
+            RoboChallengeAction("bad-action", 2, b"action", hashlib.sha256(b"action").hexdigest()),
+            execution_timestamp_ns=-1,
+        )
+    audit = adapter.audit()
+    assert audit.valid is False
+    assert audit.event_count == 0
+    assert any("observation payload digest mismatch" in issue for issue in audit.issues)
+    assert any("action execution timestamp must be non-negative" in issue for issue in audit.issues)
+
+
 def test_worldepisode_binding_is_explicit_about_fallback_profile():
     result = preflight_worldepisode({"episode_id": "episode-1", "schema": "worldepisode"})
     assert result.valid

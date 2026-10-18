@@ -72,6 +72,7 @@ class RoboChallengeObserveOnlyAdapter:
     def observe(self, message: RoboChallengeObservation) -> None:
         issues = validate_robochallenge_message(message)
         if issues:
+            self._issues.extend(f"observation {issue}" for issue in issues)
             raise ValueError("invalid RoboChallenge observation: " + "; ".join(issues))
         if message.observation_id in self._observation_ids:
             issue = f"duplicate observation_id: {message.observation_id}"
@@ -105,6 +106,7 @@ class RoboChallengeObserveOnlyAdapter:
         if execution_timestamp_ns is not None and execution_timestamp_ns < 0:
             issues.append("execution timestamp must be non-negative")
         if issues:
+            self._issues.extend(f"action {issue}" for issue in issues)
             raise ValueError("invalid RoboChallenge action: " + "; ".join(issues))
         if message.action_id in self._action_ids:
             issue = f"duplicate action_id: {message.action_id}"
