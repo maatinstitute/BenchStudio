@@ -221,6 +221,22 @@ def test_worldepisode_strict_fallback_requires_semantic_contract():
     }
 
 
+def test_worldepisode_preflight_binds_frozen_identity_and_fails_closed_on_bad_payload():
+    mismatch = preflight_worldepisode(
+        {"episode_id": "episode-1", "schema": "worldepisode", "revision_id": "rev-1"},
+        expected_episode_id="episode-2",
+        expected_revision_id="rev-2",
+    )
+    assert mismatch.valid is False
+    assert {item["code"] for item in mismatch.diagnostics} >= {
+        "episode_identity_mismatch",
+        "revision_identity_mismatch",
+    }
+    invalid = preflight_worldepisode([], expected_episode_id="episode-1")
+    assert invalid.valid is False
+    assert invalid.profile == "benchstudio_invalid_worldepisode_profile"
+
+
 def test_replay_conformance_reports_no_physics_coverage():
     result = run_replay_conformance()
     assert result["passed"] is True
