@@ -1,0 +1,1451 @@
+{
+  "codebook_version": "1",
+  "annotator": {
+    "id": null,
+    "kind": null,
+    "prior_label_exposure": null,
+    "completed_at": null
+  },
+  "papers": [
+    {
+      "system": "VLA-RL",
+      "citation": "2505.18719",
+      "source_version": null,
+      "comparison_id": null,
+      "claim_locator": null,
+      "boundary": null,
+      "cells": {
+        "real_acquisition": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "human_labor": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "simulation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wm_generation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "training_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "deployment_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wall_time": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "persistent_storage": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        }
+      }
+    },
+    {
+      "system": "E2HiL",
+      "citation": "10.1109/LRA.2026.3693577",
+      "source_version": null,
+      "comparison_id": null,
+      "claim_locator": null,
+      "boundary": null,
+      "cells": {
+        "real_acquisition": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "human_labor": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "simulation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wm_generation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "training_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "deployment_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wall_time": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "persistent_storage": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        }
+      }
+    },
+    {
+      "system": "Persistent Robot World Models",
+      "citation": "2603.25685",
+      "source_version": null,
+      "comparison_id": null,
+      "claim_locator": null,
+      "boundary": null,
+      "cells": {
+        "real_acquisition": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "human_labor": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "simulation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wm_generation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "training_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "deployment_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wall_time": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "persistent_storage": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        }
+      }
+    },
+    {
+      "system": "Hi-WM",
+      "citation": "2604.21741",
+      "source_version": null,
+      "comparison_id": null,
+      "claim_locator": null,
+      "boundary": null,
+      "cells": {
+        "real_acquisition": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "human_labor": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "simulation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wm_generation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "training_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "deployment_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wall_time": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "persistent_storage": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        }
+      }
+    },
+    {
+      "system": "tau0-VLA",
+      "citation": "2608.16885",
+      "source_version": null,
+      "comparison_id": null,
+      "claim_locator": null,
+      "boundary": null,
+      "cells": {
+        "real_acquisition": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "human_labor": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "simulation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wm_generation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "training_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "deployment_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wall_time": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "persistent_storage": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        }
+      }
+    },
+    {
+      "system": "WoVR",
+      "citation": "2602.13977",
+      "source_version": null,
+      "comparison_id": null,
+      "claim_locator": null,
+      "boundary": null,
+      "cells": {
+        "real_acquisition": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "human_labor": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "simulation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wm_generation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "training_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "deployment_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wall_time": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "persistent_storage": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        }
+      }
+    },
+    {
+      "system": "Realtime-VLA FLASH",
+      "citation": "2605.13778",
+      "source_version": null,
+      "comparison_id": null,
+      "claim_locator": null,
+      "boundary": null,
+      "cells": {
+        "real_acquisition": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "human_labor": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "simulation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wm_generation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "training_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "deployment_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wall_time": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "persistent_storage": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        }
+      }
+    },
+    {
+      "system": "SV-VLA",
+      "citation": "2604.02965",
+      "source_version": null,
+      "comparison_id": null,
+      "claim_locator": null,
+      "boundary": null,
+      "cells": {
+        "real_acquisition": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "human_labor": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "simulation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wm_generation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "training_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "deployment_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wall_time": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "persistent_storage": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        }
+      }
+    },
+    {
+      "system": "STEP",
+      "citation": "2602.08245",
+      "source_version": null,
+      "comparison_id": null,
+      "claim_locator": null,
+      "boundary": null,
+      "cells": {
+        "real_acquisition": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "human_labor": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "simulation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wm_generation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "training_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "deployment_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wall_time": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "persistent_storage": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        }
+      }
+    },
+    {
+      "system": "A2C2",
+      "citation": "2509.23224",
+      "source_version": null,
+      "comparison_id": null,
+      "claim_locator": null,
+      "boundary": null,
+      "cells": {
+        "real_acquisition": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "human_labor": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "simulation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wm_generation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "training_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "deployment_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wall_time": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "persistent_storage": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        }
+      }
+    },
+    {
+      "system": "SAM2Act+",
+      "citation": "2501.18564",
+      "source_version": null,
+      "comparison_id": null,
+      "claim_locator": null,
+      "boundary": null,
+      "cells": {
+        "real_acquisition": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "human_labor": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "simulation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wm_generation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "training_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "deployment_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wall_time": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "persistent_storage": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        }
+      }
+    },
+    {
+      "system": "SEAR",
+      "citation": "2603.01891",
+      "source_version": null,
+      "comparison_id": null,
+      "claim_locator": null,
+      "boundary": null,
+      "cells": {
+        "real_acquisition": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "human_labor": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "simulation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wm_generation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "training_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "deployment_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wall_time": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "persistent_storage": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        }
+      }
+    },
+    {
+      "system": "Q-chunking",
+      "citation": "2507.07969",
+      "source_version": null,
+      "comparison_id": null,
+      "claim_locator": null,
+      "boundary": null,
+      "cells": {
+        "real_acquisition": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "human_labor": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "simulation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wm_generation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "training_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "deployment_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wall_time": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "persistent_storage": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        }
+      }
+    },
+    {
+      "system": "CO-RFT",
+      "citation": "2508.02219",
+      "source_version": null,
+      "comparison_id": null,
+      "claim_locator": null,
+      "boundary": null,
+      "cells": {
+        "real_acquisition": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "human_labor": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "simulation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wm_generation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "training_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "deployment_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wall_time": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "persistent_storage": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        }
+      }
+    },
+    {
+      "system": "FPC-VLA",
+      "citation": "2509.04018",
+      "source_version": null,
+      "comparison_id": null,
+      "claim_locator": null,
+      "boundary": null,
+      "cells": {
+        "real_acquisition": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "human_labor": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "simulation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wm_generation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "training_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "deployment_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wall_time": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "persistent_storage": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        }
+      }
+    },
+    {
+      "system": "RoboFAC",
+      "citation": "2505.12224",
+      "source_version": null,
+      "comparison_id": null,
+      "claim_locator": null,
+      "boundary": null,
+      "cells": {
+        "real_acquisition": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "human_labor": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "simulation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wm_generation": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "training_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "deployment_compute": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "wall_time": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        },
+        "persistent_storage": {
+          "label": null,
+          "source_locator": null,
+          "evidence": null,
+          "rationale": null,
+          "quantity": null,
+          "unit": null,
+          "denominator": null,
+          "search_log": null
+        }
+      }
+    }
+  ]
+}

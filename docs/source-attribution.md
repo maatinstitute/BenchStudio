@@ -18,6 +18,16 @@ the following projects. Product runtimes are not vendored into this repository.
   schedule digest, external gates, and exclusive-write semantics; it then
   converts that exact schedule into `FrozenCampaignPlan`. The heavy
   CUDA/LeRobot runtime remains external.
+- Refinement/Refresh annotation agreement: `benchstudio.analysis.agreement`
+  is a direct port of `review/agreement.py` at upstream commit
+  `8c92e66c7ab19403822cb87908253260666fb3a6`; source digest
+  `cbdc7ece57801c0c1bf32dcbd3cd2b5cdac521aafd8c739385d10b5ac26af0f2` and
+  source-test digest
+  `db526f5f630ae35a9c3d4ffcf36986ae1e3c41367844c54d8cd6f7495adbc806`.
+  The neutral blind annotation fixture digest is
+  `6f096153e5c8cbd5209d89cc42e1e2a9bba41291299153efc3cc3e481d4a4d32`.
+  The port preserves frozen scope, evidence/locator/rationale requirements,
+  label validation, kappa/agreement metrics, and disagreement records.
 - Refinement/Refresh result analysis: `benchstudio.analysis.result_metrics`
   is a direct port of `experiments/real_smolvla/result_metrics.py` from the
   same upstream commit. The source digest is

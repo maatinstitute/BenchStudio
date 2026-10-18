@@ -5,6 +5,10 @@ from .acceptance import (
     EvaluationAcceptanceReport,
     audit_evaluation_acceptance,
 )
+from .agreement import DIMENSIONS, LABELS
+from .agreement import compare as compare_annotation_packets
+from .agreement import metrics as annotation_agreement_metrics
+from .agreement import validate as validate_annotation_packet
 from .campaign_audit import CampaignAudit, audit_campaign, audit_campaign_directory
 from .claims import ClaimDecision, ClaimType, validate_claim
 from .dataset_manifest import DatasetResolution, resolve_manifest
@@ -125,6 +129,11 @@ __all__ = [
     "AcceptanceCheck",
     "EvaluationAcceptanceReport",
     "audit_evaluation_acceptance",
+    "DIMENSIONS",
+    "LABELS",
+    "compare_annotation_packets",
+    "annotation_agreement_metrics",
+    "validate_annotation_packet",
     "CampaignAudit",
     "audit_campaign",
     "audit_campaign_directory",
