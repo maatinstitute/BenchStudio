@@ -67,6 +67,14 @@ the following projects. Product runtimes are not vendored into this repository.
   `d6a6b5eeff857741f9cd45893545403c48cd8796b25dde500b6ac382b4e9cd47`.
   The port preserves deterministic hierarchical sampling, S/M/U/C exposure
   identity, mask validation, atomic JSON round-trips, and schedule hashing.
+- RoboPAD evaluation-branch integrity: `benchstudio.analysis.outcome_eval` is a
+  direct port of `experiments/outcome_eval.py` at upstream commit
+  `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
+  `a630bdec6559a86fae0f8a7c1c13619c9a4398d0249bc2201ddde7fd0972ce5e` and
+  source-test digest
+  `abf10ecf2733aad3167e9a2b0d6d642a469c5f3d52f03f45b719d48e0517a280`.
+  The port preserves arm prompt roles, pre-policy/contact exclusions, first
+  attainment semantics, and independent replay checks for evaluation branches.
 - AlpaBridge: `benchstudio.integrations.alpasim_metrics` is a direct
   dependency-free port of `src/alpabridge/neutral/alpasim_metrics.py` from
   upstream commit `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`. Its source digest

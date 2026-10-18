@@ -13,6 +13,14 @@ from .ledger_validation import compare as compare_refinement_ledgers
 from .ledger_validation import validate as validate_refinement_ledger
 from .ledger_validation import validate_completed as validate_completed_refinement_ledger
 from .missingness import MissingOutcomeBounds, missing_outcome_bounds
+from .outcome_eval import (
+    boundary_outcome,
+    first_attainment_step,
+    inference_kwargs,
+    prompt_mode_for_arm,
+    validate_evaluation_branch,
+    validate_replay_attainment,
+)
 from .outcome_report import (
     analyze_primary,
     clopper_pearson,
@@ -96,6 +104,12 @@ __all__ = [
     "clopper_pearson",
     "outcome_discordance_interval",
     "summarize_cells",
+    "prompt_mode_for_arm",
+    "inference_kwargs",
+    "boundary_outcome",
+    "first_attainment_step",
+    "validate_replay_attainment",
+    "validate_evaluation_branch",
     "EventBookmark",
     "InferenceEvent",
     "InferenceScheduleAudit",
