@@ -95,7 +95,10 @@ def _validate_condition_controls(conditions: list[dict[str, Any]]) -> None:
             ):
                 raise ValueError(f"{label}.{field} must be a positive integer")
         strategy = condition.get("execution_strategy")
-        if strategy is not None and strategy not in {"sync", "async", "streaming", "cached"}:
+        if strategy is not None and (
+            not isinstance(strategy, str)
+            or strategy not in {"sync", "async", "streaming", "cached"}
+        ):
             raise ValueError(f"{label}.execution_strategy is unsupported")
         max_cache_entries = condition.get("max_cache_entries")
         if max_cache_entries is not None and (
@@ -149,7 +152,12 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
             raise ValueError(f"execution.{field} must be a non-negative integer")
     _validate_model_capabilities(model, evaluation)
     strategy = evaluation.get("execution_strategy", "sync")
-    if strategy not in {"sync", "async", "streaming", "cached"}:
+    if not isinstance(strategy, str) or strategy not in {
+        "sync",
+        "async",
+        "streaming",
+        "cached",
+    }:
         raise ValueError(f"unsupported evaluation.execution_strategy: {strategy}")
     max_cache_entries = evaluation.get("max_cache_entries", 256)
     if (

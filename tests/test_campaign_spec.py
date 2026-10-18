@@ -91,6 +91,24 @@ def test_campaign_spec_rejects_unknown_execution_strategy():
         )
 
 
+def test_campaign_spec_rejects_non_string_execution_strategy():
+    with pytest.raises(ValueError, match="execution_strategy"):
+        compile_campaign_spec(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "bad-strategy-type"},
+                "task": {"task_id": "task"},
+                "environments": [{"id": "sim", "kind": "simulator"}],
+                "evaluation": {
+                    "seeds": [1],
+                    "paired": True,
+                    "execution_strategy": [],
+                    "conditions": [{"x": 1}],
+                },
+            }
+        )
+
+
 @pytest.mark.parametrize("repetitions", [0, -1, 1.5, True])
 def test_campaign_spec_rejects_invalid_repetition_counts(repetitions):
     with pytest.raises(ValueError, match="evaluation.repetitions"):
@@ -117,7 +135,7 @@ def test_campaign_spec_rejects_invalid_repetition_counts(repetitions):
         ({"observation_refresh_ticks": 0}, "observation_refresh_ticks"),
         ({"max_episode_steps": True}, "max_episode_steps"),
         ({"denoising_steps": -1}, "denoising_steps"),
-        ({"execution_strategy": "batch"}, "execution_strategy"),
+        ({"execution_strategy": []}, "execution_strategy"),
         ({"max_cache_entries": 0}, "max_cache_entries"),
         ({"id": 42}, r"conditions\[0\]\.id"),
     ],
