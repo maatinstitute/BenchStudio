@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -67,6 +69,56 @@ class ExecutionOverhead:
                 self.timing_provenance.to_dict() if self.timing_provenance is not None else None
             ),
         }
+
+
+def write_execution_overhead(report: ExecutionOverhead, path: Path) -> None:
+    """Persist an overhead audit as an independently inspectable artifact."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {"schema": "benchstudio_execution_overhead_v1", "report": report.to_dict()},
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def load_execution_overhead(path: Path) -> ExecutionOverhead:
+    """Load and validate a serialized overhead audit."""
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("schema") != "benchstudio_execution_overhead_v1":
+        raise ValueError("unsupported execution-overhead schema")
+    values = payload.get("report")
+    if not isinstance(values, dict):
+        raise ValueError("execution-overhead report must be a mapping")
+    provenance_value = values.get("timing_provenance")
+    provenance = None
+    if provenance_value is not None:
+        if not isinstance(provenance_value, dict):
+            raise ValueError("timing_provenance must be a mapping")
+        provenance = TimingProvenance(
+            str(provenance_value.get("clock_domain", "")),
+            str(provenance_value.get("start_boundary", "")),
+            str(provenance_value.get("end_boundary", "")),
+            provenance_value.get("uncertainty_ms"),
+        )
+    report = ExecutionOverhead(
+        int(values.get("matched_samples", 0)),
+        values.get("baseline_mean_ms"),
+        values.get("instrumented_mean_ms"),
+        values.get("added_mean_ms"),
+        values.get("relative_overhead"),
+        int(values.get("baseline_deadline_misses", 0)),
+        int(values.get("instrumented_deadline_misses", 0)),
+        bool(values.get("valid", False)),
+        tuple(str(issue) for issue in values.get("issues", [])),
+        provenance,
+    )
+    if report.valid and not report.provenance_complete:
+        raise ValueError("valid execution-overhead report lacks complete timing provenance")
+    return report
 
 
 def audit_execution_overhead(

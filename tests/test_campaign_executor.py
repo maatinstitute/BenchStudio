@@ -8,7 +8,13 @@ import zipfile
 import pytest
 
 from benchstudio.adapters import default_registry
-from benchstudio.analysis import ClaimType, OutcomeRecord
+from benchstudio.analysis import (
+    ClaimType,
+    OutcomeRecord,
+    TimingProvenance,
+    audit_execution_overhead,
+    write_execution_overhead,
+)
 from benchstudio.campaigns import (
     CampaignArchiveError,
     CampaignExecutor,
@@ -376,6 +382,25 @@ def test_campaign_executor_exposes_frozen_plan_audit(tmp_path):
     assert audit.attempts_complete is True
     assert audit.evidence_verified is True
     assert audit.claim.status == "supported"
+
+
+def test_campaign_executor_includes_persisted_execution_overhead_in_audit(tmp_path):
+    plan = CampaignPlanner(
+        run_id="overhead-audit-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    output = tmp_path / "campaign"
+    executor = CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator())
+    executor.run()
+    report = audit_execution_overhead(
+        [10.0],
+        [11.0],
+        deadline_ms=15.0,
+        timing_provenance=TimingProvenance("host_monotonic", "start", "end"),
+    )
+    write_execution_overhead(report, output / "execution-overhead.json")
+    audit = executor.audit(evidence={"authoritative_scorer_declared": True})
+    assert audit.execution_overhead == report
+    assert audit.to_dict()["execution_overhead_valid"] is True
 
 
 def test_campaign_executor_audit_rechecks_runtime_evidence(tmp_path):

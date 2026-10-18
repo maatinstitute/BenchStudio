@@ -1,6 +1,13 @@
+import json
+
 import pytest
 
-from benchstudio.analysis import TimingProvenance, audit_execution_overhead
+from benchstudio.analysis import (
+    TimingProvenance,
+    audit_execution_overhead,
+    load_execution_overhead,
+    write_execution_overhead,
+)
 
 
 def test_execution_overhead_reports_added_latency_and_deadline_misses():
@@ -31,3 +38,19 @@ def test_execution_overhead_preserves_clock_boundaries_and_uncertainty():
     assert report.valid is True
     assert report.provenance_complete is True
     assert report.to_dict()["timing_provenance"]["clock_domain"] == "host_monotonic"
+
+
+def test_execution_overhead_round_trips_as_a_campaign_evidence_artifact(tmp_path):
+    report = audit_execution_overhead(
+        [10.0, 12.0],
+        [11.0, 16.0],
+        deadline_ms=15.0,
+        timing_provenance=TimingProvenance(
+            "host_monotonic", "inference_start", "inference_end", uncertainty_ms=0.1
+        ),
+    )
+    path = tmp_path / "execution-overhead.json"
+    write_execution_overhead(report, path)
+    loaded = load_execution_overhead(path)
+    assert loaded == report
+    assert json.loads(path.read_text())["schema"] == "benchstudio_execution_overhead_v1"

@@ -414,15 +414,21 @@ class CampaignExecutor:
         claim_type: "ClaimType | None" = None,
         evidence: dict[str, Any] | None = None,
         outcome_records: Iterable["OutcomeRecord"] | None = None,
+        execution_overhead: Any | None = None,
     ) -> "CampaignAudit":
         """Audit the current ledger against this executor's frozen plan."""
         from ..analysis.campaign_audit import audit_campaign
         from ..analysis.claims import ClaimType
+        from ..analysis.overhead import load_execution_overhead
 
         if claim_type is None:
             claim_type = ClaimType.SINGLE_RUN_OUTCOME
         if outcome_records is None and (self.output / "outcomes.jsonl").is_file():
             outcome_records = self.outcome_ledger().records
+        if execution_overhead is None:
+            overhead_path = self.output / "execution-overhead.json"
+            if overhead_path.is_file():
+                execution_overhead = load_execution_overhead(overhead_path)
         evidence_issues = self._audit_evidence_issues()
         claim_evidence = dict(evidence or {})
         claim_evidence["trusted_artifacts"] = (
@@ -435,6 +441,7 @@ class CampaignExecutor:
             evidence=claim_evidence,
             outcome_records=outcome_records,
             evidence_issues=evidence_issues,
+            execution_overhead=execution_overhead,
         )
 
     def _audit_evidence_issues(self) -> tuple[str, ...]:

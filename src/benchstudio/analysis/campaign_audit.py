@@ -9,6 +9,7 @@ from ..campaigns.frozen_plan import FrozenCampaignPlan
 from ..validity import BenchmarkValidityAudit, BenchmarkValidityRecord, audit_benchmark_validity
 from .claims import ClaimDecision, ClaimType, validate_claim
 from .outcomes import OutcomeProvenanceAudit, OutcomeRecord, audit_outcome_provenance
+from .overhead import ExecutionOverhead, load_execution_overhead
 
 _FINAL_STATUSES = {"completed", "failed", "cancelled"}
 
@@ -28,6 +29,7 @@ class CampaignAudit:
     calibration_issues: tuple[str, ...] = ()
     benchmark_validity: BenchmarkValidityAudit | None = None
     evidence_issues: tuple[str, ...] = ()
+    execution_overhead: ExecutionOverhead | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -49,6 +51,14 @@ class CampaignAudit:
             "benchmark_validity": (
                 self.benchmark_validity.to_dict() if self.benchmark_validity is not None else None
             ),
+            "execution_overhead": (
+                self.execution_overhead.to_dict() if self.execution_overhead is not None else None
+            ),
+            "execution_overhead_valid": (
+                self.execution_overhead is not None
+                and self.execution_overhead.valid
+                and self.execution_overhead.provenance_complete
+            ),
         }
 
 
@@ -60,6 +70,7 @@ def audit_campaign(
     evidence: dict[str, Any] | None = None,
     outcome_records: Iterable[OutcomeRecord] | None = None,
     evidence_issues: Iterable[str] = (),
+    execution_overhead: ExecutionOverhead | None = None,
 ) -> CampaignAudit:
     """Audit frozen-plan accounting and derive claim prerequisites."""
     rows = list(records)
@@ -136,6 +147,7 @@ def audit_campaign(
         tuple(calibration_issues),
         benchmark_validity,
         evidence_issue_rows,
+        execution_overhead,
     )
 
 
@@ -144,6 +156,7 @@ def audit_campaign_directory(
     *,
     claim_type: ClaimType = ClaimType.SINGLE_RUN_OUTCOME,
     evidence: dict[str, Any] | None = None,
+    execution_overhead: ExecutionOverhead | None = None,
 ) -> CampaignAudit:
     """Audit an existing campaign directory without constructing adapters."""
     from ..campaigns.frozen_plan import load_frozen_campaign_plan
@@ -157,6 +170,13 @@ def audit_campaign_directory(
     records = ledger.records
     by_attempt = {record.get("attempt_id"): record for record in records}
     evidence_issues: list[str] = []
+    if execution_overhead is None:
+        overhead_path = root / "execution-overhead.json"
+        if overhead_path.is_file():
+            try:
+                execution_overhead = load_execution_overhead(overhead_path)
+            except (OSError, ValueError, TypeError) as exc:
+                evidence_issues.append(f"execution overhead is invalid: {exc}")
     for attempt in plan.attempts:
         attempt_id = attempt.key.attempt_id
         record = by_attempt.get(attempt_id)
@@ -201,6 +221,7 @@ def audit_campaign_directory(
         evidence=claim_evidence,
         outcome_records=outcome_records,
         evidence_issues=evidence_issues,
+        execution_overhead=execution_overhead,
     )
 
 

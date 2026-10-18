@@ -12,7 +12,13 @@ from .outcomes import (
     audit_outcome_provenance,
     validate_outcome_record,
 )
-from .overhead import ExecutionOverhead, TimingProvenance, audit_execution_overhead
+from .overhead import (
+    ExecutionOverhead,
+    TimingProvenance,
+    audit_execution_overhead,
+    load_execution_overhead,
+    write_execution_overhead,
+)
 from .paired import (
     PairedOutcomeSummary,
     clopper_pearson_interval,
@@ -58,6 +64,8 @@ __all__ = [
     "audit_outcome_provenance",
     "validate_outcome_record",
     "audit_execution_overhead",
+    "load_execution_overhead",
+    "write_execution_overhead",
     "EventBookmark",
     "InferenceEvent",
     "InferenceScheduleAudit",

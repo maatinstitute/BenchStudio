@@ -67,6 +67,11 @@ python -m benchstudio.cli --campaign-spec campaign.json --plan-output campaign-p
 
 Each run emits `manifest.json`, `episodes.jsonl`, and `summary.json`.
 
+Matched instrumented-versus-baseline timing can be persisted as
+`execution-overhead.json` with `write_execution_overhead()`. Campaign audits
+load that artifact, retain clock/boundary uncertainty, and expose deadline
+misses through the `execution_overhead_valid` audit field.
+
 Compiled mock campaigns can also be audited and packaged as immutable evidence
 bundles:
 
