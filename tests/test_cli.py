@@ -184,7 +184,7 @@ def test_cli_executes_registry_gymnasium_campaign(monkeypatch, tmp_path, capsys)
                     }
                 ],
                 "evaluation": {
-                    "seeds": [7],
+                    "seeds": [7, 8],
                     "paired": True,
                     "conditions": [
                         {
@@ -210,12 +210,14 @@ def test_cli_executes_registry_gymnasium_campaign(monkeypatch, tmp_path, capsys)
             "--output",
             str(tmp_path / "campaign"),
             "--execute-registry",
+            "--workers",
+            "2",
             "--audit",
         ],
     )
     assert main() == 0
     output = capsys.readouterr().out
-    assert "campaign_status=completed committed=1 failed=0 missing=0" in output
+    assert "campaign_status=completed committed=2 failed=0 missing=0" in output
     assert "audit_status=qualified attempts_complete=True evidence_verified=True" in output
 
 
