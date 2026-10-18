@@ -50,3 +50,21 @@ def test_campaign_spec_rejects_unauthorized_enabled_physical_environment():
                 "evaluation": {"seeds": [1], "paired": True, "conditions": [{"x": 1}]},
             }
         )
+
+
+def test_campaign_spec_rejects_non_frozen_confirmation_or_imputed_missingness():
+    base = {
+        "schema": "benchstudio.campaign.v1",
+        "experiment": {"name": "run"},
+        "task": {"task_id": "task"},
+        "environments": [{"id": "sim", "kind": "simulator"}],
+        "evaluation": {
+            "seeds": [1],
+            "paired": True,
+            "conditions": [{"x": 1}],
+        },
+    }
+    for field, value in (("confirmation_plan", "adaptive"), ("missing_outcomes", "impute")):
+        spec = {**base, "evaluation": {**base["evaluation"], field: value}}
+        with pytest.raises(ValueError, match=field):
+            compile_campaign_spec(spec)

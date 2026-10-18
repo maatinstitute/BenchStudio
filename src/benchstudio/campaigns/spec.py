@@ -33,6 +33,10 @@ def compile_campaign_spec(spec: dict[str, Any]) -> FrozenCampaignPlan:
         raise ValueError("evaluation.conditions must be a non-empty list of mappings")
     if evaluation.get("paired") is not True:
         raise ValueError("evaluation.paired must be true for this compiler")
+    if evaluation.get("missing_outcomes") not in (None, "preserve"):
+        raise ValueError("evaluation.missing_outcomes must be 'preserve'")
+    if evaluation.get("confirmation_plan") not in (None, "frozen"):
+        raise ValueError("evaluation.confirmation_plan must be 'frozen'")
     return CampaignPlanner(
         run_id=run_id,
         scenario_id=scenario_id,
