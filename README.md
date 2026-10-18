@@ -16,6 +16,12 @@ python -m pytest
 python -m benchstudio.cli --episodes 3 --output runs/smoke
 ```
 
+Compile a declarative campaign before execution (the CLI input is JSON):
+
+```bash
+python -m benchstudio.cli --campaign-spec campaign.json --plan-output campaign-plan.json
+```
+
 Each run emits `manifest.json`, `episodes.jsonl`, and `summary.json`.
 
 The reusable evidence layer also provides digest-tracked NDJSON artifacts and
