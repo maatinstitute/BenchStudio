@@ -39,3 +39,41 @@ def test_campaign_document_loader_rejects_non_mapping_json(tmp_path):
 
     with pytest.raises(ValueError, match="top-level mapping"):
         load_campaign_document(path)
+
+
+def test_cli_can_execute_compiled_campaign_with_mock_backend(monkeypatch, tmp_path, capsys):
+    spec_path = tmp_path / "campaign.json"
+    plan_path = tmp_path / "plan.json"
+    output = tmp_path / "run"
+    spec_path.write_text(
+        json.dumps(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "cli-execute"},
+                "task": {"task_id": "task"},
+                "environments": [{"id": "sim", "kind": "simulator"}],
+                "evaluation": {
+                    "seeds": [1],
+                    "paired": True,
+                    "conditions": [{"denoising_steps": 2, "action_prefix": 1}],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--campaign-spec",
+            str(spec_path),
+            "--plan-output",
+            str(plan_path),
+            "--output",
+            str(output),
+            "--execute-mock",
+        ],
+    )
+    assert main() == 0
+    assert (output / "attempt-results.jsonl").is_file()
+    assert "campaign_status=completed" in capsys.readouterr().out

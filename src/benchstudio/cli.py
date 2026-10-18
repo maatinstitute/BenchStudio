@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from .campaigns import compile_campaign_spec, load_campaign_document
+from .campaigns import CampaignExecutor, compile_campaign_spec, load_campaign_document
 from .mock import MockPolicy, MockSimulator
 from .runner import RunConfig, run_episodes
 
@@ -27,6 +27,11 @@ def main() -> int:
         default=Path("campaign-plan.json"),
         help="Destination for a compiled campaign plan.",
     )
+    parser.add_argument(
+        "--execute-mock",
+        action="store_true",
+        help="Execute a compiled campaign with the deterministic mock adapters.",
+    )
     args = parser.parse_args()
     if args.campaign_spec is not None:
         spec = load_campaign_document(args.campaign_spec)
@@ -36,6 +41,17 @@ def main() -> int:
             f"compiled_plan={args.plan_output} attempts={len(plan.attempts)} "
             f"digest={plan.plan_digest_sha256}"
         )
+        if args.execute_mock:
+            summary = CampaignExecutor(
+                plan,
+                args.output,
+                lambda _: MockPolicy(),
+                lambda _: MockSimulator(),
+            ).run()
+            print(
+                f"campaign_status=completed committed={len(summary.committed_attempt_ids)} "
+                f"missing={len(summary.missing_attempt_ids)}"
+            )
         return 0
     config = RunConfig(
         episodes=args.episodes,
