@@ -29,6 +29,7 @@ class GymnasiumSimulator:
         env: Any | None = None,
         success_fn: SuccessFn | None = None,
         dt_s: float | None = None,
+        stop_on_success: bool = False,
         **make_kwargs: Any,
     ) -> None:
         if env is None:
@@ -47,9 +48,12 @@ class GymnasiumSimulator:
             raise ValueError("provide env_id or env, not both")
         if dt_s is not None and dt_s < 0:
             raise ValueError("dt_s must be non-negative")
+        if not isinstance(stop_on_success, bool):
+            raise ValueError("stop_on_success must be boolean")
         self.env = env
         self.success_fn = success_fn
         self.dt_s = dt_s
+        self.stop_on_success = stop_on_success
         self._step = 0
         self._sim_time_s = 0.0
         self._terminated = False
@@ -95,7 +99,7 @@ class GymnasiumSimulator:
         return self._latest
 
     def is_done(self) -> bool:
-        return self._terminated or self._truncated
+        return self._terminated or self._truncated or (self.stop_on_success and self._success)
 
     def is_success(self) -> bool:
         return self._success

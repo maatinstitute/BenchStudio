@@ -24,14 +24,16 @@ def test_gymnasium_adapter_runs_a_closed_loop_episode(tmp_path):
     simulator = GymnasiumSimulator(
         "CartPole-v1",
         dt_s=0.02,
-        success_fn=lambda _observation, _reward, _terminated, _truncated, _info: True,
+        stop_on_success=True,
+        success_fn=lambda _observation, reward, _terminated, _truncated, _info: reward > 0,
     )
     summary = run_episodes(
         _CartPolePolicy(),
         simulator,
-        RunConfig(episodes=1, action_prefix=1, max_episode_steps=1),
+        RunConfig(episodes=1, action_prefix=1, max_episode_steps=3),
         tmp_path / "run",
     )
     assert summary["scheduled_episode_count"] == 1
     assert summary["completed_episode_count"] == 1
     assert summary["success_count"] == 1
+    assert summary["episodes"][0]["steps"] == 1
