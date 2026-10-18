@@ -12,7 +12,7 @@ from .outcomes import (
     audit_outcome_provenance,
     validate_outcome_record,
 )
-from .overhead import ExecutionOverhead, audit_execution_overhead
+from .overhead import ExecutionOverhead, TimingProvenance, audit_execution_overhead
 from .paired import (
     PairedOutcomeSummary,
     clopper_pearson_interval,
@@ -51,6 +51,7 @@ from .transfer import (
 __all__ = [
     "MissingOutcomeBounds",
     "ExecutionOverhead",
+    "TimingProvenance",
     "OutcomeRecord",
     "OutcomeLedger",
     "OutcomeProvenanceAudit",
