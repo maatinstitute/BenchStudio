@@ -30,6 +30,7 @@ class FrozenCampaignPlan:
     attempts: tuple[PlannedAttempt, ...]
     plan_digest_sha256: str
     paired_schedule: tuple[dict[str, Any], ...] = ()
+    source_spec_sha256: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -37,6 +38,7 @@ class FrozenCampaignPlan:
             "attempts": [asdict(item) for item in self.attempts],
             "plan_digest_sha256": self.plan_digest_sha256,
             "paired_schedule": list(self.paired_schedule),
+            "source_spec_sha256": self.source_spec_sha256,
         }
 
     def write(self, path: Path) -> None:
@@ -58,6 +60,7 @@ class CampaignPlanner:
         seeds: Iterable[int],
         repetitions: int = 1,
         scenario_pack_digest: str | None = None,
+        source_spec_sha256: str | None = None,
     ) -> None:
         if not run_id or not scenario_id:
             raise ValueError("run_id and scenario_id are required")
@@ -69,6 +72,7 @@ class CampaignPlanner:
         self.seeds = tuple(int(seed) for seed in seeds)
         self.repetitions = repetitions
         self.scenario_pack_digest = scenario_pack_digest
+        self.source_spec_sha256 = source_spec_sha256
         if not self.conditions or not self.seeds:
             raise ValueError("conditions and seeds must not be empty")
 
@@ -105,7 +109,12 @@ class CampaignPlanner:
         digest = hashlib.sha256(
             json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
-        return FrozenCampaignPlan(self.run_id, tuple(attempts), digest)
+        return FrozenCampaignPlan(
+            self.run_id,
+            tuple(attempts),
+            digest,
+            source_spec_sha256=self.source_spec_sha256,
+        )
 
 
 def _identity(value: Any) -> str:
