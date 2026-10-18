@@ -109,6 +109,36 @@ def test_campaign_spec_rejects_non_string_execution_strategy():
         )
 
 
+def test_strategy_type_error_is_rejected_before_model_capability_binding():
+    with pytest.raises(ValueError, match="execution_strategy"):
+        compile_campaign_spec(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "bad-strategy-profile"},
+                "model": {
+                    "adapter": "mock",
+                    "capabilities": {
+                        "model_id": "m",
+                        "family": "vla",
+                        "input_modalities": ["image"],
+                        "output_representation": "joint_targets",
+                        "supports_closed_loop": True,
+                        "supports_action_chunks": True,
+                        "supported_metrics": ["success"],
+                    },
+                },
+                "task": {"task_id": "task"},
+                "environments": [{"id": "sim", "kind": "simulator"}],
+                "evaluation": {
+                    "seeds": [1],
+                    "paired": True,
+                    "execution_strategy": [],
+                    "conditions": [{"x": 1}],
+                },
+            }
+        )
+
+
 @pytest.mark.parametrize("repetitions", [0, -1, 1.5, True])
 def test_campaign_spec_rejects_invalid_repetition_counts(repetitions):
     with pytest.raises(ValueError, match="evaluation.repetitions"):

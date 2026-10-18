@@ -150,7 +150,6 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
             isinstance(value, bool) or not isinstance(value, int) or value < 0
         ):
             raise ValueError(f"execution.{field} must be a non-negative integer")
-    _validate_model_capabilities(model, evaluation)
     strategy = evaluation.get("execution_strategy", "sync")
     if not isinstance(strategy, str) or strategy not in {
         "sync",
@@ -159,6 +158,7 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
         "cached",
     }:
         raise ValueError(f"unsupported evaluation.execution_strategy: {strategy}")
+    _validate_model_capabilities(model, evaluation)
     max_cache_entries = evaluation.get("max_cache_entries", 256)
     if (
         isinstance(max_cache_entries, bool)
