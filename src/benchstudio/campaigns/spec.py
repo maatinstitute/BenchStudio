@@ -36,6 +36,11 @@ def compile_campaign_spec(spec: dict[str, Any]) -> FrozenCampaignPlan:
         conditions=conditions,
         seeds=seeds,
         repetitions=int(evaluation.get("repetitions", 1)),
+        scenario_pack_digest=(
+            task.get("scenario_pack_digest")
+            if isinstance(task.get("scenario_pack_digest"), str)
+            else None
+        ),
     ).freeze()
 
 

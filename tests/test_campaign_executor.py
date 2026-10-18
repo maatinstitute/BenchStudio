@@ -32,3 +32,21 @@ def test_campaign_executor_uses_frozen_attempts_and_resumes_idempotently(tmp_pat
         plan.attempts[0].key.pair_id,
         plan.attempts[1].key.pair_id,
     }
+
+
+def test_campaign_executor_rejects_a_different_plan_at_existing_output(tmp_path):
+    first = CampaignPlanner(
+        run_id="run-1", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    CampaignExecutor(
+        first, tmp_path / "campaign", lambda _: MockPolicy(), lambda _: MockSimulator()
+    )
+    second = CampaignPlanner(
+        run_id="run-1", scenario_id="task", conditions=[{"x": 2}], seeds=[1]
+    ).freeze()
+    import pytest
+
+    with pytest.raises(ValueError, match="campaign plan"):
+        CampaignExecutor(
+            second, tmp_path / "campaign", lambda _: MockPolicy(), lambda _: MockSimulator()
+        )

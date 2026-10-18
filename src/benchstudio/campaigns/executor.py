@@ -38,7 +38,13 @@ class CampaignExecutor:
         self.policy_factory = policy_factory
         self.simulator_factory = simulator_factory
         self.output.mkdir(parents=True, exist_ok=True)
-        self.plan.write(self.output / "campaign-plan.json")
+        plan_path = self.output / "campaign-plan.json"
+        if plan_path.is_file():
+            existing = json.loads(plan_path.read_text(encoding="utf-8"))
+            if existing.get("plan_digest_sha256") != plan.plan_digest_sha256:
+                raise ValueError("existing campaign plan does not match frozen plan")
+        else:
+            self.plan.write(plan_path)
         self.ledger = AttemptLedger(self.output / "attempt-results.jsonl", plan)
 
     def run(self) -> CampaignExecutionSummary:
@@ -46,7 +52,7 @@ class CampaignExecutor:
         skipped: list[str] = []
         for attempt in self.plan.attempts:
             attempt_id = attempt.key.attempt_id
-            if attempt_id in self.ledger._seen:
+            if self.ledger.contains(attempt_id):
                 skipped.append(attempt_id)
                 continue
             attempt_dir = self.output / "attempts" / attempt_id

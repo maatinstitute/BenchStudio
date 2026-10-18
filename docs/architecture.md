@@ -35,6 +35,11 @@ is carried into an append-only attempt ledger. Interrupted campaigns therefore
 retain prior results and expose missing attempts without silently reassigning a
 result to another condition.
 
+`benchstudio.scenarios` represents a portable task pack by its task revision,
+asset SHA-256 digests, initial-condition digest, and success-criterion version.
+Campaign pair identities include the pack digest when supplied, so equal task
+names do not imply equivalent evaluation worlds.
+
 `CampaignExecutor` is the execution boundary for frozen plans. It creates one
 evidence directory per attempt, commits only planned identities to the ledger,
 and resumes by skipping already committed attempts. A partial directory without

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -54,7 +55,12 @@ class AttemptLedger:
         }
         with self.path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(record, sort_keys=True) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
         self._seen.add(key.attempt_id)
+
+    def contains(self, attempt_id: str) -> bool:
+        return attempt_id in self._seen
 
     @property
     def missing_attempt_ids(self) -> list[str]:

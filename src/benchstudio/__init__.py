@@ -59,6 +59,7 @@ from .evidence import (
 )
 from .replay import ReplayPolicy, ReplaySimulator, load_joint_sequence
 from .runner import EpisodeResult, RunConfig, run_episodes
+from .scenarios import ScenarioPack, load_scenario_pack, validate_scenario_pack
 from .trajectory import compare_trajectories, load_trajectory
 
 __all__ = [
@@ -93,6 +94,7 @@ __all__ = [
     "ReplaySimulator",
     "FrozenCampaignPlan",
     "ScenarioContract",
+    "ScenarioPack",
     "ScoreCoverage",
     "ResourceAudit",
     "ResourceBudget",
@@ -108,6 +110,8 @@ __all__ = [
     "compare_trajectories",
     "load_trajectory",
     "run_episodes",
+    "load_scenario_pack",
+    "validate_scenario_pack",
     "audit_score_coverage",
     "audit_resources",
     "estimate_transfer_gap",

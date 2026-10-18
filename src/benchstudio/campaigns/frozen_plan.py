@@ -55,6 +55,7 @@ class CampaignPlanner:
         conditions: Iterable[dict[str, Any]],
         seeds: Iterable[int],
         repetitions: int = 1,
+        scenario_pack_digest: str | None = None,
     ) -> None:
         if not run_id or not scenario_id:
             raise ValueError("run_id and scenario_id are required")
@@ -65,6 +66,7 @@ class CampaignPlanner:
         self.conditions = tuple(dict(condition) for condition in conditions)
         self.seeds = tuple(int(seed) for seed in seeds)
         self.repetitions = repetitions
+        self.scenario_pack_digest = scenario_pack_digest
         if not self.conditions or not self.seeds:
             raise ValueError("conditions and seeds must not be empty")
 
@@ -73,7 +75,13 @@ class CampaignPlanner:
         for condition in self.conditions:
             condition_id = _identity(condition)
             for seed_index, seed in enumerate(self.seeds):
-                pair_id = _identity({"scenario_id": self.scenario_id, "seed": seed})
+                pair_id = _identity(
+                    {
+                        "scenario_id": self.scenario_id,
+                        "scenario_pack_digest": self.scenario_pack_digest,
+                        "seed": seed,
+                    }
+                )
                 for repetition in range(self.repetitions):
                     attempt_id = f"attempt-{len(attempts):06d}"
                     attempts.append(
@@ -87,6 +95,7 @@ class CampaignPlanner:
                                 "condition": condition,
                                 "seed_index": seed_index,
                                 "repetition": repetition,
+                                "scenario_pack_digest": self.scenario_pack_digest,
                             },
                         )
                     )
