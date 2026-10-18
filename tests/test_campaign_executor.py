@@ -28,6 +28,7 @@ from benchstudio.campaigns import (
     verify_campaign_archive,
     write_campaign_archive,
 )
+from benchstudio.evidence import build_artifact_manifest, write_manifest_trust_anchor
 from benchstudio.mock import MockPolicy, MockSimulator
 from benchstudio.model_adapters import default_model_registry
 
@@ -848,6 +849,29 @@ def test_campaign_archive_verifier_rejects_tampered_attempt_bytes(tmp_path):
     result = verify_campaign_archive(build_campaign_archive(output))
     assert result["valid"] is False
     assert any(issue["reason"] == "artifact_evidence_digest_mismatch" for issue in result["issues"])
+
+
+def test_campaign_archive_verifier_rejects_malformed_dependency_provenance(tmp_path):
+    plan = CampaignPlanner(
+        run_id="invalid-dependencies", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    output = tmp_path / "campaign"
+    CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
+    attempt_id = plan.attempts[0].key.attempt_id
+    manifest_path = output / "attempts" / attempt_id / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["simulator_dependencies"] = [{"available": "yes"}]
+    manifest_path.write_text(json.dumps(manifest) + "\n", encoding="utf-8")
+    attempt_root = output / "attempts" / attempt_id
+    artifact_manifest = build_artifact_manifest(attempt_root, status="completed")
+    artifact_path = attempt_root / "artifact-manifest.json"
+    artifact_path.write_text(json.dumps(artifact_manifest) + "\n", encoding="utf-8")
+    write_manifest_trust_anchor(
+        artifact_path, output / "attempts" / f"{attempt_id}.artifact-manifest.sha256"
+    )
+    result = verify_campaign_archive(build_campaign_archive(output))
+    assert result["valid"] is False
+    assert any(issue["reason"] == "run_manifest_dependency_invalid" for issue in result["issues"])
 
 
 def test_campaign_archive_verifier_rejects_invalid_embedded_plan(tmp_path):

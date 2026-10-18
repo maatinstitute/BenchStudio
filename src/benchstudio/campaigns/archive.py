@@ -178,6 +178,14 @@ def _validate_embedded_attempt_evidence(
     manifest_name = f"{prefix}artifact-manifest.json"
     anchor_name = f"attempts/{attempt_id}.artifact-manifest.sha256"
     issues: list[dict[str, str]] = []
+    run_manifest_name = f"{prefix}manifest.json"
+    if run_manifest_name in contents:
+        try:
+            run_manifest = json.loads(contents[run_manifest_name])
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            issues.append({"reason": "run_manifest_invalid", "detail": f"{attempt_id}:{exc}"})
+        else:
+            issues.extend(_validate_run_manifest_dependencies(run_manifest, attempt_id))
     try:
         manifest = json.loads(contents[manifest_name])
     except (KeyError, json.JSONDecodeError, UnicodeDecodeError) as exc:
@@ -255,6 +263,43 @@ def _validate_embedded_attempt_evidence(
         actual_manifest_digest = hashlib.sha256(contents[manifest_name]).hexdigest()
         if expected_manifest_digest != actual_manifest_digest:
             issues.append({"reason": "artifact_trust_anchor_mismatch", "detail": attempt_id})
+    return issues
+
+
+def _validate_run_manifest_dependencies(manifest: object, attempt_id: str) -> list[dict[str, str]]:
+    """Validate dependency provenance embedded in a run manifest."""
+    if not isinstance(manifest, dict):
+        return [{"reason": "run_manifest_invalid", "detail": attempt_id}]
+    issues: list[dict[str, str]] = []
+    for field in ("model_dependencies", "simulator_dependencies"):
+        records = manifest.get(field)
+        if records is None:
+            continue
+        if not isinstance(records, list):
+            issues.append(
+                {"reason": "run_manifest_dependencies_invalid", "detail": f"{attempt_id}:{field}"}
+            )
+            continue
+        for index, record in enumerate(records):
+            valid = (
+                isinstance(record, dict)
+                and isinstance(record.get("name"), str)
+                and bool(record["name"])
+                and isinstance(record.get("import_name"), str)
+                and bool(record["import_name"])
+                and isinstance(record.get("available"), bool)
+                and isinstance(record.get("required"), bool)
+                and isinstance(record.get("scope"), str)
+                and bool(record["scope"])
+                and (record.get("version") is None or isinstance(record.get("version"), str))
+            )
+            if not valid:
+                issues.append(
+                    {
+                        "reason": "run_manifest_dependency_invalid",
+                        "detail": f"{attempt_id}:{field}:{index}",
+                    }
+                )
     return issues
 
 
