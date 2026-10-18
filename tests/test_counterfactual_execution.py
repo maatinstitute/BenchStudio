@@ -68,6 +68,21 @@ def test_execute_counterfactual_plan_rejects_negative_recovery_time():
         )
 
 
+@pytest.mark.parametrize("value", [True, float("nan"), "slow"])
+def test_execute_counterfactual_plan_rejects_invalid_recovery_time(value):
+    with pytest.raises(ValueError, match="recovery_time_ms"):
+        execute_counterfactual_plan(
+            _plan(), lambda _: CounterfactualEvaluation(success=False, recovery_time_ms=value)
+        )
+
+
+def test_execute_counterfactual_plan_rejects_non_mapping_metadata():
+    with pytest.raises(ValueError, match="metadata"):
+        execute_counterfactual_plan(
+            _plan(), lambda _: CounterfactualEvaluation(success=False, metadata=["invalid"])
+        )
+
+
 def test_execute_counterfactual_plan_preserves_partial_results_on_evaluator_failure(tmp_path):
     def evaluator(cell):
         if cell.branch == "intervention":

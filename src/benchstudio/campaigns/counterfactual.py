@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterable, Literal
@@ -192,12 +193,20 @@ def execute_counterfactual_plan(
                     raise TypeError("counterfactual evaluator must return CounterfactualEvaluation")
                 if not isinstance(evaluation.success, (bool, type(None))):
                     raise ValueError("counterfactual success must be boolean or None")
-                if evaluation.recovery_time_ms is not None and evaluation.recovery_time_ms < 0:
-                    raise ValueError("recovery_time_ms must be non-negative")
+                if evaluation.recovery_time_ms is not None:
+                    if (
+                        isinstance(evaluation.recovery_time_ms, bool)
+                        or not isinstance(evaluation.recovery_time_ms, (int, float))
+                        or not math.isfinite(float(evaluation.recovery_time_ms))
+                        or evaluation.recovery_time_ms < 0
+                    ):
+                        raise ValueError("recovery_time_ms must be finite and non-negative")
                 if evaluation.failure_category is not None and not isinstance(
                     evaluation.failure_category, str
                 ):
                     raise ValueError("failure_category must be a string or None")
+                if evaluation.metadata is not None and not isinstance(evaluation.metadata, dict):
+                    raise ValueError("counterfactual metadata must be a mapping or None")
                 result = CounterfactualBranchResult(
                     cell.branch_attempt_id,
                     cell.pair_id,
