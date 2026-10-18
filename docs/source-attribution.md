@@ -401,6 +401,15 @@ the following projects. Product runtimes are not vendored into this repository.
   source-test digest `7566a00c11dfd4a636a0e5296424adad61f9e0ce188e6bdff3cd76cb88b79e22`.
   The ports preserve no-action initialization checks and fixed plan identity;
   simulator/runtime launch, policy execution, and physical authority remain external.
+- RoboPAD cell-store runtime extension: `benchstudio.integrations.CellStore`
+  ports the semantic digest, bounded auxiliary-array, partial-action-journal,
+  pending-execution-unknown, and terminal-receipt portions of
+  `experiments/icra_assay_runtime.py` at the same upstream commit and source
+  digest `421e1878d25874473cc76b5a264bf7dedc73261a0471725631ef1d20633dc791`;
+  the upstream runtime-test digest is
+  `7566a00c11dfd4a636a0e5296424adad61f9e0ce188e6bdff3cd76cb88b79e22`.
+  The extension reuses the ported bounded evidence store, retains partial
+  failures without retry semantics, and does not launch the external runtime.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment

@@ -75,6 +75,7 @@ from .robochallenge import (
     RoboChallengeProtocolAudit,
     validate_robochallenge_message,
 )
+from .robopad_cell_store import CellStore
 from .robopad_competence import (
     MAX_BYTES,
     checked_rotation_delta,
@@ -255,6 +256,7 @@ __all__ = [
     "layout",
     "relationship",
     "EvidenceStore",
+    "CellStore",
     "InitializationFailure",
     "VERSION",
     "initialize_restored_pose",
