@@ -39,6 +39,85 @@ def write_comparison_report(report: dict[str, Any], path: Path) -> None:
     path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
 
+def build_campaign_comparison_report(
+    *,
+    scenario_id: str,
+    backend_campaigns: dict[str, Path],
+) -> dict[str, Any]:
+    """Compare attempt evidence from completed or partially completed campaigns.
+
+    Campaign plans are the ordering authority. Missing attempt directories remain
+    missing records, while malformed or failed attempt summaries remain explicit
+    execution failures rather than becoming task outcomes.
+    """
+    reports: dict[str, list[dict[str, Any] | None]] = {}
+    errors: dict[str, list[str]] = {}
+    for backend, root in backend_campaigns.items():
+        backend_reports, backend_errors = _load_campaign_reports(root)
+        reports[backend] = backend_reports
+        if backend_errors:
+            errors[backend] = backend_errors
+    return build_comparison_report(
+        scenario_id=scenario_id,
+        per_backend_reports=reports,
+        per_backend_errors=errors,
+    )
+
+
+def _load_campaign_reports(root: Path) -> tuple[list[dict[str, Any] | None], list[str]]:
+    plan_path = root / "campaign-plan.json"
+    errors: list[str] = []
+    try:
+        plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [], [f"campaign plan could not be loaded: {type(exc).__name__}: {exc}"]
+    attempts = plan.get("attempts") if isinstance(plan, dict) else None
+    if not isinstance(attempts, list):
+        return [], ["campaign plan attempts must be a list"]
+    reports: list[dict[str, Any] | None] = []
+    for index, attempt in enumerate(attempts):
+        attempt_id = attempt.get("key", {}).get("attempt_id") if isinstance(attempt, dict) else None
+        if not isinstance(attempt_id, str) or not attempt_id:
+            errors.append(f"attempt {index} has no stable attempt_id")
+            reports.append({"pair_id": f"invalid-attempt-{index}", "status": "plan_error"})
+            continue
+        summary_path = root / "attempts" / attempt_id / "summary.json"
+        if not summary_path.is_file():
+            reports.append(None)
+            continue
+        try:
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            errors.append(f"{attempt_id}: summary could not be loaded: {type(exc).__name__}: {exc}")
+            reports.append({"pair_id": attempt_id, "status": "summary_error"})
+            continue
+        episodes = summary.get("episodes") if isinstance(summary, dict) else None
+        if (
+            not isinstance(episodes, list)
+            or len(episodes) != 1
+            or not isinstance(episodes[0], dict)
+        ):
+            errors.append(f"{attempt_id}: summary must contain exactly one episode report")
+            reports.append({"pair_id": attempt_id, "status": "summary_error"})
+            continue
+        report = dict(episodes[0])
+        original_pair_id = report.get("pair_id")
+        condition_id = report.get("condition_id") or attempt.get("key", {}).get("condition_id")
+        if not isinstance(original_pair_id, str) or not original_pair_id:
+            errors.append(f"{attempt_id}: episode report is missing pair_id")
+            reports.append({"pair_id": attempt_id, "status": "summary_error"})
+            continue
+        if not isinstance(condition_id, str) or not condition_id:
+            errors.append(f"{attempt_id}: episode report is missing condition_id")
+            reports.append({"pair_id": attempt_id, "status": "summary_error"})
+            continue
+        report["pair_id"] = f"{condition_id}:{original_pair_id}"
+        report["original_pair_id"] = original_pair_id
+        report["attempt_id"] = attempt_id
+        reports.append(report)
+    return reports, errors
+
+
 def _summarize(reports: list[dict[str, Any] | None]) -> dict[str, Any]:
     completed = [report for report in reports if report is not None and _is_task_outcome(report)]
     failed = [report for report in reports if report is not None and not _is_task_outcome(report)]

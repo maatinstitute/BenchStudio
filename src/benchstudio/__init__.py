@@ -102,7 +102,7 @@ from .campaigns import (
     validate_search_plan,
     write_campaign_archive,
 )
-from .compare import build_comparison_report
+from .compare import build_campaign_comparison_report, build_comparison_report
 from .conformance import (
     ActionSpec,
     AdapterCapabilities,
@@ -274,6 +274,7 @@ __all__ = [
     "TransferFidelityReport",
     "ValidationIssue",
     "build_comparison_report",
+    "build_campaign_comparison_report",
     "load_campaign_document",
     "load_frozen_campaign_plan",
     "default_registry",
