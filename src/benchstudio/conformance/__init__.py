@@ -22,12 +22,19 @@ from .policy_session import (
     SessionStatus,
 )
 from .replay_protocol import AdapterCapabilities, validate_adapter_capabilities
-from .replay_timing import ScheduledAction, apply_zero_order_hold, validate_action_timing
+from .replay_timing import (
+    ActionQueueAudit,
+    ScheduledAction,
+    apply_zero_order_hold,
+    audit_action_queue,
+    validate_action_timing,
+)
 from .scenario_validation import ScenarioContract, validate_scenario_pair
 from .world_state import ValidationIssue, validate_observation
 
 __all__ = [
     "ActionSpec",
+    "ActionQueueAudit",
     "AdapterCapabilities",
     "DeadlineAudit",
     "ScenarioContract",
@@ -49,6 +56,7 @@ __all__ = [
     "SignalSpec",
     "apply_zero_order_hold",
     "audit_deadlines",
+    "audit_action_queue",
     "validate_action",
     "validate_action_timing",
     "validate_adapter_capabilities",

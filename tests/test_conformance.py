@@ -4,7 +4,11 @@ from benchstudio.conformance import (
     ActionSpec,
     AdapterCapabilities,
     ScenarioContract,
+    ScheduledAction,
+    apply_zero_order_hold,
+    audit_action_queue,
     validate_action,
+    validate_action_timing,
     validate_adapter_capabilities,
     validate_observation,
     validate_scenario_pair,
@@ -38,3 +42,35 @@ def test_timestamped_observation_is_valid():
         0, 0.0, source_timestamp=Timestamp(0, "sim_time"), received_monotonic_ns=1
     )
     assert validate_observation(observation) == []
+
+
+def test_replay_timing_tracks_clock_domains_and_dropped_commands():
+    dropped = ScheduledAction(
+        "drop",
+        10,
+        20,
+        [1],
+        queue_sequence=2,
+        dropped=True,
+        drop_reason="controller_deadline",
+    )
+    effective = ScheduledAction("keep", 5, 10, [2], queue_sequence=1)
+    audit = audit_action_queue([dropped, effective])
+    assert audit.complete is True
+    assert audit.effective == 1
+    assert apply_zero_order_hold([dropped, effective], [20]) == [effective]
+
+
+def test_replay_timing_rejects_mismatched_domains_and_deadline_miss():
+    action = ScheduledAction(
+        "late",
+        20,
+        30,
+        [1],
+        command_clock_domain="host_monotonic",
+        effective_clock_domain="sim_time",
+        deadline_ns=10,
+    )
+    issues = validate_action_timing(action)
+    assert "command and effective timestamps use different clock domains" in issues
+    assert "command_time_ns is after controller deadline" in issues
