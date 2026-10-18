@@ -56,6 +56,7 @@ from .robopad_competence import (
     world_rotation_delta,
 )
 from .robopad_reference import FixedReference
+from .robopad_reference_adapter import CandidateGoals, SourceGeometry, build_goals, extract_geometry
 from .teleop_replay_timing import (
     LogicalReplayClock,
     ReplayScheduleEntry,
@@ -101,6 +102,10 @@ __all__ = [
     "load_alpabridge_telemetry",
     "route_arc_length_m",
     "FixedReference",
+    "CandidateGoals",
+    "SourceGeometry",
+    "build_goals",
+    "extract_geometry",
     "MAX_BYTES",
     "checked_rotation_delta",
     "compact_record",

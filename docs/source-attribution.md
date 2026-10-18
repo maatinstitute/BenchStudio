@@ -108,6 +108,16 @@ the following projects. Product runtimes are not vendored into this repository.
   `bce4cd71464e83feed06807825cd015ff3cc7c29e235cc34420cb2f12c60fc73`.
   The port preserves bounded evidence writes and exact replay semantics;
   physical rollout execution and source geometry remain external.
+- RoboPAD source geometry adapter: `benchstudio.integrations.
+  robopad_reference_adapter` ports the read-only geometry extraction,
+  transformed grasp transfer, conservative goal construction, and frozen
+  stage-goal mapping from `experiments/icra_reference_adapter.py` at upstream
+  commit `4ecd468cc67cc40681ca2af9097b7ade5825fadd`. Source digest is
+  `9a7e87062fc6450f00a0d55daa309edfcf7af396729d73fa3575e1eb679bf4f3`, and
+  the upstream test digest is
+  `deb6c852547c567a5d7950f1021ab5be03f9121b93394d39a6033b90106bd1ce`.
+  The adapter remains read-only and records unresolved live-geometry and
+  controller checks instead of claiming competence.
 - RoboPAD campaign resource limits: the existing `ResourceBudget` and frozen
   campaign compiler now carry the source campaign manifest's GPU-hour, output
   byte, policy-query, retry, and per-cell timeout ceilings. The shared runner
