@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Callable, Iterable
 
 from ..contracts import Policy, Simulator
+from ..evidence import verify_artifact_manifest
 from ..runner import RunConfig, run_episodes
 from .frozen_plan import FrozenCampaignPlan, PlannedAttempt
 from .ledger import AttemptLedger
@@ -68,6 +69,13 @@ class CampaignExecutor:
         for attempt in self.plan.attempts:
             attempt_id = attempt.key.attempt_id
             if self.ledger.contains(attempt_id):
+                attempt_dir = self.output / "attempts" / attempt_id
+                verification = verify_artifact_manifest(attempt_dir)
+                if not verification["valid"]:
+                    raise RuntimeError(
+                        f"attempt {attempt_id} evidence verification failed: "
+                        f"{verification['mismatches']}"
+                    )
                 skipped.append(attempt_id)
                 continue
             if attempt_id in self.cancelled_attempts:
@@ -113,6 +121,12 @@ class CampaignExecutor:
                         config,
                         attempt_dir,
                     )
+                verification = verify_artifact_manifest(attempt_dir)
+                if not verification["valid"]:
+                    raise RuntimeError(
+                        f"attempt {attempt_id} evidence verification failed: "
+                        f"{verification['mismatches']}"
+                    )
                 self.ledger.append(
                     attempt.key,
                     {
@@ -121,6 +135,7 @@ class CampaignExecutor:
                         "scheduled_episode_count": summary.get("scheduled_episode_count"),
                         "completed_episode_count": summary.get("completed_episode_count"),
                         "attempt_summary_path": str(attempt_dir / "summary.json"),
+                        "evidence_verified": True,
                     },
                 )
                 committed.append(attempt_id)

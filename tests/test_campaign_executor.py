@@ -84,3 +84,15 @@ def test_campaign_executor_records_declared_cancellation(tmp_path):
     ).run()
     assert result.cancelled_attempt_ids == ("attempt-000000",)
     assert result.missing_attempt_ids == ()
+
+
+def test_campaign_executor_refuses_tampered_resumed_attempt(tmp_path):
+    plan = CampaignPlanner(
+        run_id="run-1", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    output = tmp_path / "campaign"
+    CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
+    trace = output / "attempts" / "attempt-000000" / "episodes.jsonl"
+    trace.write_text(trace.read_text() + "tampered\n")
+    with __import__("pytest").raises(RuntimeError, match="evidence verification"):
+        CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
