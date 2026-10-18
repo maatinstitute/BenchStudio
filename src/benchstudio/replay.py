@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from typing import Any
 
@@ -71,10 +72,19 @@ class ReplaySimulator:
     def reset(self, *, seed: int) -> Observation:
         self._cursor = 0
         self._success = False
-        return Observation(sequence=0, sim_time_s=0.0, payload={"seed": seed})
+        return Observation(
+            sequence=0,
+            sim_time_s=0.0,
+            payload={"seed": seed},
+            received_monotonic_ns=time.monotonic_ns(),
+        )
 
     def observe(self) -> Observation:
-        return Observation(sequence=self._cursor, sim_time_s=self._cursor * self._sim_step_s)
+        return Observation(
+            sequence=self._cursor,
+            sim_time_s=self._cursor * self._sim_step_s,
+            received_monotonic_ns=time.monotonic_ns(),
+        )
 
     def step(self, action: Any) -> Observation:
         del action

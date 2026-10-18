@@ -63,3 +63,12 @@ def test_run_artifact_manifest_detects_trace_tampering(tmp_path):
     result = verify_artifact_manifest(run_dir)
     assert result["valid"] is False
     assert result["mismatches"][0]["file"] == "episodes.jsonl"
+
+
+def test_artifact_manifest_rejects_unbound_files(tmp_path):
+    run_dir = tmp_path / "run"
+    run_episodes(MockPolicy(), MockSimulator(), RunConfig(episodes=1), run_dir)
+    (run_dir / "unexpected.bin").write_bytes(b"outside the manifest")
+    result = verify_artifact_manifest(run_dir)
+    assert result["valid"] is False
+    assert {item["reason"] for item in result["mismatches"]} == {"unbound_artifact"}

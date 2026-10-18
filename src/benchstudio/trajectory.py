@@ -61,11 +61,14 @@ def compare_trajectories(
     series: list[dict[str, Any]] = []
     split: dict[str, Any] | None = None
     max_joint = max_position = max_rotation = 0.0
+    invalid_quaternions_total = 0
     for time_a, time_b in pairs:
         frame_a = frame_by_time_a[time_a]
         frame_b = by_time_b[time_b]
         joint_rmse = _joint_rmse(frame_a.joints, frame_b.joints)
-        position_delta, rotation_delta = _object_deltas(frame_a.objects, frame_b.objects)
+        position_delta, rotation_delta, invalid_quaternions = _object_deltas(
+            frame_a.objects, frame_b.objects
+        )
         if joint_rmse is None and position_delta is None:
             continue
         sample = {
@@ -73,11 +76,13 @@ def compare_trajectories(
             "joint_rmse_rad": joint_rmse,
             "object_position_delta_m": position_delta,
             "object_rotation_delta_rad": rotation_delta,
+            "invalid_quaternion_count": invalid_quaternions,
         }
         series.append(sample)
         max_joint = max(max_joint, joint_rmse or 0.0)
         max_position = max(max_position, position_delta or 0.0)
         max_rotation = max(max_rotation, rotation_delta or 0.0)
+        invalid_quaternions_total += invalid_quaternions
         if split is None:
             if position_delta is not None and position_delta > position_split_m:
                 split = {
@@ -113,6 +118,7 @@ def compare_trajectories(
             "max": max_rotation,
             "final": final["object_rotation_delta_rad"],
         },
+        "validation": {"invalid_quaternion_count": invalid_quaternions_total},
         "split": split,
         "series": _downsample(series, max_series_points),
     }
@@ -153,11 +159,12 @@ def _joint_rmse(joints_a: dict[str, float], joints_b: dict[str, float]) -> float
 
 def _object_deltas(
     objects_a: dict[str, dict[str, list[float]]], objects_b: dict[str, dict[str, list[float]]]
-) -> tuple[float | None, float | None]:
+) -> tuple[float | None, float | None, int]:
     shared = sorted(set(objects_a) & set(objects_b))
     if not shared:
-        return None, None
+        return None, None, 0
     max_position = max_rotation = 0.0
+    invalid_quaternions = 0
     for object_id in shared:
         pose_a, pose_b = objects_a[object_id], objects_b[object_id]
         max_position = max(
@@ -173,15 +180,20 @@ def _object_deltas(
         if quat_a is not None and quat_b is not None:
             dot = abs(sum(a * b for a, b in zip(quat_a, quat_b)))
             max_rotation = max(max_rotation, 2.0 * math.acos(min(1.0, max(-1.0, dot))))
-    return max_position, max_rotation
+        elif pose_a.get("quat_wxyz") is not None or pose_b.get("quat_wxyz") is not None:
+            invalid_quaternions += 1
+    return max_position, max_rotation, invalid_quaternions
 
 
 def _normalized_quaternion(value: Any) -> tuple[float, float, float, float] | None:
     if not isinstance(value, (list, tuple)) or len(value) != 4:
         return None
-    values = tuple(float(item) for item in value)
+    try:
+        values = tuple(float(item) for item in value)
+    except (TypeError, ValueError):
+        return None
     norm = math.sqrt(sum(item * item for item in values))
-    if norm <= 1e-12:
+    if norm <= 1e-12 or not all(math.isfinite(item) for item in values):
         return None
     return tuple(item / norm for item in values)  # type: ignore[return-value]
 

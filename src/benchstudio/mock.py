@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+
 from .contracts import ActionChunk, Observation
 
 
@@ -25,10 +27,19 @@ class MockSimulator:
     def reset(self, *, seed: int) -> Observation:
         self._step = 0
         self._success = False
-        return Observation(sequence=0, sim_time_s=0.0, payload={"seed": seed})
+        return Observation(
+            sequence=0,
+            sim_time_s=0.0,
+            payload={"seed": seed},
+            received_monotonic_ns=time.monotonic_ns(),
+        )
 
     def observe(self) -> Observation:
-        return Observation(sequence=self._step, sim_time_s=self._step * 0.1)
+        return Observation(
+            sequence=self._step,
+            sim_time_s=self._step * 0.1,
+            received_monotonic_ns=time.monotonic_ns(),
+        )
 
     def step(self, action: int) -> Observation:
         self._step += 1

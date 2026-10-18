@@ -31,3 +31,17 @@ def test_trajectory_alignment_does_not_reuse_a_frame(tmp_path):
     report = compare_trajectories(first, second)
     assert report is not None
     assert report["compared_frames"] == 1
+
+
+def test_invalid_quaternion_is_reported(tmp_path):
+    first = tmp_path / "a.ndjson"
+    second = tmp_path / "b.ndjson"
+    first.write_text(
+        '{"t_ms":0,"stream":"objects","state":{"box":{"position_xyz":[0,0,0],"quat_wxyz":[0,0,0,0]}}}\n'
+    )
+    second.write_text(
+        '{"t_ms":0,"stream":"objects","state":{"box":{"position_xyz":[0,0,0],"quat_wxyz":[1,0,0,0]}}}\n'
+    )
+    report = compare_trajectories(first, second)
+    assert report is not None
+    assert report["validation"]["invalid_quaternion_count"] == 1

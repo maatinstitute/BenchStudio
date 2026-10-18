@@ -64,3 +64,18 @@ def test_invalid_schedule_is_rejected():
 
     with pytest.raises(ValueError, match="action_prefix"):
         RunConfig(action_prefix=0)
+
+
+def test_policy_exception_is_recorded_as_episode_failure(tmp_path):
+    class BrokenPolicy(MockPolicy):
+        def predict(self, observation, *, denoising_steps):
+            raise RuntimeError("inference offline")
+
+    summary = run_episodes(
+        BrokenPolicy(), MockSimulator(), RunConfig(episodes=1), tmp_path / "failure"
+    )
+    episode = summary["episodes"][0]
+    assert summary["campaign_status"] == "completed"
+    assert episode["status"] == "policy_inference_error"
+    assert "inference offline" in episode["error"]
+    assert summary["scheduled_success_rate"] == 0.0

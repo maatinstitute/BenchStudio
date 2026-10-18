@@ -52,8 +52,8 @@ def _summarize(reports: list[dict[str, Any] | None]) -> dict[str, Any]:
         "success_count": len(successes),
         "completed_success_rate": len(successes) / len(completed) if completed else None,
         "scheduled_success_rate": len(successes) / len(reports) if reports else None,
-        # Compatibility alias; new consumers should use the explicit fields.
-        "success_rate": len(successes) / len(completed) if completed else None,
+        # Compatibility alias uses the conservative scheduled denominator.
+        "success_rate": len(successes) / len(reports) if reports else None,
         "mean_time_to_success_s": _mean(report.get("sim_time_s") for report in successes),
         "mean_wall_time_s": sum(wall_times) / len(wall_times) if wall_times else None,
     }

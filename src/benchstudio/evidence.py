@@ -60,6 +60,7 @@ def verify_artifact_manifest(root: Path) -> dict[str, Any]:
     manifest_path = root / "artifact-manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     mismatches: list[dict[str, Any]] = []
+    bound_names = set(manifest.get("files", {}))
     for name, expected in manifest.get("files", {}).items():
         path = root / name
         if not path.is_file():
@@ -68,7 +69,18 @@ def verify_artifact_manifest(root: Path) -> dict[str, Any]:
         actual = sha256_file(path)
         if actual != expected.get("sha256") or path.stat().st_size != expected.get("bytes"):
             mismatches.append({"file": name, "reason": "digest_or_size_mismatch"})
-    return {"valid": not mismatches, "status": manifest.get("status"), "mismatches": mismatches}
+    for path in root.iterdir():
+        if (
+            path.is_file()
+            and path.name != "artifact-manifest.json"
+            and path.name not in bound_names
+        ):
+            mismatches.append({"file": path.name, "reason": "unbound_artifact"})
+    return {
+        "valid": not mismatches,
+        "status": manifest.get("status"),
+        "mismatches": mismatches,
+    }
 
 
 def environment_fingerprint(backend_id: str | None = None) -> dict[str, Any]:
