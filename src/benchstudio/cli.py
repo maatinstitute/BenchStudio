@@ -32,6 +32,7 @@ from .evidence import verify_artifact_manifest
 from .mock import MockPolicy, MockSimulator
 from .model_adapters import default_model_registry
 from .runner import RunConfig, run_episodes
+from .scenarios import verify_scenario_archive
 
 
 def _positive_int(value: str) -> int:
@@ -123,6 +124,15 @@ def main() -> int:
     parser.add_argument(
         "--trusted-archive-sha256",
         help="Require --verify-archive to match this independent archive digest.",
+    )
+    parser.add_argument(
+        "--verify-scenario-archive",
+        type=Path,
+        help="Verify a scenario ZIP without extracting it.",
+    )
+    parser.add_argument(
+        "--trusted-scenario-archive-sha256",
+        help="Require --verify-scenario-archive to match an independent digest.",
     )
     parser.add_argument(
         "--fetch-artifact",
@@ -239,6 +249,15 @@ def main() -> int:
         return 0 if result["valid"] else 2
     if args.trusted_archive_sha256 is not None:
         parser.error("--trusted-archive-sha256 requires --verify-archive")
+    if args.verify_scenario_archive is not None:
+        result = verify_scenario_archive(
+            args.verify_scenario_archive.read_bytes(),
+            expected_sha256=args.trusted_scenario_archive_sha256,
+        )
+        print(json.dumps(result, sort_keys=True))
+        return 0 if result["valid"] else 2
+    if args.trusted_scenario_archive_sha256 is not None:
+        parser.error("--trusted-scenario-archive-sha256 requires --verify-scenario-archive")
     if args.fetch_artifact is not None:
         if args.extract_output is None:
             parser.error("--fetch-artifact requires --extract-output")

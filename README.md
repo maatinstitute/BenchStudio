@@ -97,6 +97,14 @@ python -m benchstudio.cli --campaign-spec campaign.json --execute-mock \
   --audit --archive-output runs/campaign.zip
 ```
 
+Scenario archives can be independently verified before extraction or campaign
+scheduling:
+
+```bash
+python -m benchstudio.cli --verify-scenario-archive scenario.zip \
+  --trusted-scenario-archive-sha256 <archive-sha256>
+```
+
 When a campaign declares adapter IDs, execute those frozen registry entries
 directly (optional dependencies are checked before work is scheduled):
 

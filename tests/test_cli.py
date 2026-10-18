@@ -327,6 +327,31 @@ def test_cli_verifies_campaign_archive_without_extraction(monkeypatch, tmp_path,
     assert result["valid"] is True
 
 
+def test_cli_verifies_scenario_archive_without_extraction(monkeypatch, tmp_path, capsys):
+    from benchstudio.scenarios import build_scenario_archive, scenario_archive_digest
+
+    root = tmp_path / "scenario"
+    root.mkdir()
+    (root / "task.json").write_text("{}")
+    archive = tmp_path / "scenario.zip"
+    payload = build_scenario_archive(root)
+    archive.write_bytes(payload)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--verify-scenario-archive",
+            str(archive),
+            "--trusted-scenario-archive-sha256",
+            scenario_archive_digest(payload),
+        ],
+    )
+    assert main() == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["schema"] == "benchstudio_scenario_archive_verification_v1"
+    assert result["valid"] is True
+
+
 def test_cli_fetches_and_extracts_local_artifact(monkeypatch, tmp_path, capsys):
     from benchstudio.campaigns import (
         CampaignExecutor,
