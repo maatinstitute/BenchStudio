@@ -145,11 +145,38 @@ def test_robochallenge_adapter_preserves_opaque_payload_digests():
     assert records[1]["execution_timestamp_status"] == "unavailable"
     assert records[0]["payload_base64"] == "b2JzZXJ2YXRpb24tYnl0ZXM="
     assert records[1]["payload_base64"] == "YWN0aW9uLWJ5dGVz"
+    audit = adapter.audit()
+    assert audit.valid
+    assert audit.observation_count == 1
+    assert audit.action_acknowledgment_count == 1
+    assert [record["adapter_sequence"] for record in records] == [0, 1]
     assert validate_robochallenge_message(RoboChallengeAction("bad", 1, b"x", "0" * 64)) == [
         "payload digest mismatch"
     ]
     with pytest.raises(ValueError, match="execution timestamp"):
         adapter.action_acknowledged(action, execution_timestamp_ns=-1)
+
+
+def test_robochallenge_adapter_rejects_duplicate_and_reordered_messages():
+    records: list[dict[str, object]] = []
+    adapter = RoboChallengeObserveOnlyAdapter(records.append)
+    payload = b"observation"
+    first = RoboChallengeObservation("obs-1", 10, payload, hashlib.sha256(payload).hexdigest())
+    adapter.observe(first)
+    with pytest.raises(ValueError, match="duplicate observation_id"):
+        adapter.observe(first)
+    later = RoboChallengeObservation("obs-2", 9, payload, hashlib.sha256(payload).hexdigest())
+    with pytest.raises(ValueError, match="non-decreasing"):
+        adapter.observe(later)
+    action_payload = b"action"
+    action = RoboChallengeAction(
+        "act-1", 11, action_payload, hashlib.sha256(action_payload).hexdigest()
+    )
+    adapter.action_acknowledged(action, execution_timestamp_ns=None)
+    with pytest.raises(ValueError, match="duplicate action_id"):
+        adapter.action_acknowledged(action, execution_timestamp_ns=None)
+    assert adapter.audit().valid is False
+    assert adapter.audit().event_count == 2
 
 
 def test_worldepisode_binding_is_explicit_about_fallback_profile():

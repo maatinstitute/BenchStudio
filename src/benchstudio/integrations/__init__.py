@@ -14,6 +14,7 @@ from .robochallenge import (
     RoboChallengeAction,
     RoboChallengeObservation,
     RoboChallengeObserveOnlyAdapter,
+    RoboChallengeProtocolAudit,
     validate_robochallenge_message,
 )
 from .worldepisode import WorldEpisodePreflight, preflight_worldepisode
@@ -24,6 +25,7 @@ __all__ = [
     "RoboChallengeAction",
     "RoboChallengeObservation",
     "RoboChallengeObserveOnlyAdapter",
+    "RoboChallengeProtocolAudit",
     "validate_robochallenge_message",
     "WorldEpisodePreflight",
     "preflight_worldepisode",
