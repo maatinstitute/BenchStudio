@@ -45,22 +45,25 @@ class AttemptLedger:
                 record = json.loads(line)
             except json.JSONDecodeError as exc:
                 raise ValueError("ledger contains invalid JSON") from exc
+            if not isinstance(record, dict):
+                raise ValueError("ledger record must be a mapping")
             attempt_id = record.get("attempt_id")
-            if record.get("plan_digest_sha256") != self.plan.plan_digest_sha256:
+            digest = record.get("plan_digest_sha256")
+            if not isinstance(digest, str) or digest != self.plan.plan_digest_sha256:
                 raise ValueError("ledger record does not match frozen plan digest")
             if not isinstance(attempt_id, str) or attempt_id not in self._planned:
                 raise ValueError("ledger contains an attempt outside the frozen plan")
             expected = self._planned[attempt_id]
-            if any(
-                record.get(field) != getattr(expected, field)
-                for field in (
-                    "run_id",
-                    "scenario_id",
-                    "pair_id",
-                    "condition_id",
-                    "environment_id",
-                )
-            ):
+            identity_fields = (
+                "run_id",
+                "scenario_id",
+                "pair_id",
+                "condition_id",
+                "environment_id",
+            )
+            if any(not isinstance(record.get(field), str) for field in identity_fields):
+                raise ValueError("ledger record identity fields must be strings")
+            if any(record.get(field) != getattr(expected, field) for field in identity_fields):
                 raise ValueError("ledger record identity does not match frozen plan")
             if attempt_id in seen:
                 raise ValueError(f"ledger contains duplicate attempt: {attempt_id}")

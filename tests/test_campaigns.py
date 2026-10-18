@@ -86,6 +86,34 @@ def test_attempt_ledger_rejects_reopening_with_a_different_plan(tmp_path):
         AttemptLedger(path, other)
 
 
+def test_attempt_ledger_rejects_malformed_persisted_records(tmp_path):
+    plan = CampaignPlanner(
+        run_id="malformed-ledger", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    path = tmp_path / "attempts.jsonl"
+    path.write_text("[]\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="mapping"):
+        AttemptLedger(path, plan)
+
+    path.write_text(
+        json.dumps(
+            {
+                "attempt_id": plan.attempts[0].key.attempt_id,
+                "plan_digest_sha256": plan.plan_digest_sha256,
+                "run_id": plan.run_id,
+                "scenario_id": plan.attempts[0].key.scenario_id,
+                "pair_id": plan.attempts[0].key.pair_id,
+                "condition_id": plan.attempts[0].key.condition_id,
+                "environment_id": None,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="identity fields"):
+        AttemptLedger(path, plan)
+
+
 def test_attempt_ledger_refreshes_between_workers_and_rejects_duplicate_commit(tmp_path):
     plan = CampaignPlanner(
         run_id="run-1", scenario_id="pick", conditions=[{"budget": 2}], seeds=[1, 2]
