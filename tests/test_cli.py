@@ -125,6 +125,35 @@ def test_cli_campaign_audit_reopens_persisted_outcomes(monkeypatch, tmp_path, ca
     assert audit["claim"]["prerequisites"]["authoritative_scorer_declared"] is True
 
 
+def test_cli_verifies_detached_manifest_signature(monkeypatch, tmp_path, capsys):
+    from benchstudio.evidence_signing import generate_ed25519_keypair, sign_manifest
+    from benchstudio.mock import MockPolicy, MockSimulator
+    from benchstudio.runner import RunConfig, run_episodes
+
+    run_dir = tmp_path / "signed-run"
+    run_episodes(MockPolicy(), MockSimulator(), RunConfig(), run_dir)
+    private_key, public_key = generate_ed25519_keypair()
+    signature_path = tmp_path / "manifest.sig"
+    public_key_path = tmp_path / "manifest.pub"
+    sign_manifest(run_dir / "artifact-manifest.json", private_key, signature_path)
+    public_key_path.write_bytes(public_key)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--verify-artifact",
+            str(run_dir),
+            "--manifest-signature",
+            str(signature_path),
+            "--trusted-public-key",
+            str(public_key_path),
+        ],
+    )
+    assert main() == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["signature"]["valid"] is True
+
+
 def test_cli_executes_declared_registry_adapters(monkeypatch, tmp_path, capsys):
     spec_path = tmp_path / "registry-campaign.json"
     output = tmp_path / "run"

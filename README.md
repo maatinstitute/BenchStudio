@@ -30,6 +30,9 @@ python -m benchstudio.cli --verify-artifact runs/smoke \
   --trusted-manifest-sha256 <manifest-sha256>
 ```
 
+Signed manifests can be verified with `--manifest-signature` and
+`--trusted-public-key` instead of, or in addition to, the digest reference.
+
 Audit a completed frozen campaign directory without constructing or rerunning
 its model and simulator adapters:
 

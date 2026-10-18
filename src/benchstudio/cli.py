@@ -115,13 +115,35 @@ def main() -> int:
         "--trusted-manifest-sha256",
         help="Require --verify-artifact to match this independently supplied manifest digest.",
     )
+    parser.add_argument(
+        "--manifest-signature",
+        type=Path,
+        help="Detached manifest signature to verify with --trusted-public-key.",
+    )
+    parser.add_argument(
+        "--trusted-public-key",
+        type=Path,
+        help="PEM public key used to verify --manifest-signature.",
+    )
     args = parser.parse_args()
-    if args.trusted_manifest_sha256 is not None and args.verify_artifact is None:
-        parser.error("--trusted-manifest-sha256 requires --verify-artifact")
+    if args.verify_artifact is None and any(
+        value is not None
+        for value in (
+            args.trusted_manifest_sha256,
+            args.manifest_signature,
+            args.trusted_public_key,
+        )
+    ):
+        parser.error("artifact trust options require --verify-artifact")
     if args.verify_artifact is not None:
+        public_key = (
+            args.trusted_public_key.read_bytes() if args.trusted_public_key is not None else None
+        )
         result = verify_artifact_manifest(
             args.verify_artifact,
             trusted_manifest_sha256=args.trusted_manifest_sha256,
+            signature_path=args.manifest_signature,
+            trusted_public_key=public_key,
         )
         print(json.dumps(result, sort_keys=True))
         return 0 if result["valid"] else 2
