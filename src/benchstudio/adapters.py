@@ -208,6 +208,7 @@ def module_available(import_name: str) -> bool:
 
 
 def default_registry(*, discover_external: bool = True) -> AdapterRegistry:
+    from .integrations.mujoco import MujocoSimulator
     from .mock import MockSimulator
     from .replay import ReplaySimulator
 
@@ -224,6 +225,19 @@ def default_registry(*, discover_external: bool = True) -> AdapterRegistry:
             simulator_id="trace_replay",
             label="URDF Studio-style trace replay facade",
             factory=ReplaySimulator,
+        )
+    )
+    registry.register(
+        AdapterDescriptor(
+            simulator_id="mujoco",
+            label="Optional MuJoCo physics simulator",
+            factory=MujocoSimulator,
+            dependencies=(Dependency("mujoco", "mujoco"),),
+            capabilities=BackendCapabilities(
+                owns_physics=True,
+                closed_loop=True,
+                evidence_authority="mujoco",
+            ),
         )
     )
     if discover_external:

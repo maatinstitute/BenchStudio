@@ -18,7 +18,11 @@ maintained projects. Their runtimes are not vendored into this repository.
   not a port of the AlpaBridge service. The AlpaBridge telemetry adapter reads
   the published v3 JSONL shape and preserves its latency-target, route-source,
   and model-load event semantics; it does not import or reimplement AlpaSim.
-  Product-specific runtimes remain external.
+Product-specific runtimes remain external.
+
+The optional `benchstudio.integrations.mujoco` adapter uses MuJoCo's public
+Python API when the user installs the `mujoco` extra. It does not vendor the
+runtime or assign official benchmark scoring authority to BenchStudio.
 
 Any future source migration must preserve the original repository's notices,
 third-party licenses, and historical evidence. The current BenchStudio

@@ -17,6 +17,12 @@ def test_default_registry_is_ready_without_optional_simulators():
     assert readiness["ready"] is True
 
 
+def test_default_registry_declares_optional_mujoco_backend():
+    descriptor = default_registry(discover_external=False).get("mujoco")
+    assert descriptor.capabilities.owns_physics is True
+    assert descriptor.dependencies[0].import_name == "mujoco"
+
+
 def test_trace_replay_backend_is_registered_and_instantiable():
     registry = default_registry()
     readiness = registry.readiness("trace_replay")
