@@ -45,6 +45,16 @@ from .alpabridge_route import (
     segment_point_distance,
     straight_trajectory,
 )
+from .alpabridge_trajectory_selector import (
+    DEFAULT_TRAJECTORY_SELECTOR_CONFIG,
+    TrajectoryCandidate,
+    TrajectoryReference,
+    TrajectorySelectorConfig,
+    TrajectorySelectorScore,
+    score_candidate,
+    speed_scale,
+    trajectory_region_score,
+)
 from .alpasim_metrics import (
     AlpaSimEvidence,
     AlpaSimEvidenceConfig,
@@ -135,6 +145,14 @@ __all__ = [
     "default_target_config",
     "build_rectifier",
     "rectify_image",
+    "DEFAULT_TRAJECTORY_SELECTOR_CONFIG",
+    "TrajectoryCandidate",
+    "TrajectoryReference",
+    "TrajectorySelectorConfig",
+    "TrajectorySelectorScore",
+    "score_candidate",
+    "speed_scale",
+    "trajectory_region_score",
     "FixedReference",
     "CandidateGoals",
     "SourceGeometry",

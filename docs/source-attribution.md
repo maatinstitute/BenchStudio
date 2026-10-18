@@ -240,6 +240,16 @@ the following projects. Product runtimes are not vendored into this repository.
   `bf67ad43c767bf81d3f07e45af1a3e7990b48d925cd776195311573043a3621d`;
   their conformance-test digest is
   `4a5003fe9f5b9c53371192f8451338a64174d0585942a9d2930a46e38bc7d589`.
+- AlpaBridge trajectory selection: `benchstudio.integrations.
+  alpabridge_trajectory_selector` ports the speed-scaled 3-second/5-second
+  reference-region scoring and candidate selection from
+  `src/alpabridge/simulator/trajectory_selector.py` at the same upstream
+  commit. Source digest is
+  `5dfe55ef11fda051170b1b1753f262d439ab45e940d7bea679c80c0054228b50`, and
+  the upstream selector/maneuver regression-test digest is
+  `c80281fd146ace1a3c57141c2473d7c93569b846ec5f14eb2e5459bd99d980e6`.
+  The simulator-backed maneuver generation and execution authority remain
+  external.
 - AlpaBridge camera-frame preparation: `benchstudio.integrations.alpabridge_image`
   ports the cover-resize/center-crop utility from
   `src/alpabridge/simulator/image_ops.py` and the fail-soft optional
