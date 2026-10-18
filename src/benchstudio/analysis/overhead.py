@@ -88,6 +88,8 @@ def write_execution_overhead(report: ExecutionOverhead, path: Path) -> None:
 def load_execution_overhead(path: Path) -> ExecutionOverhead:
     """Load and validate a serialized overhead audit."""
     payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("execution-overhead artifact must be a mapping")
     if payload.get("schema") != "benchstudio_execution_overhead_v1":
         raise ValueError("unsupported execution-overhead schema")
     values = payload.get("report")

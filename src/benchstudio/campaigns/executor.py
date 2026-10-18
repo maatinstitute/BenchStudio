@@ -425,11 +425,14 @@ class CampaignExecutor:
             claim_type = ClaimType.SINGLE_RUN_OUTCOME
         if outcome_records is None and (self.output / "outcomes.jsonl").is_file():
             outcome_records = self.outcome_ledger().records
+        evidence_issues = list(self._audit_evidence_issues())
         if execution_overhead is None:
             overhead_path = self.output / "execution-overhead.json"
             if overhead_path.is_file():
-                execution_overhead = load_execution_overhead(overhead_path)
-        evidence_issues = self._audit_evidence_issues()
+                try:
+                    execution_overhead = load_execution_overhead(overhead_path)
+                except (OSError, ValueError, TypeError) as exc:
+                    evidence_issues.append(f"execution overhead is invalid: {exc}")
         claim_evidence = dict(evidence or {})
         claim_evidence["trusted_artifacts"] = (
             claim_evidence.get("trusted_artifacts", True) is not False and not evidence_issues
