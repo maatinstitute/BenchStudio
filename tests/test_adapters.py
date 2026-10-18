@@ -7,7 +7,7 @@ from benchstudio.mock import MockSimulator
 
 
 def test_default_registry_is_ready_without_optional_simulators():
-    readiness = default_registry().readiness("mock")
+    readiness = default_registry(discover_external=False).readiness("mock")
     assert readiness["ready"] is True
 
 
@@ -37,6 +37,12 @@ def test_registry_reports_missing_dependency_without_importing_backend():
 
 
 def test_duplicate_adapter_registration_is_rejected():
-    registry = default_registry()
+    registry = default_registry(discover_external=False)
     with pytest.raises(ValueError, match="already registered"):
         registry.register(AdapterDescriptor("mock", "duplicate", MockSimulator))
+
+
+def test_external_discovery_is_optional_and_diagnostic():
+    registry = default_registry(discover_external=False)
+    assert registry.discover(group="benchstudio.no_such_group") == ()
+    assert registry.discovery_diagnostics == ()

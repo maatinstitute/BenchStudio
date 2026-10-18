@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 from dataclasses import dataclass, field
+from importlib import metadata
 from typing import Any, Callable
 
 from .contracts import Simulator
@@ -28,6 +29,7 @@ class AdapterRegistry:
 
     def __init__(self) -> None:
         self._descriptors: dict[str, AdapterDescriptor] = {}
+        self._discovery_diagnostics: list[dict[str, str]] = []
 
     def register(self, descriptor: AdapterDescriptor) -> None:
         if descriptor.simulator_id in self._descriptors:
@@ -76,6 +78,46 @@ class AdapterRegistry:
             raise RuntimeError(f"simulator {simulator_id} is not ready; missing: {missing}")
         return descriptor.factory(**kwargs)
 
+    def discover(self, group: str = "benchstudio.simulators") -> tuple[dict[str, str], ...]:
+        """Load optional simulator adapters exposed through package entry points."""
+        entries = metadata.entry_points()
+        selected = (
+            entries.select(group=group) if hasattr(entries, "select") else entries.get(group, ())
+        )
+        diagnostics: list[dict[str, str]] = []
+        for entry in selected:
+            try:
+                loaded = entry.load()
+                value = (
+                    loaded()
+                    if callable(loaded) and not isinstance(loaded, AdapterDescriptor)
+                    else loaded
+                )
+                descriptors = (value,) if isinstance(value, AdapterDescriptor) else tuple(value)
+                if not descriptors or not all(
+                    isinstance(item, AdapterDescriptor) for item in descriptors
+                ):
+                    raise TypeError(
+                        "entry point must return AdapterDescriptor or an iterable of them"
+                    )
+                for descriptor in descriptors:
+                    self.register(descriptor)
+                diagnostics.append({"entry_point": entry.name, "status": "loaded"})
+            except Exception as exc:
+                diagnostics.append(
+                    {
+                        "entry_point": entry.name,
+                        "status": "error",
+                        "error": f"{type(exc).__name__}: {exc}",
+                    }
+                )
+        self._discovery_diagnostics.extend(diagnostics)
+        return tuple(diagnostics)
+
+    @property
+    def discovery_diagnostics(self) -> tuple[dict[str, str], ...]:
+        return tuple(self._discovery_diagnostics)
+
 
 def module_available(import_name: str) -> bool:
     try:
@@ -87,7 +129,7 @@ def module_available(import_name: str) -> bool:
     return True
 
 
-def default_registry() -> AdapterRegistry:
+def default_registry(*, discover_external: bool = True) -> AdapterRegistry:
     from .mock import MockSimulator
     from .replay import ReplaySimulator
 
@@ -106,4 +148,6 @@ def default_registry() -> AdapterRegistry:
             factory=ReplaySimulator,
         )
     )
+    if discover_external:
+        registry.discover()
     return registry

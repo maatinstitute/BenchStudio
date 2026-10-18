@@ -97,6 +97,10 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
                 raise ValueError(
                     f"physical environment {environment_id} requires explicit authorization"
                 )
+            if item.get("retry_policy", "none") != "none" or item.get("auto_retry", False):
+                raise ValueError(
+                    f"physical environment {environment_id} must disable automatic retries"
+                )
     if not _enabled_environment_ids(environments):
         raise ValueError("at least one environment must be enabled")
     for section in ("measurement", "outputs"):

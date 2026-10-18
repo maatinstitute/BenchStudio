@@ -52,6 +52,27 @@ def test_campaign_spec_rejects_unauthorized_enabled_physical_environment():
         )
 
 
+def test_campaign_spec_rejects_physical_automatic_retry():
+    with pytest.raises(ValueError, match="automatic retries"):
+        compile_campaign_spec(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "physical"},
+                "task": {"task_id": "task"},
+                "environments": [
+                    {
+                        "id": "robot",
+                        "kind": "physical",
+                        "enabled": True,
+                        "requires_authorization": True,
+                        "retry_policy": "automatic",
+                    }
+                ],
+                "evaluation": {"seeds": [1], "paired": True, "conditions": [{"x": 1}]},
+            }
+        )
+
+
 def test_campaign_spec_rejects_non_frozen_confirmation_or_imputed_missingness():
     base = {
         "schema": "benchstudio.campaign.v1",
