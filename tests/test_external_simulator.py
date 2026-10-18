@@ -59,3 +59,28 @@ def test_external_command_simulator_is_registered_and_ready():
 def test_external_simulator_rejects_coerced_observation_fields(response):
     with pytest.raises(ValueError, match="observation"):
         _observation(response)
+
+
+def test_external_simulator_reset_clears_terminal_state_when_flags_are_omitted():
+    script = (
+        "import json,sys; reset_count=0;\n"
+        "for line in sys.stdin:\n"
+        " request=json.loads(line); op=request['operation'];\n"
+        " if op=='reset':\n"
+        "  reset_count+=1; response={'observation':{'sequence':0,'sim_time_s':0.0,'payload':{}}};\n"
+        " elif op=='step': response={'observation':{'sequence':1,'sim_time_s':0.1,"
+        "'payload':{}},'done':True,'success':True};\n"
+        " elif op=='close': break\n"
+        " else: response={'observation':{'sequence':0,'sim_time_s':0.0,'payload':{}}}\n"
+        " print(json.dumps(response),flush=True)\n"
+    )
+    simulator = ExternalCommandSimulator((sys.executable, "-u", "-c", script))
+    try:
+        simulator.reset(seed=1)
+        simulator.step(1)
+        assert simulator.is_done() is True
+        simulator.reset(seed=2)
+        assert simulator.is_done() is False
+        assert simulator.is_success() is False
+    finally:
+        simulator.close()

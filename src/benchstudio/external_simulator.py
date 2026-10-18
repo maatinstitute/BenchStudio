@@ -65,6 +65,8 @@ class ExternalCommandSimulator:
         response = self._request(
             {"schema": "benchstudio.simulator_request.v1", "operation": "reset", "seed": seed}
         )
+        self._done = False
+        self._success = False
         self._update_state(response)
         return _observation(response)
 
