@@ -27,6 +27,15 @@ def test_default_model_registry_exposes_external_command_policy():
     assert registry.readiness("external_command")["ready"] is True
 
 
+def test_default_model_registry_exposes_persistent_external_command_policy():
+    registry = default_model_registry(discover_external=False)
+    assert registry.readiness("persistent_external_command")["ready"] is True
+    assert (
+        "persistent_process"
+        in registry.get("persistent_external_command").capabilities.runtime_controls
+    )
+
+
 def test_model_registry_reports_missing_dependency():
     registry = ModelAdapterRegistry()
     registry.register(

@@ -142,6 +142,17 @@ def run_episodes(
             episode_results.append(
                 _campaign_failure_with_status(len(episode_results), exc, status="cleanup_error")
             )
+        try:
+            close_policy = getattr(policy, "close", None)
+            if close_policy is not None:
+                close_policy()
+        except Exception as exc:
+            campaign_status = "failed_cleanup"
+            episode_results.append(
+                _campaign_failure_with_status(
+                    len(episode_results), exc, status="policy_close_error"
+                )
+            )
     summary = _summary(config, episode_results, campaign_status=campaign_status)
     (output / "summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"

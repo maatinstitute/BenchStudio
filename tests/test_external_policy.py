@@ -5,7 +5,10 @@ import sys
 import pytest
 
 from benchstudio.contracts import Observation, Timestamp
-from benchstudio.external_policy import ExternalCommandPolicy
+from benchstudio.external_policy import (
+    ExternalCommandPolicy,
+    PersistentExternalCommandPolicy,
+)
 
 
 def _command(script: str) -> tuple[str, ...]:
@@ -47,3 +50,22 @@ def test_external_command_policy_rejects_malformed_responses():
     policy.reset(seed=1)
     with pytest.raises(ValueError, match="actions array"):
         policy.predict(Observation(0, 0.0), denoising_steps=None)
+
+
+def test_persistent_external_command_policy_keeps_runtime_alive():
+    policy = PersistentExternalCommandPolicy(
+        _command(
+            "import json,sys; "
+            "[print(json.dumps({'status':'ok'}), flush=True) if r['operation']=='reset' "
+            "else print(json.dumps({'actions':[r['observation']['sequence']],"
+            "'metadata':{'seed':r['seed']}}), flush=True) if r['operation']=='predict' "
+            "else print(json.dumps({'status':'closed'}), flush=True) "
+            "for r in map(json.loads,sys.stdin)]"
+        )
+    )
+    policy.reset(seed=11)
+    assert policy.predict(Observation(4, 0.4), denoising_steps=3).actions == (4,)
+    assert policy.predict(Observation(5, 0.5), denoising_steps=3).metadata == {"seed": 11}
+    process = policy._process
+    policy.close()
+    assert process is not None and process.poll() is not None

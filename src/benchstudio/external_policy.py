@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import selectors
 import subprocess
 from collections.abc import Mapping, Sequence
 from typing import Any
@@ -88,6 +89,125 @@ class ExternalCommandPolicy:
         return ActionChunk(tuple(response["actions"]), dict(metadata))
 
 
+class PersistentExternalCommandPolicy:
+    """Keep an independent policy runtime alive across inference requests.
+
+    The process receives one JSON request and returns one JSON response per line.
+    Operations are ``reset``, ``predict`` and ``close``. This avoids measuring
+    process startup as model inference and supports runtimes that keep a loaded
+    checkpoint or accelerator context in memory.
+    """
+
+    policy_id = "persistent_external_command_policy"
+
+    def __init__(
+        self,
+        command: Sequence[str],
+        *,
+        policy_id: str = "persistent_external_command_policy",
+        timeout_s: float = 30.0,
+        cwd: str | None = None,
+        environment: Mapping[str, str] | None = None,
+    ) -> None:
+        if not command or any(not isinstance(part, str) or not part for part in command):
+            raise ValueError("command must contain non-empty strings")
+        if timeout_s <= 0:
+            raise ValueError("timeout_s must be positive")
+        if not policy_id:
+            raise ValueError("policy_id must not be empty")
+        self.command = tuple(command)
+        self.policy_id = policy_id
+        self.timeout_s = timeout_s
+        self.cwd = cwd
+        self.environment = dict(environment or {})
+        self._process: subprocess.Popen[str] | None = None
+        self._seed: int | None = None
+
+    def reset(self, *, seed: int) -> None:
+        self._ensure_started()
+        response = self._request(
+            {
+                "schema": "benchstudio.policy_request.v1",
+                "operation": "reset",
+                "seed": int(seed),
+            }
+        )
+        _validate_policy_status(response)
+        self._seed = int(seed)
+
+    def predict(self, observation: Observation, *, denoising_steps: int | None) -> ActionChunk:
+        response = self._request(
+            {
+                "schema": "benchstudio.policy_request.v1",
+                "operation": "predict",
+                "seed": self._seed,
+                "observation": _jsonable_observation(observation),
+                "denoising_steps": denoising_steps,
+            }
+        )
+        return _action_chunk(response)
+
+    def close(self) -> None:
+        process = self._process
+        if process is None:
+            return
+        try:
+            self._request({"schema": "benchstudio.policy_request.v1", "operation": "close"})
+        except (BrokenPipeError, TimeoutError, RuntimeError, ValueError):
+            pass
+        finally:
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=self.timeout_s)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+            self._process = None
+
+    def _ensure_started(self) -> None:
+        if self._process is not None and self._process.poll() is None:
+            return
+        environment = os.environ.copy()
+        environment.update(self.environment)
+        self._process = subprocess.Popen(
+            self.command,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            cwd=self.cwd,
+            env=environment,
+            bufsize=1,
+        )
+
+    def _request(self, request: dict[str, Any]) -> dict[str, Any]:
+        self._ensure_started()
+        process = self._process
+        if process is None or process.stdin is None or process.stdout is None:
+            raise RuntimeError("persistent external policy process is unavailable")
+        process.stdin.write(json.dumps(request, sort_keys=True) + "\n")
+        process.stdin.flush()
+        selector = selectors.DefaultSelector()
+        try:
+            selector.register(process.stdout, selectors.EVENT_READ)
+            if not selector.select(self.timeout_s):
+                raise TimeoutError(f"external policy exceeded {self.timeout_s}s timeout")
+            line = process.stdout.readline()
+        finally:
+            selector.close()
+        if not line:
+            detail = process.stderr.read().strip()[-1000:] if process.stderr else ""
+            raise RuntimeError("external policy exited" + (f": {detail}" if detail else ""))
+        try:
+            response = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError("external policy returned invalid JSON") from exc
+        if not isinstance(response, dict):
+            raise ValueError("external policy response must be a mapping")
+        return response
+
+
 def external_command_capabilities() -> ModelCapabilityProfile:
     return ModelCapabilityProfile(
         model_id="external_command_policy",
@@ -99,6 +219,17 @@ def external_command_capabilities() -> ModelCapabilityProfile:
         supported_metrics=("success", "latency", "resource_use"),
         runtime_controls=("timeout_s", "command", "environment"),
         timing_signals=("host_monotonic",),
+    )
+
+
+def persistent_external_command_capabilities() -> ModelCapabilityProfile:
+    capabilities = external_command_capabilities()
+    return ModelCapabilityProfile(
+        **{
+            **capabilities.to_dict(),
+            "model_id": "persistent_external_command_policy",
+            "runtime_controls": tuple(capabilities.runtime_controls) + ("persistent_process",),
+        }
     )
 
 
@@ -119,3 +250,18 @@ def _jsonable_observation(observation: Observation) -> dict[str, Any]:
         ),
         "received_monotonic_ns": observation.received_monotonic_ns,
     }
+
+
+def _validate_policy_status(response: dict[str, Any]) -> None:
+    if response.get("status", "ok") not in {"ok", "reset", "closed"}:
+        raise RuntimeError(f"external policy reset failed: {response.get('status')}")
+
+
+def _action_chunk(response: dict[str, Any]) -> ActionChunk:
+    actions = response.get("actions")
+    if not isinstance(actions, list):
+        raise ValueError("external policy response requires an actions array")
+    metadata = response.get("metadata", {})
+    if not isinstance(metadata, dict):
+        raise ValueError("external policy metadata must be a mapping")
+    return ActionChunk(tuple(actions), dict(metadata))

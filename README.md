@@ -99,6 +99,11 @@ Model runtimes can also be kept outside BenchStudio behind the registered
 requires a JSON response containing an `actions` array, preserving the model
 runtime's ownership while retaining BenchStudio timing and evidence capture.
 
+For loaded checkpoints and accelerator-backed policies, use the registered
+`persistent_external_command` adapter. It keeps one JSON-line process alive for
+`reset`, `predict`, and `close`, so process startup is not counted as inference
+latency and the runtime can retain its model state between requests.
+
 External simulators can use the simulator registry's `external_command`
 adapter as a persistent JSON-line process. It supports `reset`, `observe`,
 `step`, and `close` messages while leaving physics and safety authority in
