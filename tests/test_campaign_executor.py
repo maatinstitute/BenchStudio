@@ -1,13 +1,22 @@
 from __future__ import annotations
 
+import io
 import json
+import zipfile
+
+import pytest
 
 from benchstudio.analysis import ClaimType
 from benchstudio.campaigns import (
+    CampaignArchiveError,
     CampaignExecutor,
     CampaignPlanner,
     WorkerLeaseManager,
+    build_campaign_archive,
+    campaign_archive_digest,
     compile_campaign_spec,
+    extract_verified_campaign_archive,
+    write_campaign_archive,
 )
 from benchstudio.mock import MockPolicy, MockSimulator
 
@@ -199,3 +208,40 @@ def test_worker_lease_renewal_remains_owner_bound(tmp_path):
     assert renewed.expires_at_ns > lease.expires_at_ns
     with __import__("pytest").raises(ValueError, match="owner"):
         leases.renew(type(lease)(lease.attempt_id, "worker-b", lease.expires_at_ns))
+
+
+def test_campaign_archive_is_deterministic_and_extracts_verified_evidence(tmp_path):
+    plan = CampaignPlanner(
+        run_id="archive-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    output = tmp_path / "campaign"
+    CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
+    first = build_campaign_archive(output)
+    second = build_campaign_archive(output)
+    assert first == second
+    destination = tmp_path / "unpacked"
+    digest = extract_verified_campaign_archive(
+        first, destination, expected_sha256=campaign_archive_digest(first)
+    )
+    assert (destination / "campaign-plan.json").is_file()
+    assert (destination / "attempt-results.jsonl").is_file()
+    assert len(digest) == 64
+    written = write_campaign_archive(output, tmp_path / "campaign.zip")
+    assert written["sha256"] == campaign_archive_digest((tmp_path / "campaign.zip").read_bytes())
+    with pytest.raises(CampaignArchiveError, match="already exists"):
+        write_campaign_archive(output, tmp_path / "campaign.zip")
+
+
+def test_campaign_archive_rejects_symlinks_and_traversal(tmp_path):
+    root = tmp_path / "campaign"
+    root.mkdir()
+    target = tmp_path / "outside.txt"
+    target.write_text("outside")
+    (root / "link").symlink_to(target)
+    with pytest.raises(CampaignArchiveError, match="symlink"):
+        build_campaign_archive(root)
+    malicious = io.BytesIO()
+    with zipfile.ZipFile(malicious, "w") as package:
+        package.writestr("../escape.txt", "no")
+    with pytest.raises(CampaignArchiveError, match="unsafe path"):
+        extract_verified_campaign_archive(malicious.getvalue(), tmp_path / "unsafe")

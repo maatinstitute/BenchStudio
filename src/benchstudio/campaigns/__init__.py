@@ -1,5 +1,12 @@
 """Frozen campaign planning and append-only attempt accounting."""
 
+from .archive import (
+    CampaignArchiveError,
+    build_campaign_archive,
+    campaign_archive_digest,
+    extract_verified_campaign_archive,
+    write_campaign_archive,
+)
 from .confirmation import (
     ConfirmationCase,
     FrozenConfirmationPlan,
@@ -26,6 +33,7 @@ from .worker import WorkerLease, WorkerLeaseManager
 
 __all__ = [
     "AttemptKey",
+    "CampaignArchiveError",
     "AttemptLedger",
     "WorkerLease",
     "WorkerLeaseManager",
@@ -33,6 +41,10 @@ __all__ = [
     "CampaignPlanner",
     "CampaignExecutionSummary",
     "CampaignExecutor",
+    "build_campaign_archive",
+    "campaign_archive_digest",
+    "extract_verified_campaign_archive",
+    "write_campaign_archive",
     "load_campaign_document",
     "compile_campaign_spec",
     "CounterfactualCell",

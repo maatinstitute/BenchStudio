@@ -191,6 +191,12 @@ class CampaignExecutor:
             outcome_records=outcome_records,
         )
 
+    def archive(self, destination: Path) -> dict[str, str | int]:
+        """Write this campaign's current evidence as an immutable bundle."""
+        from .archive import write_campaign_archive
+
+        return write_campaign_archive(self.output, destination)
+
 
 def _resource_budget(plan: FrozenCampaignPlan) -> ResourceBudget | None:
     evaluation = (plan.protocol or {}).get("P", {}).get("evaluation", {})
