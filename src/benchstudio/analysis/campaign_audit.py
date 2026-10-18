@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Iterable
 
 from ..calibration import calibration_from_environment, compare_calibrations
@@ -135,6 +136,61 @@ def audit_campaign(
         tuple(calibration_issues),
         benchmark_validity,
         evidence_issue_rows,
+    )
+
+
+def audit_campaign_directory(
+    root: Path,
+    *,
+    claim_type: ClaimType = ClaimType.SINGLE_RUN_OUTCOME,
+    evidence: dict[str, Any] | None = None,
+) -> CampaignAudit:
+    """Audit an existing campaign directory without constructing adapters."""
+    from ..campaigns.frozen_plan import load_frozen_campaign_plan
+    from ..campaigns.ledger import AttemptLedger
+    from ..evidence import verify_artifact_manifest
+    from ..runtime_receipts import load_runtime_receipt, verify_runtime_receipt
+
+    plan = load_frozen_campaign_plan(root / "campaign-plan.json")
+    ledger = AttemptLedger(root / "attempt-results.jsonl", plan)
+    records = ledger.records
+    by_attempt = {record.get("attempt_id"): record for record in records}
+    evidence_issues: list[str] = []
+    for attempt in plan.attempts:
+        attempt_id = attempt.key.attempt_id
+        record = by_attempt.get(attempt_id)
+        if record is None or record.get("status") == "cancelled":
+            continue
+        attempt_dir = root / "attempts" / attempt_id
+        verification = verify_artifact_manifest(attempt_dir)
+        if not verification["valid"]:
+            evidence_issues.append(
+                f"{attempt_id}: artifact manifest is invalid: {verification['mismatches']}"
+            )
+            continue
+        receipt_path = attempt_dir / "runtime-receipt.json"
+        receipt_check = verify_runtime_receipt(receipt_path)
+        if not receipt_check["valid"]:
+            evidence_issues.append(f"{attempt_id}: runtime receipt is invalid")
+            continue
+        receipt = load_runtime_receipt(receipt_path)
+        for field, expected in (
+            ("run_id", plan.run_id),
+            ("attempt_id", attempt_id),
+            ("plan_digest_sha256", plan.plan_digest_sha256),
+        ):
+            if receipt.get(field) != expected:
+                evidence_issues.append(
+                    f"{attempt_id}: runtime receipt {field} does not match frozen plan"
+                )
+    claim_evidence = dict(evidence or {})
+    claim_evidence["trusted_artifacts"] = not evidence_issues
+    return audit_campaign(
+        plan,
+        records,
+        claim_type=claim_type,
+        evidence=claim_evidence,
+        evidence_issues=evidence_issues,
     )
 
 

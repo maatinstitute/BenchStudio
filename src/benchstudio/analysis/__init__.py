@@ -1,6 +1,6 @@
 """Offline validity and uncertainty analyses."""
 
-from .campaign_audit import CampaignAudit, audit_campaign
+from .campaign_audit import CampaignAudit, audit_campaign, audit_campaign_directory
 from .claims import ClaimDecision, ClaimType, validate_claim
 from .failure_events import EventBookmark, bookmark_critical_events
 from .inference_schedule import InferenceEvent, InferenceScheduleAudit, audit_inference_schedule
@@ -62,6 +62,7 @@ __all__ = [
     "ClaimDecision",
     "CampaignAudit",
     "audit_campaign",
+    "audit_campaign_directory",
     "ClaimType",
     "ScoreCoverage",
     "audit_score_coverage",

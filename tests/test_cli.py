@@ -81,6 +81,22 @@ def test_cli_returns_nonzero_for_invalid_artifact(monkeypatch, tmp_path, capsys)
     assert result["valid"] is False
 
 
+def test_cli_audits_existing_campaign_without_execution(monkeypatch, tmp_path, capsys):
+    from benchstudio.campaigns import CampaignExecutor, CampaignPlanner
+    from benchstudio.mock import MockPolicy, MockSimulator
+
+    plan = CampaignPlanner(
+        run_id="audit-cli", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    output = tmp_path / "campaign"
+    CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
+    monkeypatch.setattr("sys.argv", ["benchstudio-run", "--audit-output", str(output)])
+    assert main() == 0
+    audit = json.loads(capsys.readouterr().out)
+    assert audit["attempts_complete"] is True
+    assert audit["evidence_verified"] is True
+
+
 def test_cli_executes_declared_registry_adapters(monkeypatch, tmp_path, capsys):
     spec_path = tmp_path / "registry-campaign.json"
     output = tmp_path / "run"

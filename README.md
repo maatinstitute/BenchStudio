@@ -30,6 +30,13 @@ python -m benchstudio.cli --verify-artifact runs/smoke \
   --trusted-manifest-sha256 <manifest-sha256>
 ```
 
+Audit a completed frozen campaign directory without constructing or rerunning
+its model and simulator adapters:
+
+```bash
+python -m benchstudio.cli --audit-output runs/campaign
+```
+
 The end-to-end frozen-campaign CI gate can be run directly with:
 
 ```bash

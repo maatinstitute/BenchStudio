@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from .adapters import default_registry
+from .analysis import audit_campaign_directory
 from .campaigns import (
     CampaignExecutor,
     HttpArtifactStore,
@@ -100,6 +101,11 @@ def main() -> int:
         help="Verify an existing run artifact directory without executing it.",
     )
     parser.add_argument(
+        "--audit-output",
+        type=Path,
+        help="Audit an existing campaign directory without executing adapters.",
+    )
+    parser.add_argument(
         "--trusted-manifest-sha256",
         help="Require --verify-artifact to match this independently supplied manifest digest.",
     )
@@ -113,6 +119,10 @@ def main() -> int:
         )
         print(json.dumps(result, sort_keys=True))
         return 0 if result["valid"] else 2
+    if args.audit_output is not None:
+        audit = audit_campaign_directory(args.audit_output)
+        print(json.dumps(audit.to_dict(), sort_keys=True))
+        return 0 if audit.attempts_complete and audit.evidence_verified else 2
     if args.readiness:
         simulator_registry = default_registry(discover_external=False)
         model_registry = default_model_registry(discover_external=False)

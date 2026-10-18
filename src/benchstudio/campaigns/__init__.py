@@ -37,7 +37,13 @@ from .counterfactual import (
     validate_counterfactual_plan,
 )
 from .executor import CampaignExecutionSummary, CampaignExecutor
-from .frozen_plan import AttemptKey, CampaignPlanner, FrozenCampaignPlan, PlannedAttempt
+from .frozen_plan import (
+    AttemptKey,
+    CampaignPlanner,
+    FrozenCampaignPlan,
+    PlannedAttempt,
+    load_frozen_campaign_plan,
+)
 from .io import load_campaign_document
 from .ledger import AttemptLedger
 from .paired_design import compile_balanced_paired_plan
@@ -94,6 +100,7 @@ __all__ = [
     "execute_confirmation_plan",
     "validate_confirmation_plan",
     "FrozenCampaignPlan",
+    "load_frozen_campaign_plan",
     "Intervention",
     "PlannedAttempt",
     "validate_counterfactual_pair",

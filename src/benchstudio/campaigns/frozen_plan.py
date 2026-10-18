@@ -34,6 +34,64 @@ class FrozenCampaignPlan:
     source_spec_sha256: str | None = None
     protocol: dict[str, Any] | None = None
 
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "FrozenCampaignPlan":
+        """Reconstruct and validate a serialized frozen plan without execution."""
+        if not isinstance(payload, dict):
+            raise ValueError("frozen campaign plan must be a mapping")
+        attempts_payload = payload.get("attempts")
+        if not isinstance(attempts_payload, list):
+            raise ValueError("frozen campaign plan attempts must be a list")
+        attempts: list[PlannedAttempt] = []
+        for index, item in enumerate(attempts_payload):
+            if not isinstance(item, dict):
+                raise ValueError(f"attempt {index} must be a mapping")
+            key_payload = item.get("key")
+            if not isinstance(key_payload, dict):
+                raise ValueError(f"attempt {index} key must be a mapping")
+            try:
+                key = AttemptKey(**key_payload)
+                metadata = item.get("metadata", {})
+                if not isinstance(metadata, dict):
+                    raise ValueError("metadata must be a mapping")
+                attempt = PlannedAttempt(
+                    key=key,
+                    task_seed=int(item["task_seed"]),
+                    policy_seed=int(item["policy_seed"]),
+                    metadata=dict(metadata),
+                )
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ValueError(f"invalid attempt {index}: {exc}") from exc
+            attempts.append(attempt)
+        run_id = payload.get("run_id")
+        digest = payload.get("plan_digest_sha256")
+        if not isinstance(run_id, str) or not run_id:
+            raise ValueError("frozen campaign plan run_id is required")
+        if not isinstance(digest, str):
+            raise ValueError("frozen campaign plan digest is required")
+        protocol = payload.get("protocol")
+        if protocol is not None and not isinstance(protocol, dict):
+            raise ValueError("frozen campaign plan protocol must be a mapping")
+        expected = _plan_digest(attempts, protocol)
+        if expected != digest:
+            raise ValueError("frozen campaign plan digest does not match content")
+        paired_schedule = payload.get("paired_schedule", ())
+        if not isinstance(paired_schedule, list) or not all(
+            isinstance(item, dict) for item in paired_schedule
+        ):
+            raise ValueError("frozen campaign plan paired_schedule must be a list of mappings")
+        source_spec_sha256 = payload.get("source_spec_sha256")
+        if source_spec_sha256 is not None and not isinstance(source_spec_sha256, str):
+            raise ValueError("source_spec_sha256 must be a string or null")
+        return cls(
+            run_id,
+            tuple(attempts),
+            digest,
+            tuple(dict(item) for item in paired_schedule),
+            source_spec_sha256,
+            dict(protocol) if protocol is not None else None,
+        )
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "run_id": self.run_id,
@@ -143,3 +201,19 @@ def _identity(value: Any) -> str:
     return hashlib.sha256(
         json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()[:16]
+
+
+def _plan_digest(attempts: Iterable[PlannedAttempt], protocol: dict[str, Any] | None) -> str:
+    payload = {"attempts": [asdict(attempt) for attempt in attempts], "protocol": protocol}
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def load_frozen_campaign_plan(path: Path) -> FrozenCampaignPlan:
+    """Load and digest-validate a frozen campaign plan from JSON."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"invalid frozen campaign plan: {exc}") from exc
+    return FrozenCampaignPlan.from_dict(payload)

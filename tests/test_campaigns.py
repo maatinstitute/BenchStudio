@@ -9,6 +9,7 @@ from benchstudio.campaigns import (
     CampaignPlanner,
     Intervention,
     compile_counterfactual_plan,
+    load_frozen_campaign_plan,
     validate_counterfactual_plan,
 )
 
@@ -30,6 +31,28 @@ def test_frozen_campaign_has_stable_complete_matrix(tmp_path):
         json.loads((tmp_path / "plan.json").read_text())["plan_digest_sha256"]
         == plan.plan_digest_sha256
     )
+
+
+def test_frozen_campaign_plan_round_trips_through_independent_loader(tmp_path):
+    plan = CampaignPlanner(
+        run_id="round-trip", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    path = tmp_path / "plan.json"
+    plan.write(path)
+    assert load_frozen_campaign_plan(path) == plan
+
+
+def test_frozen_campaign_plan_loader_rejects_digest_tampering(tmp_path):
+    plan = CampaignPlanner(
+        run_id="tampered", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    path = tmp_path / "plan.json"
+    plan.write(path)
+    payload = json.loads(path.read_text())
+    payload["attempts"][0]["task_seed"] = 99
+    path.write_text(json.dumps(payload))
+    with pytest.raises(ValueError, match="digest"):
+        load_frozen_campaign_plan(path)
 
 
 def test_attempt_ledger_is_append_only_and_reports_missing(tmp_path):
