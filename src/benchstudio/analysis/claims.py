@@ -28,17 +28,31 @@ class ClaimDecision:
 
 
 def validate_claim(claim_type: ClaimType, evidence: dict[str, Any]) -> ClaimDecision:
+    """Validate a claim using explicitly boolean, claim-specific evidence.
+
+    Evidence is intentionally fail-closed: strings, numbers, and other truthy
+    values are not accepted as affirmative attestations.
+    """
+    try:
+        claim_type = ClaimType(claim_type)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"unsupported claim type: {claim_type!r}") from exc
+    if not isinstance(evidence, dict):
+        raise TypeError("claim evidence must be a mapping")
     prerequisites = {
-        "outcome_present": bool(evidence.get("outcome_present")),
-        "authoritative_scorer_declared": bool(evidence.get("authoritative_scorer_declared")),
-        "attempts_complete": bool(evidence.get("attempts_complete")),
-        "trusted_artifacts": bool(evidence.get("trusted_artifacts")),
-        "paired_conditions": bool(evidence.get("paired_conditions")),
-        "semantic_match": bool(evidence.get("semantic_match")),
-        "uncertainty_reported": bool(evidence.get("uncertainty_reported")),
-        "simulation_evidence": bool(evidence.get("simulation_evidence")),
-        "physical_evidence": bool(evidence.get("physical_evidence")),
-        "transfer_protocol": bool(evidence.get("transfer_protocol")),
+        name: evidence.get(name) is True
+        for name in (
+            "outcome_present",
+            "authoritative_scorer_declared",
+            "attempts_complete",
+            "trusted_artifacts",
+            "paired_conditions",
+            "semantic_match",
+            "uncertainty_reported",
+            "simulation_evidence",
+            "physical_evidence",
+            "transfer_protocol",
+        )
     }
     required = {
         ClaimType.SINGLE_RUN_OUTCOME: (
@@ -55,6 +69,9 @@ def validate_claim(claim_type: ClaimType, evidence: dict[str, Any]) -> ClaimDeci
             "attempts_complete",
         ),
         ClaimType.REAL_WORLD_TRANSFER: (
+            "outcome_present",
+            "authoritative_scorer_declared",
+            "trusted_artifacts",
             "paired_conditions",
             "semantic_match",
             "simulation_evidence",

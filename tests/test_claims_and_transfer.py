@@ -37,6 +37,46 @@ def test_single_outcome_can_be_qualified_when_completion_is_incomplete():
     assert decision.status == "qualified"
 
 
+def test_claim_validation_rejects_truthy_non_boolean_evidence():
+    decision = validate_claim(
+        ClaimType.SINGLE_RUN_OUTCOME,
+        {
+            "outcome_present": True,
+            "authoritative_scorer_declared": "true",
+            "trusted_artifacts": 1,
+            "attempts_complete": True,
+        },
+    )
+    assert decision.status == "qualified"
+    assert "missing prerequisite: authoritative_scorer_declared" in decision.reasons
+    assert "missing prerequisite: trusted_artifacts" in decision.reasons
+
+
+def test_transfer_claim_requires_scored_outcomes_and_trusted_evidence():
+    decision = validate_claim(
+        ClaimType.REAL_WORLD_TRANSFER,
+        {
+            "paired_conditions": True,
+            "semantic_match": True,
+            "simulation_evidence": True,
+            "physical_evidence": True,
+            "transfer_protocol": True,
+            "attempts_complete": True,
+        },
+    )
+    assert decision.status == "unsupported"
+    assert "missing prerequisite: outcome_present" in decision.reasons
+    assert "missing prerequisite: authoritative_scorer_declared" in decision.reasons
+    assert "missing prerequisite: trusted_artifacts" in decision.reasons
+
+
+def test_claim_validation_rejects_unknown_claim_type():
+    import pytest
+
+    with pytest.raises(ValueError, match="unsupported claim type"):
+        validate_claim("invented", {})
+
+
 def test_transfer_gap_preserves_missingness_and_resource_violations():
     gap = estimate_transfer_gap([True, False, None], [True, True, False])
     assert gap.matched_pairs == 2
