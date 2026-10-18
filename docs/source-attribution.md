@@ -33,6 +33,11 @@ Genesis World scene lifecycle and is dependency-lazy. Install the `genesis`
 extra in the environment that owns Genesis; BenchStudio retains only the
 temporal/evidence boundary and does not vendor Genesis or its assets.
 
+The optional `benchstudio.integrations.isaaclab` adapter follows the public
+manager-based environment reset/step contract, including vectorized resets,
+termination signals, extras, and environment step timing. Isaac Lab remains
+the owner of physics, environment lifecycle, and task scoring.
+
 Any future source migration must preserve the original repository's notices,
 third-party licenses, and historical evidence. The current BenchStudio
 repository remains private and proprietary; this file is an engineering

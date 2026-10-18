@@ -8,6 +8,7 @@ from .alpabridge import (
 )
 from .genesis import GenesisSimulator
 from .gymnasium import GymnasiumSimulator
+from .isaaclab import IsaacLabSimulator
 from .mujoco import MujocoSimulator
 from .policy_trace import POLICY_TRACE_SCHEMA, TracePolicy, observation_digest_sha256
 from .replay_conformance import run_replay_conformance, zero_order_hold_case
@@ -36,6 +37,7 @@ __all__ = [
     "load_alpabridge_telemetry",
     "MujocoSimulator",
     "GymnasiumSimulator",
+    "IsaacLabSimulator",
     "GenesisSimulator",
     "POLICY_TRACE_SCHEMA",
     "TracePolicy",

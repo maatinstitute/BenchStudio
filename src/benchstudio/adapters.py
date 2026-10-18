@@ -211,6 +211,7 @@ def default_registry(*, discover_external: bool = True) -> AdapterRegistry:
     from .external_simulator import ExternalCommandSimulator
     from .integrations.genesis import GenesisSimulator
     from .integrations.gymnasium import GymnasiumSimulator
+    from .integrations.isaaclab import IsaacLabSimulator
     from .integrations.mujoco import MujocoSimulator
     from .mock import MockSimulator
     from .replay import ReplaySimulator
@@ -265,6 +266,19 @@ def default_registry(*, discover_external: bool = True) -> AdapterRegistry:
                 owns_physics=True,
                 closed_loop=True,
                 evidence_authority="genesis",
+            ),
+        )
+    )
+    registry.register(
+        AdapterDescriptor(
+            simulator_id="isaaclab",
+            label="Optional Isaac Lab manager-based environment adapter",
+            factory=IsaacLabSimulator,
+            dependencies=(Dependency("isaaclab", "isaaclab"),),
+            capabilities=BackendCapabilities(
+                owns_physics=True,
+                closed_loop=True,
+                evidence_authority="isaaclab",
             ),
         )
     )
