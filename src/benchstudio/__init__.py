@@ -30,6 +30,7 @@ from .campaigns import (
     CounterfactualCell,
     FrozenCampaignPlan,
     Intervention,
+    compile_balanced_paired_plan,
     compile_campaign_spec,
     validate_counterfactual_pair,
 )
@@ -82,6 +83,7 @@ __all__ = [
     "AttemptKey",
     "AttemptLedger",
     "CampaignPlanner",
+    "compile_balanced_paired_plan",
     "CampaignExecutionSummary",
     "CampaignExecutor",
     "compile_campaign_spec",

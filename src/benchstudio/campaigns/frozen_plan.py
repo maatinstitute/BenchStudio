@@ -29,12 +29,14 @@ class FrozenCampaignPlan:
     run_id: str
     attempts: tuple[PlannedAttempt, ...]
     plan_digest_sha256: str
+    paired_schedule: tuple[dict[str, Any], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "run_id": self.run_id,
             "attempts": [asdict(item) for item in self.attempts],
             "plan_digest_sha256": self.plan_digest_sha256,
+            "paired_schedule": list(self.paired_schedule),
         }
 
     def write(self, path: Path) -> None:

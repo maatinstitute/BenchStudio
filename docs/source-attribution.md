@@ -7,6 +7,9 @@ maintained projects. Their runtimes are not vendored into this repository.
   published validator/preflight boundary. The replay fixture identifies
   `tools/replay_adapter_conformance.py` as its source basis and deliberately
   does not claim physics replay coverage.
+- Refinement vs Refresh: the balanced paired-design compiler follows the
+  upstream SHA-256 keyed schedule principle and complete condition-block
+  invariant, while the heavy CUDA/LeRobot runtime remains external.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment
