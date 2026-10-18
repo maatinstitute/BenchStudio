@@ -114,6 +114,14 @@ from .robopad_assay_plan import (
     suffix_seed,
 )
 from .robopad_reference_batch import FILES, NAMES, dispatch, reserve, slots, verify
+from .robopad_runtime_plan import (
+    ALLOCATION_SHA,
+    INITIALIZATION_VERSION,
+    child_runs,
+    slot_name,
+    validate_allocation_manifest,
+    validate_plan,
+)
 from .search import (
     FrozenSearchPlan,
     MinimizedCounterexample,
@@ -236,6 +244,12 @@ __all__ = [
     "reserve_child",
     "validate_claim",
     "verify_and_start",
+    "ALLOCATION_SHA",
+    "INITIALIZATION_VERSION",
+    "child_runs",
+    "slot_name",
+    "validate_allocation_manifest",
+    "validate_plan",
     "PerturbationDimension",
     "SearchCase",
     "SearchCaseResult",

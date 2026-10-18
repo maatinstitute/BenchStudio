@@ -388,6 +388,19 @@ the following projects. Product runtimes are not vendored into this repository.
   binding-hash receipts, no-resume start markers, canonical JSON/regular-file
   checks, and post-start tamper detection. This is reservation evidence, not
   scientific claim scoring; the latter remains in `benchstudio.analysis.claims`.
+- RoboPAD restored initialization and runtime-plan contracts:
+  `benchstudio.integrations.robopad_initialization` ports the reviewed
+  `initialize_restored_pose` boundary from `experiments/icra_assay_initialization.py`
+  at upstream commit `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
+  `2b0b70f3b7a1a244d73e9f777e3c77a1a4f40f0f7384a5e539a71ccb20a33124` and
+  source-test digest `dd713e25d4a5da821bfd8bd50e1212aacaa898c3011ac5bfd44f11f743adfba9`.
+  `benchstudio.campaigns.robopad_runtime_plan` extracts the dependency-light
+  fixed child-run, replay-order, allocation-manifest, and resource-limit
+  contracts from `experiments/icra_assay_runtime.py`; source digest
+  `421e1878d25874473cc76b5a264bf7dedc73261a0471725631ef1d20633dc791` and
+  source-test digest `7566a00c11dfd4a636a0e5296424adad61f9e0ce188e6bdff3cd76cb88b79e22`.
+  The ports preserve no-action initialization checks and fixed plan identity;
+  simulator/runtime launch, policy execution, and physical authority remain external.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment

@@ -96,6 +96,12 @@ from .robopad_evidence_codec import (
     relationship,
 )
 from .robopad_evidence_store import EvidenceStore
+from .robopad_initialization import (
+    VERSION,
+    InitializationFailure,
+    initialize_restored_pose,
+    snapshot,
+)
 from .robopad_reference import FixedReference
 from .robopad_reference_adapter import CandidateGoals, SourceGeometry, build_goals, extract_geometry
 from .robopad_reference_cache import SourceCache, cache_executed_source, select_prefix
@@ -249,6 +255,10 @@ __all__ = [
     "layout",
     "relationship",
     "EvidenceStore",
+    "InitializationFailure",
+    "VERSION",
+    "initialize_restored_pose",
+    "snapshot",
     "KILL_AFTER",
     "LOG_CAP",
     "RECEIPT_CAP",

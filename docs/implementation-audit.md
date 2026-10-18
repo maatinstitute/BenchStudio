@@ -58,9 +58,10 @@ has been evaluated.
 | RoboPAD intervention preflight | Implemented at geometry/contact boundary | Source-backed fixed distractor-state proposals and conservative support/contact screening are verified locally; policy search, physics restoration, and dynamic stability are external. |
 | RoboPAD visual-balance analysis | Implemented at comparison boundary | Source-backed signed image distance, per-camera balance thresholds, deterministic matching, and explicit invalid/unmatched accounting are verified locally; image provenance and simulator authority remain external. |
 | RoboPAD assay reservation boundary | Implemented at reservation boundary | Source-backed canonical run allocation, exclusive no-retry claims, binding-hash receipts, no-resume start proofs, and post-start tamper detection are verified locally; scientific claim scoring remains separate. |
+| RoboPAD initialization/runtime plan | Implemented at preflight boundary | Source-backed restored-pose controller/gripper invariants, fixed child/replay ordering, allocation-manifest identity, and resource-limit validation are verified locally; simulator launch and policy execution remain external. |
 | CI workflow | Prepared locally, not uploaded | `.github/workflows/ci.yml` exists locally. GitHub rejected its upload because the current OAuth token lacks workflow scope; source and smoke tests are published. |
 | Python compatibility | Locally verified | Python 3.10.12 compiles and imports the package; the full pytest suite runs under the configured Python 3.13 environment. |
-| Current verification snapshot | Verified locally | Full suite: 668 passed, 1 expected ZIP duplicate-entry warning, 27 subtests passed. |
+| Current verification snapshot | Verified locally | Full suite: 672 passed, 1 expected ZIP duplicate-entry warning, 27 subtests passed. |
 
 The repository remains private and proprietary. External benchmark scoring,
 physical safety, emergency stops, and hardware authorization are intentionally
