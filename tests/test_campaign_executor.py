@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import json
 
-from benchstudio.campaigns import CampaignExecutor, CampaignPlanner, WorkerLeaseManager
+from benchstudio.campaigns import (
+    CampaignExecutor,
+    CampaignPlanner,
+    WorkerLeaseManager,
+    compile_campaign_spec,
+)
 from benchstudio.mock import MockPolicy, MockSimulator
 
 
@@ -96,3 +101,32 @@ def test_campaign_executor_refuses_tampered_resumed_attempt(tmp_path):
     trace.write_text(trace.read_text() + "tampered\n")
     with __import__("pytest").raises(RuntimeError, match="evidence verification"):
         CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
+
+
+def test_campaign_executor_preserves_environment_identity_in_evidence(tmp_path):
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "paired-environments"},
+            "task": {"task_id": "mock-task"},
+            "environments": [
+                {"id": "sim-a", "kind": "simulator"},
+                {"id": "sim-b", "kind": "simulator", "enabled": True},
+            ],
+            "evaluation": {
+                "seeds": [7],
+                "paired": True,
+                "conditions": [{"denoising_steps": 2, "action_prefix": 1}],
+            },
+        }
+    )
+    output = tmp_path / "campaign"
+    result = CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
+    assert result.missing_attempt_ids == ()
+    environments = []
+    for attempt in plan.attempts:
+        manifest = json.loads(
+            (output / "attempts" / attempt.key.attempt_id / "manifest.json").read_text()
+        )
+        environments.append(manifest["config"]["environment_id"])
+    assert environments == ["sim-a", "sim-b"]
