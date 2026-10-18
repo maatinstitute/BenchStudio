@@ -69,3 +69,18 @@ def test_campaign_executor_accounts_for_attempts_leased_by_another_worker(tmp_pa
     ).run()
     assert result.committed_attempt_ids == ()
     assert result.leased_out_attempt_ids == ("attempt-000000",)
+
+
+def test_campaign_executor_records_declared_cancellation(tmp_path):
+    plan = CampaignPlanner(
+        run_id="run-1", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    result = CampaignExecutor(
+        plan,
+        tmp_path / "campaign",
+        lambda _: MockPolicy(),
+        lambda _: MockSimulator(),
+        cancelled_attempts=["attempt-000000"],
+    ).run()
+    assert result.cancelled_attempt_ids == ("attempt-000000",)
+    assert result.missing_attempt_ids == ()

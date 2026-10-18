@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Iterable
 
 from ..contracts import Policy, Simulator
 from ..runner import RunConfig, run_episodes
@@ -23,6 +23,7 @@ class CampaignExecutionSummary:
     skipped_attempt_ids: tuple[str, ...]
     missing_attempt_ids: tuple[str, ...]
     leased_out_attempt_ids: tuple[str, ...]
+    cancelled_attempt_ids: tuple[str, ...]
 
 
 class CampaignExecutor:
@@ -36,6 +37,7 @@ class CampaignExecutor:
         simulator_factory: SimulatorFactory,
         worker_id: str | None = None,
         lease_manager: WorkerLeaseManager | None = None,
+        cancelled_attempts: Iterable[str] = (),
     ) -> None:
         self.plan = plan
         self.output = output
@@ -43,6 +45,11 @@ class CampaignExecutor:
         self.simulator_factory = simulator_factory
         self.worker_id = worker_id
         self.lease_manager = lease_manager
+        self.cancelled_attempts = frozenset(cancelled_attempts)
+        planned_ids = {attempt.key.attempt_id for attempt in plan.attempts}
+        unknown = self.cancelled_attempts - planned_ids
+        if unknown:
+            raise ValueError(f"unknown cancelled attempts: {sorted(unknown)}")
         self.output.mkdir(parents=True, exist_ok=True)
         plan_path = self.output / "campaign-plan.json"
         if plan_path.is_file():
@@ -57,10 +64,18 @@ class CampaignExecutor:
         committed: list[str] = []
         skipped: list[str] = []
         leased_out: list[str] = []
+        cancelled: list[str] = []
         for attempt in self.plan.attempts:
             attempt_id = attempt.key.attempt_id
             if self.ledger.contains(attempt_id):
                 skipped.append(attempt_id)
+                continue
+            if attempt_id in self.cancelled_attempts:
+                self.ledger.append(
+                    attempt.key,
+                    {"status": "cancelled", "reason": "cancelled_before_execution"},
+                )
+                cancelled.append(attempt_id)
                 continue
             lease = None
             if self.worker_id is not None:
@@ -119,4 +134,5 @@ class CampaignExecutor:
             tuple(skipped),
             tuple(self.ledger.missing_attempt_ids),
             tuple(leased_out),
+            tuple(cancelled),
         )

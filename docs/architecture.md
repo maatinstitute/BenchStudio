@@ -68,7 +68,8 @@ reference and instrumented adapter. The RoboChallenge integration is
 observe-only: it validates opaque message digests and records acknowledgments,
 while execution, safety, and official scoring remain external.
 `CampaignExecutor` acquires and releases those leases around each attempt;
-workers report leased-out attempts separately from completed and missing ones.
+workers report leased-out and explicitly cancelled attempts separately from
+completed and missing ones.
 
 Paired summaries retain matched-unit counts, success gaps, numeric deltas, and
 standard errors. `benchstudio.reporting` writes a dependency-free JSON-shaped
