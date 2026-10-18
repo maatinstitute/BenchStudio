@@ -108,6 +108,18 @@ The reusable evidence layer also provides digest-tracked NDJSON artifacts and
 cross-backend comparison reports for simulator-to-simulator or sim-to-real
 analysis.
 
+Compare two or more completed or partially completed frozen campaigns directly
+from their evidence directories. Missing attempts stay missing, and malformed
+attempt summaries are reported as execution failures:
+
+```bash
+python -m benchstudio.cli \
+  --compare-campaign sim=runs/sim \
+  --compare-campaign real=runs/real \
+  --comparison-scenario-id arrange_fruits \
+  --comparison-output comparison.json
+```
+
 The expanded foundation adds two opt-in layers:
 
 - `benchstudio.conformance` checks observation validity, action representation,

@@ -13,6 +13,7 @@ from .campaigns import (
     compile_campaign_spec,
     load_campaign_document,
 )
+from .compare import build_campaign_comparison_report
 from .evidence import verify_artifact_manifest
 from .mock import MockPolicy, MockSimulator
 from .model_adapters import default_model_registry
@@ -112,6 +113,21 @@ def main() -> int:
         help="Claim contract to apply when auditing an existing campaign.",
     )
     parser.add_argument(
+        "--compare-campaign",
+        action="append",
+        metavar="BACKEND=PATH",
+        help="Compare frozen campaign directories; repeat once per backend.",
+    )
+    parser.add_argument(
+        "--comparison-scenario-id",
+        help="Scenario identifier for --compare-campaign.",
+    )
+    parser.add_argument(
+        "--comparison-output",
+        type=Path,
+        help="Write the JSON comparison report to this path.",
+    )
+    parser.add_argument(
         "--trusted-manifest-sha256",
         help="Require --verify-artifact to match this independently supplied manifest digest.",
     )
@@ -126,6 +142,28 @@ def main() -> int:
         help="PEM public key used to verify --manifest-signature.",
     )
     args = parser.parse_args()
+    if args.compare_campaign is not None:
+        if not args.comparison_scenario_id:
+            parser.error("--compare-campaign requires --comparison-scenario-id")
+        backend_campaigns: dict[str, Path] = {}
+        for value in args.compare_campaign:
+            backend, separator, path = value.partition("=")
+            if not separator or not backend or not path:
+                parser.error("--compare-campaign values must use BACKEND=PATH")
+            if backend in backend_campaigns:
+                parser.error(f"duplicate comparison backend: {backend}")
+            backend_campaigns[backend] = Path(path)
+        report = build_campaign_comparison_report(
+            scenario_id=args.comparison_scenario_id,
+            backend_campaigns=backend_campaigns,
+        )
+        if args.comparison_output is not None:
+            args.comparison_output.parent.mkdir(parents=True, exist_ok=True)
+            args.comparison_output.write_text(
+                json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+            )
+        print(json.dumps(report, sort_keys=True))
+        return 0 if not report["errors"] else 2
     if args.verify_artifact is None and any(
         value is not None
         for value in (

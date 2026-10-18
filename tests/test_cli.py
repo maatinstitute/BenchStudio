@@ -49,6 +49,38 @@ def test_cli_reports_adapter_readiness(monkeypatch, capsys):
     assert {item["adapter_id"] for item in report["models"]} >= {"mock"}
 
 
+def test_cli_compares_frozen_campaign_directories(monkeypatch, tmp_path, capsys):
+    from benchstudio.campaigns import CampaignExecutor, CampaignPlanner
+    from benchstudio.mock import MockPolicy, MockSimulator
+
+    plan = CampaignPlanner(
+        run_id="compare-cli", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    left = tmp_path / "left"
+    right = tmp_path / "right"
+    for output in (left, right):
+        CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
+    output = tmp_path / "comparison.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--compare-campaign",
+            f"left={left}",
+            "--compare-campaign",
+            f"right={right}",
+            "--comparison-scenario-id",
+            "task",
+            "--comparison-output",
+            str(output),
+        ],
+    )
+    assert main() == 0
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["divergence"]["left_vs_right"]["compared_episodes"] == 1
+    assert json.loads(capsys.readouterr().out)["schema"] == "benchstudio_comparison_report_v1"
+
+
 def test_cli_verifies_existing_artifact_without_execution(monkeypatch, tmp_path, capsys):
     from benchstudio.evidence import sha256_file
     from benchstudio.mock import MockPolicy, MockSimulator
