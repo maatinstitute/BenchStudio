@@ -5,6 +5,7 @@ import json
 import re
 from typing import Any
 
+from ..contracts import ModelCapabilityProfile
 from .frozen_plan import CampaignPlanner, FrozenCampaignPlan
 
 
@@ -73,6 +74,7 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
     model = _mapping(spec.get("model", {}), "model")
     if model and not isinstance(model.get("adapter"), str):
         raise ValueError("model.adapter is required when model is declared")
+    _validate_model_capabilities(model, _mapping(spec.get("evaluation", {}), "evaluation"))
     checkpoint = model.get("checkpoint")
     if checkpoint is not None and (
         not isinstance(checkpoint, str) or re.fullmatch(r"sha256:[0-9a-f]{64}", checkpoint) is None
@@ -122,6 +124,55 @@ def _validate_resource_budget(evaluation: dict[str, Any]) -> None:
             raise ValueError(f"resource budget {name} must be non-negative")
         if name == "max_attempts" and int(value) != value:
             raise ValueError("resource budget max_attempts must be an integer")
+
+
+def _validate_model_capabilities(model: dict[str, Any], evaluation: dict[str, Any]) -> None:
+    declared = model.get("capabilities")
+    if declared is None:
+        return
+    if not isinstance(declared, dict):
+        raise ValueError("model.capabilities must be a mapping")
+    required = {
+        "model_id",
+        "family",
+        "input_modalities",
+        "output_representation",
+        "supports_closed_loop",
+        "supports_action_chunks",
+        "supported_metrics",
+    }
+    missing = sorted(required - declared.keys())
+    if missing:
+        raise ValueError("model.capabilities missing: " + ", ".join(missing))
+    try:
+        profile = ModelCapabilityProfile(
+            **{
+                **declared,
+                "input_modalities": tuple(declared["input_modalities"]),
+                "supported_metrics": tuple(declared["supported_metrics"]),
+                "runtime_controls": tuple(declared.get("runtime_controls", ())),
+                "timing_signals": tuple(declared.get("timing_signals", ())),
+            }
+        )
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"invalid model.capabilities: {exc}") from exc
+    issues = profile.validate()
+    if issues:
+        raise ValueError("invalid model.capabilities: " + "; ".join(issues))
+    strategy = evaluation.get("execution_strategy")
+    if strategy == "async" and not profile.supports_async:
+        raise ValueError("execution_strategy async requires supports_async")
+    if strategy == "streaming" and not profile.supports_streaming:
+        raise ValueError("execution_strategy streaming requires supports_streaming")
+    if strategy == "cached" and not profile.supports_cached_predictions:
+        raise ValueError("execution_strategy cached requires supports_cached_predictions")
+    conditions = evaluation.get("conditions", [])
+    if any(
+        isinstance(condition, dict) and condition.get("action_prefix", 1) > 1
+        for condition in conditions
+    ):
+        if not profile.supports_action_chunks:
+            raise ValueError("action_prefix > 1 requires supports_action_chunks")
 
 
 def _digest(value: Any) -> str:

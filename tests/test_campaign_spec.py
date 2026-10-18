@@ -183,3 +183,33 @@ def test_campaign_spec_rejects_unknown_resource_budget_field():
                 },
             }
         )
+
+
+def test_campaign_spec_rejects_incompatible_model_execution_strategy():
+    with pytest.raises(ValueError, match="requires supports_async"):
+        compile_campaign_spec(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "capability-gated"},
+                "model": {
+                    "adapter": "mock",
+                    "capabilities": {
+                        "model_id": "m",
+                        "family": "vla",
+                        "input_modalities": ["image"],
+                        "output_representation": "joint_targets",
+                        "supports_closed_loop": True,
+                        "supports_action_chunks": True,
+                        "supported_metrics": ["success"],
+                    },
+                },
+                "task": {"task_id": "task"},
+                "environments": [{"id": "sim", "kind": "simulator"}],
+                "evaluation": {
+                    "seeds": [1],
+                    "paired": True,
+                    "execution_strategy": "async",
+                    "conditions": [{"action_prefix": 1}],
+                },
+            }
+        )
