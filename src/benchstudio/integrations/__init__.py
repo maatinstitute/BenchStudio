@@ -6,6 +6,12 @@ from .alpabridge import (
     audit_alpabridge_telemetry,
     load_alpabridge_telemetry,
 )
+from .alpabridge_camera_calibration import (
+    CameraCalibration,
+    calibration_from_available_camera,
+    calibrations_from_session_request,
+    camera_protos_from_session_request,
+)
 from .alpabridge_lifecycle import (
     LifecycleEvent,
     SyntheticLifecycleService,
@@ -67,6 +73,10 @@ __all__ = [
     "LifecycleEvent",
     "SyntheticLifecycleService",
     "run_synthetic_lifecycle_cycle",
+    "CameraCalibration",
+    "calibration_from_available_camera",
+    "calibrations_from_session_request",
+    "camera_protos_from_session_request",
     "DriverPolicy",
     "PolicyRegistry",
     "load_external_policy_modules",

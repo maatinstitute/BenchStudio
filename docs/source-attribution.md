@@ -56,6 +56,15 @@ the following projects. Product runtimes are not vendored into this repository.
   `cd380c740ef5957d3f980188a3b726c33504cf1662c566684cf30bbf06f9cf24`.
   The port preserves structured lifecycle events, hardened late-message
   handling, cleanup/isolation behavior, and strict-mode failure evidence.
+- AlpaBridge camera calibration: `benchstudio.integrations.
+  alpabridge_camera_calibration` is a direct port of
+  `src/alpabridge/driver/camera_calibration.py` at upstream commit
+  `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`; source digest
+  `f2ecef4834502681f0daa1f17b39acda238fd0a506f7f878a073080a077ea434`.
+  The port preserves oneof model selection, native-resolution validation,
+  per-axis scaling of pixel intrinsics to delivered frames, raw camera-proto
+  retention, and graceful handling of incomplete rigs. AlpaSim protobufs and
+  driver serving remain external.
 - AlpaBridge policy registry: `benchstudio.integrations.alpabridge_policy_registry`
   ports the reusable registry/precondition/configuration core from
   `src/alpabridge/driver/policy_registry.py` at commit
