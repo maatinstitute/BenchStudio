@@ -13,7 +13,10 @@ maintained projects. Their runtimes are not vendored into this repository.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment
-  mapping. Product-specific runtimes remain external.
+  mapping. The `PolicySession` boundary is informed by AlpaBridge's session,
+  modality, readiness, and latency behavior; it is a dependency-free contract,
+  not a port of the AlpaBridge service. Product-specific runtimes remain
+  external.
 
 Any future source migration must preserve the original repository's notices,
 third-party licenses, and historical evidence. The current BenchStudio

@@ -1,0 +1,81 @@
+from dataclasses import dataclass
+
+from benchstudio.conformance import (
+    ActionSpec,
+    ModalityFrame,
+    PolicySession,
+    SessionStatus,
+)
+from benchstudio.contracts import ActionChunk, Observation
+
+
+@dataclass
+class StubPolicy:
+    result: object = ActionChunk((0.1, 0.2))
+
+    def reset(self, *, seed: int) -> None:
+        self.seed = seed
+
+    def predict(self, observation: Observation, *, denoising_steps: int | None) -> ActionChunk:
+        return self.result  # type: ignore[return-value]
+
+
+def _session(policy: StubPolicy | None = None) -> PolicySession:
+    return PolicySession(
+        "session-a",
+        policy or StubPolicy(),
+        required_modalities=("image", "state"),
+        modality_max_age_ns=100,
+        action_spec=ActionSpec("arm", "joint_position", "rad", 2),
+    )
+
+
+def test_policy_session_requires_explicit_lifecycle() -> None:
+    session = _session()
+    result = session.predict(Observation(0, 0.0))
+    assert result.status == "invalid_session_state"
+    session.initialize(seed=7)
+    session.start()
+    assert session.status == SessionStatus.RUNNING
+
+
+def test_policy_session_rejects_missing_and_stale_modalities() -> None:
+    session = _session()
+    session.initialize(seed=1)
+    session.start()
+    result = session.predict(
+        Observation(0, 0.0),
+        frames=[ModalityFrame("image", 850), ModalityFrame("image", 990)],
+        now_ns=1_000,
+    )
+    assert result.status == "invalid_modalities"
+    assert any("missing required modality" in error for error in result.errors)
+    assert any("duplicate modality" in error for error in result.errors)
+
+
+def test_policy_session_validates_action_and_deadline() -> None:
+    session = _session()
+    session.initialize(seed=1)
+    session.start()
+    clock = iter((100, 250))
+    result = session.predict(
+        Observation(0, 0.0),
+        frames=[ModalityFrame("image", 990), ModalityFrame("state", 995)],
+        now_ns=1_000,
+        timeout_ns=100,
+        clock_ns=lambda: next(clock),
+    )
+    assert result.status == "deadline_missed"
+    assert result.latency_ns == 150
+
+
+def test_policy_session_rejects_bad_action_shape() -> None:
+    session = _session(StubPolicy(ActionChunk((0.1,))))
+    session.initialize(seed=1)
+    session.start()
+    result = session.predict(
+        Observation(0, 0.0),
+        frames=[ModalityFrame("image", 990), ModalityFrame("state", 995)],
+        now_ns=1_000,
+    )
+    assert result.status == "invalid_action"

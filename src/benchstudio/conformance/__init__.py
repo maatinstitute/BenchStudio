@@ -14,6 +14,13 @@ from .embodiment import (
     validate_representation_mapping,
 )
 from .policy_lifecycle import LifecycleState, LifecycleTracker, validate_lifecycle_events
+from .policy_session import (
+    ModalityFrame,
+    PolicySession,
+    PolicySessionEvent,
+    PredictionResult,
+    SessionStatus,
+)
 from .replay_protocol import AdapterCapabilities, validate_adapter_capabilities
 from .replay_timing import ScheduledAction, apply_zero_order_hold, validate_action_timing
 from .scenario_validation import ScenarioContract, validate_scenario_pair
@@ -27,6 +34,10 @@ __all__ = [
     "ValidationIssue",
     "LifecycleState",
     "LifecycleTracker",
+    "ModalityFrame",
+    "PolicySession",
+    "PolicySessionEvent",
+    "PredictionResult",
     "MappingRule",
     "MappingEndpoint",
     "MappingSpec",
@@ -34,6 +45,7 @@ __all__ = [
     "RepresentationSignalSpec",
     "RepresentationSpec",
     "ScheduledAction",
+    "SessionStatus",
     "SignalSpec",
     "apply_zero_order_hold",
     "audit_deadlines",
