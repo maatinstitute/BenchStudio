@@ -58,6 +58,15 @@ the following projects. Product runtimes are not vendored into this repository.
   The port preserves frozen task/seed/parent panels, conservative missing-cell
   bounds, exact discordance intervals, and explicit attempted/complete/missing
   accounting; training and official outcome authority remain external.
+- RoboPAD deterministic outcome exposure scheduling:
+  `benchstudio.campaigns.outcome_schedule` is a direct port of
+  `experiments/outcome_schedule.py` at upstream commit
+  `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
+  `36dfa5060d0cb0161b09f02c43954300a237f0a5898ab91342ad6e7e23e1ec9b` and
+  source-test digest
+  `d6a6b5eeff857741f9cd45893545403c48cd8796b25dde500b6ac382b4e9cd47`.
+  The port preserves deterministic hierarchical sampling, S/M/U/C exposure
+  identity, mask validation, atomic JSON round-trips, and schedule hashing.
 - AlpaBridge: `benchstudio.integrations.alpasim_metrics` is a direct
   dependency-free port of `src/alpabridge/neutral/alpasim_metrics.py` from
   upstream commit `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`. Its source digest
