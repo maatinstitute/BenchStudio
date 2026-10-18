@@ -48,14 +48,18 @@ class AdapterRegistry:
         dependencies = []
         for dependency in descriptor.dependencies:
             available = module_available(dependency.import_name)
-            dependencies.append({
-                "name": dependency.name,
-                "import_name": dependency.import_name,
-                "available": available,
-                "required": dependency.required,
-                "scope": dependency.scope,
-            })
-        missing_required = [item["name"] for item in dependencies if item["required"] and not item["available"]]
+            dependencies.append(
+                {
+                    "name": dependency.name,
+                    "import_name": dependency.import_name,
+                    "available": available,
+                    "required": dependency.required,
+                    "scope": dependency.scope,
+                }
+            )
+        missing_required = [
+            item["name"] for item in dependencies if item["required"] and not item["available"]
+        ]
         return {
             "simulator_id": descriptor.simulator_id,
             "label": descriptor.label,
@@ -87,9 +91,11 @@ def default_registry() -> AdapterRegistry:
     from .mock import MockSimulator
 
     registry = AdapterRegistry()
-    registry.register(AdapterDescriptor(
-        simulator_id="mock",
-        label="Deterministic mock simulator",
-        factory=MockSimulator,
-    ))
+    registry.register(
+        AdapterDescriptor(
+            simulator_id="mock",
+            label="Deterministic mock simulator",
+            factory=MockSimulator,
+        )
+    )
     return registry

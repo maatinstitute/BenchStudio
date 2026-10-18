@@ -1,7 +1,28 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
+
+ClockDomain = Literal["sim_time", "host_monotonic", "robot_clock"]
+
+
+@dataclass(frozen=True)
+class Timestamp:
+    value_ns: int
+    domain: ClockDomain
+    uncertainty_ns: int | None = None
+
+
+@dataclass(frozen=True)
+class ObservationFrame:
+    observation_id: str
+    episode_id: str
+    sequence: int
+    source_timestamp: Timestamp | None
+    received_monotonic_ns: int
+    sensor_timestamp: Timestamp | None
+    payload: dict[str, Any] = field(default_factory=dict)
+    payload_digest: str | None = None
 
 
 @dataclass(frozen=True)
@@ -9,6 +30,8 @@ class Observation:
     sequence: int
     sim_time_s: float
     payload: dict[str, Any] = field(default_factory=dict)
+    source_timestamp: Timestamp | None = None
+    received_monotonic_ns: int | None = None
 
 
 @dataclass(frozen=True)

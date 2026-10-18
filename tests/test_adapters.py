@@ -13,12 +13,14 @@ def test_default_registry_is_ready_without_optional_simulators():
 
 def test_registry_reports_missing_dependency_without_importing_backend():
     registry = AdapterRegistry()
-    registry.register(AdapterDescriptor(
-        simulator_id="missing",
-        label="Missing backend",
-        factory=MockSimulator,
-        dependencies=(Dependency("not-installed", "benchstudio_package_that_does_not_exist"),),
-    ))
+    registry.register(
+        AdapterDescriptor(
+            simulator_id="missing",
+            label="Missing backend",
+            factory=MockSimulator,
+            dependencies=(Dependency("not-installed", "benchstudio_package_that_does_not_exist"),),
+        )
+    )
     readiness = registry.readiness("missing")
     assert readiness["ready"] is False
     assert readiness["missing_required"] == ["not-installed"]

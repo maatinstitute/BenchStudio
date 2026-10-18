@@ -46,6 +46,7 @@ def compare_trajectories(
     *,
     position_split_m: float = 0.01,
     joint_split_rad: float = 0.05,
+    rotation_split_rad: float = 0.05,
     max_series_points: int = 200,
 ) -> dict[str, Any] | None:
     """Time-align two traces and localize their first meaningful divergence."""
@@ -79,9 +80,26 @@ def compare_trajectories(
         max_rotation = max(max_rotation, rotation_delta or 0.0)
         if split is None:
             if position_delta is not None and position_delta > position_split_m:
-                split = {"t_ms": time_a, "metric": "object_position_delta_m", "value": position_delta, "threshold": position_split_m}
+                split = {
+                    "t_ms": time_a,
+                    "metric": "object_position_delta_m",
+                    "value": position_delta,
+                    "threshold": position_split_m,
+                }
             elif joint_rmse is not None and joint_rmse > joint_split_rad:
-                split = {"t_ms": time_a, "metric": "joint_rmse_rad", "value": joint_rmse, "threshold": joint_split_rad}
+                split = {
+                    "t_ms": time_a,
+                    "metric": "joint_rmse_rad",
+                    "value": joint_rmse,
+                    "threshold": joint_split_rad,
+                }
+            elif rotation_delta is not None and rotation_delta > rotation_split_rad:
+                split = {
+                    "t_ms": time_a,
+                    "metric": "object_rotation_delta_rad",
+                    "value": rotation_delta,
+                    "threshold": rotation_split_rad,
+                }
     if not series:
         return None
     final = series[-1]
@@ -91,7 +109,10 @@ def compare_trajectories(
         "duration_ms": final["t_ms"],
         "joint_rmse_rad": {"max": max_joint, "final": final["joint_rmse_rad"]},
         "object_position_delta_m": {"max": max_position, "final": final["object_position_delta_m"]},
-        "object_rotation_delta_rad": {"max": max_rotation, "final": final["object_rotation_delta_rad"]},
+        "object_rotation_delta_rad": {
+            "max": max_rotation,
+            "final": final["object_rotation_delta_rad"],
+        },
         "split": split,
         "series": _downsample(series, max_series_points),
     }
@@ -101,10 +122,17 @@ def _align(times_a: list[int], times_b: list[int], tolerance: float) -> list[tup
     pairs: list[tuple[int, int]] = []
     index_b = 0
     for time_a in times_a:
-        while index_b + 1 < len(times_b) and abs(times_b[index_b + 1] - time_a) <= abs(times_b[index_b] - time_a):
+        while index_b < len(times_b) - 1 and times_b[index_b] < time_a - tolerance:
             index_b += 1
-        if times_b and abs(times_b[index_b] - time_a) <= tolerance:
-            pairs.append((time_a, times_b[index_b]))
+        if index_b >= len(times_b):
+            break
+        candidates = [(abs(times_b[index_b] - time_a), index_b)]
+        if index_b + 1 < len(times_b):
+            candidates.append((abs(times_b[index_b + 1] - time_a), index_b + 1))
+        distance, chosen = min(candidates)
+        if distance <= tolerance:
+            pairs.append((time_a, times_b[chosen]))
+            index_b = chosen + 1
     return pairs
 
 
@@ -123,19 +151,39 @@ def _joint_rmse(joints_a: dict[str, float], joints_b: dict[str, float]) -> float
     return math.sqrt(sum((joints_a[name] - joints_b[name]) ** 2 for name in shared) / len(shared))
 
 
-def _object_deltas(objects_a: dict[str, dict[str, list[float]]], objects_b: dict[str, dict[str, list[float]]]) -> tuple[float | None, float | None]:
+def _object_deltas(
+    objects_a: dict[str, dict[str, list[float]]], objects_b: dict[str, dict[str, list[float]]]
+) -> tuple[float | None, float | None]:
     shared = sorted(set(objects_a) & set(objects_b))
     if not shared:
         return None, None
     max_position = max_rotation = 0.0
     for object_id in shared:
         pose_a, pose_b = objects_a[object_id], objects_b[object_id]
-        max_position = max(max_position, math.sqrt(sum((a - b) ** 2 for a, b in zip(pose_a["position_xyz"], pose_b["position_xyz"]))))
-        quat_a, quat_b = pose_a.get("quat_wxyz"), pose_b.get("quat_wxyz")
-        if quat_a and quat_b:
+        max_position = max(
+            max_position,
+            math.sqrt(
+                sum((a - b) ** 2 for a, b in zip(pose_a["position_xyz"], pose_b["position_xyz"]))
+            ),
+        )
+        quat_a, quat_b = (
+            _normalized_quaternion(pose_a.get("quat_wxyz")),
+            _normalized_quaternion(pose_b.get("quat_wxyz")),
+        )
+        if quat_a is not None and quat_b is not None:
             dot = abs(sum(a * b for a, b in zip(quat_a, quat_b)))
             max_rotation = max(max_rotation, 2.0 * math.acos(min(1.0, max(-1.0, dot))))
     return max_position, max_rotation
+
+
+def _normalized_quaternion(value: Any) -> tuple[float, float, float, float] | None:
+    if not isinstance(value, (list, tuple)) or len(value) != 4:
+        return None
+    values = tuple(float(item) for item in value)
+    norm = math.sqrt(sum(item * item for item in values))
+    if norm <= 1e-12:
+        return None
+    return tuple(item / norm for item in values)  # type: ignore[return-value]
 
 
 def _downsample(series: list[dict[str, Any]], maximum: int) -> list[dict[str, Any]]:

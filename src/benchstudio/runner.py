@@ -5,13 +5,14 @@ import json
 import platform
 import sys
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from statistics import mean
 from typing import Any
 
 from .contracts import Policy, Simulator
+from .evidence import NdjsonWriter, build_artifact_manifest, environment_fingerprint
 
 
 @dataclass(frozen=True)
@@ -40,6 +41,7 @@ class RunConfig:
 class EpisodeResult:
     episode_id: str
     success: bool
+    status: str
     termination_reason: str
     steps: int
     policy_calls: int
@@ -50,25 +52,44 @@ class EpisodeResult:
     mean_policy_latency_ms: float
     p95_policy_latency_ms: float
     action_prefix: int
+    error: str | None = None
 
 
-def run_episodes(policy: Policy, simulator: Simulator, config: RunConfig, output: Path) -> dict[str, Any]:
+def run_episodes(
+    policy: Policy, simulator: Simulator, config: RunConfig, output: Path
+) -> dict[str, Any]:
     output.mkdir(parents=True, exist_ok=True)
     manifest = _manifest(policy, simulator, config)
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     episode_results: list[EpisodeResult] = []
-    with (output / "episodes.jsonl").open("w", encoding="utf-8") as trace_file:
+    trace_writer = NdjsonWriter(output / "episodes.jsonl")
+    campaign_status = "completed"
+    try:
         for index in range(config.episodes):
             result, events = _run_episode(policy, simulator, config, index)
             episode_results.append(result)
             for event in events:
-                trace_file.write(json.dumps(event, sort_keys=True) + "\n")
-    summary = _summary(config, episode_results)
-    (output / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+                trace_writer.write(event)
+    except Exception as exc:
+        campaign_status = "failed"
+        episode_results.append(_campaign_failure(len(episode_results), exc))
+    finally:
+        trace_writer.close()
+        simulator.close()
+    summary = _summary(config, episode_results, campaign_status=campaign_status)
+    (output / "summary.json").write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    artifact_manifest = build_artifact_manifest(output, status=campaign_status)
+    (output / "artifact-manifest.json").write_text(
+        json.dumps(artifact_manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return summary
 
 
-def _run_episode(policy: Policy, simulator: Simulator, config: RunConfig, index: int) -> tuple[EpisodeResult, list[dict[str, Any]]]:
+def _run_episode(
+    policy: Policy, simulator: Simulator, config: RunConfig, index: int
+) -> tuple[EpisodeResult, list[dict[str, Any]]]:
     episode_id = f"episode-{index:04d}"
     seed = config.seed + index
     policy.reset(seed=seed)
@@ -82,8 +103,10 @@ def _run_episode(policy: Policy, simulator: Simulator, config: RunConfig, index:
     start = time.perf_counter_ns()
     termination_reason = "max_episode_steps"
     while not simulator.is_done() and steps < config.max_episode_steps:
+        source_observation = observation
+        inference_id = f"{episode_id}-inference-{policy_calls:04d}"
         request_ns = time.perf_counter_ns()
-        action_chunk = policy.predict(observation, denoising_steps=config.denoising_steps)
+        action_chunk = policy.predict(source_observation, denoising_steps=config.denoising_steps)
         latency_ms = (time.perf_counter_ns() - request_ns) / 1_000_000
         latencies.append(latency_ms)
         policy_calls += 1
@@ -97,20 +120,24 @@ def _run_episode(policy: Policy, simulator: Simulator, config: RunConfig, index:
             step_start = time.perf_counter_ns()
             next_observation = simulator.step(action)
             execution_ms = (time.perf_counter_ns() - step_start) / 1_000_000
-            age_ms = max(0.0, (next_observation.sim_time_s - observation.sim_time_s) * 1000)
+            age_ms = max(0.0, (next_observation.sim_time_s - source_observation.sim_time_s) * 1000)
             ages.append(age_ms)
-            events.append({
-                "episode_id": episode_id,
-                "step": steps,
-                "observation_sequence": observation.sequence,
-                "next_observation_sequence": next_observation.sequence,
-                "observation_age_ms": round(age_ms, 6),
-                "policy_latency_ms": round(latency_ms, 6),
-                "action_execution_ms": round(execution_ms, 6),
-                "action_prefix": config.action_prefix,
-                "action_index": action_index,
-                "denoising_steps": config.denoising_steps,
-            })
+            events.append(
+                {
+                    "episode_id": episode_id,
+                    "step": steps,
+                    "inference_id": inference_id,
+                    "source_observation_sequence": source_observation.sequence,
+                    "next_observation_sequence": next_observation.sequence,
+                    "observation_age_ms": round(age_ms, 6),
+                    "observation_age_status": "sim_time_delta",
+                    "policy_latency_ms": round(latency_ms, 6),
+                    "action_execution_ms": round(execution_ms, 6),
+                    "action_prefix": config.action_prefix,
+                    "action_index": action_index,
+                    "denoising_steps": config.denoising_steps,
+                }
+            )
             # Refreshing is deliberately controlled outside the policy. When a
             # refresh interval is larger than one, the policy continues to see
             # the previous observation while the simulator advances.
@@ -129,6 +156,7 @@ def _run_episode(policy: Policy, simulator: Simulator, config: RunConfig, index:
     return EpisodeResult(
         episode_id=episode_id,
         success=simulator.is_success(),
+        status="success" if simulator.is_success() else "failure",
         termination_reason=termination_reason,
         steps=steps,
         policy_calls=policy_calls,
@@ -153,20 +181,50 @@ def _manifest(policy: Policy, simulator: Simulator, config: RunConfig) -> dict[s
         "config": config_payload,
         "config_digest_sha256": digest,
         "runtime": {"python": sys.version, "platform": platform.platform()},
+        "environment": environment_fingerprint(simulator.simulator_id),
     }
 
 
-def _summary(config: RunConfig, results: list[EpisodeResult]) -> dict[str, Any]:
+def _summary(
+    config: RunConfig, results: list[EpisodeResult], *, campaign_status: str
+) -> dict[str, Any]:
     successes = sum(result.success for result in results)
+    completed = sum(result.status in {"success", "failure"} for result in results)
+    scheduled = config.episodes
     return {
         "schema": "benchstudio_run_summary_v1",
         "task_id": config.task_id,
         "robot_id": config.robot_id,
         "episode_count": len(results),
+        "scheduled_episode_count": scheduled,
+        "completed_episode_count": completed,
+        "missing_episode_count": max(0, scheduled - len(results)),
         "success_count": successes,
         "success_rate": successes / len(results) if results else 0.0,
+        "completed_success_rate": successes / completed if completed else None,
+        "scheduled_success_rate": successes / scheduled if scheduled else None,
+        "campaign_status": campaign_status,
         "episodes": [asdict(result) for result in results],
     }
+
+
+def _campaign_failure(index: int, error: Exception) -> EpisodeResult:
+    return EpisodeResult(
+        episode_id=f"episode-{index:04d}",
+        success=False,
+        status="campaign_error",
+        termination_reason="campaign_error",
+        steps=0,
+        policy_calls=0,
+        observation_count=0,
+        duration_ms=0.0,
+        mean_observation_age_ms=0.0,
+        p95_observation_age_ms=0.0,
+        mean_policy_latency_ms=0.0,
+        p95_policy_latency_ms=0.0,
+        action_prefix=0,
+        error=f"{type(error).__name__}: {error}",
+    )
 
 
 def _percentile(values: list[float], fraction: float) -> float:

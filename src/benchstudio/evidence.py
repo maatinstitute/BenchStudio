@@ -34,6 +34,43 @@ class NdjsonWriter:
         }
 
 
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def build_artifact_manifest(root: Path, *, status: str) -> dict[str, Any]:
+    """Bind produced run artifacts without creating a self-referential hash."""
+    files = {}
+    for path in sorted(root.iterdir()):
+        if path.is_file() and path.name != "artifact-manifest.json":
+            files[path.name] = {"sha256": sha256_file(path), "bytes": path.stat().st_size}
+    return {
+        "schema": "benchstudio_artifact_manifest_v1",
+        "status": status,
+        "files": files,
+    }
+
+
+def verify_artifact_manifest(root: Path) -> dict[str, Any]:
+    """Verify every file bound by an artifact manifest and report mismatches."""
+    manifest_path = root / "artifact-manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    mismatches: list[dict[str, Any]] = []
+    for name, expected in manifest.get("files", {}).items():
+        path = root / name
+        if not path.is_file():
+            mismatches.append({"file": name, "reason": "missing"})
+            continue
+        actual = sha256_file(path)
+        if actual != expected.get("sha256") or path.stat().st_size != expected.get("bytes"):
+            mismatches.append({"file": name, "reason": "digest_or_size_mismatch"})
+    return {"valid": not mismatches, "status": manifest.get("status"), "mismatches": mismatches}
+
+
 def environment_fingerprint(backend_id: str | None = None) -> dict[str, Any]:
     """Capture reproducibility facts without embedding private paths or secrets."""
     package_names = ("mujoco", "genesis-world", "usd-core", "numpy", "scipy")
