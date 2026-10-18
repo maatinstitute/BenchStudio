@@ -7,6 +7,12 @@ from .archive import (
     extract_verified_campaign_archive,
     write_campaign_archive,
 )
+from .artifacts import (
+    ArtifactReference,
+    ArtifactStore,
+    LocalArtifactStore,
+    publish_campaign_archive,
+)
 from .confirmation import (
     ConfirmationCase,
     FrozenConfirmationPlan,
@@ -54,6 +60,10 @@ __all__ = [
     "campaign_archive_digest",
     "extract_verified_campaign_archive",
     "write_campaign_archive",
+    "ArtifactReference",
+    "ArtifactStore",
+    "LocalArtifactStore",
+    "publish_campaign_archive",
     "load_campaign_document",
     "compile_campaign_spec",
     "CounterfactualCell",

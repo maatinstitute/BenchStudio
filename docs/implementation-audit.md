@@ -35,6 +35,7 @@ has been evaluated.
 | Audited evaluation reports | Implemented | Reports can serialize campaign audit decisions, outcome provenance, and paired uncertainty together, preserving qualified/unsupported claim context offline. |
 | Distributed lease recovery | Implemented for filesystem workers | Expired leases are reclaimable by the next worker, active leases can be renewed by their owner, and ownership checks remain enforced. Physical jobs still require explicit no-retry policy. |
 | Campaign evidence bundles | Implemented | Deterministic, content-addressed ZIP bundles include frozen plans, ledgers, manifests, and attempt evidence; extraction rejects symlinks and traversal paths. |
+| Artifact publication | Implemented locally | `ArtifactStore` and `LocalArtifactStore` publish deterministic campaign bundles by digest with atomic writes and idempotent retry behavior; cloud/object-storage credentials remain external. |
 | CLI campaign workflow | Implemented | Declarative mock execution can now audit its ledger and write the immutable campaign bundle from one command. |
 | SmolVLA/DM0.5 parity | Harness ready, external run pending | The parity and schedule contracts are implemented; no checkpoint is bundled or silently downloaded. |
 | CI workflow | Prepared locally, not uploaded | `.github/workflows/ci.yml` exists locally. GitHub rejected its upload because the current OAuth token lacks workflow scope; source and smoke tests are published. |

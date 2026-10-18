@@ -12,6 +12,7 @@ from benchstudio.campaigns import (
     CampaignArchiveError,
     CampaignExecutor,
     CampaignPlanner,
+    LocalArtifactStore,
     WorkerLeaseManager,
     build_campaign_archive,
     campaign_archive_digest,
@@ -424,6 +425,18 @@ def test_campaign_archive_is_deterministic_and_extracts_verified_evidence(tmp_pa
     assert written["sha256"] == campaign_archive_digest((tmp_path / "campaign.zip").read_bytes())
     with pytest.raises(CampaignArchiveError, match="already exists"):
         write_campaign_archive(output, tmp_path / "campaign.zip")
+
+
+def test_campaign_executor_publishes_content_addressed_artifact(tmp_path):
+    plan = CampaignPlanner(
+        run_id="publish-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    output = tmp_path / "campaign"
+    executor = CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator())
+    executor.run()
+    reference = executor.publish_artifact(LocalArtifactStore(tmp_path / "store"))
+    assert reference["schema"] == "benchstudio.campaign_archive.v1"
+    assert len(reference["digest_sha256"]) == 64
 
 
 def test_campaign_archive_rejects_symlinks_and_traversal(tmp_path):

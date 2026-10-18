@@ -306,6 +306,12 @@ class CampaignExecutor:
 
         return write_campaign_archive(self.output, destination)
 
+    def publish_artifact(self, store: Any) -> dict[str, str | int]:
+        """Publish the current immutable campaign bundle through an artifact store."""
+        from .artifacts import publish_campaign_archive
+
+        return publish_campaign_archive(self.output, store).to_dict()
+
 
 def _resource_budget(plan: FrozenCampaignPlan) -> ResourceBudget | None:
     evaluation = (plan.protocol or {}).get("P", {}).get("evaluation", {})
