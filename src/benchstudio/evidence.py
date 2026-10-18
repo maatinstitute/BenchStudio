@@ -44,8 +44,14 @@ def sha256_file(path: Path) -> str:
 
 def build_artifact_manifest(root: Path, *, status: str) -> dict[str, Any]:
     """Bind produced run artifacts without creating a self-referential hash."""
+    if not root.is_dir():
+        raise ValueError(f"artifact root is not a directory: {root}")
+    if not isinstance(status, str) or not status:
+        raise ValueError("status must be a non-empty string")
     files = {}
     for path in sorted(root.iterdir()):
+        if path.is_symlink():
+            raise ValueError(f"artifact root contains symlink: {path.name}")
         if path.is_file() and path.name != "artifact-manifest.json":
             files[path.name] = {"sha256": sha256_file(path), "bytes": path.stat().st_size}
     return {
@@ -102,6 +108,8 @@ def verify_artifact_manifest(
         return _verification_result(None, mismatches, trust_anchor, signature)
     if manifest.get("schema") != "benchstudio_artifact_manifest_v1":
         mismatches.append({"file": manifest_path.name, "reason": "manifest_schema_mismatch"})
+    if not isinstance(manifest.get("status"), str) or not manifest.get("status"):
+        mismatches.append({"file": manifest_path.name, "reason": "manifest_status_invalid"})
     if not anchor.is_file():
         mismatches.append({"file": manifest_path.name, "reason": "trust_anchor_missing"})
     else:
@@ -155,6 +163,16 @@ def verify_artifact_manifest(
         if not isinstance(expected, dict):
             mismatches.append({"file": name, "reason": "manifest_file_entry_invalid"})
             continue
+        digest = expected.get("sha256")
+        size = expected.get("bytes")
+        if (
+            not isinstance(digest, str)
+            or len(digest) != 64
+            or any(character not in "0123456789abcdef" for character in digest)
+        ):
+            mismatches.append({"file": name, "reason": "manifest_digest_invalid"})
+        if not isinstance(size, int) or isinstance(size, bool) or size < 0:
+            mismatches.append({"file": name, "reason": "manifest_size_invalid"})
         path = root / name
         if path.is_symlink():
             mismatches.append({"file": name, "reason": "symlink_artifact"})
@@ -168,7 +186,7 @@ def verify_artifact_manifest(
             mismatches.append({"file": name, "reason": "missing"})
             continue
         actual = sha256_file(path)
-        if actual != expected.get("sha256") or path.stat().st_size != expected.get("bytes"):
+        if actual != digest or path.stat().st_size != size:
             mismatches.append({"file": name, "reason": "digest_or_size_mismatch"})
     for path in root.iterdir():
         if (

@@ -143,6 +143,38 @@ def test_artifact_manifest_verifier_rejects_path_escape(tmp_path):
     assert "manifest_path_escape" in {item["reason"] for item in result["mismatches"]}
 
 
+def test_artifact_manifest_verifier_rejects_malformed_file_entry(tmp_path):
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    (run_dir / "artifact-manifest.json").write_text(
+        json.dumps(
+            {
+                "schema": "benchstudio_artifact_manifest_v1",
+                "status": "completed",
+                "files": {"trace.jsonl": {"sha256": "not-a-digest", "bytes": "1"}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    result = verify_artifact_manifest(run_dir)
+    reasons = {item["reason"] for item in result["mismatches"]}
+    assert {"manifest_digest_invalid", "manifest_size_invalid"} <= reasons
+
+
+def test_artifact_manifest_creation_rejects_symlinks(tmp_path):
+    import pytest
+
+    root = tmp_path / "run"
+    root.mkdir()
+    target = tmp_path / "outside.txt"
+    target.write_text("outside", encoding="utf-8")
+    (root / "trace.jsonl").symlink_to(target)
+    with pytest.raises(ValueError, match="contains symlink"):
+        from benchstudio.evidence import build_artifact_manifest
+
+        build_artifact_manifest(root, status="completed")
+
+
 def test_artifact_manifest_verifier_rejects_symlinked_bound_file(tmp_path):
     run_dir = tmp_path / "symlink"
     run_dir.mkdir()
