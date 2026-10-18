@@ -50,6 +50,12 @@ the following projects. Product runtimes are not vendored into this repository.
   The port preserves the upstream fail-closed condition-block, schedule-digest,
   task/state/seed-balance, and complete-pair selection checks. CUDA/LeRobot
   rollout execution and checkpoint ownership remain external.
+- Refinement/Refresh development gates: `benchstudio.analysis.
+  refinement_protocol` also ports the dependency-free `compare_arrays`,
+  `image_variants`, and code-identity `profiler_counts` gates from
+  `experiments/tooling/development_gates.py` at the same upstream commit;
+  the CUDA model and simulator execution surrounding those gates remains
+  external.
 - Refinement/Refresh result analysis: `benchstudio.analysis.result_metrics`
   is a direct port of `experiments/real_smolvla/result_metrics.py` from the
   same upstream commit. The source digest is

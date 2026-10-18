@@ -1,18 +1,24 @@
+import cProfile
 import io
 
 import numpy as np
 import pytest
 
 from benchstudio.analysis.refinement_protocol import (
+    ATOL,
     CONDITIONS,
+    RTOL,
     array_record,
     batch_one_success,
+    compare_arrays,
     development_schedule,
+    image_variants,
     json_line,
     keyed_seed,
     observation_field_shas,
     observation_sha,
     parity_report,
+    profiler_counts,
     select_schedule,
     sha,
 )
@@ -62,6 +68,60 @@ def test_source_schedule_selection_rejects_digest_and_block_corruption():
     plan["scheduling"]["schedule_sha256"] = sha(plan["schedule"])
     with pytest.raises(ValueError, match="contiguous"):
         select_schedule(plan)
+
+
+def test_source_development_array_gate_reports_exact_and_tolerant_differences():
+    reference = np.zeros((1, 2), dtype=np.float32)
+    candidate = reference.copy()
+    candidate[0, 1] = 0.001
+    report = compare_arrays(reference, candidate)
+    assert report["exact_equal"] is False
+    assert report["allclose"] is False
+    assert report["rtol"] == RTOL
+    assert report["atol"] == ATOL
+    with pytest.raises(ValueError, match="finite arrays"):
+        compare_arrays(reference, reference + np.nan)
+
+
+def test_source_development_image_variants_preserve_state_and_reject_identical_cameras():
+    observation = {
+        "pixels": {
+            "left": np.ones((1, 3, 3, 3), dtype=np.uint8),
+            "wrist": np.full((1, 3, 3, 3), 7, dtype=np.uint8),
+        },
+        "robot_state": {"position": [1.0, 2.0, 3.0]},
+    }
+    variants, keys = image_variants(observation)
+    assert keys == ["left", "wrist"]
+    assert np.all(variants["camera_swap"]["pixels"]["left"] == 7)
+    assert np.all(variants["zero_images"]["pixels"]["wrist"] == 0)
+    assert variants["native"]["robot_state"] == observation["robot_state"]
+    observation["pixels"]["wrist"][:] = 1
+    with pytest.raises(ValueError, match="identical"):
+        image_variants(observation)
+
+
+def test_source_profiler_counts_bind_code_identity():
+    class First:
+        def sample_actions(self):
+            return None
+
+    class Second:
+        def sample_actions(self):
+            return None
+
+    first, second = First(), Second()
+    profiler = cProfile.Profile()
+    profiler.enable()
+    first.sample_actions()
+    for _ in range(3):
+        second.sample_actions()
+    profiler.disable()
+    counts = profiler_counts(
+        profiler, {"first": first.sample_actions, "second": second.sample_actions}
+    )
+    assert counts["first"]["total_calls"] == 1
+    assert counts["second"]["total_calls"] == 3
 
 
 def test_array_and_nested_observation_hashes_bind_shape_dtype_and_fields():

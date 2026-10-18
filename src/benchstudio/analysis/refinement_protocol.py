@@ -10,6 +10,8 @@ from typing import Any, Iterable
 
 DEFAULT_CONDITIONS = {(1, 5), (1, 10), (5, 5), (5, 10)}
 CONDITIONS = DEFAULT_CONDITIONS
+RTOL = 1e-5
+ATOL = 1e-6
 
 
 def canonical(value: Any) -> bytes:
@@ -20,6 +22,11 @@ def canonical(value: Any) -> bytes:
 
 def sha(value: Any) -> str:
     return hashlib.sha256(canonical(value)).hexdigest()
+
+
+def require(value: Any, message: str) -> None:
+    if not value:
+        raise ValueError(message)
 
 
 def file_sha(path: str | Path) -> str:
@@ -165,6 +172,66 @@ def select_schedule(plan: dict[str, Any], max_blocks: int | None = None) -> list
     if len(selected_rows) != max_blocks * per_block:
         raise ValueError("balanced selection size mismatch")
     return copy.deepcopy(selected_rows)
+
+
+def compare_arrays(
+    reference: Any, candidate: Any, rtol: float = RTOL, atol: float = ATOL
+) -> dict[str, Any]:
+    """Compare finite arrays using the source development-gate contract."""
+    import numpy as np
+
+    left, right = np.asarray(reference), np.asarray(candidate)
+    require(
+        left.shape == right.shape and np.isfinite(left).all() and np.isfinite(right).all(),
+        "comparison requires finite arrays with identical shapes",
+    )
+    delta = np.abs(left.astype(np.float64) - right.astype(np.float64))
+    return {
+        "exact_equal": bool(np.array_equal(left, right)),
+        "allclose": bool(np.allclose(left, right, rtol=rtol, atol=atol)),
+        "max_abs_diff": float(delta.max()),
+        "mean_abs_diff": float(delta.mean()),
+        "rtol": rtol,
+        "atol": atol,
+    }
+
+
+def profiler_counts(profiler: Any, methods: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Count original method code identities, not ambiguous function names."""
+    import inspect
+    import pstats
+
+    stats = pstats.Stats(profiler).stats
+    result: dict[str, dict[str, Any]] = {}
+    for label, method in methods.items():
+        code = inspect.unwrap(method).__code__
+        key = (code.co_filename, code.co_firstlineno, code.co_name)
+        primitive, total, _own_s, _cumulative_s, _callers = stats.get(key, (0, 0, 0.0, 0.0, {}))
+        result[label] = {
+            "primitive_calls": primitive,
+            "total_calls": total,
+            "source_file": code.co_filename,
+            "first_line": code.co_firstlineno,
+            "function": code.co_name,
+        }
+    return result
+
+
+def image_variants(observation: dict[str, Any]) -> tuple[dict[str, dict[str, Any]], list[str]]:
+    """Create native, camera-swapped, and zero-image development inputs."""
+    import numpy as np
+
+    require(isinstance(observation.get("pixels"), dict), "raw pixels dictionary required")
+    keys = sorted(observation["pixels"])
+    require(len(keys) == 2, "exactly two real camera inputs required")
+    a, b = (np.asarray(observation["pixels"][key]) for key in keys)
+    require(a.shape == b.shape and a.dtype == b.dtype, "camera swap requires matching arrays")
+    require(not np.array_equal(a, b), "camera images unexpectedly identical")
+    swap, zero = copy.deepcopy(observation), copy.deepcopy(observation)
+    swap["pixels"][keys[0]], swap["pixels"][keys[1]] = b.copy(), a.copy()
+    for key in keys:
+        zero["pixels"][key] = np.zeros_like(observation["pixels"][key])
+    return {"native": copy.deepcopy(observation), "camera_swap": swap, "zero_images": zero}, keys
 
 
 def array_record(value: Any) -> dict[str, Any]:
