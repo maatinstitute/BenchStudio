@@ -77,6 +77,8 @@ def test_robochallenge_adapter_preserves_opaque_payload_digests():
         "robochallenge_action_acknowledged",
     ]
     assert records[1]["execution_timestamp_status"] == "unavailable"
+    assert records[0]["payload_base64"] == "b2JzZXJ2YXRpb24tYnl0ZXM="
+    assert records[1]["payload_base64"] == "YWN0aW9uLWJ5dGVz"
     assert validate_robochallenge_message(RoboChallengeAction("bad", 1, b"x", "0" * 64)) == [
         "payload digest mismatch"
     ]

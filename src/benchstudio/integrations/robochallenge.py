@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 from dataclasses import dataclass
 from typing import Callable
@@ -58,6 +59,7 @@ class RoboChallengeObserveOnlyAdapter:
                 "event_type": "robochallenge_observation",
                 "observation_id": message.observation_id,
                 "timestamp_ns": message.timestamp_ns,
+                "payload_base64": base64.b64encode(message.payload).decode("ascii"),
                 "payload_digest_sha256": message.payload_digest_sha256,
             }
         )
@@ -74,6 +76,7 @@ class RoboChallengeObserveOnlyAdapter:
                 "action_id": message.action_id,
                 "command_timestamp_ns": message.command_timestamp_ns,
                 "execution_timestamp_ns": execution_timestamp_ns,
+                "payload_base64": base64.b64encode(message.payload).decode("ascii"),
                 "execution_timestamp_status": "reported"
                 if execution_timestamp_ns is not None
                 else "unavailable",
