@@ -158,6 +158,8 @@ def _validate_campaign_contents(contents: dict[str, bytes]) -> list[dict[str, st
                     issues.append(
                         {"reason": "ledger_evidence_missing", "detail": f"{attempt_id}:{name}"}
                     )
+            if all(name in contents for name in required_evidence):
+                issues.extend(_validate_embedded_attempt_evidence(contents, attempt_id, status))
         for field in ("run_id", "scenario_id", "pair_id", "condition_id", "environment_id"):
             if record.get(field) != getattr(expected, field):
                 issues.append(
@@ -165,6 +167,94 @@ def _validate_campaign_contents(contents: dict[str, bytes]) -> list[dict[str, st
                 )
     for attempt_id in sorted(set(planned) - seen):
         issues.append({"reason": "ledger_attempt_missing", "detail": attempt_id})
+    return issues
+
+
+def _validate_embedded_attempt_evidence(
+    contents: dict[str, bytes], attempt_id: str, ledger_status: str
+) -> list[dict[str, str]]:
+    """Verify one archived attempt manifest against the bytes in the bundle."""
+    prefix = f"attempts/{attempt_id}/"
+    manifest_name = f"{prefix}artifact-manifest.json"
+    anchor_name = f"attempts/{attempt_id}.artifact-manifest.sha256"
+    issues: list[dict[str, str]] = []
+    try:
+        manifest = json.loads(contents[manifest_name])
+    except (KeyError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+        return [{"reason": "artifact_manifest_invalid", "detail": f"{attempt_id}:{exc}"}]
+    if (
+        not isinstance(manifest, dict)
+        or manifest.get("schema") != "benchstudio_artifact_manifest_v1"
+    ):
+        issues.append({"reason": "artifact_manifest_invalid", "detail": attempt_id})
+        return issues
+    if manifest.get("status") != ledger_status:
+        issues.append({"reason": "artifact_manifest_status_mismatch", "detail": attempt_id})
+    files = manifest.get("files")
+    if not isinstance(files, dict):
+        return issues + [{"reason": "artifact_manifest_files_invalid", "detail": attempt_id}]
+    bound_names: set[str] = set()
+    for name, expected in files.items():
+        if (
+            not isinstance(name, str)
+            or not name
+            or Path(name).is_absolute()
+            or ".." in Path(name).parts
+        ):
+            issues.append(
+                {"reason": "artifact_manifest_path_invalid", "detail": f"{attempt_id}:{name}"}
+            )
+            continue
+        bound_names.add(name)
+        if not isinstance(expected, dict):
+            issues.append(
+                {"reason": "artifact_manifest_entry_invalid", "detail": f"{attempt_id}:{name}"}
+            )
+            continue
+        digest = expected.get("sha256")
+        size = expected.get("bytes")
+        archive_name = prefix + name
+        payload = contents.get(archive_name)
+        if (
+            not isinstance(digest, str)
+            or len(digest) != 64
+            or any(character not in "0123456789abcdef" for character in digest)
+        ):
+            issues.append(
+                {"reason": "artifact_manifest_digest_invalid", "detail": f"{attempt_id}:{name}"}
+            )
+        if not isinstance(size, int) or isinstance(size, bool) or size < 0:
+            issues.append(
+                {"reason": "artifact_manifest_size_invalid", "detail": f"{attempt_id}:{name}"}
+            )
+        if payload is None:
+            issues.append({"reason": "artifact_evidence_missing", "detail": f"{attempt_id}:{name}"})
+            continue
+        if isinstance(digest, str) and hashlib.sha256(payload).hexdigest() != digest:
+            issues.append(
+                {"reason": "artifact_evidence_digest_mismatch", "detail": f"{attempt_id}:{name}"}
+            )
+        if isinstance(size, int) and not isinstance(size, bool) and len(payload) != size:
+            issues.append(
+                {"reason": "artifact_evidence_size_mismatch", "detail": f"{attempt_id}:{name}"}
+            )
+    archived_names = {
+        name[len(prefix) :]
+        for name in contents
+        if name.startswith(prefix) and name != manifest_name
+    }
+    for name in sorted(archived_names - bound_names):
+        issues.append({"reason": "artifact_evidence_unbound", "detail": f"{attempt_id}:{name}"})
+    anchor = contents.get(anchor_name)
+    if anchor is not None:
+        try:
+            parts = anchor.decode("utf-8").strip().split()
+        except UnicodeDecodeError:
+            parts = []
+        expected_manifest_digest = parts[-1] if len(parts) >= 3 else ""
+        actual_manifest_digest = hashlib.sha256(contents[manifest_name]).hexdigest()
+        if expected_manifest_digest != actual_manifest_digest:
+            issues.append({"reason": "artifact_trust_anchor_mismatch", "detail": attempt_id})
     return issues
 
 

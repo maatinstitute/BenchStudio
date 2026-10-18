@@ -793,6 +793,19 @@ def test_campaign_archive_verifier_rejects_missing_terminal_attempt_evidence(tmp
     )
 
 
+def test_campaign_archive_verifier_rejects_tampered_attempt_bytes(tmp_path):
+    plan = CampaignPlanner(
+        run_id="tampered-evidence", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    output = tmp_path / "campaign"
+    CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
+    summary = output / "attempts" / plan.attempts[0].key.attempt_id / "summary.json"
+    summary.write_text("{}\n", encoding="utf-8")
+    result = verify_campaign_archive(build_campaign_archive(output))
+    assert result["valid"] is False
+    assert any(issue["reason"] == "artifact_evidence_digest_mismatch" for issue in result["issues"])
+
+
 def test_campaign_archive_verifier_rejects_invalid_embedded_plan(tmp_path):
     root = tmp_path / "invalid-campaign"
     root.mkdir()
