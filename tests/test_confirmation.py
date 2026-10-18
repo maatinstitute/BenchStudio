@@ -5,6 +5,7 @@ import pytest
 from benchstudio.campaigns import (
     ConfirmationEvaluation,
     SearchCandidate,
+    audit_confirmation_results,
     compile_confirmation_plan,
     execute_confirmation_plan,
     load_confirmation_plan,
@@ -99,6 +100,38 @@ def test_confirmation_execution_is_separate_and_persists_reproduction_evidence(t
     )
     assert summary["source_search_digest_sha256"] == "b" * 64
     assert summary["failure_reproduced_count"] == 1
+    rows = [
+        json.loads(line)
+        for line in (tmp_path / "confirmation-evidence" / "confirmation-results.jsonl")
+        .read_text()
+        .splitlines()
+    ]
+    assert audit_confirmation_results(plan, rows).complete
+
+
+def test_confirmation_result_audit_rejects_tampered_candidate_lineage():
+    plan = compile_confirmation_plan(
+        run_id="confirm-run",
+        source_search_digest_sha256="b" * 64,
+        candidates=[_candidate("c1")],
+        confirmation_seeds=[10],
+    )
+    case = plan.cases[0]
+    audit = audit_confirmation_results(
+        plan,
+        [
+            {
+                "case_id": case.case_id,
+                "candidate_id": "wrong",
+                "scenario_id": case.scenario_id,
+                "initial_condition_id": case.initial_condition_id,
+                "confirmation_seed": case.confirmation_seed,
+                "source_search_run_id": case.source_search_run_id,
+            }
+        ],
+    )
+    assert audit.complete is False
+    assert any("candidate_id does not match frozen plan" in issue for issue in audit.lineage_issues)
 
 
 def test_confirmation_execution_rejects_digest_on_non_reproduction():

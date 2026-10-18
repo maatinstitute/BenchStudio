@@ -5,6 +5,7 @@ import pytest
 from benchstudio.campaigns import (
     PerturbationDimension,
     SearchEvaluation,
+    audit_search_results,
     build_search_candidates,
     compile_search_plan,
     execute_search_plan,
@@ -139,6 +140,31 @@ def test_search_execution_persists_failures_as_confirmation_candidates(tmp_path)
     )
     assert summary["scheduled_case_count"] == 4
     assert summary["failed_case_count"] == 2
+    rows = [
+        __import__("json").loads(line)
+        for line in (tmp_path / "search-evidence" / "search-results.jsonl").read_text().splitlines()
+    ]
+    assert audit_search_results(plan, rows).complete
+
+
+def test_search_result_audit_rejects_tampered_case_lineage():
+    plan = compile_search_plan(
+        run_id="search-run",
+        scenario_id="task",
+        base_condition_id="base",
+        dimensions=(PerturbationDimension("x", (0,)),),
+        seeds=[1],
+    )
+    result = {
+        "case_id": plan.cases[0].case_id,
+        "scenario_id": plan.cases[0].scenario_id,
+        "base_condition_id": plan.cases[0].base_condition_id,
+        "seed": 999,
+        "parameters": dict(plan.cases[0].parameters),
+    }
+    audit = audit_search_results(plan, [result])
+    assert audit.complete is False
+    assert any("seed does not match frozen plan" in issue for issue in audit.lineage_issues)
 
 
 def test_search_execution_rejects_failure_digest_on_success():

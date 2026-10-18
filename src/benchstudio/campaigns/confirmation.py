@@ -118,6 +118,102 @@ class ConfirmationCaseResult:
         return asdict(self)
 
 
+@dataclass(frozen=True)
+class ConfirmationResultAudit:
+    scheduled_cases: int
+    recorded_cases: int
+    missing_case_ids: tuple[str, ...]
+    unknown_case_ids: tuple[str, ...]
+    duplicate_case_ids: tuple[str, ...]
+    lineage_issues: tuple[str, ...]
+
+    @property
+    def complete(self) -> bool:
+        return (
+            not (
+                self.missing_case_ids
+                or self.unknown_case_ids
+                or self.duplicate_case_ids
+                or self.lineage_issues
+            )
+            and self.recorded_cases == self.scheduled_cases
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "scheduled_cases": self.scheduled_cases,
+            "recorded_cases": self.recorded_cases,
+            "missing_case_ids": list(self.missing_case_ids),
+            "unknown_case_ids": list(self.unknown_case_ids),
+            "duplicate_case_ids": list(self.duplicate_case_ids),
+            "lineage_issues": list(self.lineage_issues),
+            "complete": self.complete,
+        }
+
+
+def load_confirmation_results(path: Path) -> list[dict[str, Any]]:
+    """Load confirmation result rows from JSON, JSONL, or NDJSON."""
+    text = path.read_text(encoding="utf-8")
+    if path.suffix.lower() in {".jsonl", ".ndjson"}:
+        values = [json.loads(line) for line in text.splitlines() if line.strip()]
+    else:
+        values = json.loads(text)
+        if isinstance(values, dict):
+            values = values.get("records")
+    if not isinstance(values, list) or not all(isinstance(value, dict) for value in values):
+        raise ValueError("confirmation results must be a JSON array or {records: [...]} mapping")
+    return values
+
+
+def audit_confirmation_results(
+    plan: FrozenConfirmationPlan, records: list[dict[str, Any]]
+) -> ConfirmationResultAudit:
+    """Verify confirmation result identity against an independent holdout plan."""
+    expected = {
+        case.case_id: (
+            case.candidate_id,
+            case.scenario_id,
+            case.initial_condition_id,
+            case.confirmation_seed,
+            case.source_search_run_id,
+        )
+        for case in plan.cases
+    }
+    occurrences: dict[str, int] = {}
+    unknown: set[str] = set()
+    lineage: list[str] = []
+    for index, record in enumerate(records):
+        case_id = record.get("case_id")
+        if not isinstance(case_id, str) or not case_id:
+            lineage.append(f"record {index}: missing case_id")
+            continue
+        occurrences[case_id] = occurrences.get(case_id, 0) + 1
+        expected_row = expected.get(case_id)
+        if expected_row is None:
+            unknown.add(case_id)
+            continue
+        for field, value in zip(
+            (
+                "candidate_id",
+                "scenario_id",
+                "initial_condition_id",
+                "confirmation_seed",
+                "source_search_run_id",
+            ),
+            expected_row,
+        ):
+            if record.get(field) != value:
+                lineage.append(f"{case_id}: {field} does not match frozen plan")
+    return ConfirmationResultAudit(
+        len(expected),
+        len(records),
+        tuple(sorted(set(expected) - occurrences.keys())),
+        tuple(sorted(unknown)),
+        tuple(sorted(case_id for case_id, count in occurrences.items() if count > 1)),
+        tuple(lineage),
+    )
+
+
 def compile_confirmation_plan(
     *,
     run_id: str,
