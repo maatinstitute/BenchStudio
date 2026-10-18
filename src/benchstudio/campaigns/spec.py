@@ -18,7 +18,6 @@ def compile_campaign_spec(spec: dict[str, Any]) -> FrozenCampaignPlan:
     experiment = _mapping(spec.get("experiment"), "experiment")
     task = _mapping(spec.get("task"), "task")
     evaluation = _mapping(spec.get("evaluation"), "evaluation")
-    _validate_protocol_sections(spec)
     run_id = experiment.get("name")
     scenario_id = task.get("task_id")
     if not isinstance(run_id, str) or not run_id:
@@ -37,6 +36,8 @@ def compile_campaign_spec(spec: dict[str, Any]) -> FrozenCampaignPlan:
         or not all(isinstance(item, dict) for item in conditions)
     ):
         raise ValueError("evaluation.conditions must be a non-empty list of mappings")
+    _validate_condition_controls(conditions)
+    _validate_protocol_sections(spec)
     if evaluation.get("paired") is not True:
         raise ValueError("evaluation.paired must be true for this compiler")
     if evaluation.get("missing_outcomes") not in (None, "preserve"):
@@ -73,6 +74,36 @@ def _mapping(value: Any, field: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"{field} must be a mapping")
     return value
+
+
+def _validate_condition_controls(conditions: list[dict[str, Any]]) -> None:
+    for index, condition in enumerate(conditions):
+        label = f"evaluation.conditions[{index}]"
+        if "id" in condition and (not isinstance(condition["id"], str) or not condition["id"]):
+            raise ValueError(f"{label}.id must be a non-empty string")
+        denoising_steps = condition.get("denoising_steps")
+        if denoising_steps is not None and (
+            isinstance(denoising_steps, bool)
+            or not isinstance(denoising_steps, int)
+            or denoising_steps < 0
+        ):
+            raise ValueError(f"{label}.denoising_steps must be a non-negative integer or null")
+        for field in ("action_prefix", "observation_refresh_ticks", "max_episode_steps"):
+            value = condition.get(field)
+            if value is not None and (
+                isinstance(value, bool) or not isinstance(value, int) or value < 1
+            ):
+                raise ValueError(f"{label}.{field} must be a positive integer")
+        strategy = condition.get("execution_strategy")
+        if strategy is not None and strategy not in {"sync", "async", "streaming", "cached"}:
+            raise ValueError(f"{label}.execution_strategy is unsupported")
+        max_cache_entries = condition.get("max_cache_entries")
+        if max_cache_entries is not None and (
+            isinstance(max_cache_entries, bool)
+            or not isinstance(max_cache_entries, int)
+            or max_cache_entries < 1
+        ):
+            raise ValueError(f"{label}.max_cache_entries must be a positive integer")
 
 
 def _validate_protocol_sections(spec: dict[str, Any]) -> None:

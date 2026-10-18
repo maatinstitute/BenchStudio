@@ -110,6 +110,35 @@ def test_campaign_spec_rejects_invalid_repetition_counts(repetitions):
         )
 
 
+@pytest.mark.parametrize(
+    "condition, message",
+    [
+        ({"action_prefix": "2"}, "action_prefix"),
+        ({"observation_refresh_ticks": 0}, "observation_refresh_ticks"),
+        ({"max_episode_steps": True}, "max_episode_steps"),
+        ({"denoising_steps": -1}, "denoising_steps"),
+        ({"execution_strategy": "batch"}, "execution_strategy"),
+        ({"max_cache_entries": 0}, "max_cache_entries"),
+        ({"id": 42}, r"conditions\[0\]\.id"),
+    ],
+)
+def test_campaign_spec_rejects_invalid_condition_controls(condition, message):
+    with pytest.raises(ValueError, match=message):
+        compile_campaign_spec(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "invalid-condition"},
+                "task": {"task_id": "task"},
+                "environments": [{"id": "sim", "kind": "simulator"}],
+                "evaluation": {
+                    "seeds": [1],
+                    "paired": True,
+                    "conditions": [condition],
+                },
+            }
+        )
+
+
 @pytest.mark.parametrize("seeds", [[True], [1.5], ["1"]])
 def test_campaign_spec_rejects_non_integer_seeds(seeds):
     with pytest.raises(ValueError, match="evaluation.seeds"):
