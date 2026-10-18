@@ -5,6 +5,7 @@ from .claims import ClaimDecision, ClaimType, validate_claim
 from .failure_events import EventBookmark, bookmark_critical_events
 from .inference_schedule import InferenceEvent, InferenceScheduleAudit, audit_inference_schedule
 from .missingness import MissingOutcomeBounds, missing_outcome_bounds
+from .overhead import ExecutionOverhead, audit_execution_overhead
 from .paired import (
     PairedOutcomeSummary,
     clopper_pearson_interval,
@@ -30,6 +31,8 @@ from .transfer import (
 
 __all__ = [
     "MissingOutcomeBounds",
+    "ExecutionOverhead",
+    "audit_execution_overhead",
     "EventBookmark",
     "InferenceEvent",
     "InferenceScheduleAudit",
