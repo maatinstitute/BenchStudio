@@ -54,6 +54,19 @@ from .frozen_plan import (
 )
 from .io import load_campaign_document
 from .ledger import AttemptLedger
+from .outcome_plan import (
+    EVALUATION_BRANCHES,
+    RECOVERY_PARENT_COUNT,
+    RECOVERY_PREFIX_STEPS,
+    RECOVERY_SUFFIX_HORIZON,
+    RESET_HORIZON,
+    RESET_PARENT_COUNT,
+    SCIENCE_SEEDS,
+    TRAINING_ARMS,
+)
+from .outcome_plan import (
+    build_plan as build_outcome_plan,
+)
 from .paired_design import compile_balanced_paired_plan
 from .refinement_plan import (
     CHECKPOINT,
@@ -99,6 +112,15 @@ __all__ = [
     "WorkerLease",
     "WorkerLeaseManager",
     "compile_balanced_paired_plan",
+    "build_outcome_plan",
+    "SCIENCE_SEEDS",
+    "TRAINING_ARMS",
+    "EVALUATION_BRANCHES",
+    "RECOVERY_PARENT_COUNT",
+    "RESET_PARENT_COUNT",
+    "RECOVERY_PREFIX_STEPS",
+    "RECOVERY_SUFFIX_HORIZON",
+    "RESET_HORIZON",
     "canonical_json",
     "compile_refinement_campaign_plan",
     "digest",

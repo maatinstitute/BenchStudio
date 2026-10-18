@@ -18,6 +18,16 @@ the following projects. Product runtimes are not vendored into this repository.
   schedule digest, external gates, and exclusive-write semantics; it then
   converts that exact schedule into `FrozenCampaignPlan`. The heavy
   CUDA/LeRobot runtime remains external.
+- RoboPAD: `benchstudio.analysis.responsiveness` is a source-backed port of
+  `experiments/metrics.py`, and `benchstudio.campaigns.outcome_plan` is a
+  source-backed port of `experiments/outcome_plan.py`, from upstream commit
+  `4ecd468cc67cc40681ca2af9097b7ade5825fadd`. The source digests are,
+  respectively, `b8bedc9cf2f0f93dda8203e48ad61cfeddd3662f6b3cdb6b7beec5138230593e`
+  and `5c27df4d02e56ab1b116eb1b0786ff892e673d27fd517918ab185082b2485ba2`.
+  Their invariants are carried into `tests/test_responsiveness.py` and
+  `tests/test_outcome_plan.py`. BenchStudio exposes the ports through its
+  analysis and campaign packages; external training, checkpoint, simulator,
+  and official outcome authority remain outside the repository.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment

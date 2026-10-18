@@ -53,6 +53,10 @@ from .resources import (
     audit_resources,
     pareto_frontier,
 )
+from .responsiveness import score as score_selective_responsiveness
+from .responsiveness import split_for as responsiveness_split_for
+from .responsiveness import summarize as summarize_selective_responsiveness
+from .responsiveness import validate as validate_selective_responsiveness
 from .score_coverage import ScoreCoverage, audit_score_coverage
 from .transfer import (
     TransferFidelityReport,
@@ -119,4 +123,8 @@ __all__ = [
     "compare_observation_streams",
     "write_parity_report",
     "validate_claim",
+    "score_selective_responsiveness",
+    "summarize_selective_responsiveness",
+    "validate_selective_responsiveness",
+    "responsiveness_split_for",
 ]
