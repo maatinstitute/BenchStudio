@@ -1,7 +1,18 @@
 from __future__ import annotations
 
-from benchstudio import build_evaluation_report, render_html_report, write_html_report
-from benchstudio.analysis import summarize_paired_outcomes
+from benchstudio import (
+    build_audited_evaluation_report,
+    build_evaluation_report,
+    render_html_report,
+    write_html_report,
+)
+from benchstudio.analysis import (
+    ClaimType,
+    OutcomeRecord,
+    audit_campaign,
+    summarize_paired_outcomes,
+)
+from benchstudio.campaigns import CampaignPlanner
 
 
 def test_paired_summary_reports_missingness_and_uncertainty():
@@ -30,3 +41,28 @@ def test_offline_report_round_trips_as_html(tmp_path):
     path = tmp_path / "report.html"
     write_html_report(report, path)
     assert "&quot;schema&quot;" in path.read_text()
+
+
+def test_audited_report_includes_claim_provenance_and_uncertainty():
+    plan = CampaignPlanner(
+        run_id="report-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    attempt_id = plan.attempts[0].key.attempt_id
+    audit = audit_campaign(
+        plan,
+        [{"attempt_id": attempt_id, "status": "completed", "evidence_verified": True}],
+        claim_type=ClaimType.SINGLE_RUN_OUTCOME,
+        outcome_records=[
+            OutcomeRecord(attempt_id, True, "official", "scorer", "rev", authoritative=True)
+        ],
+    )
+    report = build_audited_evaluation_report(
+        title="Audited",
+        audit=audit,
+        outcomes={"success_rate": 1.0},
+        diagnostics={},
+        paired_statistics=summarize_paired_outcomes([True], [False]),
+    )
+    assert report["claim_decisions"][0]["status"] == "supported"
+    assert report["campaign"]["outcome_provenance"]["authoritative_scorer_declared"]
+    assert report["outcomes"]["paired_statistics"]["matched_pairs"] == 1

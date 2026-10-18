@@ -24,6 +24,29 @@ def build_evaluation_report(
     }
 
 
+def build_audited_evaluation_report(
+    *,
+    title: str,
+    audit: Any,
+    outcomes: dict[str, Any],
+    diagnostics: dict[str, Any],
+    paired_statistics: Any | None = None,
+) -> dict[str, Any]:
+    """Build the canonical report shape from an audited campaign result."""
+    outcome_payload = dict(outcomes)
+    if audit.outcome_provenance is not None:
+        outcome_payload["provenance"] = audit.outcome_provenance.to_dict()
+    if paired_statistics is not None:
+        outcome_payload["paired_statistics"] = paired_statistics.to_dict()
+    return build_evaluation_report(
+        title=title,
+        campaign=audit.to_dict(),
+        outcomes=outcome_payload,
+        diagnostics=diagnostics,
+        claim_decisions=[audit.claim.to_dict()],
+    )
+
+
 def render_html_report(report: dict[str, Any]) -> str:
     title = html.escape(str(report.get("title", "BenchStudio evaluation")))
     payload = html.escape(json.dumps(report, indent=2, sort_keys=True))

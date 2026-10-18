@@ -121,7 +121,12 @@ from .evidence import (
 )
 from .measurement import ResourceSampler, delta_resources, sample_resources
 from .replay import ReplayPolicy, ReplaySimulator, load_joint_sequence
-from .reporting import build_evaluation_report, render_html_report, write_html_report
+from .reporting import (
+    build_audited_evaluation_report,
+    build_evaluation_report,
+    render_html_report,
+    write_html_report,
+)
 from .runner import EpisodeResult, RunConfig, run_episodes
 from .scenarios import (
     ScenarioArchiveError,
@@ -222,6 +227,7 @@ __all__ = [
     "write_manifest_trust_anchor",
     "load_joint_sequence",
     "build_evaluation_report",
+    "build_audited_evaluation_report",
     "render_html_report",
     "write_html_report",
     "compare_trajectories",

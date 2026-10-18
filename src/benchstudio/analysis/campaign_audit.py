@@ -23,6 +23,22 @@ class CampaignAudit:
     claim: ClaimDecision
     outcome_provenance: OutcomeProvenanceAudit | None = None
 
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "planned_attempts": self.planned_attempts,
+            "recorded_attempts": self.recorded_attempts,
+            "missing_attempt_ids": list(self.missing_attempt_ids),
+            "duplicate_attempt_ids": list(self.duplicate_attempt_ids),
+            "unknown_attempt_ids": list(self.unknown_attempt_ids),
+            "status_counts": dict(self.status_counts),
+            "attempts_complete": self.attempts_complete,
+            "evidence_verified": self.evidence_verified,
+            "claim": self.claim.to_dict(),
+            "outcome_provenance": (
+                self.outcome_provenance.to_dict() if self.outcome_provenance is not None else None
+            ),
+        }
+
 
 def audit_campaign(
     plan: FrozenCampaignPlan,

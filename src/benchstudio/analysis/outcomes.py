@@ -121,6 +121,18 @@ class OutcomeProvenanceAudit:
     def outcome_present(self) -> bool:
         return self.complete_outcomes == self.records and self.records > 0
 
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "records": self.records,
+            "complete_outcomes": self.complete_outcomes,
+            "authoritative_records": self.authoritative_records,
+            "supplementary_records": self.supplementary_records,
+            "valid": self.valid,
+            "authoritative_scorer_declared": self.authoritative_scorer_declared,
+            "outcome_present": self.outcome_present,
+            "issues": list(self.issues),
+        }
+
 
 def validate_outcome_record(record: OutcomeRecord) -> list[str]:
     issues: list[str] = []

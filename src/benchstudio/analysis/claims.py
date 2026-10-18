@@ -18,6 +18,14 @@ class ClaimDecision:
     reasons: tuple[str, ...]
     prerequisites: dict[str, bool]
 
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "claim_type": self.claim_type.value,
+            "status": self.status,
+            "reasons": list(self.reasons),
+            "prerequisites": dict(self.prerequisites),
+        }
+
 
 def validate_claim(claim_type: ClaimType, evidence: dict[str, Any]) -> ClaimDecision:
     prerequisites = {

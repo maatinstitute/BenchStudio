@@ -17,6 +17,20 @@ class PairedOutcomeSummary:
     standard_error_numeric_delta: float | None
     success_gap_confidence_interval: tuple[float, float] | None = None
 
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "matched_pairs": self.matched_pairs,
+            "wins_a": self.wins_a,
+            "wins_b": self.wins_b,
+            "ties": self.ties,
+            "success_rate_a": self.success_rate_a,
+            "success_rate_b": self.success_rate_b,
+            "success_gap_b_minus_a": self.success_gap_b_minus_a,
+            "mean_numeric_delta_b_minus_a": self.mean_numeric_delta_b_minus_a,
+            "standard_error_numeric_delta": self.standard_error_numeric_delta,
+            "success_gap_confidence_interval": self.success_gap_confidence_interval,
+        }
+
 
 def clopper_pearson_interval(
     successes: int, trials: int, *, alpha: float = 0.05
