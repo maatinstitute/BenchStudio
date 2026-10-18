@@ -5,6 +5,7 @@ from typing import Any, Iterable
 
 from ..campaigns.frozen_plan import FrozenCampaignPlan
 from .claims import ClaimDecision, ClaimType, validate_claim
+from .outcomes import OutcomeProvenanceAudit, OutcomeRecord, audit_outcome_provenance
 
 _FINAL_STATUSES = {"completed", "failed", "cancelled"}
 
@@ -20,6 +21,7 @@ class CampaignAudit:
     attempts_complete: bool
     evidence_verified: bool
     claim: ClaimDecision
+    outcome_provenance: OutcomeProvenanceAudit | None = None
 
 
 def audit_campaign(
@@ -28,6 +30,7 @@ def audit_campaign(
     *,
     claim_type: ClaimType,
     evidence: dict[str, Any] | None = None,
+    outcome_records: Iterable[OutcomeRecord] | None = None,
 ) -> CampaignAudit:
     """Audit frozen-plan accounting and derive claim prerequisites."""
     rows = list(records)
@@ -55,15 +58,29 @@ def audit_campaign(
         and len(rows) == len(planned_ids)
     )
     trusted = bool(rows) and all(row.get("evidence_verified") is True for row in rows)
+    outcome_list = list(outcome_records) if outcome_records is not None else None
+    outcome_audit = audit_outcome_provenance(outcome_list) if outcome_list is not None else None
     claim_evidence = dict(evidence or {})
+    provenance_matches_plan = True
+    if outcome_audit is not None:
+        outcome_ids = {record.attempt_id for record in outcome_list or ()}
+        provenance_matches_plan = outcome_ids == planned_ids
     claim_evidence.update(
         {
             "attempts_complete": attempts_complete,
             "trusted_artifacts": trusted,
-            "outcome_present": bool(rows)
-            and all(row.get("status") in {"completed", "failed", "cancelled"} for row in rows),
+            "outcome_present": (
+                outcome_audit.outcome_present
+                if outcome_audit is not None
+                else bool(rows)
+                and all(row.get("status") in {"completed", "failed", "cancelled"} for row in rows)
+            ),
         }
     )
+    if outcome_audit is not None:
+        claim_evidence["authoritative_scorer_declared"] = (
+            outcome_audit.authoritative_scorer_declared and provenance_matches_plan
+        )
     decision = validate_claim(claim_type, claim_evidence)
     return CampaignAudit(
         len(planned_ids),
@@ -75,4 +92,5 @@ def audit_campaign(
         attempts_complete,
         trusted,
         decision,
+        outcome_audit,
     )
