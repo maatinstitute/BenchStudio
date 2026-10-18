@@ -96,6 +96,16 @@ the following projects. Product runtimes are not vendored into this repository.
   `561dc335cc7808f62d098dbaf7e05111ae444b28`, digest
   `bdc27b654f8dd12c27f81e4b3e0ce898408b623bcc9ef129f4e4f8502b212190`.
   Gateway execution and robot-state validation remain external to this core.
+- URDF Studio / `urdf-ops` world bridge: `benchstudio.integrations.
+  urdf_world_bridge` extracts the dependency-free wire contract from
+  `backend/world_bridge/types.py`, `event_codec.py`, and `worldd_client.py`
+  at upstream commit `561dc335cc7808f62d098dbaf7e05111ae444b28`. Source
+  digests are `57c4905fa1566b11f0c897024434d32c88d8d078dc5deb6357a5d4edc946983e`,
+  `f4337e47297cf91fc4225c13efd69acf07bee7a2d95ee0b3dcef0e8964eaa6a4`, and
+  `b8a85317ee4656481a378e10a0f4decb3d63e58d08b44fe34321d19847475ddb`.
+  It preserves event/transition mappings, strict wire parsing, timestamp
+  conversion, finite joint-state validation, and command acknowledgment
+  semantics; the Pydantic service and robot authority remain external.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment

@@ -54,6 +54,22 @@ from .teleop_replay_timing import (
     replay_schedule_duration_ms,
     resolve_command_time_ms,
 )
+from .urdf_world_bridge import (
+    WorldBridgeCommandAck,
+    WorldBridgeEvent,
+    WorldBridgeEventType,
+    WorldBridgeRolloutMode,
+    WorldBridgeSessionSnapshot,
+    WorldBridgeStatus,
+    WorldBridgeTransitionRecord,
+    WorldBridgeTransitionType,
+    parse_worldd_ack_payload,
+    parse_worldd_session_payload,
+    parse_worldd_status_payload,
+    validate_joint_command_payload,
+    world_bridge_event_type_from_worldd,
+    worldd_event_type_from_world_bridge,
+)
 from .worldepisode import WorldEpisodePreflight, preflight_worldepisode
 
 __all__ = [
@@ -102,4 +118,18 @@ __all__ = [
     "build_replay_schedule",
     "replay_schedule_duration_ms",
     "resolve_command_time_ms",
+    "WorldBridgeCommandAck",
+    "WorldBridgeEvent",
+    "WorldBridgeEventType",
+    "WorldBridgeRolloutMode",
+    "WorldBridgeSessionSnapshot",
+    "WorldBridgeStatus",
+    "WorldBridgeTransitionRecord",
+    "WorldBridgeTransitionType",
+    "parse_worldd_ack_payload",
+    "parse_worldd_session_payload",
+    "parse_worldd_status_payload",
+    "validate_joint_command_payload",
+    "world_bridge_event_type_from_worldd",
+    "worldd_event_type_from_world_bridge",
 ]
