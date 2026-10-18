@@ -32,7 +32,7 @@ from .metadata_conditioning import (
     prompt_mode_metadata,
     validate_metadata,
 )
-from .missingness import MissingOutcomeBounds, missing_outcome_bounds
+from .missingness import MissingOutcomeBounds, missing_outcome_bounds, robopad_paired_bounds
 from .observation_age_audit import analyze as analyze_observation_age
 from .observation_age_audit import validate_inputs as validate_observation_age_inputs
 from .outcome_eval import (
@@ -119,6 +119,7 @@ from .responsiveness import summarize as summarize_selective_responsiveness
 from .responsiveness import validate as validate_selective_responsiveness
 from .result_metrics import completed_outcomes
 from .result_metrics import summarize as summarize_refinement_results
+from .robopad_exposure import LIMITATIONS, audit_splits, build_inventory, demo_family, family_id
 from .score_coverage import ScoreCoverage, audit_score_coverage
 from .transfer import (
     TransferFidelityReport,
@@ -199,6 +200,12 @@ __all__ = [
     "audit_resources",
     "estimate_transfer_gap",
     "missing_outcome_bounds",
+    "robopad_paired_bounds",
+    "LIMITATIONS",
+    "audit_splits",
+    "build_inventory",
+    "demo_family",
+    "family_id",
     "ResourceAudit",
     "ResourceBudget",
     "ResourcePoint",

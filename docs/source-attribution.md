@@ -311,6 +311,21 @@ the following projects. Product runtimes are not vendored into this repository.
   deterministic suffix seeds, source-attempt hash binding, no-padding
   semantics, held-source selection, and immutable retained actions; NumPy
   trace decoding remains lazy and physical/source authority remains external.
+- RoboPAD paired missing-outcome bounds: `robopad_paired_bounds` in
+  `benchstudio.analysis.missingness` directly ports
+  `experiments/icra_missing_outcomes.py` at upstream commit
+  `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
+  `3ea733beb3193eaa0b8ea936214583731355f9a0ad274efbb55560ef141a8a78` and
+  source-test digest `be926548e7e0e856c1ed722bcf05e6b02422e9ccb08bf3a65f6689fc8f99df9c`.
+  It preserves fixed denominators, binary-completion bounds, explicit unknown
+  arms, and the absence of sampling-uncertainty claims.
+- RoboPAD exposure quarantine: `benchstudio.analysis.robopad_exposure` ports
+  the family identity and split-audit boundary from `experiments/icra_exposure.py`
+  at the same upstream commit; source digest
+  `2bdea057d0c14679c9013a445ffa3dad7d2296f3ed0e55d6c300e2e7865ae1ce` and
+  source-test digest `3c3d76ce31057826752027e824b0e0701e1af7506b7dfac10dc649f8dd0a6362`.
+  The audit remains explicitly provisional and freshness-ineligible; dataset
+  bytes, aliases, and broader parent coverage are not certified.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment
