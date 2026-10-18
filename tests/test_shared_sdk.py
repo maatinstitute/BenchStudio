@@ -93,3 +93,24 @@ def test_score_coverage_and_missing_outcome_bounds_are_explicit():
     assert bounds.upper_success_rate == 0.6
     with pytest.raises(ValueError):
         missing_outcome_bounds(scheduled=2, observed=3, successes=1)
+
+
+def test_score_coverage_accepts_declared_early_success_but_not_censoring():
+    early_success = audit_score_coverage(
+        scheduled_steps=10,
+        observed_steps=6,
+        scored_steps=6,
+        success_step=5,
+        termination_reason="success",
+    )
+    assert early_success.complete is True
+    assert early_success.issues == ()
+
+    censored = audit_score_coverage(
+        scheduled_steps=10,
+        observed_steps=6,
+        scored_steps=6,
+        termination_reason="censored",
+    )
+    assert censored.complete is False
+    assert censored.issues == ("evaluation is incomplete: censored",)

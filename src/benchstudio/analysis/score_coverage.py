@@ -1,6 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
+
+TerminationReason = Literal[
+    "success",
+    "failure",
+    "scheduled_end",
+    "censored",
+    "cancelled",
+    "infrastructure_failure",
+]
 
 
 @dataclass(frozen=True)
@@ -11,6 +21,7 @@ class ScoreCoverage:
     post_success_steps: int
     complete: bool
     issues: tuple[str, ...]
+    termination_reason: TerminationReason | None = None
 
     @property
     def coverage_fraction(self) -> float:
@@ -18,7 +29,12 @@ class ScoreCoverage:
 
 
 def audit_score_coverage(
-    *, scheduled_steps: int, observed_steps: int, scored_steps: int, success_step: int | None = None
+    *,
+    scheduled_steps: int,
+    observed_steps: int,
+    scored_steps: int,
+    success_step: int | None = None,
+    termination_reason: TerminationReason | None = None,
 ) -> ScoreCoverage:
     issues: list[str] = []
     if min(scheduled_steps, observed_steps, scored_steps) < 0:
@@ -32,9 +48,26 @@ def audit_score_coverage(
         post_success_steps = max(0, observed_steps - success_step - 1)
         if success_step >= observed_steps:
             issues.append("success_step is outside observed steps")
-    complete = not issues and observed_steps == scheduled_steps and scored_steps == scheduled_steps
+    declared_early_success = termination_reason == "success" and success_step is not None
+    if declared_early_success and success_step != observed_steps - 1:
+        issues.append("success termination must be the final observed step")
+    if declared_early_success and scored_steps != observed_steps:
+        issues.append("early success requires every observed step to be scored")
+    complete = not issues and (
+        (observed_steps == scheduled_steps and scored_steps == scheduled_steps)
+        or declared_early_success
+    )
     if not complete and not issues:
-        issues.append("score does not cover the scheduled evaluation")
+        if termination_reason in {"censored", "cancelled", "infrastructure_failure"}:
+            issues.append(f"evaluation is incomplete: {termination_reason}")
+        else:
+            issues.append("score does not cover the scheduled evaluation")
     return ScoreCoverage(
-        scheduled_steps, observed_steps, scored_steps, post_success_steps, complete, tuple(issues)
+        scheduled_steps,
+        observed_steps,
+        scored_steps,
+        post_success_steps,
+        complete,
+        tuple(issues),
+        termination_reason,
     )
