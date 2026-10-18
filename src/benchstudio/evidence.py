@@ -66,6 +66,8 @@ def verify_artifact_manifest(
     root: Path,
     trust_anchor_path: Path | None = None,
     trusted_manifest_sha256: str | None = None,
+    signature_path: Path | None = None,
+    trusted_public_key: bytes | None = None,
 ) -> dict[str, Any]:
     """Verify bound files and, optionally, an independently supplied digest.
 
@@ -99,6 +101,25 @@ def verify_artifact_manifest(
             mismatches.append(
                 {"file": manifest_path.name, "reason": "external_trust_reference_mismatch"}
             )
+    signature: dict[str, Any] | None = None
+    if signature_path is not None or trusted_public_key is not None:
+        resolved_signature_path = (
+            signature_path or root.parent / f"{root.name}.artifact-manifest.sig"
+        )
+        if not resolved_signature_path.is_file():
+            mismatches.append({"file": manifest_path.name, "reason": "signature_missing"})
+            signature = {"valid": False, "reason": "signature_missing"}
+        elif trusted_public_key is None:
+            mismatches.append({"file": manifest_path.name, "reason": "public_key_missing"})
+            signature = {"valid": False, "reason": "public_key_missing"}
+        else:
+            from .evidence_signing import verify_manifest_signature
+
+            signature = verify_manifest_signature(
+                manifest_path, resolved_signature_path, trusted_public_key
+            )
+            if not signature["valid"]:
+                mismatches.append({"file": manifest_path.name, "reason": signature["reason"]})
     bound_names = set(manifest.get("files", {}))
     for name, expected in manifest.get("files", {}).items():
         path = root / name
@@ -120,6 +141,7 @@ def verify_artifact_manifest(
         "status": manifest.get("status"),
         "mismatches": mismatches,
         "trust_anchor": trust_anchor,
+        "signature": signature,
     }
 
 

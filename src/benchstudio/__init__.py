@@ -119,6 +119,11 @@ from .evidence import (
     verify_artifact_manifest,
     write_manifest_trust_anchor,
 )
+from .evidence_signing import (
+    generate_ed25519_keypair,
+    sign_manifest,
+    verify_manifest_signature,
+)
 from .measurement import ResourceSampler, delta_resources, sample_resources
 from .model_adapters import (
     ModelAdapterDescriptor,
@@ -231,6 +236,9 @@ __all__ = [
     "verify_artifact_manifest",
     "validate_confirmation_plan",
     "write_manifest_trust_anchor",
+    "generate_ed25519_keypair",
+    "sign_manifest",
+    "verify_manifest_signature",
     "load_joint_sequence",
     "build_evaluation_report",
     "build_audited_evaluation_report",
