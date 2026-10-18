@@ -80,6 +80,15 @@ the following projects. Product runtimes are not vendored into this repository.
   `tests/test_outcome_plan.py`. BenchStudio exposes the ports through its
   analysis and campaign packages; external training, checkpoint, simulator,
   and official outcome authority remain outside the repository.
+- RoboPAD path geometry: `benchstudio.conformance.path_geometry` ports the
+  conservative swept-box segment/slab screen from
+  `experiments/icra_path_geometry.py` and its proper-rotation validation
+  boundary from `experiments/icra_reference_pose.py` at upstream commit
+  `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digests are
+  `1beec4f1e9c87fbcb6a1e5bb5e0b48c88b69ef7a217f4b63605be90cb0f4e606` and
+  `1a281a6b43c32e3e8c79ac57eb28f765e1677a0e7e1b646c909cc139a9d17c79`.
+  The port is an intervention preflight only; full robot geometry, tracking
+  error, and physical safety remain external.
 - RoboPAD campaign resource limits: the existing `ResourceBudget` and frozen
   campaign compiler now carry the source campaign manifest's GPU-hour, output
   byte, policy-query, retry, and per-cell timeout ceilings. The shared runner

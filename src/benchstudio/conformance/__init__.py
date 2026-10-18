@@ -25,6 +25,7 @@ from .embodiment import (
     validate_mapping,
     validate_representation_mapping,
 )
+from .path_geometry import proper_rotation, swept_box_intersects
 from .policy_lifecycle import LifecycleState, LifecycleTracker, validate_lifecycle_events
 from .policy_session import (
     ModalityFrame,
@@ -79,6 +80,7 @@ __all__ = [
     "RepresentationSpec",
     "ScheduledAction",
     "SessionStatus",
+    "proper_rotation",
     "SignalSpec",
     "apply_zero_order_hold",
     "audit_deadlines",
@@ -92,4 +94,5 @@ __all__ = [
     "validate_mapping",
     "validate_representation_mapping",
     "validate_scenario_pair",
+    "swept_box_intersects",
 ]
