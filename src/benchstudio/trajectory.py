@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import dataclass
+from numbers import Real
 from pathlib import Path
 from typing import Any
 
@@ -32,7 +33,14 @@ def load_trajectory(path: Path) -> list[Frame]:
         if record.get("stream") == "robot_joints":
             positions = state.get("joint_positions")
             if isinstance(positions, dict):
-                frame.joints.update({str(k): float(v) for k, v in positions.items()})
+                for name, value in positions.items():
+                    if (
+                        not isinstance(value, Real)
+                        or isinstance(value, bool)
+                        or not math.isfinite(value)
+                    ):
+                        continue
+                    frame.joints[str(name)] = float(value)
         elif record.get("stream") == "objects":
             for object_id, pose in state.items():
                 if isinstance(pose, dict) and "position_xyz" in pose:
@@ -198,22 +206,25 @@ def _object_deltas(
 def _finite_vector(value: Any, length: int) -> tuple[float, ...] | None:
     if not isinstance(value, (list, tuple)) or len(value) != length:
         return None
-    try:
-        values = tuple(float(item) for item in value)
-    except (TypeError, ValueError):
+    if any(
+        not isinstance(item, Real) or isinstance(item, bool) or not math.isfinite(item)
+        for item in value
+    ):
         return None
-    return values if all(math.isfinite(item) for item in values) else None
+    return tuple(float(item) for item in value)
 
 
 def _normalized_quaternion(value: Any) -> tuple[float, float, float, float] | None:
     if not isinstance(value, (list, tuple)) or len(value) != 4:
         return None
-    try:
-        values = tuple(float(item) for item in value)
-    except (TypeError, ValueError):
+    if any(
+        not isinstance(item, Real) or isinstance(item, bool) or not math.isfinite(item)
+        for item in value
+    ):
         return None
+    values = tuple(float(item) for item in value)
     norm = math.sqrt(sum(item * item for item in values))
-    if norm <= 1e-12 or not all(math.isfinite(item) for item in values):
+    if norm <= 1e-12:
         return None
     return tuple(item / norm for item in values)  # type: ignore[return-value]
 

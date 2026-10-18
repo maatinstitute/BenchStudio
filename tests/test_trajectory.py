@@ -59,3 +59,21 @@ def test_malformed_pose_is_reported_without_crashing(tmp_path):
     report = compare_trajectories(first, second)
     assert report is not None
     assert report["validation"]["invalid_pose_count"] == 1
+
+
+def test_textual_trajectory_values_are_not_coerced_into_measurements(tmp_path):
+    first = tmp_path / "a.ndjson"
+    second = tmp_path / "b.ndjson"
+    first.write_text(
+        '{"t_ms":0,"stream":"robot_joints","state":{"joint_positions":{"j1":"0.1"}}}\n'
+        '{"t_ms":0,"stream":"objects","state":{"box":{"position_xyz":["0",0,0],"quat_wxyz":[1,0,0,0]}}}\n'
+    )
+    second.write_text(
+        '{"t_ms":0,"stream":"robot_joints","state":{"joint_positions":{"j1":0.2}}}\n'
+        '{"t_ms":0,"stream":"objects","state":{"box":{"position_xyz":[0,0,0],"quat_wxyz":[1,0,0,0]}}}\n'
+    )
+    report = compare_trajectories(first, second)
+    assert report is not None
+    assert report["joint_rmse_rad"]["final"] is None
+    assert report["validation"]["invalid_pose_count"] == 1
+    assert report["split"] is None
