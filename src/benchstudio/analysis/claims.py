@@ -37,12 +37,14 @@ def validate_claim(claim_type: ClaimType, evidence: dict[str, Any]) -> ClaimDeci
             "outcome_present",
             "authoritative_scorer_declared",
             "trusted_artifacts",
+            "attempts_complete",
         ),
         ClaimType.PAIRED_COMPARISON: (
             "outcome_present",
             "paired_conditions",
             "semantic_match",
             "uncertainty_reported",
+            "attempts_complete",
         ),
         ClaimType.REAL_WORLD_TRANSFER: (
             "paired_conditions",
@@ -50,6 +52,7 @@ def validate_claim(claim_type: ClaimType, evidence: dict[str, Any]) -> ClaimDeci
             "simulation_evidence",
             "physical_evidence",
             "transfer_protocol",
+            "attempts_complete",
         ),
     }[claim_type]
     missing = tuple(name for name in required if not prerequisites[name])

@@ -2,6 +2,7 @@
 
 from .adapters import AdapterDescriptor, AdapterRegistry, Dependency, default_registry
 from .analysis import (
+    CampaignAudit,
     ClaimDecision,
     ClaimType,
     EventBookmark,
@@ -17,6 +18,7 @@ from .analysis import (
     ScoreCoverage,
     TransferFidelityReport,
     TransferGap,
+    audit_campaign,
     audit_inference_schedule,
     audit_resources,
     audit_score_coverage,
@@ -94,6 +96,7 @@ from .trajectory import compare_trajectories, load_trajectory
 __all__ = [
     "ActionChunk",
     "ClaimDecision",
+    "CampaignAudit",
     "ClaimType",
     "ActionSpec",
     "EmbodimentRef",
@@ -169,6 +172,7 @@ __all__ = [
     "audit_resources",
     "pareto_frontier",
     "audit_inference_schedule",
+    "audit_campaign",
     "estimate_transfer_gap",
     "summarize_transfer_fidelity",
     "audit_deadlines",
