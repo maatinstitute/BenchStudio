@@ -2,12 +2,20 @@
 
 from .adapters import AdapterDescriptor, AdapterRegistry, Dependency, default_registry
 from .analysis import (
+    ClaimDecision,
+    ClaimType,
     EventBookmark,
     MissingOutcomeBounds,
+    ResourceAudit,
+    ResourceBudget,
     ScoreCoverage,
+    TransferGap,
+    audit_resources,
     audit_score_coverage,
     bookmark_critical_events,
+    estimate_transfer_gap,
     missing_outcome_bounds,
+    validate_claim,
 )
 from .campaigns import (
     AttemptKey,
@@ -33,7 +41,15 @@ from .conformance import (
     validate_observation,
     validate_scenario_pair,
 )
-from .contracts import ActionChunk, Observation, ObservationFrame, Policy, Simulator, Timestamp
+from .contracts import (
+    ActionChunk,
+    ModelCapabilityProfile,
+    Observation,
+    ObservationFrame,
+    Policy,
+    Simulator,
+    Timestamp,
+)
 from .evidence import (
     NdjsonWriter,
     build_artifact_manifest,
@@ -47,6 +63,8 @@ from .trajectory import compare_trajectories, load_trajectory
 
 __all__ = [
     "ActionChunk",
+    "ClaimDecision",
+    "ClaimType",
     "ActionSpec",
     "AdapterDescriptor",
     "AdapterCapabilities",
@@ -65,6 +83,7 @@ __all__ = [
     "EpisodeResult",
     "Intervention",
     "Observation",
+    "ModelCapabilityProfile",
     "ObservationFrame",
     "Policy",
     "RunConfig",
@@ -75,6 +94,9 @@ __all__ = [
     "FrozenCampaignPlan",
     "ScenarioContract",
     "ScoreCoverage",
+    "ResourceAudit",
+    "ResourceBudget",
+    "TransferGap",
     "ValidationIssue",
     "build_comparison_report",
     "default_registry",
@@ -87,6 +109,8 @@ __all__ = [
     "load_trajectory",
     "run_episodes",
     "audit_score_coverage",
+    "audit_resources",
+    "estimate_transfer_gap",
     "audit_deadlines",
     "bookmark_critical_events",
     "missing_outcome_bounds",
@@ -94,5 +118,6 @@ __all__ = [
     "validate_adapter_capabilities",
     "validate_observation",
     "validate_scenario_pair",
+    "validate_claim",
     "validate_counterfactual_pair",
 ]

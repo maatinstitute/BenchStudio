@@ -7,6 +7,20 @@ ClockDomain = Literal["sim_time", "host_monotonic", "robot_clock"]
 
 
 @dataclass(frozen=True)
+class ModelCapabilityProfile:
+    model_id: str
+    family: Literal["vla", "planner", "world_model", "safety_monitor", "custom"]
+    input_modalities: tuple[str, ...]
+    output_representation: str
+    supports_closed_loop: bool
+    supports_action_chunks: bool
+    supported_metrics: tuple[str, ...]
+
+    def supports(self, metric: str) -> bool:
+        return metric in self.supported_metrics
+
+
+@dataclass(frozen=True)
 class Timestamp:
     value_ns: int
     domain: ClockDomain

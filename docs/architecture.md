@@ -51,6 +51,12 @@ the same transition index and `pair_id`. Deadline audits and critical-event
 bookmarks make incomplete execution, timing misses, stale observations, and
 unverified execution timestamps explicit without inferring unavailable facts.
 
+Capability profiles, resource audits, transfer-gap estimates, and claim
+validation keep the interpretation layer separate from raw outcomes. A
+simulation result cannot become a real-world-transfer claim without physical
+evidence and a declared transfer protocol; unsupported prerequisites are
+reported rather than inferred.
+
 Simulator implementations register an `AdapterDescriptor`. Optional simulator
 dependencies are probed only when readiness is requested; the mock adapter
 therefore remains usable in a clean Python environment.
