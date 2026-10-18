@@ -127,13 +127,44 @@ class AdapterRegistry:
     def validate_plan(self, plan: Any) -> tuple[str, ...]:
         """Validate backend declarations frozen in a campaign plan."""
         protocol = getattr(plan, "protocol", None) or {}
-        environments = protocol.get("S", {}).get("environments", [])
         issues: list[str] = []
+        if not isinstance(protocol, Mapping):
+            return ("protocol must be a mapping",)
+        system = protocol.get("S", {})
+        if not isinstance(system, Mapping):
+            return ("protocol.S must be a mapping",)
+        environments = system.get("environments", [])
+        if not isinstance(environments, list):
+            return ("protocol.S.environments must be a list",)
+        seen_ids: set[str] = set()
         for environment in environments:
-            if not isinstance(environment, dict) or not environment.get("adapter"):
+            if not isinstance(environment, Mapping):
+                issues.append("environment declaration must be a mapping")
                 continue
-            environment_id = environment.get("id", "<unknown>")
-            simulator_id = environment["adapter"]
+            # Generic environment declarations remain valid for callers that
+            # provide an explicit simulator_factory. Only adapter-backed
+            # declarations are owned by this registry and need these checks.
+            if "adapter" not in environment:
+                continue
+            environment_id = environment.get("id")
+            if not isinstance(environment_id, str) or not environment_id:
+                issues.append("environment declaration requires a non-empty string id")
+                environment_id = "<unknown>"
+            elif environment_id in seen_ids:
+                issues.append(f"duplicate environment id {environment_id}")
+            else:
+                seen_ids.add(environment_id)
+            simulator_id = environment.get("adapter")
+            if not isinstance(simulator_id, str) or not simulator_id:
+                issues.append(f"{environment_id}: adapter must be a non-empty string")
+                continue
+            adapter_config = environment.get("adapter_config", {})
+            if not isinstance(adapter_config, Mapping):
+                issues.append(f"{environment_id}: adapter_config must be a mapping")
+            required = environment.get("required_capabilities", {})
+            if not isinstance(required, Mapping):
+                issues.append(f"{environment_id}: required_capabilities must be a mapping")
+                required = {}
             try:
                 readiness = self.readiness(simulator_id)
             except KeyError:
@@ -144,7 +175,6 @@ class AdapterRegistry:
                     f"{environment_id}: adapter {simulator_id} missing "
                     + ", ".join(readiness["missing_required"])
                 )
-            required = environment.get("required_capabilities", {})
             try:
                 capability_issues = self.capability_issues(simulator_id, required)
             except (TypeError, ValueError) as exc:

@@ -116,3 +116,20 @@ def test_registry_validates_backend_requirements_frozen_in_plan():
     )()
     registry = default_registry(discover_external=False)
     assert registry.validate_plan(plan) == ("sim: adapter mock lacks owns_physics",)
+
+
+@pytest.mark.parametrize(
+    ("environments", "expected"),
+    [
+        ("not-a-list", "protocol.S.environments must be a list"),
+        (["not-a-mapping"], "environment declaration must be a mapping"),
+        ([{"adapter": "mock"}], "environment declaration requires a non-empty string id"),
+        ([{"id": "sim", "adapter": None}], "sim: adapter must be a non-empty string"),
+        ([{"id": "sim", "adapter": "mock", "adapter_config": []}], "sim: adapter_config must be a mapping"),
+        ([{"id": "sim", "adapter": "mock", "required_capabilities": []}], "sim: required_capabilities must be a mapping"),
+        ([{"id": "sim", "adapter": "mock"}, {"id": "sim", "adapter": "mock"}], "duplicate environment id sim"),
+    ],
+)
+def test_registry_rejects_malformed_environment_declarations(environments, expected):
+    plan = type("Plan", (), {"protocol": {"S": {"environments": environments}}})()
+    assert expected in default_registry(discover_external=False).validate_plan(plan)
