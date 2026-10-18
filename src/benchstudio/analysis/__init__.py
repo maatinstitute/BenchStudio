@@ -24,6 +24,8 @@ from .ledger_validation import compare as compare_refinement_ledgers
 from .ledger_validation import validate as validate_refinement_ledger
 from .ledger_validation import validate_completed as validate_completed_refinement_ledger
 from .missingness import MissingOutcomeBounds, missing_outcome_bounds
+from .observation_age_audit import analyze as analyze_observation_age
+from .observation_age_audit import validate_inputs as validate_observation_age_inputs
 from .outcome_eval import (
     boundary_outcome,
     first_attainment_step,
@@ -121,6 +123,8 @@ __all__ = [
     "first_attainment_step",
     "validate_replay_attainment",
     "validate_evaluation_branch",
+    "analyze_observation_age",
+    "validate_observation_age_inputs",
     "EventBookmark",
     "InferenceEvent",
     "InferenceScheduleAudit",

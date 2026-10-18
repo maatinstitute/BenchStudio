@@ -28,6 +28,16 @@ the following projects. Product runtimes are not vendored into this repository.
   `6f096153e5c8cbd5209d89cc42e1e2a9bba41291299153efc3cc3e481d4a4d32`.
   The port preserves frozen scope, evidence/locator/rationale requirements,
   label validation, kappa/agreement metrics, and disagreement records.
+- Refinement/Refresh observation-age audit:
+  `benchstudio.analysis.observation_age_audit` is a direct port of
+  `experiments/tooling/audit_observation_age.py` at upstream commit
+  `8c92e66c7ab19403822cb87908253260666fb3a6`; source digest
+  `ffb18ad855d035d91b2eda60939426cb50c7618dcb45c77363619247bd718b75` and
+  source-test digest
+  `3394e7fee375e3cf5875c8707524085f1e3ece6f27662e8634fdf86296f2c89d`.
+  The port preserves refresh cadence, held-observation identity, recursive
+  field-hash reconciliation, paired episode identities, and first-divergence
+  reporting; historical runtime data and policy-quality claims remain external.
 - Refinement/Refresh result analysis: `benchstudio.analysis.result_metrics`
   is a direct port of `experiments/real_smolvla/result_metrics.py` from the
   same upstream commit. The source digest is
