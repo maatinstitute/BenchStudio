@@ -231,6 +231,16 @@ the following projects. Product runtimes are not vendored into this repository.
   `c1cf7a0c13d190806de2c80e879279d22c28a9a77f0c46eb3135f521ec83a42c`.
   The ramp remains disabled by default to preserve historical constant-speed
   samples; AlpaSim serving and driver authority remain external.
+- AlpaBridge camera-frame preparation: `benchstudio.integrations.alpabridge_image`
+  ports the cover-resize/center-crop utility from
+  `src/alpabridge/simulator/image_ops.py` and the fail-soft optional
+  rectification boundary from `src/alpabridge/simulator/camera_rectification.py`
+  at upstream commit `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`. Source
+  digests are `9004d96f5d9a8db9962195535aa42a3afbd411111457a73945f6bd702d401a34`
+  and `d28b7e7c640f96193bbc5a2f3bf00e9f50ac8eb2cf5b924c64095ef9c92c96a0`;
+  source-test digests are `5a9dabca2690acaab75f36be5717d6d0638e100ec747541490a963ae12fe8cf7`
+  and `a7faa208c70bdfd414c496a16322c277627f54bf8fae5ff07a7610b13628a891`.
+  The external f-theta transform remains optional and is never vendored here.
 - URDF Studio / `urdf-ops`: `benchstudio.conformance.dataset_alignment` ports
   the dataset-alignment registry boundary from `backend/services/
   dataset_alignment.py` at upstream commit

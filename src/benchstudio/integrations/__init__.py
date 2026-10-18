@@ -14,6 +14,13 @@ from .alpabridge_camera_calibration import (
     calibrations_from_session_request,
     camera_protos_from_session_request,
 )
+from .alpabridge_image import (
+    build_rectifier,
+    default_target_config,
+    rectification_disabled,
+    rectify_image,
+    resize_and_center_crop,
+)
 from .alpabridge_lifecycle import (
     LifecycleEvent,
     SyntheticLifecycleService,
@@ -119,6 +126,11 @@ __all__ = [
     "sample_route",
     "point_at_distance",
     "straight_trajectory",
+    "resize_and_center_crop",
+    "rectification_disabled",
+    "default_target_config",
+    "build_rectifier",
+    "rectify_image",
     "FixedReference",
     "CandidateGoals",
     "SourceGeometry",
