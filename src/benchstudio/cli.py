@@ -16,6 +16,14 @@ from .model_adapters import default_model_registry
 from .runner import RunConfig, run_episodes
 
 
+def _mock_policy_factory(_attempt):
+    return MockPolicy()
+
+
+def _mock_simulator_factory(_attempt):
+    return MockSimulator()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run a BenchStudio temporal-fidelity evaluation.")
     parser.add_argument("--episodes", type=int, default=1)
@@ -35,10 +43,16 @@ def main() -> int:
         default=Path("campaign-plan.json"),
         help="Destination for a compiled campaign plan.",
     )
-    parser.add_argument(
+    execution_group = parser.add_mutually_exclusive_group()
+    execution_group.add_argument(
         "--execute-mock",
         action="store_true",
         help="Execute a compiled campaign with the deterministic mock adapters.",
+    )
+    execution_group.add_argument(
+        "--execute-registry",
+        action="store_true",
+        help="Execute adapters declared in the frozen campaign specification.",
     )
     parser.add_argument(
         "--audit",
@@ -85,13 +99,36 @@ def main() -> int:
             f"compiled_plan={args.plan_output} attempts={len(plan.attempts)} "
             f"digest={plan.plan_digest_sha256}"
         )
-        if args.execute_mock:
+        if args.execute_mock or args.execute_registry:
+            if args.execute_registry:
+                environments = plan.protocol.get("S", {}).get("environments", [])
+                enabled_without_adapter = [
+                    item.get("id", "<unknown>")
+                    for item in environments
+                    if isinstance(item, dict)
+                    and item.get("enabled", item.get("kind") != "physical")
+                    and not item.get("adapter")
+                ]
+                if enabled_without_adapter:
+                    raise ValueError(
+                        "--execute-registry requires adapters for enabled environments: "
+                        + ", ".join(enabled_without_adapter)
+                    )
+                model_declared = (plan.protocol.get("M", {}) or {}).get("adapter")
+                policy_factory = None if model_declared else _mock_policy_factory
+                simulator_factory = None
+                model_registry = default_model_registry()
+            else:
+                policy_factory = _mock_policy_factory
+                simulator_factory = _mock_simulator_factory
+                model_registry = None
             executor = CampaignExecutor(
                 plan,
                 args.output,
-                lambda _: MockPolicy(),
-                lambda _: MockSimulator(),
+                policy_factory,
+                simulator_factory,
                 adapter_registry=default_registry(),
+                model_registry=model_registry,
             )
             summary = executor.run()
             print(

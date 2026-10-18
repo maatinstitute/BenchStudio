@@ -44,6 +44,13 @@ python -m benchstudio.cli --campaign-spec campaign.json --execute-mock \
   --audit --archive-output runs/campaign.zip
 ```
 
+When a campaign declares adapter IDs, execute those frozen registry entries
+directly (optional dependencies are checked before work is scheduled):
+
+```bash
+python -m benchstudio.cli --campaign-spec campaign.json --execute-registry
+```
+
 The same command can publish the deterministic bundle to a local
 content-addressed artifact store:
 
