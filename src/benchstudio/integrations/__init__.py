@@ -8,6 +8,7 @@ from .alpabridge import (
 )
 from .gymnasium import GymnasiumSimulator
 from .mujoco import MujocoSimulator
+from .policy_trace import POLICY_TRACE_SCHEMA, TracePolicy, observation_digest_sha256
 from .replay_conformance import run_replay_conformance, zero_order_hold_case
 from .robochallenge import (
     RoboChallengeAction,
@@ -32,4 +33,7 @@ __all__ = [
     "load_alpabridge_telemetry",
     "MujocoSimulator",
     "GymnasiumSimulator",
+    "POLICY_TRACE_SCHEMA",
+    "TracePolicy",
+    "observation_digest_sha256",
 ]

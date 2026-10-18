@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 
 import pytest
 
@@ -8,9 +9,12 @@ from benchstudio.analysis import compare_observation_streams, compare_policy_out
 from benchstudio.campaigns import WorkerLeaseManager
 from benchstudio.contracts import Observation
 from benchstudio.integrations import (
+    POLICY_TRACE_SCHEMA,
     RoboChallengeAction,
     RoboChallengeObservation,
     RoboChallengeObserveOnlyAdapter,
+    TracePolicy,
+    observation_digest_sha256,
     preflight_worldepisode,
     run_replay_conformance,
     validate_robochallenge_message,
@@ -48,6 +52,39 @@ def test_policy_parity_records_instrumentation_failures():
     )
     assert report.equivalent is False
     assert report.mismatches[0]["actual_error"] == "RuntimeError: instrumentation failure"
+
+
+def test_trace_policy_replays_actions_and_binds_observation_digest(tmp_path):
+    observation = Observation(2, 0.2, payload={"joint": [1.0]})
+    trace_path = tmp_path / "policy-trace.jsonl"
+    trace_path.write_text(
+        json.dumps(
+            {
+                "schema": POLICY_TRACE_SCHEMA,
+                "sequence": 2,
+                "actions": [0.5, -0.5],
+                "metadata": {"source": "recorded"},
+                "observation_sha256": observation_digest_sha256(observation),
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    policy = TracePolicy.from_jsonl(trace_path)
+    policy.reset(seed=9)
+    result = policy.predict(observation, denoising_steps=2)
+    assert result.actions == (0.5, -0.5)
+    assert result.metadata == {"source": "recorded", "trace_seed": 9}
+    with pytest.raises(ValueError, match="observation digest mismatch"):
+        policy.predict(Observation(2, 0.2, payload={"joint": [2.0]}), denoising_steps=2)
+
+
+def test_trace_policy_rejects_duplicate_sequences(tmp_path):
+    path = tmp_path / "duplicate.jsonl"
+    row = {"schema": POLICY_TRACE_SCHEMA, "sequence": 1, "actions": [1]}
+    path.write_text(json.dumps(row) + "\n" + json.dumps(row) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="duplicate sequences"):
+        TracePolicy.from_jsonl(path)
 
 
 def test_observation_parity_compares_payload_identity_and_missing_sequences():

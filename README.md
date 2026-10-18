@@ -113,6 +113,11 @@ The reusable evidence layer also provides digest-tracked NDJSON artifacts and
 cross-backend comparison reports for simulator-to-simulator or sim-to-real
 analysis.
 
+Recorded policy traces can be used as a fail-closed parity reference. The
+`benchstudio.integrations.TracePolicy` adapter binds each action to its expected
+observation digest, so altered preprocessing or state cannot silently reuse the
+recorded action sequence.
+
 Compare two or more completed or partially completed frozen campaigns directly
 from their evidence directories. Missing attempts stay missing, and malformed
 attempt summaries are reported as execution failures:
