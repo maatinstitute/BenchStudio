@@ -76,6 +76,17 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
     model = _mapping(spec.get("model", {}), "model")
     if model and not isinstance(model.get("adapter"), str):
         raise ValueError("model.adapter is required when model is declared")
+    if "adapter_config" in model and not isinstance(model["adapter_config"], dict):
+        raise ValueError("model.adapter_config must be a mapping")
+    task = _mapping(spec.get("task"), "task")
+    if "task_revision" in task and (
+        not isinstance(task["task_revision"], str) or not task["task_revision"]
+    ):
+        raise ValueError("task.task_revision must be a non-empty string")
+    if "scenario_pack_digest" in task:
+        digest = task["scenario_pack_digest"]
+        if not isinstance(digest, str) or re.fullmatch(r"(?:sha256:)?[0-9a-f]{64}", digest) is None:
+            raise ValueError("task.scenario_pack_digest must be a SHA-256 digest")
     evaluation = _mapping(spec.get("evaluation", {}), "evaluation")
     _validate_model_capabilities(model, evaluation)
     strategy = evaluation.get("execution_strategy", "sync")
@@ -111,6 +122,8 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
             raise ValueError(f"environment {environment_id} requires kind")
         if "adapter" in item and (not isinstance(item["adapter"], str) or not item["adapter"]):
             raise ValueError(f"environment {environment_id} adapter must be a non-empty string")
+        if "adapter_config" in item and not isinstance(item["adapter_config"], dict):
+            raise ValueError(f"environment {environment_id} adapter_config must be a mapping")
         if "calibration" in item:
             CalibrationRecord.from_mapping(
                 item["calibration"], field=f"environment {environment_id}.calibration"

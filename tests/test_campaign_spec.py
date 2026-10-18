@@ -231,3 +231,44 @@ def test_campaign_spec_rejects_incompatible_model_execution_strategy():
                 },
             }
         )
+
+
+def test_campaign_spec_rejects_malformed_frozen_adapter_configuration():
+    base = {
+        "schema": "benchstudio.campaign.v1",
+        "experiment": {"name": "malformed"},
+        "model": {"adapter": "mock"},
+        "task": {"task_id": "task"},
+        "environments": [{"id": "sim", "kind": "simulator"}],
+        "evaluation": {"seeds": [1], "paired": True, "conditions": [{"x": 1}]},
+    }
+    with pytest.raises(ValueError, match="model.adapter_config"):
+        compile_campaign_spec({**base, "model": {"adapter": "mock", "adapter_config": []}})
+    with pytest.raises(ValueError, match="scenario_pack_digest"):
+        compile_campaign_spec(
+            {**base, "task": {"task_id": "task", "scenario_pack_digest": "latest"}}
+        )
+    with pytest.raises(ValueError, match="adapter_config"):
+        compile_campaign_spec(
+            {
+                **base,
+                "environments": [{"id": "sim", "kind": "simulator", "adapter_config": "latest"}],
+            }
+        )
+
+
+def test_campaign_spec_accepts_pinned_scenario_revision_and_digest():
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "pinned"},
+            "task": {
+                "task_id": "task",
+                "task_revision": "rev-1",
+                "scenario_pack_digest": "sha256:" + "a" * 64,
+            },
+            "environments": [{"id": "sim", "kind": "simulator"}],
+            "evaluation": {"seeds": [1], "paired": True, "conditions": [{"x": 1}]},
+        }
+    )
+    assert plan.protocol["S"]["task"]["task_revision"] == "rev-1"
