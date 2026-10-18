@@ -718,3 +718,13 @@ def test_campaign_archive_can_be_verified_without_extraction(tmp_path):
         archive + b"x", expected_sha256=campaign_archive_digest(archive)
     )
     assert tampered["valid"] is False
+
+
+def test_campaign_archive_verifier_rejects_invalid_embedded_plan(tmp_path):
+    root = tmp_path / "invalid-campaign"
+    root.mkdir()
+    (root / "campaign-plan.json").write_text("{}\n", encoding="utf-8")
+    (root / "attempt-results.jsonl").write_text("\n", encoding="utf-8")
+    result = verify_campaign_archive(build_campaign_archive(root))
+    assert result["valid"] is False
+    assert any(issue["reason"] == "invalid_campaign_plan" for issue in result["issues"])

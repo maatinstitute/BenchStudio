@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+import json
 import zipfile
 from pathlib import Path
 
@@ -66,6 +67,7 @@ def verify_campaign_archive(
     if len(archive) > _MAX_CAMPAIGN_ARCHIVE_BYTES:
         issues.append({"reason": "archive_too_large"})
     names: list[str] = []
+    contents: dict[str, bytes] = {}
     try:
         with zipfile.ZipFile(io.BytesIO(archive)) as package:
             for member in package.infolist():
@@ -79,6 +81,7 @@ def verify_campaign_archive(
                 mode = (member.external_attr >> 16) & 0o170000
                 if mode == 0o120000:
                     issues.append({"reason": "symlink_entry", "name": name})
+                contents.setdefault(name, package.read(member))
             if package.testzip() is not None:
                 issues.append({"reason": "corrupt_member"})
     except zipfile.BadZipFile:
@@ -88,6 +91,8 @@ def verify_campaign_archive(
     required = {"campaign-plan.json", "attempt-results.jsonl"}
     missing = sorted(required - set(names))
     issues.extend({"reason": "required_file_missing", "name": name} for name in missing)
+    if not missing and not any(issue["reason"] == "invalid_zip" for issue in issues):
+        issues.extend(_validate_campaign_contents(contents))
     return {
         "schema": "benchstudio_campaign_archive_verification_v1",
         "digest_sha256": digest,
@@ -96,6 +101,45 @@ def verify_campaign_archive(
         "issues": issues,
         "valid": not issues,
     }
+
+
+def _validate_campaign_contents(contents: dict[str, bytes]) -> list[dict[str, str]]:
+    from .frozen_plan import FrozenCampaignPlan
+
+    issues: list[dict[str, str]] = []
+    try:
+        plan = FrozenCampaignPlan.from_dict(json.loads(contents["campaign-plan.json"]))
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        return [{"reason": "invalid_campaign_plan", "detail": str(exc)}]
+    planned = {attempt.key.attempt_id: attempt.key for attempt in plan.attempts}
+    seen: set[str] = set()
+    for index, line in enumerate(contents["attempt-results.jsonl"].splitlines()):
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError as exc:
+            issues.append({"reason": "invalid_ledger_json", "detail": f"line {index}: {exc}"})
+            continue
+        if not isinstance(record, dict):
+            issues.append({"reason": "invalid_ledger_record", "detail": f"line {index}"})
+            continue
+        attempt_id = record.get("attempt_id")
+        expected = planned.get(attempt_id)
+        if not isinstance(attempt_id, str) or expected is None:
+            issues.append({"reason": "ledger_attempt_outside_plan", "detail": str(attempt_id)})
+            continue
+        if attempt_id in seen:
+            issues.append({"reason": "ledger_duplicate_attempt", "detail": attempt_id})
+        seen.add(attempt_id)
+        if record.get("plan_digest_sha256") != plan.plan_digest_sha256:
+            issues.append({"reason": "ledger_plan_digest_mismatch", "detail": attempt_id})
+        for field in ("run_id", "scenario_id", "pair_id", "condition_id", "environment_id"):
+            if record.get(field) != getattr(expected, field):
+                issues.append(
+                    {"reason": "ledger_identity_mismatch", "detail": f"{attempt_id}:{field}"}
+                )
+    return issues
 
 
 def write_campaign_archive(root: Path, destination: Path) -> dict[str, str | int]:
