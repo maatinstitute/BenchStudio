@@ -13,6 +13,7 @@ from benchstudio.campaigns import (
     load_frozen_campaign_plan,
     validate_counterfactual_plan,
 )
+from benchstudio.campaigns.frozen_plan import PlannedAttempt, _plan_digest
 
 
 def test_frozen_campaign_has_stable_complete_matrix(tmp_path):
@@ -32,6 +33,16 @@ def test_frozen_campaign_has_stable_complete_matrix(tmp_path):
         json.loads((tmp_path / "plan.json").read_text())["plan_digest_sha256"]
         == plan.plan_digest_sha256
     )
+
+
+def test_campaign_planner_rejects_duplicate_condition_identities():
+    with pytest.raises(ValueError, match="unique identities"):
+        CampaignPlanner(
+            run_id="duplicate-conditions",
+            scenario_id="task",
+            conditions=[{"budget": 2}, {"budget": 2}],
+            seeds=[1],
+        )
 
 
 def test_frozen_campaign_plan_round_trips_through_independent_loader(tmp_path):
@@ -87,6 +98,42 @@ def test_frozen_campaign_plan_loader_rejects_duplicate_or_mismatched_attempt_ide
     path = tmp_path / "duplicate.json"
     path.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(ValueError, match="duplicate attempt_id"):
+        load_frozen_campaign_plan(path)
+
+    duplicate_key = plan.to_dict()
+    first = plan.attempts[0]
+    second = plan.attempts[1]
+    duplicate_key["attempts"][1]["key"] = {
+        **duplicate_key["attempts"][1]["key"],
+        "scenario_id": first.key.scenario_id,
+        "pair_id": first.key.pair_id,
+        "condition_id": first.key.condition_id,
+        "environment_id": first.key.environment_id,
+        "attempt_id": "different-attempt-id",
+    }
+    duplicate_attempt = PlannedAttempt(
+        key=type(second.key)(
+            first.key.run_id,
+            first.key.scenario_id,
+            first.key.pair_id,
+            first.key.condition_id,
+            "different-attempt-id",
+            first.key.environment_id,
+        ),
+        task_seed=second.task_seed,
+        policy_seed=second.policy_seed,
+        metadata=second.metadata,
+    )
+    duplicate_key["plan_digest_sha256"] = _plan_digest(
+        plan.run_id,
+        [first, duplicate_attempt],
+        paired_schedule=plan.paired_schedule,
+        source_spec_sha256=plan.source_spec_sha256,
+        protocol=plan.protocol,
+    )
+    path = tmp_path / "duplicate-key.json"
+    path.write_text(json.dumps(duplicate_key), encoding="utf-8")
+    with pytest.raises(ValueError, match="duplicate attempt identity"):
         load_frozen_campaign_plan(path)
 
     payload = plan.to_dict()
