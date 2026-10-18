@@ -59,6 +59,35 @@ class FrozenCounterfactualPlan:
         )
 
 
+@dataclass(frozen=True)
+class CounterfactualEvaluation:
+    """Evaluator output for one nominal or intervention branch."""
+
+    success: bool | None
+    recovery_time_ms: float | None = None
+    failure_category: str | None = None
+    metadata: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True)
+class CounterfactualBranchResult:
+    """Evidence record retaining the frozen branch lineage."""
+
+    branch_attempt_id: str
+    pair_id: str
+    nominal_attempt_id: str
+    branch: Literal["nominal", "intervention"]
+    transition_index: int
+    intervention_id: str
+    success: bool | None
+    recovery_time_ms: float | None
+    failure_category: str | None
+    metadata: dict[str, Any]
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
 def compile_counterfactual_plan(
     nominal_plan: FrozenCampaignPlan, interventions: Iterable[Intervention]
 ) -> FrozenCounterfactualPlan:
@@ -114,6 +143,8 @@ def compile_counterfactual_plan(
 
 def validate_counterfactual_plan(plan: FrozenCounterfactualPlan) -> list[str]:
     issues: list[str] = []
+    if not plan.pairs:
+        issues.append("counterfactual plan must contain at least one pair")
     for index, pair in enumerate(plan.pairs):
         issues.extend(
             f"pair {index}: {issue}"
@@ -128,6 +159,71 @@ def validate_counterfactual_plan(plan: FrozenCounterfactualPlan) -> list[str]:
     if expected != plan.plan_digest_sha256:
         issues.append("plan_digest_sha256 does not match pairs")
     return issues
+
+
+def execute_counterfactual_plan(
+    plan: FrozenCounterfactualPlan,
+    evaluator: Any,
+    *,
+    output: Path | None = None,
+) -> tuple[CounterfactualBranchResult, ...]:
+    """Execute nominal and intervention branches through an external evaluator.
+
+    The evaluator owns simulator state and disturbance application. BenchStudio
+    controls branch order, frozen lineage, result serialization, and paired
+    accounting; it never infers a missing outcome as failure.
+    """
+    issues = validate_counterfactual_plan(plan)
+    if issues:
+        raise ValueError("invalid counterfactual plan: " + "; ".join(issues))
+    results: list[CounterfactualBranchResult] = []
+    for pair in plan.pairs:
+        for cell in (pair.nominal, pair.intervention):
+            evaluation = evaluator(cell)
+            if not isinstance(evaluation, CounterfactualEvaluation):
+                raise TypeError("counterfactual evaluator must return CounterfactualEvaluation")
+            if not isinstance(evaluation.success, (bool, type(None))):
+                raise ValueError("counterfactual success must be boolean or None")
+            if evaluation.recovery_time_ms is not None and evaluation.recovery_time_ms < 0:
+                raise ValueError("recovery_time_ms must be non-negative")
+            if evaluation.failure_category is not None and not isinstance(
+                evaluation.failure_category, str
+            ):
+                raise ValueError("failure_category must be a string or None")
+            results.append(
+                CounterfactualBranchResult(
+                    cell.branch_attempt_id,
+                    cell.pair_id,
+                    cell.nominal_attempt_id,
+                    cell.branch,
+                    cell.intervention.transition_index,
+                    cell.intervention.intervention_id,
+                    evaluation.success,
+                    evaluation.recovery_time_ms,
+                    evaluation.failure_category,
+                    dict(evaluation.metadata or {}),
+                )
+            )
+    frozen_results = tuple(results)
+    if output is not None:
+        output.mkdir(parents=True, exist_ok=True)
+        with (output / "counterfactual-results.jsonl").open("w", encoding="utf-8") as handle:
+            for result in frozen_results:
+                handle.write(json.dumps(result.to_dict(), sort_keys=True) + "\n")
+        summary = {
+            "schema": "benchstudio.counterfactual_results.v1",
+            "run_id": plan.run_id,
+            "source_plan_digest_sha256": plan.source_plan_digest_sha256,
+            "plan_digest_sha256": plan.plan_digest_sha256,
+            "result_digest_sha256": _digest([result.to_dict() for result in frozen_results]),
+            "scheduled_branch_count": len(frozen_results),
+            "completed_branch_count": len(frozen_results),
+            "unknown_outcome_count": sum(result.success is None for result in frozen_results),
+        }
+        (output / "counterfactual-summary.json").write_text(
+            json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+    return frozen_results
 
 
 def validate_counterfactual_pair(

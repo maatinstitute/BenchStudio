@@ -25,11 +25,14 @@ from .confirmation import (
     validate_confirmation_plan,
 )
 from .counterfactual import (
+    CounterfactualBranchResult,
     CounterfactualCell,
+    CounterfactualEvaluation,
     CounterfactualPair,
     FrozenCounterfactualPlan,
     Intervention,
     compile_counterfactual_plan,
+    execute_counterfactual_plan,
     validate_counterfactual_pair,
     validate_counterfactual_plan,
 )
@@ -76,9 +79,12 @@ __all__ = [
     "load_campaign_document",
     "compile_campaign_spec",
     "CounterfactualCell",
+    "CounterfactualBranchResult",
+    "CounterfactualEvaluation",
     "CounterfactualPair",
     "FrozenCounterfactualPlan",
     "compile_counterfactual_plan",
+    "execute_counterfactual_plan",
     "ConfirmationCase",
     "ConfirmationCaseResult",
     "ConfirmationEvaluation",
