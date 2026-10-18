@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from benchstudio.campaigns import CampaignExecutor, CampaignPlanner
+from benchstudio.campaigns import CampaignExecutor, CampaignPlanner, WorkerLeaseManager
 from benchstudio.mock import MockPolicy, MockSimulator
 
 
@@ -50,3 +50,22 @@ def test_campaign_executor_rejects_a_different_plan_at_existing_output(tmp_path)
         CampaignExecutor(
             second, tmp_path / "campaign", lambda _: MockPolicy(), lambda _: MockSimulator()
         )
+
+
+def test_campaign_executor_accounts_for_attempts_leased_by_another_worker(tmp_path):
+    plan = CampaignPlanner(
+        run_id="run-1", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    leases = WorkerLeaseManager(tmp_path / "leases")
+    held = leases.acquire(plan.attempts[0].key.attempt_id, "worker-a")
+    assert held is not None
+    result = CampaignExecutor(
+        plan,
+        tmp_path / "campaign",
+        lambda _: MockPolicy(),
+        lambda _: MockSimulator(),
+        worker_id="worker-b",
+        lease_manager=leases,
+    ).run()
+    assert result.committed_attempt_ids == ()
+    assert result.leased_out_attempt_ids == ("attempt-000000",)
