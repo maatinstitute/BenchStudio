@@ -32,6 +32,16 @@ def main() -> int:
         action="store_true",
         help="Execute a compiled campaign with the deterministic mock adapters.",
     )
+    parser.add_argument(
+        "--audit",
+        action="store_true",
+        help="Audit the executed campaign ledger and print its claim status.",
+    )
+    parser.add_argument(
+        "--archive-output",
+        type=Path,
+        help="Write a deterministic immutable archive of the executed campaign evidence.",
+    )
     args = parser.parse_args()
     if args.campaign_spec is not None:
         spec = load_campaign_document(args.campaign_spec)
@@ -42,16 +52,30 @@ def main() -> int:
             f"digest={plan.plan_digest_sha256}"
         )
         if args.execute_mock:
-            summary = CampaignExecutor(
+            executor = CampaignExecutor(
                 plan,
                 args.output,
                 lambda _: MockPolicy(),
                 lambda _: MockSimulator(),
-            ).run()
+            )
+            summary = executor.run()
             print(
                 f"campaign_status=completed committed={len(summary.committed_attempt_ids)} "
                 f"missing={len(summary.missing_attempt_ids)}"
             )
+            if args.audit:
+                audit = executor.audit()
+                print(
+                    f"audit_status={audit.claim.status} "
+                    f"attempts_complete={audit.attempts_complete} "
+                    f"evidence_verified={audit.evidence_verified}"
+                )
+            if args.archive_output is not None:
+                archive = executor.archive(args.archive_output)
+                print(
+                    f"archive_output={archive['path']} archive_sha256={archive['sha256']} "
+                    f"archive_bytes={archive['bytes']}"
+                )
         return 0
     config = RunConfig(
         episodes=args.episodes,

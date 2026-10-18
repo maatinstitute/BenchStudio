@@ -30,6 +30,14 @@ python -m benchstudio.cli --campaign-spec campaign.json --plan-output campaign-p
 
 Each run emits `manifest.json`, `episodes.jsonl`, and `summary.json`.
 
+Compiled mock campaigns can also be audited and packaged as immutable evidence
+bundles:
+
+```bash
+python -m benchstudio.cli --campaign-spec campaign.json --execute-mock \
+  --audit --archive-output runs/campaign.zip
+```
+
 The reusable evidence layer also provides digest-tracked NDJSON artifacts and
 cross-backend comparison reports for simulator-to-simulator or sim-to-real
 analysis.

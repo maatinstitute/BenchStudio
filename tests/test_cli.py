@@ -45,6 +45,7 @@ def test_cli_can_execute_compiled_campaign_with_mock_backend(monkeypatch, tmp_pa
     spec_path = tmp_path / "campaign.json"
     plan_path = tmp_path / "plan.json"
     output = tmp_path / "run"
+    archive = tmp_path / "campaign.zip"
     spec_path.write_text(
         json.dumps(
             {
@@ -72,8 +73,14 @@ def test_cli_can_execute_compiled_campaign_with_mock_backend(monkeypatch, tmp_pa
             "--output",
             str(output),
             "--execute-mock",
+            "--audit",
+            "--archive-output",
+            str(archive),
         ],
     )
     assert main() == 0
     assert (output / "attempt-results.jsonl").is_file()
-    assert "campaign_status=completed" in capsys.readouterr().out
+    assert archive.is_file()
+    captured = capsys.readouterr()
+    assert "campaign_status=completed" in captured.out
+    assert "audit_status=qualified" in captured.out
