@@ -11,6 +11,7 @@ from pathlib import Path
 from statistics import mean
 from typing import Any, Callable
 
+from .analysis.resources import ResourceBudget, audit_resources
 from .conformance import ActionSpec, PolicySession, validate_observation
 from .contracts import Policy, Simulator
 from .evidence import (
@@ -36,6 +37,7 @@ class RunConfig:
     initial_condition_id: str = "default"
     action_spec: ActionSpec | None = None
     policy_timeout_ns: int | None = None
+    resource_budget: ResourceBudget | None = None
 
     def __post_init__(self) -> None:
         if self.episodes < 1:
@@ -448,7 +450,7 @@ def _summary(
     successes = sum(result.success for result in results)
     completed = sum(result.status in {"success", "failure"} for result in results)
     scheduled = config.episodes
-    return {
+    summary = {
         "schema": "benchstudio_run_summary_v1",
         "task_id": config.task_id,
         "robot_id": config.robot_id,
@@ -463,6 +465,31 @@ def _summary(
         "campaign_status": campaign_status,
         "episodes": [asdict(result) for result in results],
     }
+    if config.resource_budget is not None:
+        compute_values = [
+            result.resource_metrics.get("compute_time_ms")
+            for result in results
+            if isinstance(result.resource_metrics.get("compute_time_ms"), (int, float))
+        ]
+        if config.resource_budget.max_compute_time_ms is not None and len(compute_values) != len(
+            results
+        ):
+            summary["resource_budget_audit"] = {
+                "valid": False,
+                "violations": ["compute_time_unavailable"],
+            }
+        else:
+            audit = audit_resources(
+                calls=sum(result.policy_calls for result in results),
+                wall_time_ms=sum(result.duration_ms for result in results),
+                compute_time_ms=sum(compute_values),
+                budget=config.resource_budget,
+            )
+            summary["resource_budget_audit"] = {
+                "valid": audit.valid,
+                "violations": list(audit.violations),
+            }
+    return summary
 
 
 def _campaign_failure(index: int, error: Exception) -> EpisodeResult:

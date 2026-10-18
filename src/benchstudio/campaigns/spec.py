@@ -118,7 +118,12 @@ def _validate_resource_budget(evaluation: dict[str, Any]) -> None:
     if not isinstance(budget, dict):
         raise ValueError("evaluation.resource_budget must be a mapping")
     for name, value in budget.items():
-        if name not in {"max_attempts", "max_policy_calls", "max_wall_time_ms"}:
+        if name not in {
+            "max_attempts",
+            "max_policy_calls",
+            "max_wall_time_ms",
+            "max_compute_time_ms",
+        }:
             raise ValueError(f"unsupported resource budget field: {name}")
         if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
             raise ValueError(f"resource budget {name} must be non-negative")

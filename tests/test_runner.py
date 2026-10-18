@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+from benchstudio.analysis import ResourceBudget
 from benchstudio.conformance import ActionSpec
 from benchstudio.contracts import ActionChunk
 from benchstudio.mock import MockPolicy, MockSimulator
@@ -45,6 +46,23 @@ def test_resource_sampler_is_recorded_as_attempt_evidence(tmp_path):
     measurement = events[-1]
     assert measurement["event_type"] == "resource_measurement"
     assert measurement["delta"]["inference_calls"] == 3
+
+
+def test_runtime_resource_budget_audit_is_written_to_summary(tmp_path):
+    summary = run_episodes(
+        MockPolicy(),
+        MockSimulator(),
+        RunConfig(
+            episodes=1,
+            action_prefix=1,
+            resource_budget=ResourceBudget(max_inference_calls=1),
+        ),
+        tmp_path / "budget",
+    )
+    assert summary["resource_budget_audit"] == {
+        "valid": False,
+        "violations": ["inference_call_budget_exceeded"],
+    }
 
 
 def test_action_prefix_changes_policy_call_count(tmp_path):

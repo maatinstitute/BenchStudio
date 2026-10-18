@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable
 
+from ..analysis.resources import ResourceBudget
 from ..contracts import Policy, Simulator
 from ..evidence import verify_artifact_manifest
 from ..measurement import ResourceSampler
@@ -119,6 +120,7 @@ class CampaignExecutor:
                         observation_refresh_ticks=condition.get("observation_refresh_ticks", 1),
                         max_episode_steps=condition.get("max_episode_steps", 100),
                         initial_condition_id=attempt.key.pair_id,
+                        resource_budget=_resource_budget(self.plan),
                     )
                     summary = run_episodes(
                         self.policy_factory(attempt),
@@ -146,6 +148,7 @@ class CampaignExecutor:
                         "completed_episode_count": summary.get("completed_episode_count"),
                         "attempt_summary_path": str(attempt_dir / "summary.json"),
                         "evidence_verified": True,
+                        "resource_budget_audit": summary.get("resource_budget_audit"),
                     },
                 )
                 committed.append(attempt_id)
@@ -161,3 +164,19 @@ class CampaignExecutor:
             tuple(leased_out),
             tuple(cancelled),
         )
+
+
+def _resource_budget(plan: FrozenCampaignPlan) -> ResourceBudget | None:
+    evaluation = (plan.protocol or {}).get("P", {}).get("evaluation", {})
+    values = evaluation.get("resource_budget", {})
+    if not isinstance(values, dict):
+        return None
+    if not any(
+        name in values for name in ("max_policy_calls", "max_wall_time_ms", "max_compute_time_ms")
+    ):
+        return None
+    return ResourceBudget(
+        max_inference_calls=values.get("max_policy_calls"),
+        max_wall_time_ms=values.get("max_wall_time_ms"),
+        max_compute_time_ms=values.get("max_compute_time_ms"),
+    )
