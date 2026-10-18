@@ -32,11 +32,16 @@ class IsaacLabSimulator:
     ) -> None:
         if not callable(getattr(env, "reset", None)) or not callable(getattr(env, "step", None)):
             raise TypeError("Isaac Lab env must provide reset and step")
-        if env_index < 0:
+        if isinstance(env_index, bool) or not isinstance(env_index, int) or env_index < 0:
             raise ValueError("env_index must be non-negative")
-        if dt_s is not None and (dt_s <= 0 or not math.isfinite(float(dt_s))):
+        if dt_s is not None and (
+            isinstance(dt_s, bool)
+            or not isinstance(dt_s, (int, float))
+            or dt_s <= 0
+            or not math.isfinite(dt_s)
+        ):
             raise ValueError("dt_s must be finite and positive")
-        if max_steps < 1:
+        if isinstance(max_steps, bool) or not isinstance(max_steps, int) or max_steps < 1:
             raise ValueError("max_steps must be positive")
         self.env = env
         self.observation_fn = observation_fn or _default_observation
@@ -130,7 +135,12 @@ class IsaacLabSimulator:
 
 def _env_step_dt(env: Any) -> float:
     value = getattr(env, "step_dt", 1.0)
-    if not isinstance(value, (int, float)) or value <= 0 or not math.isfinite(float(value)):
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or value <= 0
+        or not math.isfinite(value)
+    ):
         raise ValueError("Isaac Lab env.step_dt must be finite and positive")
     return float(value)
 

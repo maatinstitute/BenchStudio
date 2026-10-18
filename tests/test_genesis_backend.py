@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from benchstudio.integrations import GenesisSimulator
 
 
@@ -37,3 +39,15 @@ def test_genesis_adapter_binds_explicit_scene_callbacks():
     assert simulator.is_success() is True
     simulator.close()
     assert scene.closed is True
+
+
+@pytest.mark.parametrize("dt_s", [True, "0.01", float("nan")])
+def test_genesis_rejects_coerced_timing_controls(dt_s):
+    scene = _FakeScene()
+    with pytest.raises(ValueError, match="dt_s"):
+        GenesisSimulator(
+            scene,
+            observation_fn=lambda current: {"value": current.value},
+            action_fn=lambda current, action: None,
+            dt_s=dt_s,
+        )

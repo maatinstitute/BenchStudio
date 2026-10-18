@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from benchstudio.integrations import IsaacLabSimulator
 
 
@@ -39,3 +41,9 @@ def test_isaaclab_adapter_selects_one_vectorized_environment():
     assert simulator.is_success() is True
     simulator.close()
     assert env.closed is True
+
+
+@pytest.mark.parametrize("dt_s", [True, "0.05", float("inf")])
+def test_isaaclab_rejects_coerced_timing_controls(dt_s):
+    with pytest.raises(ValueError, match="dt_s"):
+        IsaacLabSimulator(_FakeIsaacEnv(), dt_s=dt_s)

@@ -41,9 +41,14 @@ class GenesisSimulator:
             raise TypeError("observation_fn must be callable")
         if not callable(action_fn):
             raise TypeError("action_fn must be callable")
-        if dt_s <= 0 or not math.isfinite(float(dt_s)):
+        if (
+            isinstance(dt_s, bool)
+            or not isinstance(dt_s, (int, float))
+            or dt_s <= 0
+            or not math.isfinite(dt_s)
+        ):
             raise ValueError("dt_s must be finite and positive")
-        if max_steps < 1:
+        if isinstance(max_steps, bool) or not isinstance(max_steps, int) or max_steps < 1:
             raise ValueError("max_steps must be positive")
         if reset_fn is None and not callable(getattr(scene, "reset", None)):
             raise ValueError("scene.reset or reset_fn is required")
