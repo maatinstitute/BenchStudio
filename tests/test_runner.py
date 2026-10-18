@@ -21,6 +21,32 @@ def test_run_emits_reproducible_artifact_set(tmp_path):
     assert {"observation_age_ms", "policy_latency_ms", "action_prefix"} <= records[0].keys()
 
 
+def test_resource_sampler_is_recorded_as_attempt_evidence(tmp_path):
+    samples = iter(
+        [
+            {"inference_calls": 10, "gpu_time_ms": 100.0, "gpu_memory_bytes": 512},
+            {"inference_calls": 13, "gpu_time_ms": 125.0, "gpu_memory_bytes": 640},
+        ]
+    )
+    run_dir = tmp_path / "resources"
+    summary = run_episodes(
+        MockPolicy(),
+        MockSimulator(),
+        RunConfig(episodes=1, action_prefix=1),
+        run_dir,
+        resource_sampler=lambda: next(samples),
+    )
+    assert summary["episodes"][0]["resource_metrics"] == {
+        "gpu_memory_bytes": 640,
+        "gpu_time_ms": 25.0,
+        "inference_calls": 3,
+    }
+    events = [json.loads(line) for line in (run_dir / "episodes.jsonl").read_text().splitlines()]
+    measurement = events[-1]
+    assert measurement["event_type"] == "resource_measurement"
+    assert measurement["delta"]["inference_calls"] == 3
+
+
 def test_action_prefix_changes_policy_call_count(tmp_path):
     one = run_episodes(
         MockPolicy(), MockSimulator(), RunConfig(episodes=1, action_prefix=1), tmp_path / "one"

@@ -92,6 +92,7 @@ from .evidence import (
     verify_artifact_manifest,
     write_manifest_trust_anchor,
 )
+from .measurement import ResourceSampler, delta_resources, sample_resources
 from .replay import ReplayPolicy, ReplaySimulator, load_joint_sequence
 from .reporting import build_evaluation_report, render_html_report, write_html_report
 from .runner import EpisodeResult, RunConfig, run_episodes
@@ -186,6 +187,9 @@ __all__ = [
     "compare_trajectories",
     "load_trajectory",
     "run_episodes",
+    "ResourceSampler",
+    "sample_resources",
+    "delta_resources",
     "load_scenario_pack",
     "validate_scenario_pack",
     "audit_score_coverage",

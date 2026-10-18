@@ -5,7 +5,7 @@ import json
 import platform
 import sys
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from statistics import mean
@@ -19,6 +19,7 @@ from .evidence import (
     environment_fingerprint,
     write_manifest_trust_anchor,
 )
+from .measurement import ResourceSampler, delta_resources, sample_resources
 
 
 @dataclass(frozen=True)
@@ -68,11 +69,17 @@ class EpisodeResult:
     mean_policy_latency_ms: float
     p95_policy_latency_ms: float
     action_prefix: int
+    resource_metrics: dict[str, float | int | str] = field(default_factory=dict)
     error: str | None = None
 
 
 def run_episodes(
-    policy: Policy, simulator: Simulator, config: RunConfig, output: Path
+    policy: Policy,
+    simulator: Simulator,
+    config: RunConfig,
+    output: Path,
+    *,
+    resource_sampler: ResourceSampler | None = None,
 ) -> dict[str, Any]:
     output.mkdir(parents=True, exist_ok=True)
     manifest = _manifest(policy, simulator, config)
@@ -83,7 +90,13 @@ def run_episodes(
     try:
         for index in range(config.episodes):
             result, _events = _run_episode(
-                policy, simulator, config, index, emit=trace_writer.write, retain_events=False
+                policy,
+                simulator,
+                config,
+                index,
+                emit=trace_writer.write,
+                retain_events=False,
+                resource_sampler=resource_sampler,
             )
             episode_results.append(result)
             if result.status not in {"success", "failure"}:
@@ -128,6 +141,7 @@ def _run_episode(
     index: int,
     emit: Callable[[dict[str, Any]], None] | None = None,
     retain_events: bool = True,
+    resource_sampler: ResourceSampler | None = None,
 ) -> tuple[EpisodeResult, list[dict[str, Any]]]:
     episode_id = f"episode-{index:04d}"
     seed = config.seed + index
@@ -152,6 +166,7 @@ def _run_episode(
     observation_count = 1
     steps = 0
     start = time.perf_counter_ns()
+    resource_before = sample_resources(resource_sampler)
     try:
         session.initialize(seed=seed)
         session.start()
@@ -324,6 +339,20 @@ def _run_episode(
     elif simulator.is_done() and termination_reason != "success":
         termination_reason = "failure"
     session.stop()
+    resource_after = sample_resources(resource_sampler)
+    resource_metrics = delta_resources(resource_before, resource_after)
+    record(
+        {
+            "schema": "benchstudio.event.v1",
+            "event_type": "resource_measurement",
+            "episode_id": episode_id,
+            "pair_id": pair_id,
+            "condition_id": condition_id,
+            "before": resource_before,
+            "after": resource_after,
+            "delta": resource_metrics,
+        }
+    )
     duration_ms = (time.perf_counter_ns() - start) / 1_000_000
     return EpisodeResult(
         episode_id=episode_id,
@@ -341,6 +370,7 @@ def _run_episode(
         mean_policy_latency_ms=round(mean(latencies), 6) if latencies else 0.0,
         p95_policy_latency_ms=round(_percentile(latencies, 0.95), 6),
         action_prefix=config.action_prefix,
+        resource_metrics=resource_metrics,
     ), events
 
 
