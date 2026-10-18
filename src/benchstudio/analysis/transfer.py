@@ -113,12 +113,16 @@ def summarize_transfer_fidelity(records: list[dict[str, Any]]) -> TransferFideli
             continue
         seen.add(identity)
         pairs.append(record)
-    complete = [
-        record
-        for record in pairs
-        if isinstance(record.get("simulation_success"), bool)
-        and isinstance(record.get("physical_success"), bool)
-    ]
+    complete: list[dict[str, Any]] = []
+    for index, record in enumerate(pairs):
+        simulation = record.get("simulation_success")
+        physical = record.get("physical_success")
+        if not isinstance(simulation, bool) or not isinstance(physical, bool):
+            issues.append(
+                f"record {index}: simulation_success and physical_success must be boolean"
+            )
+            continue
+        complete.append(record)
     if len(complete) < len(pairs):
         issues.append("some matched outcomes are missing")
     if not complete:
@@ -170,12 +174,22 @@ def summarize_transfer_fidelity(records: list[dict[str, Any]]) -> TransferFideli
     )
     system_rates = _system_rates(complete)
     concordance = _ranking_concordance(system_rates)
-    ages = [
-        float(row["observation_age_ms"])
-        for row in complete
-        if isinstance(row.get("observation_age_ms"), (int, float))
-        and math.isfinite(float(row["observation_age_ms"]))
-    ]
+    ages: list[float] = []
+    for index, row in enumerate(complete):
+        age = row.get("observation_age_ms")
+        if age is None:
+            continue
+        if (
+            isinstance(age, bool)
+            or not isinstance(age, (int, float))
+            or not math.isfinite(float(age))
+            or age < 0
+        ):
+            issues.append(
+                f"complete record {index}: observation_age_ms must be finite and non-negative"
+            )
+            continue
+        ages.append(float(age))
     return TransferFidelityReport(
         len(pairs),
         len(complete),
@@ -198,22 +212,35 @@ def estimate_transfer_gap(
 ) -> TransferGap:
     if len(simulation_successes) != len(physical_successes):
         return TransferGap(0.0, 0.0, 0.0, 0, False, ("paired inputs must have equal length",))
+    invalid = [
+        index
+        for index, (simulation, physical) in enumerate(
+            zip(simulation_successes, physical_successes)
+        )
+        if (simulation is not None and not isinstance(simulation, bool))
+        or (physical is not None and not isinstance(physical, bool))
+    ]
     pairs = [
         (simulation, physical)
         for simulation, physical in zip(simulation_successes, physical_successes)
-        if simulation is not None and physical is not None
+        if isinstance(simulation, bool) and isinstance(physical, bool)
     ]
     if not pairs:
-        return TransferGap(0.0, 0.0, 0.0, 0, False, ("no complete matched pairs",))
+        issues = (["invalid boolean outcome at index " + str(index) for index in invalid]) + [
+            "no complete matched pairs"
+        ]
+        return TransferGap(0.0, 0.0, 0.0, 0, False, tuple(issues))
     simulation_rate = sum(simulation for simulation, _ in pairs) / len(pairs)
     physical_rate = sum(physical for _, physical in pairs) / len(pairs)
+    issues = ["some outcomes are missing"] if len(pairs) != len(simulation_successes) else []
+    issues.extend("invalid boolean outcome at index " + str(index) for index in invalid)
     return TransferGap(
         simulation_rate,
         physical_rate,
         physical_rate - simulation_rate,
         len(pairs),
-        len(pairs) == len(simulation_successes),
-        () if len(pairs) == len(simulation_successes) else ("some outcomes are missing",),
+        not issues,
+        tuple(issues),
     )
 
 

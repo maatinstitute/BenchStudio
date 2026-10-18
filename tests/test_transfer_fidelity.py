@@ -87,3 +87,35 @@ def test_transfer_fidelity_artifact_round_trip(tmp_path):
     payload = json.loads(output.read_text(encoding="utf-8"))
     assert payload["schema"] == "benchstudio_transfer_fidelity_report_v1"
     assert payload["complete_pairs"] == 1
+
+
+def test_transfer_fidelity_rejects_invalid_outcomes_and_ages():
+    report = summarize_transfer_fidelity(
+        [
+            {
+                "system_id": "a",
+                "pair_id": "p1",
+                "simulation_success": "yes",
+                "physical_success": True,
+                "observation_age_ms": -1,
+            },
+            {
+                "system_id": "a",
+                "pair_id": "p2",
+                "simulation_success": True,
+                "physical_success": False,
+                "observation_age_ms": float("nan"),
+            },
+        ]
+    )
+    assert report.complete_pairs == 1
+    assert any("must be boolean" in issue for issue in report.issues)
+    assert any("observation_age_ms must be finite" in issue for issue in report.issues)
+
+
+def test_transfer_gap_rejects_non_boolean_outcomes():
+    from benchstudio.analysis import estimate_transfer_gap
+
+    gap = estimate_transfer_gap([True, "yes"], [False, True])
+    assert gap.valid is False
+    assert "invalid boolean outcome at index 1" in gap.issues
