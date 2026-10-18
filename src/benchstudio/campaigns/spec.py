@@ -232,12 +232,19 @@ def _validate_resource_budget(evaluation: dict[str, Any]) -> None:
             "max_policy_calls",
             "max_wall_time_ms",
             "max_compute_time_ms",
+            "max_gpu_hours",
+            "max_bytes",
+            "max_policy_queries",
+            "retry_limit",
+            "per_cell_timeout_seconds",
         }:
             raise ValueError(f"unsupported resource budget field: {name}")
         if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
             raise ValueError(f"resource budget {name} must be non-negative")
         if name == "max_attempts" and int(value) != value:
             raise ValueError("resource budget max_attempts must be an integer")
+        if name in {"max_bytes", "max_policy_queries", "retry_limit"} and int(value) != value:
+            raise ValueError(f"resource budget {name} must be an integer")
 
 
 def _validate_model_capabilities(model: dict[str, Any], evaluation: dict[str, Any]) -> None:

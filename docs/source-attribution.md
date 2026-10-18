@@ -42,6 +42,13 @@ the following projects. Product runtimes are not vendored into this repository.
   `tests/test_outcome_plan.py`. BenchStudio exposes the ports through its
   analysis and campaign packages; external training, checkpoint, simulator,
   and official outcome authority remain outside the repository.
+- RoboPAD campaign resource limits: the existing `ResourceBudget` and frozen
+  campaign compiler now carry the source campaign manifest's GPU-hour, output
+  byte, policy-query, retry, and per-cell timeout ceilings. The shared runner
+  audits those measurements without introducing a second campaign ledger; the
+  source basis is `experiments/outcome_campaign.py` at upstream commit
+  `4ecd468cc67cc40681ca2af9097b7ade5825fadd`, source digest
+  `d19822c6928fb374359a0abdf5d72749aa4fec9cb8c29d068be7689933953c12`.
 - AlpaBridge: `benchstudio.integrations.alpasim_metrics` is a direct
   dependency-free port of `src/alpabridge/neutral/alpasim_metrics.py` from
   upstream commit `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`. Its source digest

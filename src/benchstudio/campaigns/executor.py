@@ -560,13 +560,28 @@ def _resource_budget(plan: FrozenCampaignPlan) -> ResourceBudget | None:
     if not isinstance(values, dict):
         return None
     if not any(
-        name in values for name in ("max_policy_calls", "max_wall_time_ms", "max_compute_time_ms")
+        name in values
+        for name in (
+            "max_policy_calls",
+            "max_wall_time_ms",
+            "max_compute_time_ms",
+            "max_gpu_hours",
+            "max_bytes",
+            "max_policy_queries",
+            "retry_limit",
+            "per_cell_timeout_seconds",
+        )
     ):
         return None
     return ResourceBudget(
         max_inference_calls=values.get("max_policy_calls"),
         max_wall_time_ms=values.get("max_wall_time_ms"),
         max_compute_time_ms=values.get("max_compute_time_ms"),
+        max_gpu_hours=values.get("max_gpu_hours"),
+        max_bytes=values.get("max_bytes"),
+        max_policy_queries=values.get("max_policy_queries"),
+        retry_limit=values.get("retry_limit"),
+        per_cell_timeout_seconds=values.get("per_cell_timeout_seconds"),
     )
 
 

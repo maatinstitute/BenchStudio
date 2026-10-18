@@ -178,7 +178,7 @@ def run_episodes(
                     len(episode_results), exc, status="policy_close_error"
                 )
             )
-    summary = _summary(config, episode_results, campaign_status=campaign_status)
+    summary = _summary(config, episode_results, campaign_status=campaign_status, output=output)
     (output / "summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -585,7 +585,11 @@ def _manifest(policy: Policy, simulator: Simulator, config: RunConfig) -> dict[s
 
 
 def _summary(
-    config: RunConfig, results: list[EpisodeResult], *, campaign_status: str
+    config: RunConfig,
+    results: list[EpisodeResult],
+    *,
+    campaign_status: str,
+    output: Path | None = None,
 ) -> dict[str, Any]:
     successes = sum(result.success for result in results)
     completed = sum(result.status in {"success", "failure"} for result in results)
@@ -628,11 +632,30 @@ def _summary(
                 "violations": ["compute_time_unavailable"],
             }
         else:
+            resource_metrics = [
+                result.resource_metrics
+                for result in results
+                if isinstance(result.resource_metrics, dict)
+            ]
+            gpu_time_values = [
+                value
+                for metrics in resource_metrics
+                for key, value in metrics.items()
+                if key == "gpu_time_ms" and isinstance(value, (int, float))
+            ]
+            output_bytes = (
+                sum(path.stat().st_size for path in output.rglob("*") if path.is_file())
+                if output is not None
+                else None
+            )
             audit = audit_resources(
                 calls=sum(result.policy_calls for result in results),
                 wall_time_ms=sum(result.duration_ms for result in results),
                 compute_time_ms=sum(compute_values),
                 budget=config.resource_budget,
+                gpu_hours=(sum(gpu_time_values) / 3_600_000 if gpu_time_values else None),
+                output_bytes=output_bytes,
+                policy_queries=sum(result.policy_calls for result in results),
             )
             summary["resource_budget_audit"] = {
                 "valid": audit.valid,
