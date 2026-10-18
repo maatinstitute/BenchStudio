@@ -201,6 +201,19 @@ python -m benchstudio.cli --validate-search-plan search-plan.json
 python -m benchstudio.cli --validate-confirmation-plan confirmation-plan.json
 ```
 
+Result artifacts can be audited independently against those frozen plans. The
+commands fail closed when rows are missing, duplicated, mis-bound, or carry
+invalid outcome/failure evidence:
+
+```bash
+python -m benchstudio.cli \
+  --search-results search-results.jsonl \
+  --search-plan search-plan.json
+python -m benchstudio.cli \
+  --confirmation-results confirmation-results.jsonl \
+  --confirmation-plan confirmation-plan.json
+```
+
 Recorded policy traces can be used as a fail-closed parity reference. The
 `benchstudio.integrations.TracePolicy` adapter binds each action to its expected
 observation digest, so altered preprocessing or state cannot silently reuse the

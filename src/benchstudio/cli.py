@@ -190,6 +190,26 @@ def main() -> int:
         help="Load and validate a serialized independent confirmation plan.",
     )
     parser.add_argument(
+        "--search-results",
+        type=Path,
+        help="Audit serialized counterexample-search results against --search-plan.",
+    )
+    parser.add_argument(
+        "--search-plan",
+        type=Path,
+        help="Frozen search plan required by --search-results.",
+    )
+    parser.add_argument(
+        "--confirmation-results",
+        type=Path,
+        help="Audit serialized confirmation results against --confirmation-plan.",
+    )
+    parser.add_argument(
+        "--confirmation-plan",
+        type=Path,
+        help="Frozen confirmation plan required by --confirmation-results.",
+    )
+    parser.add_argument(
         "--claim-type",
         choices=[claim.value for claim in ClaimType],
         default=ClaimType.SINGLE_RUN_OUTCOME.value,
@@ -302,6 +322,51 @@ def main() -> int:
         }
         print(json.dumps(payload, sort_keys=True))
         return 0
+    result_audit_options = (
+        args.search_results is not None,
+        args.search_plan is not None,
+        args.confirmation_results is not None,
+        args.confirmation_plan is not None,
+    )
+    if any(result_audit_options):
+        if args.search_results is not None or args.search_plan is not None:
+            if args.search_results is None or args.search_plan is None:
+                parser.error("--search-results and --search-plan must be supplied together")
+            if args.confirmation_results is not None or args.confirmation_plan is not None:
+                parser.error("search and confirmation result audits are mutually exclusive")
+            from .campaigns import audit_search_results, load_search_plan, load_search_results
+
+            plan = load_search_plan(args.search_plan)
+            records = load_search_results(args.search_results)
+            audit = audit_search_results(plan, records)
+            payload = {
+                "schema": "benchstudio.counterexample_search_audit_v1",
+                "plan_digest_sha256": plan.plan_digest_sha256,
+                "result_path": str(args.search_results),
+                **audit.to_dict(),
+            }
+        else:
+            if args.confirmation_results is None or args.confirmation_plan is None:
+                parser.error(
+                    "--confirmation-results and --confirmation-plan must be supplied together"
+                )
+            from .campaigns import (
+                audit_confirmation_results,
+                load_confirmation_plan,
+                load_confirmation_results,
+            )
+
+            plan = load_confirmation_plan(args.confirmation_plan)
+            records = load_confirmation_results(args.confirmation_results)
+            audit = audit_confirmation_results(plan, records)
+            payload = {
+                "schema": "benchstudio.confirmation_audit_v1",
+                "plan_digest_sha256": plan.plan_digest_sha256,
+                "result_path": str(args.confirmation_results),
+                **audit.to_dict(),
+            }
+        print(json.dumps(payload, sort_keys=True))
+        return 0 if payload["complete"] else 2
     if args.compare_policy_traces is not None:
         reference, instrumented = map(Path, args.compare_policy_traces)
         report = compare_policy_trace_files(reference, instrumented)

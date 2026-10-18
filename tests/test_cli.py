@@ -67,6 +67,83 @@ def test_cli_validates_serialized_confirmation_plan(monkeypatch, tmp_path, capsy
     assert report["case_count"] == 1
 
 
+def test_cli_audits_search_results_against_frozen_plan(monkeypatch, tmp_path, capsys):
+    from benchstudio.campaigns import (
+        PerturbationDimension,
+        SearchEvaluation,
+        compile_search_plan,
+        execute_search_plan,
+    )
+
+    plan = compile_search_plan(
+        run_id="search-audit",
+        scenario_id="task",
+        base_condition_id="base",
+        dimensions=(PerturbationDimension("x", (0,)),),
+        seeds=[1],
+    )
+    evidence = tmp_path / "search"
+    execute_search_plan(plan, lambda _: SearchEvaluation(failed=False), output=evidence)
+    plan_path = tmp_path / "search-plan.json"
+    plan.write(plan_path)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--search-results",
+            str(evidence / "search-results.jsonl"),
+            "--search-plan",
+            str(plan_path),
+        ],
+    )
+    assert main() == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["schema"] == "benchstudio.counterexample_search_audit_v1"
+    assert report["complete"] is True
+
+
+def test_cli_audits_confirmation_results_and_fails_closed(monkeypatch, tmp_path, capsys):
+    from benchstudio.campaigns import (
+        ConfirmationEvaluation,
+        SearchCandidate,
+        compile_confirmation_plan,
+        execute_confirmation_plan,
+    )
+
+    plan = compile_confirmation_plan(
+        run_id="confirmation-audit",
+        source_search_digest_sha256="a" * 64,
+        candidates=[SearchCandidate("candidate", "task", "state", "search", 1, "b" * 64)],
+        confirmation_seeds=[2],
+    )
+    evidence = tmp_path / "confirmation"
+    execute_confirmation_plan(
+        plan, lambda _: ConfirmationEvaluation(failure_reproduced=False), output=evidence
+    )
+    plan_path = tmp_path / "confirmation-plan.json"
+    plan.write(plan_path)
+    result_path = evidence / "confirmation-results.jsonl"
+    result_path.write_text(
+        result_path.read_text().replace(
+            '"failure_reproduced": false', '"failure_reproduced": "yes"'
+        )
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--confirmation-results",
+            str(result_path),
+            "--confirmation-plan",
+            str(plan_path),
+        ],
+    )
+    assert main() == 2
+    report = json.loads(capsys.readouterr().out)
+    assert report["schema"] == "benchstudio.confirmation_audit_v1"
+    assert report["complete"] is False
+
+
 def test_campaign_document_loader_rejects_non_mapping_json(tmp_path):
     path = tmp_path / "campaign.json"
     path.write_text("[]", encoding="utf-8")
