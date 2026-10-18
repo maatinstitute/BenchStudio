@@ -9,6 +9,7 @@ from benchstudio.campaigns import (
     CampaignPlanner,
     Intervention,
     compile_counterfactual_plan,
+    load_counterfactual_plan,
     load_frozen_campaign_plan,
     validate_counterfactual_plan,
 )
@@ -119,6 +120,34 @@ def test_counterfactual_plan_binds_nominal_and_intervention_branches():
     )
     assert validate_counterfactual_plan(plan) == []
     assert len({pair.intervention.branch_attempt_id for pair in plan.pairs}) == len(plan.pairs)
+
+
+def test_counterfactual_plan_round_trips_through_independent_loader(tmp_path):
+    nominal = CampaignPlanner(
+        run_id="round-trip-cf", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    plan = compile_counterfactual_plan(
+        nominal, [Intervention("delay", 1, "sensor_delay", {"ms": 10})]
+    )
+    path = tmp_path / "counterfactual-plan.json"
+    plan.write(path)
+    assert load_counterfactual_plan(path) == plan
+
+
+def test_counterfactual_plan_loader_rejects_digest_tampering(tmp_path):
+    nominal = CampaignPlanner(
+        run_id="tampered-cf", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    plan = compile_counterfactual_plan(
+        nominal, [Intervention("delay", 1, "sensor_delay", {"ms": 10})]
+    )
+    path = tmp_path / "counterfactual-plan.json"
+    plan.write(path)
+    payload = json.loads(path.read_text())
+    payload["pairs"][0]["intervention"]["intervention"]["parameters"]["ms"] = 20
+    path.write_text(json.dumps(payload))
+    with pytest.raises(ValueError, match="digest"):
+        load_counterfactual_plan(path)
 
 
 def test_counterfactual_plan_rejects_reserved_or_duplicate_interventions():

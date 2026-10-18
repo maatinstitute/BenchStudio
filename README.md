@@ -170,6 +170,10 @@ python -m benchstudio.cli --recovery-records counterfactual-results.jsonl \
   --recovery-output recovery-report.json
 ```
 
+Pass `--recovery-plan counterfactual-plan.json` to validate every recorded
+branch against the frozen nominal/intervention plan; mismatched or missing
+lineage fails closed.
+
 Recorded policy traces can be used as a fail-closed parity reference. The
 `benchstudio.integrations.TracePolicy` adapter binds each action to its expected
 observation digest, so altered preprocessing or state cannot silently reuse the

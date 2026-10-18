@@ -21,6 +21,8 @@ class RecoverySummary:
     mean_recovery_time_ms: float | None
     issues: tuple[str, ...]
     recovery_confidence_interval: tuple[float, float] | None = None
+    lineage_valid: bool | None = None
+    lineage_issues: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -38,6 +40,8 @@ class RecoverySummary:
                 else None
             ),
             "issues": list(self.issues),
+            "lineage_valid": self.lineage_valid,
+            "lineage_issues": list(self.lineage_issues),
         }
 
 

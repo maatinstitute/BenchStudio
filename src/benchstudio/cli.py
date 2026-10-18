@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import replace
 from pathlib import Path
 
 from .adapters import default_registry
@@ -146,6 +147,7 @@ def main() -> int:
     )
     parser.add_argument("--recovery-records", type=Path)
     parser.add_argument("--recovery-output", type=Path)
+    parser.add_argument("--recovery-plan", type=Path)
     parser.add_argument(
         "--claim-type",
         choices=[claim.value for claim in ClaimType],
@@ -224,10 +226,32 @@ def main() -> int:
         return 0 if report.complete_pairs > 0 and not report.issues else 2
     if args.recovery_records is not None:
         report = summarize_recovery_outcomes(load_recovery_records(args.recovery_records))
+        if args.recovery_plan is not None:
+            from .analysis import audit_counterfactual_outcomes
+            from .campaigns import load_counterfactual_plan
+
+            records = load_recovery_records(args.recovery_records)
+            lineage = audit_counterfactual_outcomes(
+                load_counterfactual_plan(args.recovery_plan), records
+            )
+            report = replace(
+                report,
+                lineage_valid=lineage.complete,
+                lineage_issues=(
+                    tuple(lineage.missing_branch_attempt_ids)
+                    + tuple(lineage.unknown_branch_attempt_ids)
+                    + tuple(lineage.duplicate_branch_attempt_ids)
+                    + tuple(lineage.lineage_issues)
+                ),
+            )
         if args.recovery_output is not None:
             write_recovery_report(report, args.recovery_output)
         print(json.dumps(report.to_dict(), sort_keys=True))
-        return 0 if report.matched_pairs > 0 and not report.issues else 2
+        return (
+            0
+            if report.matched_pairs > 0 and not report.issues and report.lineage_valid is not False
+            else 2
+        )
     if args.compare_campaign is not None:
         if not args.comparison_scenario_id:
             parser.error("--compare-campaign requires --comparison-scenario-id")

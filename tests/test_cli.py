@@ -148,6 +148,48 @@ def test_cli_writes_recovery_report(monkeypatch, tmp_path):
     assert report["recovery_rate"] == 1.0
 
 
+def test_cli_validates_recovery_report_against_frozen_counterfactual_plan(monkeypatch, tmp_path):
+    from benchstudio.campaigns import (
+        CampaignPlanner,
+        CounterfactualEvaluation,
+        Intervention,
+        compile_counterfactual_plan,
+        execute_counterfactual_plan,
+    )
+
+    plan = compile_counterfactual_plan(
+        CampaignPlanner(
+            run_id="cli-cf", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+        ).freeze(),
+        [Intervention("delay", 1, "sensor_delay", {"ms": 10})],
+    )
+    evidence_dir = tmp_path / "evidence"
+    execute_counterfactual_plan(
+        plan,
+        lambda cell: CounterfactualEvaluation(success=cell.branch == "nominal"),
+        output=evidence_dir,
+    )
+    plan_path = tmp_path / "counterfactual-plan.json"
+    plan.write(plan_path)
+    output = tmp_path / "recovery-report.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--recovery-records",
+            str(evidence_dir / "counterfactual-results.jsonl"),
+            "--recovery-plan",
+            str(plan_path),
+            "--recovery-output",
+            str(output),
+        ],
+    )
+    assert main() == 0
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["lineage_valid"] is True
+    assert report["lineage_issues"] == []
+
+
 def test_cli_compares_frozen_policy_traces(monkeypatch, tmp_path, capsys):
     from benchstudio.integrations import POLICY_TRACE_SCHEMA
 

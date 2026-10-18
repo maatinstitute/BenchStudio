@@ -33,6 +33,7 @@ from .counterfactual import (
     Intervention,
     compile_counterfactual_plan,
     execute_counterfactual_plan,
+    load_counterfactual_plan,
     validate_counterfactual_pair,
     validate_counterfactual_plan,
 )
@@ -91,6 +92,7 @@ __all__ = [
     "FrozenCounterfactualPlan",
     "compile_counterfactual_plan",
     "execute_counterfactual_plan",
+    "load_counterfactual_plan",
     "ConfirmationCase",
     "ConfirmationCaseResult",
     "ConfirmationEvaluation",

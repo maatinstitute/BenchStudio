@@ -60,6 +60,50 @@ class FrozenCounterfactualPlan:
         )
 
 
+def load_counterfactual_plan(path: Path) -> FrozenCounterfactualPlan:
+    """Load and validate a serialized frozen counterfactual plan."""
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict) or payload.get("schema") != "benchstudio.counterfactual.v1":
+        raise ValueError("unsupported counterfactual plan schema")
+    pairs_payload = payload.get("pairs")
+    if not isinstance(pairs_payload, list):
+        raise ValueError("counterfactual plan pairs must be a list")
+
+    def cell(value: Any) -> CounterfactualCell:
+        if not isinstance(value, dict):
+            raise ValueError("counterfactual cell must be a mapping")
+        intervention_value = value.get("intervention")
+        if not isinstance(intervention_value, dict):
+            raise ValueError("counterfactual intervention must be a mapping")
+        return CounterfactualCell(
+            pair_id=str(value["pair_id"]),
+            nominal_attempt_id=str(value["nominal_attempt_id"]),
+            branch_attempt_id=str(value["branch_attempt_id"]),
+            intervention=Intervention(
+                intervention_id=str(intervention_value["intervention_id"]),
+                transition_index=int(intervention_value["transition_index"]),
+                kind=str(intervention_value["kind"]),
+                parameters=dict(intervention_value.get("parameters", {})),
+            ),
+            branch=value.get("branch", "intervention"),
+        )
+
+    pairs = tuple(
+        CounterfactualPair(cell(value["nominal"]), cell(value["intervention"]))
+        for value in pairs_payload
+    )
+    plan = FrozenCounterfactualPlan(
+        run_id=str(payload["run_id"]),
+        source_plan_digest_sha256=str(payload["source_plan_digest_sha256"]),
+        pairs=pairs,
+        plan_digest_sha256=str(payload["plan_digest_sha256"]),
+    )
+    issues = validate_counterfactual_plan(plan)
+    if issues:
+        raise ValueError("invalid counterfactual plan: " + "; ".join(issues))
+    return plan
+
+
 @dataclass(frozen=True)
 class CounterfactualEvaluation:
     """Evaluator output for one nominal or intervention branch."""
