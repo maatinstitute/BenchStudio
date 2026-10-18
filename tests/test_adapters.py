@@ -23,6 +23,12 @@ def test_default_registry_declares_optional_mujoco_backend():
     assert descriptor.dependencies[0].import_name == "mujoco"
 
 
+def test_default_registry_declares_optional_gymnasium_backend():
+    descriptor = default_registry(discover_external=False).get("gymnasium")
+    assert descriptor.capabilities.closed_loop is True
+    assert descriptor.capabilities.owns_physics is False
+
+
 def test_trace_replay_backend_is_registered_and_instantiable():
     registry = default_registry()
     readiness = registry.readiness("trace_replay")

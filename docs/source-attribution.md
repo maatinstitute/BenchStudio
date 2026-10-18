@@ -24,6 +24,10 @@ The optional `benchstudio.integrations.mujoco` adapter uses MuJoCo's public
 Python API when the user installs the `mujoco` extra. It does not vendor the
 runtime or assign official benchmark scoring authority to BenchStudio.
 
+The optional `benchstudio.integrations.gymnasium` adapter follows Gymnasium's
+public five-value `step` protocol and remains a generic environment boundary;
+it does not claim LIBERO or another benchmark's task/scoring semantics.
+
 Any future source migration must preserve the original repository's notices,
 third-party licenses, and historical evidence. The current BenchStudio
 repository remains private and proprietary; this file is an engineering

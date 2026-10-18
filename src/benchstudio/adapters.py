@@ -208,6 +208,7 @@ def module_available(import_name: str) -> bool:
 
 
 def default_registry(*, discover_external: bool = True) -> AdapterRegistry:
+    from .integrations.gymnasium import GymnasiumSimulator
     from .integrations.mujoco import MujocoSimulator
     from .mock import MockSimulator
     from .replay import ReplaySimulator
@@ -237,6 +238,18 @@ def default_registry(*, discover_external: bool = True) -> AdapterRegistry:
                 owns_physics=True,
                 closed_loop=True,
                 evidence_authority="mujoco",
+            ),
+        )
+    )
+    registry.register(
+        AdapterDescriptor(
+            simulator_id="gymnasium",
+            label="Optional Gymnasium environment adapter",
+            factory=GymnasiumSimulator,
+            dependencies=(Dependency("gymnasium", "gymnasium"),),
+            capabilities=BackendCapabilities(
+                closed_loop=True,
+                evidence_authority="gymnasium",
             ),
         )
     )

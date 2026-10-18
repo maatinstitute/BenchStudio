@@ -6,6 +6,7 @@ from .alpabridge import (
     audit_alpabridge_telemetry,
     load_alpabridge_telemetry,
 )
+from .gymnasium import GymnasiumSimulator
 from .mujoco import MujocoSimulator
 from .replay_conformance import run_replay_conformance, zero_order_hold_case
 from .robochallenge import (
@@ -30,4 +31,5 @@ __all__ = [
     "audit_alpabridge_telemetry",
     "load_alpabridge_telemetry",
     "MujocoSimulator",
+    "GymnasiumSimulator",
 ]
