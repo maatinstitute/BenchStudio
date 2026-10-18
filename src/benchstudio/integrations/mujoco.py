@@ -10,6 +10,7 @@ from __future__ import annotations
 import importlib
 import math
 import time
+from numbers import Real
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
@@ -30,9 +31,9 @@ class MujocoSimulator:
         success_fn: SuccessFn | None = None,
         initial_qpos: Iterable[float] | None = None,
     ) -> None:
-        if max_steps < 1:
+        if isinstance(max_steps, bool) or not isinstance(max_steps, int) or max_steps < 1:
             raise ValueError("max_steps must be positive")
-        if frame_skip < 1:
+        if isinstance(frame_skip, bool) or not isinstance(frame_skip, int) or frame_skip < 1:
             raise ValueError("frame_skip must be positive")
         self.xml_path = Path(xml_path)
         if not self.xml_path.is_file():
@@ -96,10 +97,9 @@ class MujocoSimulator:
             values = ()
         if len(values) != self.model.nu:
             raise ValueError(f"action length must equal MuJoCo model.nu ({self.model.nu})")
-        try:
-            numeric = tuple(float(value) for value in values)
-        except (TypeError, ValueError) as exc:
-            raise ValueError("MuJoCo actions must be numeric") from exc
+        if any(isinstance(value, bool) or not isinstance(value, Real) for value in values):
+            raise ValueError("MuJoCo actions must be numeric")
+        numeric = tuple(float(value) for value in values)
         if not all(math.isfinite(value) for value in numeric):
             raise ValueError("MuJoCo actions must be finite")
         self.data.ctrl[:] = numeric

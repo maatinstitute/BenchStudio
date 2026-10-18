@@ -74,3 +74,10 @@ def test_mujoco_single_actuator_accepts_scalar_action(tmp_path):
     observation = simulator.step(0.0)
     assert observation.sequence == 1
     simulator.close()
+
+
+@pytest.mark.parametrize("field", ["max_steps", "frame_skip"])
+def test_mujoco_rejects_boolean_step_controls(tmp_path, field):
+    kwargs = {field: True}
+    with pytest.raises(ValueError, match="positive"):
+        MujocoSimulator(tmp_path / "missing.xml", **kwargs)

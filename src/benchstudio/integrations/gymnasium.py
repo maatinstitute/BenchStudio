@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import importlib
+import math
 import time
+from numbers import Real
 from typing import Any, Callable, Mapping
 
 from ..contracts import Observation, Timestamp
@@ -46,8 +48,13 @@ class GymnasiumSimulator:
             env = gymnasium.make(env_id, **make_kwargs)
         elif env_id is not None:
             raise ValueError("provide env_id or env, not both")
-        if dt_s is not None and dt_s < 0:
-            raise ValueError("dt_s must be non-negative")
+        if dt_s is not None and (
+            isinstance(dt_s, bool)
+            or not isinstance(dt_s, Real)
+            or not math.isfinite(dt_s)
+            or dt_s < 0
+        ):
+            raise ValueError("dt_s must be a finite non-negative number")
         if not isinstance(stop_on_success, bool):
             raise ValueError("stop_on_success must be boolean")
         self.env = env
@@ -109,9 +116,17 @@ class GymnasiumSimulator:
 
     def _dt_s(self) -> float:
         if self.dt_s is not None:
-            return self.dt_s
+            return float(self.dt_s)
         unwrapped = getattr(self.env, "unwrapped", self.env)
-        return float(getattr(unwrapped, "dt", 1.0))
+        value = getattr(unwrapped, "dt", 1.0)
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, Real)
+            or not math.isfinite(value)
+            or value < 0
+        ):
+            raise ValueError("Gymnasium environment dt must be finite and non-negative")
+        return float(value)
 
     def _make_observation(self, payload: Any) -> Observation:
         return Observation(

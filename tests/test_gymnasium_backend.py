@@ -37,3 +37,9 @@ def test_gymnasium_adapter_runs_a_closed_loop_episode(tmp_path):
     assert summary["completed_episode_count"] == 1
     assert summary["success_count"] == 1
     assert summary["episodes"][0]["steps"] == 1
+
+
+@pytest.mark.parametrize("dt_s", [True, "0.02", float("nan")])
+def test_gymnasium_rejects_coerced_timing_controls(dt_s):
+    with pytest.raises(ValueError, match="dt_s"):
+        GymnasiumSimulator(env=object(), dt_s=dt_s)
