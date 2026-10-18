@@ -19,8 +19,10 @@ if TYPE_CHECKING:
     from ..analysis.campaign_audit import CampaignAudit
     from ..analysis.claims import ClaimType
     from ..analysis.outcomes import OutcomeRecord
+    from ..model_adapters import ModelAdapterRegistry
 
 PolicyFactory = Callable[[PlannedAttempt], Policy]
+PolicyKwargsFactory = Callable[[PlannedAttempt], dict[str, Any]]
 SimulatorFactory = Callable[[PlannedAttempt], Simulator]
 SimulatorKwargsFactory = Callable[[PlannedAttempt], dict[str, Any]]
 ResourceSamplerFactory = Callable[[PlannedAttempt], ResourceSampler]
@@ -44,7 +46,7 @@ class CampaignExecutor:
         self,
         plan: FrozenCampaignPlan,
         output: Path,
-        policy_factory: PolicyFactory,
+        policy_factory: PolicyFactory | None = None,
         simulator_factory: SimulatorFactory | None = None,
         worker_id: str | None = None,
         lease_manager: WorkerLeaseManager | None = None,
@@ -52,15 +54,21 @@ class CampaignExecutor:
         resource_sampler_factory: ResourceSamplerFactory | None = None,
         adapter_registry: "AdapterRegistry | None" = None,
         simulator_kwargs_factory: SimulatorKwargsFactory | None = None,
+        model_registry: "ModelAdapterRegistry | None" = None,
+        policy_kwargs_factory: PolicyKwargsFactory | None = None,
     ) -> None:
         self.plan = plan
         self.output = output
         self.policy_factory = policy_factory
+        self.model_registry = model_registry
+        self.policy_kwargs_factory = policy_kwargs_factory
         self.simulator_factory = simulator_factory
         self.adapter_registry = adapter_registry
         self.simulator_kwargs_factory = simulator_kwargs_factory
         if simulator_factory is None and adapter_registry is None:
             raise ValueError("simulator_factory or adapter_registry is required")
+        if policy_factory is None and model_registry is None:
+            raise ValueError("policy_factory or model_registry is required")
         self.worker_id = worker_id
         self.lease_manager = lease_manager
         self.cancelled_attempts = frozenset(cancelled_attempts)
@@ -70,6 +78,12 @@ class CampaignExecutor:
             if issues:
                 raise ValueError(
                     "campaign backend requirements are not satisfied: " + "; ".join(issues)
+                )
+        if model_registry is not None:
+            issues = model_registry.validate_plan(plan)
+            if issues:
+                raise ValueError(
+                    "campaign model requirements are not satisfied: " + "; ".join(issues)
                 )
         planned_ids = {attempt.key.attempt_id for attempt in plan.attempts}
         unknown = self.cancelled_attempts - planned_ids
@@ -142,7 +156,7 @@ class CampaignExecutor:
                         resource_budget=_resource_budget(self.plan),
                     )
                     summary = run_episodes(
-                        self.policy_factory(attempt),
+                        self._policy_for_attempt(attempt),
                         self._simulator_for_attempt(attempt),
                         config,
                         attempt_dir,
@@ -183,6 +197,26 @@ class CampaignExecutor:
             tuple(leased_out),
             tuple(cancelled),
         )
+
+    def _policy_for_attempt(self, attempt: PlannedAttempt) -> Policy:
+        if self.policy_factory is not None:
+            return self.policy_factory(attempt)
+        if self.model_registry is None:
+            raise RuntimeError("no policy factory or model registry is configured")
+        model = self.plan.protocol.get("M", {})
+        adapter_id = model.get("adapter") if isinstance(model, dict) else None
+        if not isinstance(adapter_id, str) or not adapter_id:
+            raise ValueError(
+                "frozen plan requires model.adapter when no policy_factory is supplied"
+            )
+        kwargs = (
+            self.policy_kwargs_factory(attempt)
+            if self.policy_kwargs_factory is not None
+            else model.get("adapter_config", {})
+        )
+        if not isinstance(kwargs, dict):
+            raise ValueError("model.adapter_config must be a mapping")
+        return self.model_registry.create(adapter_id, **kwargs)
 
     def _simulator_for_attempt(self, attempt: PlannedAttempt) -> Simulator:
         """Resolve a custom factory or the adapter declared by the frozen plan."""

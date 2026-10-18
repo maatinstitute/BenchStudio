@@ -20,6 +20,7 @@ from benchstudio.campaigns import (
     write_campaign_archive,
 )
 from benchstudio.mock import MockPolicy, MockSimulator
+from benchstudio.model_adapters import default_model_registry
 
 
 def test_campaign_executor_uses_frozen_attempts_and_resumes_idempotently(tmp_path):
@@ -260,6 +261,30 @@ def test_campaign_executor_can_instantiate_declared_adapter(tmp_path):
         (tmp_path / "campaign" / "attempts" / "attempt-000000" / "manifest.json").read_text()
     )
     assert manifest["simulator_id"] == "mock_simulator"
+
+
+def test_campaign_executor_can_instantiate_declared_model_adapter(tmp_path):
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "model-registry-backed"},
+            "model": {"adapter": "mock"},
+            "task": {"task_id": "task"},
+            "environments": [{"id": "sim", "kind": "simulator"}],
+            "evaluation": {
+                "seeds": [1],
+                "paired": True,
+                "conditions": [{"denoising_steps": 2, "action_prefix": 1}],
+            },
+        }
+    )
+    result = CampaignExecutor(
+        plan,
+        tmp_path / "campaign",
+        model_registry=default_model_registry(discover_external=False),
+        simulator_factory=lambda _: MockSimulator(),
+    ).run()
+    assert result.missing_attempt_ids == ()
 
 
 def test_expired_worker_lease_is_reclaimed_by_next_worker(tmp_path):

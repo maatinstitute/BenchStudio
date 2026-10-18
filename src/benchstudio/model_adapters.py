@@ -1,0 +1,176 @@
+from __future__ import annotations
+
+import importlib
+from dataclasses import dataclass, field
+from importlib import metadata
+from typing import Any, Callable
+
+from .contracts import ModelCapabilityProfile, Policy
+
+
+@dataclass(frozen=True)
+class ModelDependency:
+    name: str
+    import_name: str
+    required: bool = True
+    scope: str = "runtime"
+
+
+@dataclass(frozen=True)
+class ModelAdapterDescriptor:
+    adapter_id: str
+    label: str
+    factory: Callable[..., Policy]
+    capabilities: ModelCapabilityProfile
+    dependencies: tuple[ModelDependency, ...] = field(default_factory=tuple)
+
+
+class ModelAdapterRegistry:
+    """Dependency-aware registry for independently developed policy adapters."""
+
+    def __init__(self) -> None:
+        self._descriptors: dict[str, ModelAdapterDescriptor] = {}
+        self._discovery_diagnostics: list[dict[str, str]] = []
+
+    def register(self, descriptor: ModelAdapterDescriptor) -> None:
+        if descriptor.adapter_id in self._descriptors:
+            raise ValueError(f"model adapter already registered: {descriptor.adapter_id}")
+        issues = descriptor.capabilities.validate()
+        if issues:
+            raise ValueError(
+                f"invalid capabilities for model adapter {descriptor.adapter_id}: "
+                + "; ".join(issues)
+            )
+        self._descriptors[descriptor.adapter_id] = descriptor
+
+    def get(self, adapter_id: str) -> ModelAdapterDescriptor:
+        try:
+            return self._descriptors[adapter_id]
+        except KeyError as exc:
+            raise KeyError(f"unknown model adapter: {adapter_id}") from exc
+
+    def list(self) -> list[ModelAdapterDescriptor]:
+        return [self._descriptors[key] for key in sorted(self._descriptors)]
+
+    def readiness(self, adapter_id: str) -> dict[str, Any]:
+        descriptor = self.get(adapter_id)
+        dependencies = [
+            {
+                "name": dependency.name,
+                "import_name": dependency.import_name,
+                "available": _module_available(dependency.import_name),
+                "required": dependency.required,
+                "scope": dependency.scope,
+            }
+            for dependency in descriptor.dependencies
+        ]
+        missing_required = [
+            item["name"] for item in dependencies if item["required"] and not item["available"]
+        ]
+        return {
+            "adapter_id": descriptor.adapter_id,
+            "label": descriptor.label,
+            "ready": not missing_required,
+            "missing_required": missing_required,
+            "capabilities": descriptor.capabilities,
+            "dependencies": dependencies,
+        }
+
+    def create(self, adapter_id: str, **kwargs: Any) -> Policy:
+        descriptor = self.get(adapter_id)
+        readiness = self.readiness(adapter_id)
+        if not readiness["ready"]:
+            raise RuntimeError(
+                f"model adapter {adapter_id} is not ready; missing: "
+                + ", ".join(readiness["missing_required"])
+            )
+        return descriptor.factory(**kwargs)
+
+    def validate_plan(self, plan: Any) -> tuple[str, ...]:
+        """Validate the model adapter frozen in a campaign plan."""
+        protocol = getattr(plan, "protocol", None) or {}
+        model = protocol.get("M", {})
+        if not isinstance(model, dict) or not model.get("adapter"):
+            return ()
+        adapter_id = model["adapter"]
+        try:
+            readiness = self.readiness(adapter_id)
+        except KeyError:
+            return (f"unknown model adapter {adapter_id}",)
+        if not readiness["ready"]:
+            return (
+                f"model adapter {adapter_id} missing " + ", ".join(readiness["missing_required"]),
+            )
+        return ()
+
+    def discover(self, group: str = "benchstudio.models") -> tuple[dict[str, str], ...]:
+        entries = metadata.entry_points()
+        selected = (
+            entries.select(group=group) if hasattr(entries, "select") else entries.get(group, ())
+        )
+        diagnostics: list[dict[str, str]] = []
+        for entry in selected:
+            try:
+                loaded = entry.load()
+                value = loaded() if callable(loaded) else loaded
+                descriptors = (
+                    (value,) if isinstance(value, ModelAdapterDescriptor) else tuple(value)
+                )
+                if not descriptors or not all(
+                    isinstance(item, ModelAdapterDescriptor) for item in descriptors
+                ):
+                    raise TypeError(
+                        "entry point must return ModelAdapterDescriptor or an iterable of them"
+                    )
+                for descriptor in descriptors:
+                    self.register(descriptor)
+                diagnostics.append({"entry_point": entry.name, "status": "loaded"})
+            except Exception as exc:
+                diagnostics.append(
+                    {
+                        "entry_point": entry.name,
+                        "status": "error",
+                        "error": f"{type(exc).__name__}: {exc}",
+                    }
+                )
+        self._discovery_diagnostics.extend(diagnostics)
+        return tuple(diagnostics)
+
+    @property
+    def discovery_diagnostics(self) -> tuple[dict[str, str], ...]:
+        return tuple(self._discovery_diagnostics)
+
+
+def _module_available(import_name: str) -> bool:
+    try:
+        importlib.import_module(import_name)
+    except ModuleNotFoundError as exc:
+        if exc.name == import_name or import_name.startswith(f"{exc.name}."):
+            return False
+        raise
+    return True
+
+
+def default_model_registry(*, discover_external: bool = True) -> ModelAdapterRegistry:
+    from .mock import MockPolicy
+
+    registry = ModelAdapterRegistry()
+    registry.register(
+        ModelAdapterDescriptor(
+            adapter_id="mock",
+            label="Deterministic mock policy",
+            factory=MockPolicy,
+            capabilities=ModelCapabilityProfile(
+                model_id="mock_policy",
+                family="custom",
+                input_modalities=("state",),
+                output_representation="action_chunk",
+                supports_closed_loop=True,
+                supports_action_chunks=True,
+                supported_metrics=("success",),
+            ),
+        )
+    )
+    if discover_external:
+        registry.discover()
+    return registry

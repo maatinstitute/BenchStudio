@@ -14,6 +14,7 @@ has been evaluated.
 | Evidence integrity | Verified locally | Artifact manifests, sibling anchors, external digest verification, and safe archive extraction are implemented. A remote signature service is not claimed. |
 | Policy lifecycle and timing | Verified as contracts | Lifecycle, action semantics, clock domains, queue/drop/deadline, and replay conformance validators are tested. |
 | Model capability declarations | Verified as data contracts | VLA, planner, world-model, monitor, timing, memory, streaming, and caching fields are represented and validated. |
+| Model adapter registry | Implemented | Policy adapters declare capabilities and dependencies, support optional entry-point discovery, and can be instantiated directly from frozen model declarations. |
 | Inference efficiency | Verified as instrumentation | Latency, observation age, action chunks, resource points, overhead, and Pareto helpers are implemented; no production checkpoint result is claimed. |
 | Paired statistics | Verified | Exact binomial and discordance intervals, matched deltas, missingness, and standard errors are exposed in analysis results. |
 | Sim-to-real fidelity | Analysis-ready | Transfer gaps, failure-category agreement, observation-age summaries, and ranking concordance are implemented; physical data is not present. |

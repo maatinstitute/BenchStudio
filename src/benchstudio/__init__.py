@@ -120,6 +120,12 @@ from .evidence import (
     write_manifest_trust_anchor,
 )
 from .measurement import ResourceSampler, delta_resources, sample_resources
+from .model_adapters import (
+    ModelAdapterDescriptor,
+    ModelAdapterRegistry,
+    ModelDependency,
+    default_model_registry,
+)
 from .replay import ReplayPolicy, ReplaySimulator, load_joint_sequence
 from .reporting import (
     build_audited_evaluation_report,
@@ -234,6 +240,10 @@ __all__ = [
     "load_trajectory",
     "run_episodes",
     "ResourceSampler",
+    "ModelAdapterDescriptor",
+    "ModelAdapterRegistry",
+    "ModelDependency",
+    "default_model_registry",
     "sample_resources",
     "delta_resources",
     "load_scenario_pack",
