@@ -41,6 +41,14 @@ def test_campaign_document_loader_rejects_non_mapping_json(tmp_path):
         load_campaign_document(path)
 
 
+def test_cli_reports_adapter_readiness(monkeypatch, capsys):
+    monkeypatch.setattr("sys.argv", ["benchstudio-run", "--readiness"])
+    assert main() == 0
+    report = json.loads(capsys.readouterr().out)
+    assert {item["simulator_id"] for item in report["simulators"]} >= {"mock", "mujoco"}
+    assert {item["adapter_id"] for item in report["models"]} >= {"mock"}
+
+
 def test_cli_can_execute_compiled_campaign_with_mock_backend(monkeypatch, tmp_path, capsys):
     spec_path = tmp_path / "campaign.json"
     plan_path = tmp_path / "plan.json"

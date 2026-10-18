@@ -16,6 +16,12 @@ python -m pytest
 python -m benchstudio.cli --episodes 3 --output runs/smoke
 ```
 
+Inspect optional backend and model-adapter readiness before scheduling work:
+
+```bash
+python -m benchstudio.cli --readiness
+```
+
 The end-to-end frozen-campaign CI gate can be run directly with:
 
 ```bash

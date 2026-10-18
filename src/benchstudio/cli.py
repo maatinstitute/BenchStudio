@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 from .adapters import default_registry
@@ -11,6 +12,7 @@ from .campaigns import (
     load_campaign_document,
 )
 from .mock import MockPolicy, MockSimulator
+from .model_adapters import default_model_registry
 from .runner import RunConfig, run_episodes
 
 
@@ -53,7 +55,28 @@ def main() -> int:
         type=Path,
         help="Publish the executed campaign bundle to a local content-addressed store.",
     )
+    parser.add_argument(
+        "--readiness",
+        action="store_true",
+        help="Print dependency readiness and declared capabilities for available adapters.",
+    )
     args = parser.parse_args()
+    if args.readiness:
+        simulator_registry = default_registry(discover_external=False)
+        model_registry = default_model_registry(discover_external=False)
+        simulators = [
+            simulator_registry.readiness(descriptor.simulator_id)
+            for descriptor in simulator_registry.list()
+        ]
+        models = [
+            {
+                **(readiness := model_registry.readiness(descriptor.adapter_id)),
+                "capabilities": readiness["capabilities"].to_dict(),
+            }
+            for descriptor in model_registry.list()
+        ]
+        print(json.dumps({"simulators": simulators, "models": models}, sort_keys=True))
+        return 0
     if args.campaign_spec is not None:
         spec = load_campaign_document(args.campaign_spec)
         plan = compile_campaign_spec(spec)
