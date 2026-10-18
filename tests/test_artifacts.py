@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import hashlib
+import urllib.error
 
 import pytest
 
-from benchstudio.campaigns import LocalArtifactStore, publish_campaign_archive
+from benchstudio.campaigns import HttpArtifactStore, LocalArtifactStore, publish_campaign_archive
 
 
 def test_local_artifact_store_is_content_addressed_and_idempotent(tmp_path):
@@ -33,3 +34,32 @@ def test_publish_campaign_archive_returns_verified_reference(tmp_path):
     assert reference.schema == "benchstudio.campaign_archive.v1"
     assert len(reference.digest_sha256) == 64
     assert reference.bytes > 0
+
+
+def test_http_artifact_store_publishes_digest_addressed_archive(monkeypatch):
+    calls = []
+
+    class Response:
+        status = 201
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    def fake_urlopen(request, timeout):
+        calls.append((request, timeout))
+        if len(calls) == 2:
+            raise urllib.error.HTTPError(request.full_url, 412, "exists", {}, None)
+        return Response()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    payload = b"campaign-archive"
+    digest = hashlib.sha256(payload).hexdigest()
+    store = HttpArtifactStore("https://objects.example.test")
+    first = store.publish_archive(payload, digest_sha256=digest)
+    second = store.publish_archive(payload, digest_sha256=digest)
+    assert first.uri == second.uri == f"https://objects.example.test/{digest[:2]}/{digest}.zip"
+    assert calls[0][0].data == payload
+    assert calls[0][0].get_header("If-none-match") == "*"

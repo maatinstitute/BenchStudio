@@ -10,6 +10,7 @@ from .archive import (
 from .artifacts import (
     ArtifactReference,
     ArtifactStore,
+    HttpArtifactStore,
     LocalArtifactStore,
     publish_campaign_archive,
 )
@@ -70,6 +71,7 @@ __all__ = [
     "ArtifactReference",
     "ArtifactStore",
     "LocalArtifactStore",
+    "HttpArtifactStore",
     "publish_campaign_archive",
     "load_campaign_document",
     "compile_campaign_spec",

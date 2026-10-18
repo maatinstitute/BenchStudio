@@ -66,6 +66,10 @@ python -m benchstudio.cli --campaign-spec campaign.json --execute-mock \
   --artifact-store runs/artifacts
 ```
 
+The same `ArtifactStore` contract also supports vendor-neutral HTTP PUT
+publication through `HttpArtifactStore`, using the archive SHA-256 as the
+immutable object path and treating an existing object as idempotent.
+
 Model runtimes can also be kept outside BenchStudio behind the registered
 `external_command` adapter. It sends one JSON request per inference and
 requires a JSON response containing an `actions` array, preserving the model
