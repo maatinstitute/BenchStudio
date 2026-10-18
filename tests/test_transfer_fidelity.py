@@ -39,6 +39,11 @@ def test_transfer_fidelity_preserves_missingness_and_estimates_paired_gap():
         report.success_gap_confidence_interval[0] < -0.5 < report.success_gap_confidence_interval[1]
     )
     assert report.failure_category_agreement_rate == 0.5
+    payload = report.to_dict()
+    assert payload["schema"] == "benchstudio_transfer_fidelity_report_v1"
+    assert payload["success_gap_confidence_interval"] == list(
+        report.success_gap_confidence_interval
+    )
     assert report.mean_observation_age_ms == 15
     assert "some matched outcomes are missing" in report.issues
 

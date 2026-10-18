@@ -16,6 +16,16 @@ class TransferGap:
     valid: bool
     issues: tuple[str, ...]
 
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "simulation_success_rate": self.simulation_success_rate,
+            "physical_success_rate": self.physical_success_rate,
+            "physical_minus_simulation": self.physical_minus_simulation,
+            "matched_pairs": self.matched_pairs,
+            "valid": self.valid,
+            "issues": list(self.issues),
+        }
+
 
 @dataclass(frozen=True)
 class TransferFidelityReport:
@@ -32,6 +42,28 @@ class TransferFidelityReport:
     ranking_concordance: float | None
     mean_observation_age_ms: float | None
     issues: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "schema": "benchstudio_transfer_fidelity_report_v1",
+            "matched_pairs": self.matched_pairs,
+            "complete_pairs": self.complete_pairs,
+            "simulation_success_rate": self.simulation_success_rate,
+            "physical_success_rate": self.physical_success_rate,
+            "success_gap_physical_minus_simulation": self.success_gap_physical_minus_simulation,
+            "success_gap_standard_error": self.success_gap_standard_error,
+            "success_gap_confidence_interval": (
+                list(self.success_gap_confidence_interval)
+                if self.success_gap_confidence_interval is not None
+                else None
+            ),
+            "success_agreement_rate": self.success_agreement_rate,
+            "failure_category_agreement_rate": self.failure_category_agreement_rate,
+            "system_success_rates": self.system_success_rates,
+            "ranking_concordance": self.ranking_concordance,
+            "mean_observation_age_ms": self.mean_observation_age_ms,
+            "issues": list(self.issues),
+        }
 
 
 def summarize_transfer_fidelity(records: list[dict[str, Any]]) -> TransferFidelityReport:
