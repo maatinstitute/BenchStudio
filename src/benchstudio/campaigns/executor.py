@@ -11,6 +11,7 @@ from ..contracts import Policy, Simulator
 from ..evidence import verify_artifact_manifest
 from ..measurement import ResourceSampler
 from ..runner import RunConfig, run_episodes
+from ..runtime_receipts import load_runtime_receipt, verify_runtime_receipt
 from .frozen_plan import FrozenCampaignPlan, PlannedAttempt
 from .ledger import AttemptLedger
 from .worker import WorkerLeaseManager
@@ -109,6 +110,7 @@ class CampaignExecutor:
             attempt_id = attempt.key.attempt_id
             if self.ledger.contains(attempt_id):
                 attempt_dir = self.output / "attempts" / attempt_id
+                self._verify_runtime_receipt(attempt, attempt_dir)
                 verification = verify_artifact_manifest(attempt_dir)
                 if not verification["valid"]:
                     raise RuntimeError(
@@ -186,6 +188,7 @@ class CampaignExecutor:
                         f"attempt {attempt_id} evidence verification failed: "
                         f"{verification['mismatches']}"
                     )
+                self._verify_runtime_receipt(attempt, attempt_dir)
                 self.ledger.append(
                     attempt.key,
                     {
@@ -211,6 +214,31 @@ class CampaignExecutor:
             tuple(leased_out),
             tuple(cancelled),
         )
+
+    def _verify_runtime_receipt(self, attempt: PlannedAttempt, attempt_dir: Path) -> None:
+        receipt_path = attempt_dir / "runtime-receipt.json"
+        verification = verify_runtime_receipt(receipt_path)
+        if not verification["valid"]:
+            raise RuntimeError(
+                f"attempt {attempt.key.attempt_id} runtime receipt is invalid: "
+                f"{verification['reason']}"
+            )
+        receipt = load_runtime_receipt(receipt_path)
+        expected = {
+            "run_id": self.plan.run_id,
+            "attempt_id": attempt.key.attempt_id,
+            "plan_digest_sha256": self.plan.plan_digest_sha256,
+        }
+        for field, value in expected.items():
+            if receipt.get(field) != value:
+                raise RuntimeError(
+                    f"attempt {attempt.key.attempt_id} runtime receipt {field} does not "
+                    "match the frozen plan"
+                )
+        if receipt.get("worker_id") is not None and not isinstance(receipt.get("worker_id"), str):
+            raise RuntimeError(
+                f"attempt {attempt.key.attempt_id} runtime receipt worker identity is invalid"
+            )
 
     def run_parallel(self, workers: int) -> CampaignExecutionSummary:
         """Run pending attempts with multiple lease-owning workers.
