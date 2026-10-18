@@ -1,6 +1,18 @@
 """Preflight checks for semantic and temporal compatibility."""
 
 from .action_semantics import ActionSpec, validate_action
+from .dataset_alignment import (
+    AlignmentEmbodiment,
+    AlignmentEndpoint,
+    AlignmentJointRule,
+    AlignmentMapping,
+    AlignmentQuery,
+    DatasetAlignmentInput,
+    DatasetAlignmentRegistry,
+    DatasetAlignmentValidation,
+    EmbodimentResolveRequest,
+    EmbodimentResolveResult,
+)
 from .deadlines import DeadlineAudit, audit_deadlines
 from .embodiment import (
     EmbodimentRef,
@@ -38,10 +50,20 @@ from .world_state import (
 
 __all__ = [
     "ActionSpec",
+    "AlignmentEmbodiment",
+    "AlignmentEndpoint",
+    "AlignmentJointRule",
+    "AlignmentMapping",
+    "AlignmentQuery",
     "ActionQueueAudit",
     "AdapterCapabilities",
     "DeadlineAudit",
     "ScenarioContract",
+    "DatasetAlignmentInput",
+    "DatasetAlignmentRegistry",
+    "DatasetAlignmentValidation",
+    "EmbodimentResolveRequest",
+    "EmbodimentResolveResult",
     "ValidationIssue",
     "LifecycleState",
     "LifecycleTracker",
