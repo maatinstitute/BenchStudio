@@ -238,6 +238,58 @@ def test_worldepisode_strict_fallback_requires_semantic_contract():
     }
 
 
+def test_worldepisode_strict_fallback_reports_malformed_nested_contracts():
+    result = preflight_worldepisode(
+        {
+            "episode_id": "episode-1",
+            "schema": "worldepisode",
+            "clock_graph": {
+                "clocks": [{"clock_id": "sim"}],
+                "mappings": [
+                    {
+                        "source_clock_id": "unknown",
+                        "target_clock_id": "sim",
+                        "drift_model": "linear",
+                        "estimated_error": -1,
+                    }
+                ],
+            },
+            "action_space": {"channels": [{"control_mode": "position"}]},
+            "world_revision": {"world_revision_id": "sha256:" + "a" * 64},
+            "world_deltas": {},
+            "provenance": {"source": "test"},
+            "quality": {},
+        },
+        strict=True,
+    )
+    assert result.valid is False
+    assert {item["code"] for item in result.diagnostics} >= {
+        "unknown_clock_reference",
+        "invalid_clock_uncertainty",
+        "incomplete_action_channel",
+        "invalid_world_trace",
+    }
+
+    malformed = preflight_worldepisode(
+        {
+            "episode_id": "episode-2",
+            "schema": "worldepisode",
+            "clock_graph": "not-a-mapping",
+            "action_space": [],
+            "world_deltas": [],
+            "provenance": [],
+            "quality": {},
+        },
+        strict=True,
+    )
+    assert malformed.valid is False
+    assert {item["code"] for item in malformed.diagnostics} >= {
+        "invalid_clock_graph",
+        "invalid_action_space",
+        "missing_provenance",
+    }
+
+
 def test_worldepisode_preflight_binds_frozen_identity_and_fails_closed_on_bad_payload():
     mismatch = preflight_worldepisode(
         {"episode_id": "episode-1", "schema": "worldepisode", "revision_id": "rev-1"},

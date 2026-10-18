@@ -60,13 +60,61 @@ def validate_worldepisode_record(record: dict[str, Any]) -> list[ValidationIssue
 def validate_worldepisode_contract(record: dict[str, Any]) -> list[ValidationIssue]:
     """Validate the semantic fields required for strict WorldEpisode binding."""
     issues = validate_worldepisode_record(record)
-    clocks = record.get("clock_graph", {}).get("clocks", [])
-    clock_ids = {item.get("clock_id") for item in clocks if isinstance(item, dict)}
+    clock_graph = record.get("clock_graph")
+    if not isinstance(clock_graph, dict):
+        issues.append(
+            ValidationIssue("invalid_clock_graph", "clock_graph must be a mapping", "clock_graph")
+        )
+        clock_graph = {}
+    clocks = clock_graph.get("clocks", [])
+    if not isinstance(clocks, list):
+        issues.append(
+            ValidationIssue(
+                "invalid_clocks", "clock_graph.clocks must be a list", "clock_graph.clocks"
+            )
+        )
+        clocks = []
+    clock_ids: set[str] = set()
+    for index, clock in enumerate(clocks):
+        if not isinstance(clock, dict) or not isinstance(clock.get("clock_id"), str):
+            issues.append(
+                ValidationIssue(
+                    "invalid_clock",
+                    "each clock requires a string clock_id",
+                    f"clock_graph.clocks[{index}]",
+                )
+            )
+            continue
+        clock_id = clock["clock_id"]
+        if not clock_id:
+            issues.append(
+                ValidationIssue(
+                    "invalid_clock", "clock_id must not be empty", f"clock_graph.clocks[{index}]"
+                )
+            )
+            continue
+        if clock_id in clock_ids:
+            issues.append(
+                ValidationIssue(
+                    "duplicate_clock", "clock_id must be unique", f"clock_graph.clocks[{index}]"
+                )
+            )
+        clock_ids.add(clock_id)
     if not clock_ids:
         issues.append(
             ValidationIssue("missing_clock_graph", "clock_graph requires a clock", "clock_graph")
         )
-    for index, mapping in enumerate(record.get("clock_graph", {}).get("mappings", [])):
+    mappings = clock_graph.get("mappings", [])
+    if not isinstance(mappings, list):
+        issues.append(
+            ValidationIssue(
+                "invalid_clock_mappings",
+                "clock_graph.mappings must be a list",
+                "clock_graph.mappings",
+            )
+        )
+        mappings = []
+    for index, mapping in enumerate(mappings):
         if (
             not isinstance(mapping, dict)
             or "drift_model" not in mapping
@@ -79,7 +127,56 @@ def validate_worldepisode_contract(record: dict[str, Any]) -> list[ValidationIss
                     f"clock_graph.mappings[{index}]",
                 )
             )
-    channels = record.get("action_space", {}).get("channels", [])
+            continue
+        for field in ("source_clock_id", "target_clock_id"):
+            if field in mapping and mapping[field] not in clock_ids:
+                issues.append(
+                    ValidationIssue(
+                        "unknown_clock_reference",
+                        f"{field} must reference a declared clock",
+                        f"clock_graph.mappings[{index}].{field}",
+                    )
+                )
+        if not isinstance(mapping["drift_model"], str) or not mapping["drift_model"]:
+            issues.append(
+                ValidationIssue(
+                    "invalid_drift_model",
+                    "drift_model must be a non-empty string",
+                    f"clock_graph.mappings[{index}].drift_model",
+                )
+            )
+        estimated_error = mapping["estimated_error"]
+        if (
+            isinstance(estimated_error, bool)
+            or not isinstance(estimated_error, (int, float))
+            or not math.isfinite(estimated_error)
+            or estimated_error < 0
+        ):
+            issues.append(
+                ValidationIssue(
+                    "invalid_clock_uncertainty",
+                    "estimated_error must be a finite non-negative number",
+                    f"clock_graph.mappings[{index}].estimated_error",
+                )
+            )
+    action_space = record.get("action_space")
+    if not isinstance(action_space, dict):
+        issues.append(
+            ValidationIssue(
+                "invalid_action_space", "action_space must be a mapping", "action_space"
+            )
+        )
+        action_space = {}
+    channels = action_space.get("channels", [])
+    if not isinstance(channels, list):
+        issues.append(
+            ValidationIssue(
+                "invalid_action_channels",
+                "action_space.channels must be a list",
+                "action_space.channels",
+            )
+        )
+        channels = []
     for index, channel in enumerate(channels):
         if not isinstance(channel, dict):
             issues.append(
@@ -108,6 +205,15 @@ def validate_worldepisode_contract(record: dict[str, Any]) -> list[ValidationIss
                     f"action_space.channels[{index}]",
                 )
             )
+        for field in required:
+            if field in channel and not isinstance(channel[field], str):
+                issues.append(
+                    ValidationIssue(
+                        "invalid_action_semantics",
+                        f"{field} must be a string",
+                        f"action_space.channels[{index}].{field}",
+                    )
+                )
     world_revision = record.get("world_revision", {})
     world_revision_id = (
         world_revision.get("world_revision_id") if isinstance(world_revision, dict) else None
@@ -130,7 +236,16 @@ def validate_worldepisode_contract(record: dict[str, Any]) -> list[ValidationIss
                 "world_deltas",
             )
         )
-    if not isinstance(record.get("provenance"), dict) or not record["provenance"].get("source"):
+    elif not isinstance(record["world_deltas"], list):
+        issues.append(
+            ValidationIssue("invalid_world_trace", "world_deltas must be a list", "world_deltas")
+        )
+    provenance = record.get("provenance")
+    if (
+        not isinstance(provenance, dict)
+        or not isinstance(provenance.get("source"), str)
+        or not provenance.get("source")
+    ):
         issues.append(
             ValidationIssue("missing_provenance", "provenance.source is required", "provenance")
         )
