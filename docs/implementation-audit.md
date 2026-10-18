@@ -25,6 +25,7 @@ has been evaluated.
 | Sim-to-real statistical uncertainty | Implemented for matched records | Transfer reports preserve missing outcomes and now include an exact paired discordance confidence interval alongside the point gap and standard error. |
 | RoboChallenge observe-only evidence | Implemented at protocol boundary | Validated opaque observation/action bytes are retained as canonical base64 plus SHA-256 digests; execution and official scoring remain external. |
 | End-to-end campaign audit | Implemented | `CampaignExecutor.audit()` reads the append-only ledger and validates frozen-plan completeness, artifact verification, and claim prerequisites in one path. |
+| Distributed lease recovery | Implemented for filesystem workers | Expired leases are reclaimable by the next worker, active leases can be renewed by their owner, and ownership checks remain enforced. Physical jobs still require explicit no-retry policy. |
 | SmolVLA/DM0.5 parity | Harness ready, external run pending | The parity and schedule contracts are implemented; no checkpoint is bundled or silently downloaded. |
 | CI workflow | Prepared locally, not uploaded | `.github/workflows/ci.yml` exists locally. GitHub rejected its upload because the current OAuth token lacks workflow scope; source and smoke tests are published. |
 

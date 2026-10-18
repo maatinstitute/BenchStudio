@@ -169,3 +169,33 @@ def test_campaign_executor_exposes_frozen_plan_audit(tmp_path):
     assert audit.attempts_complete is True
     assert audit.evidence_verified is True
     assert audit.claim.status == "supported"
+
+
+def test_expired_worker_lease_is_reclaimed_by_next_worker(tmp_path):
+    now = [1_000_000_000]
+
+    def clock():
+        return now[0]
+
+    leases = WorkerLeaseManager(tmp_path / "leases", lease_seconds=1, clock_ns=clock)
+    first = leases.acquire("attempt-1", "worker-a")
+    assert first is not None
+    now[0] += 2_000_000_000
+    second = leases.acquire("attempt-1", "worker-b")
+    assert second is not None
+    assert second.worker_id == "worker-b"
+
+
+def test_worker_lease_renewal_remains_owner_bound(tmp_path):
+    now = [1_000_000_000]
+
+    def clock():
+        return now[0]
+
+    leases = WorkerLeaseManager(tmp_path / "leases", lease_seconds=1, clock_ns=clock)
+    lease = leases.acquire("attempt-1", "worker-a")
+    assert lease is not None
+    renewed = leases.renew(lease)
+    assert renewed.expires_at_ns > lease.expires_at_ns
+    with __import__("pytest").raises(ValueError, match="owner"):
+        leases.renew(type(lease)(lease.attempt_id, "worker-b", lease.expires_at_ns))
