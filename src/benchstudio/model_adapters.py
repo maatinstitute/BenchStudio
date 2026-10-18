@@ -202,8 +202,10 @@ def default_model_registry(*, discover_external: bool = True) -> ModelAdapterReg
         ModelAdapterDescriptor(
             adapter_id="trace",
             label="Digest-bound frozen policy trace",
-            factory=lambda path, policy_id="trace_policy": TracePolicy.from_jsonl(
-                Path(path), policy_id=policy_id
+            factory=lambda path, policy_id="trace_policy", trace_sha256=None: (
+                TracePolicy.from_jsonl(
+                    Path(path), policy_id=policy_id, expected_sha256=trace_sha256
+                )
             ),
             capabilities=ModelCapabilityProfile(
                 model_id="trace_policy",

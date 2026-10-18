@@ -39,7 +39,23 @@ class TracePolicy:
         self._reset_seed: int | None = None
 
     @classmethod
-    def from_jsonl(cls, path: Path, *, policy_id: str = "trace_policy") -> "TracePolicy":
+    def from_jsonl(
+        cls,
+        path: Path,
+        *,
+        policy_id: str = "trace_policy",
+        expected_sha256: str | None = None,
+    ) -> "TracePolicy":
+        if expected_sha256 is not None:
+            if len(expected_sha256) != 64 or any(
+                char not in "0123456789abcdef" for char in expected_sha256
+            ):
+                raise ValueError("expected trace digest must be lowercase SHA-256 hex")
+            actual_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
+            if actual_sha256 != expected_sha256:
+                raise ValueError(
+                    f"trace digest mismatch: expected {expected_sha256}, got {actual_sha256}"
+                )
         rows: list[PolicyTraceRow] = []
         for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             if not line.strip():

@@ -103,6 +103,18 @@ def test_trace_policy_rejects_duplicate_sequences(tmp_path):
         TracePolicy.from_jsonl(path)
 
 
+def test_trace_policy_verifies_expected_file_digest(tmp_path):
+    path = tmp_path / "trace.jsonl"
+    path.write_text(
+        json.dumps({"schema": POLICY_TRACE_SCHEMA, "sequence": 0, "actions": [1]}) + "\n",
+        encoding="utf-8",
+    )
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    TracePolicy.from_jsonl(path, expected_sha256=digest)
+    with pytest.raises(ValueError, match="trace digest mismatch"):
+        TracePolicy.from_jsonl(path, expected_sha256="0" * 64)
+
+
 def test_policy_trace_files_compare_action_and_observation_bindings(tmp_path):
     reference = tmp_path / "reference.jsonl"
     instrumented = tmp_path / "instrumented.jsonl"

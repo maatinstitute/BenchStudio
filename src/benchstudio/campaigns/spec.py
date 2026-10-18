@@ -78,6 +78,15 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
         raise ValueError("model.adapter is required when model is declared")
     if "adapter_config" in model and not isinstance(model["adapter_config"], dict):
         raise ValueError("model.adapter_config must be a mapping")
+    if model.get("adapter") == "trace":
+        adapter_config = model.get("adapter_config")
+        if not isinstance(adapter_config, dict) or not isinstance(adapter_config.get("path"), str):
+            raise ValueError("trace model.adapter_config.path is required")
+        trace_sha256 = adapter_config.get("trace_sha256")
+        if not isinstance(trace_sha256, str) or re.fullmatch(r"[0-9a-f]{64}", trace_sha256) is None:
+            raise ValueError(
+                "trace model.adapter_config.trace_sha256 must be lowercase SHA-256 hex"
+            )
     task = _mapping(spec.get("task"), "task")
     if "task_revision" in task and (
         not isinstance(task["task_revision"], str) or not task["task_revision"]

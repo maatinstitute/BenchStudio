@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 
 from benchstudio.adapters import default_registry
@@ -38,7 +39,10 @@ def test_frozen_trace_policy_campaign_preserves_observation_binding(tmp_path):
             "experiment": {"name": "trace-parity-campaign"},
             "model": {
                 "adapter": "trace",
-                "adapter_config": {"path": str(trace)},
+                "adapter_config": {
+                    "path": str(trace),
+                    "trace_sha256": hashlib.sha256(trace.read_bytes()).hexdigest(),
+                },
             },
             "task": {"task_id": "trace-task"},
             "environments": [{"id": "mock", "kind": "simulator", "adapter": "mock"}],
