@@ -515,6 +515,11 @@ def _load_report_acceptance_evidence(
     evidence: dict[str, bool] = {}
     if policy_path is not None:
         payload = _load_json_mapping(policy_path)
+        if payload.get("schema") not in {
+            "benchstudio_parity_report_v1",
+            "benchstudio_policy_parity_report_v1",
+        }:
+            payload = {}
         policy = payload.get("policy", payload)
         evidence["policy_transparent"] = bool(
             isinstance(policy, dict) and policy.get("equivalent") is True
@@ -522,7 +527,8 @@ def _load_report_acceptance_evidence(
     if recovery_path is not None:
         payload = _load_json_mapping(recovery_path)
         evidence["recovery_verified"] = bool(
-            payload.get("lineage_valid") is not False
+            payload.get("schema") == "benchstudio_recovery_report_v1"
+            and payload.get("lineage_valid") is not False
             and (
                 payload.get("complete") is True
                 or payload.get("passed") is True
@@ -532,7 +538,8 @@ def _load_report_acceptance_evidence(
     if statistics_path is not None:
         payload = _load_json_mapping(statistics_path)
         evidence["statistical_validity"] = bool(
-            payload.get("matched_pairs", 0) > 0
+            payload.get("schema") in {None, "benchstudio_paired_outcomes_v1"}
+            and payload.get("matched_pairs", 0) > 0
             and payload.get("success_gap_confidence_interval") is not None
         )
     if reproducibility_path is not None:

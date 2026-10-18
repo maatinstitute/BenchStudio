@@ -201,6 +201,22 @@ def test_acceptance_evidence_rejects_invalid_recovery_lineage(tmp_path):
     assert _load_report_acceptance_evidence(None, path, None, None) == {"recovery_verified": False}
 
 
+def test_acceptance_evidence_rejects_schema_less_impersonation(tmp_path):
+    from benchstudio.cli import _load_report_acceptance_evidence
+
+    recovery = tmp_path / "recovery.json"
+    recovery.write_text(
+        json.dumps({"issues": [], "matched_pairs": 3, "lineage_valid": True}),
+        encoding="utf-8",
+    )
+    policy = tmp_path / "policy.json"
+    policy.write_text(json.dumps({"equivalent": True}), encoding="utf-8")
+    assert _load_report_acceptance_evidence(policy, recovery, None, None) == {
+        "policy_transparent": False,
+        "recovery_verified": False,
+    }
+
+
 def test_cli_validates_recovery_report_against_frozen_counterfactual_plan(monkeypatch, tmp_path):
     from benchstudio.campaigns import (
         CampaignPlanner,
