@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from typing import Any
 
 from .frozen_plan import CampaignPlanner, FrozenCampaignPlan
@@ -62,6 +63,11 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
     model = _mapping(spec.get("model", {}), "model")
     if model and not isinstance(model.get("adapter"), str):
         raise ValueError("model.adapter is required when model is declared")
+    checkpoint = model.get("checkpoint")
+    if checkpoint is not None and (
+        not isinstance(checkpoint, str) or re.fullmatch(r"sha256:[0-9a-f]{64}", checkpoint) is None
+    ):
+        raise ValueError("model.checkpoint must be sha256:<lowercase digest>")
     environments = spec.get("environments", [])
     if not isinstance(environments, list) or not environments:
         raise ValueError("environments must be a non-empty list")

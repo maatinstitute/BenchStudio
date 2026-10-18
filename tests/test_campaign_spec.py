@@ -68,3 +68,17 @@ def test_campaign_spec_rejects_non_frozen_confirmation_or_imputed_missingness():
         spec = {**base, "evaluation": {**base["evaluation"], field: value}}
         with pytest.raises(ValueError, match=field):
             compile_campaign_spec(spec)
+
+
+def test_campaign_spec_rejects_unpinned_model_checkpoint():
+    with pytest.raises(ValueError, match="model.checkpoint"):
+        compile_campaign_spec(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "run"},
+                "model": {"adapter": "mock", "checkpoint": "latest"},
+                "task": {"task_id": "task"},
+                "environments": [{"id": "sim", "kind": "simulator"}],
+                "evaluation": {"seeds": [1], "paired": True, "conditions": [{"x": 1}]},
+            }
+        )
