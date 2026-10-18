@@ -146,6 +146,51 @@ def test_campaign_spec_freezes_enabled_environment_identity_and_protocol():
     assert plan.protocol["S"]["task"]["task_revision"] == "rev-1"
 
 
+def test_campaign_spec_freezes_execution_semantics_in_protocol_envelope():
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "execution-envelope"},
+            "task": {"task_id": "task"},
+            "environments": [{"id": "sim", "kind": "simulator"}],
+            "execution": {
+                "clock_domains": ["sim_time", "host_monotonic"],
+                "queue_capacity": 8,
+                "controller_deadline_ns": 1000000,
+            },
+            "evaluation": {
+                "seeds": [1],
+                "paired": True,
+                "execution_strategy": "cached",
+                "max_cache_entries": 32,
+                "conditions": [{"id": "baseline", "action_prefix": 3, "max_episode_steps": 20}],
+            },
+        }
+    )
+    execution = plan.protocol["X"]
+    assert execution["clock_domains"] == ["sim_time", "host_monotonic"]
+    assert execution["queue_capacity"] == 8
+    assert execution["strategy"] == "cached"
+    assert execution["max_cache_entries"] == 32
+    assert execution["condition_controls"] == [
+        {"id": "baseline", "action_prefix": 3, "max_episode_steps": 20}
+    ]
+
+
+def test_campaign_spec_rejects_malformed_execution_semantics():
+    base = {
+        "schema": "benchstudio.campaign.v1",
+        "experiment": {"name": "bad-execution"},
+        "task": {"task_id": "task"},
+        "environments": [{"id": "sim", "kind": "simulator"}],
+        "evaluation": {"seeds": [1], "paired": True, "conditions": [{"x": 1}]},
+    }
+    with pytest.raises(ValueError, match="clock_domains"):
+        compile_campaign_spec({**base, "execution": {"clock_domains": []}})
+    with pytest.raises(ValueError, match="queue_capacity"):
+        compile_campaign_spec({**base, "execution": {"queue_capacity": -1}})
+
+
 def test_campaign_spec_expands_enabled_multiple_environments():
     plan = compile_campaign_spec(
         {

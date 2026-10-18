@@ -88,6 +88,22 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
         if not isinstance(digest, str) or re.fullmatch(r"(?:sha256:)?[0-9a-f]{64}", digest) is None:
             raise ValueError("task.scenario_pack_digest must be a SHA-256 digest")
     evaluation = _mapping(spec.get("evaluation", {}), "evaluation")
+    execution = spec.get("execution", {})
+    if not isinstance(execution, dict):
+        raise ValueError("execution must be a mapping")
+    clock_domains = execution.get("clock_domains")
+    if clock_domains is not None and (
+        not isinstance(clock_domains, list)
+        or not clock_domains
+        or not all(isinstance(value, str) and value for value in clock_domains)
+    ):
+        raise ValueError("execution.clock_domains must be a non-empty list of strings")
+    for field in ("controller_deadline_ns", "queue_capacity"):
+        value = execution.get(field)
+        if value is not None and (
+            isinstance(value, bool) or not isinstance(value, int) or value < 0
+        ):
+            raise ValueError(f"execution.{field} must be a non-negative integer")
     _validate_model_capabilities(model, evaluation)
     strategy = evaluation.get("execution_strategy", "sync")
     if strategy not in {"sync", "async", "streaming", "cached"}:
@@ -248,6 +264,30 @@ def _protocol_record(spec: dict[str, Any]) -> dict[str, Any]:
     source digest separately. Execution backends can add D/O/R evidence later,
     but cannot replace the frozen protocol without changing the plan digest.
     """
+    evaluation = spec.get("evaluation", {})
+    execution = dict(spec.get("execution", {}))
+    if isinstance(evaluation, dict):
+        execution.setdefault("strategy", evaluation.get("execution_strategy", "sync"))
+        execution.setdefault("max_cache_entries", evaluation.get("max_cache_entries", 256))
+        execution.setdefault(
+            "condition_controls",
+            [
+                {
+                    key: condition[key]
+                    for key in (
+                        "id",
+                        "denoising_steps",
+                        "action_prefix",
+                        "observation_refresh_ticks",
+                        "max_episode_steps",
+                        "execution_strategy",
+                        "max_cache_entries",
+                    )
+                    if isinstance(condition, dict) and key in condition
+                }
+                for condition in evaluation.get("conditions", [])
+            ],
+        )
     return {
         "schema": spec["schema"],
         "protocol": spec.get("experiment", {}).get("protocol_revision"),
@@ -260,7 +300,7 @@ def _protocol_record(spec: dict[str, Any]) -> dict[str, Any]:
             "task": spec.get("task", {}),
             "environments": spec.get("environments", []),
         },
-        "X": spec.get("execution", {}),
+        "X": execution,
         "D": {"measurement": spec.get("measurement", {})},
         "O": {"outputs": spec.get("outputs", {})},
         "R": {"source_spec_sha256": _digest(spec)},
