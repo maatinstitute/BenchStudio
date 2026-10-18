@@ -204,6 +204,38 @@ def test_campaign_executor_persists_benchmark_validity(tmp_path):
     assert manifest["benchmark_validity"] == validity
 
 
+def test_campaign_executor_persists_checkpoint_pinned_model_reference(tmp_path):
+    checkpoint = "sha256:" + "a" * 64
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "checkpoint-evidence"},
+            "model": {
+                "adapter": "mock",
+                "architecture": "mock-v1",
+                "checkpoint": checkpoint,
+                "robot_profile": "mock-arm",
+                "adapter_config": {"private_path": "/should-not-be-copied"},
+            },
+            "task": {"task_id": "task"},
+            "environments": [{"id": "sim", "kind": "simulator"}],
+            "evaluation": {"seeds": [1], "paired": True, "conditions": [{"x": 1}]},
+        }
+    )
+    CampaignExecutor(
+        plan, tmp_path / "campaign", lambda _: MockPolicy(), lambda _: MockSimulator()
+    ).run()
+    manifest = json.loads(
+        (tmp_path / "campaign" / "attempts" / "attempt-000000" / "manifest.json").read_text()
+    )
+    assert manifest["model_reference"] == {
+        "adapter": "mock",
+        "architecture": "mock-v1",
+        "checkpoint": checkpoint,
+        "robot_profile": "mock-arm",
+    }
+
+
 def test_campaign_executor_wires_resource_sampler_per_attempt(tmp_path):
     plan = CampaignPlanner(
         run_id="resource-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]

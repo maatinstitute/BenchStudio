@@ -34,6 +34,7 @@ has been evaluated.
 | Outcome provenance persistence | Implemented | Plan-bound `OutcomeLedger` persists official, declared, or supplementary scorer records with schema, digest, duplicate, and frozen-attempt validation; executor audits reopen it automatically. |
 | Audited evaluation reports | Implemented | Reports can serialize campaign audit decisions, outcome provenance, and paired uncertainty together, preserving qualified/unsupported claim context offline. |
 | Distributed lease recovery | Implemented for filesystem workers | Expired leases are reclaimable by the next worker, active leases can be renewed by their owner, and ownership checks remain enforced. Physical jobs still require explicit no-retry policy. |
+| Checkpoint provenance | Implemented | Frozen checkpoint digests, model adapters, architectures, and robot profiles are copied into attempt manifests without copying private adapter configuration paths. |
 | Campaign evidence bundles | Implemented | Deterministic, content-addressed ZIP bundles include frozen plans, ledgers, manifests, and attempt evidence; extraction rejects symlinks and traversal paths. |
 | Artifact publication | Implemented locally | `ArtifactStore` and `LocalArtifactStore` publish deterministic campaign bundles by digest with atomic writes and idempotent retry behavior; cloud/object-storage credentials remain external. |
 | CLI campaign workflow | Implemented | Declarative mock execution can now audit its ledger and write the immutable campaign bundle from one command. |

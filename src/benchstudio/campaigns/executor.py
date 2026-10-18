@@ -160,6 +160,7 @@ class CampaignExecutor:
                         ),
                         calibration=_calibration(self.plan, attempt.key.environment_id),
                         benchmark_validity=_benchmark_validity(self.plan),
+                        model_reference=_model_reference(self.plan),
                         initial_condition_id=attempt.key.pair_id,
                         resource_budget=_resource_budget(self.plan),
                     )
@@ -352,3 +353,11 @@ def _benchmark_validity(plan: FrozenCampaignPlan) -> dict[str, Any] | None:
     evaluation = (plan.protocol or {}).get("P", {}).get("evaluation", {})
     value = evaluation.get("validity")
     return dict(value) if isinstance(value, dict) else None
+
+
+def _model_reference(plan: FrozenCampaignPlan) -> dict[str, Any] | None:
+    model = (plan.protocol or {}).get("M", {})
+    if not isinstance(model, dict) or not model:
+        return None
+    allowed = ("adapter", "architecture", "checkpoint", "robot_profile")
+    return {name: model[name] for name in allowed if name in model}
