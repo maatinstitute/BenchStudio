@@ -16,6 +16,12 @@ python -m pytest
 python -m benchstudio.cli --episodes 3 --output runs/smoke
 ```
 
+The end-to-end frozen-campaign CI gate can be run directly with:
+
+```bash
+python -m pytest -q tests/test_ci_smoke.py
+```
+
 Compile a declarative campaign before execution (the CLI input is JSON):
 
 ```bash
