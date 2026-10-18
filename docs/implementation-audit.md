@@ -42,7 +42,7 @@ has been evaluated.
 | Checkpoint provenance | Implemented | Frozen checkpoint digests, model adapters, architectures, and robot profiles are copied into attempt manifests without copying private adapter configuration paths. |
 | Campaign evidence bundles | Implemented | Deterministic, content-addressed ZIP bundles include frozen plans, ledgers, manifests, and attempt evidence; extraction rejects symlinks and traversal paths. |
 | Artifact publication | Implemented | `ArtifactStore`, `LocalArtifactStore`, and vendor-neutral `HttpArtifactStore` publish deterministic campaign bundles by digest with atomic local writes and idempotent retry behavior; cloud credentials and authorization remain external. |
-| CLI campaign workflow | Implemented | Declarative mock or registry execution can audit its ledger, write immutable bundles, and distribute frozen attempts with `--workers` from one command. |
+| CLI campaign workflow | Implemented | Declarative mock or registry execution can audit its ledger, write immutable bundles, distribute frozen attempts with `--workers`, and publish to local or HTTP artifact stores from one command. |
 | SmolVLA/DM0.5 parity | Harness ready, external run pending | The parity and schedule contracts are implemented; no checkpoint is bundled or silently downloaded. |
 | CI workflow | Prepared locally, not uploaded | `.github/workflows/ci.yml` exists locally. GitHub rejected its upload because the current OAuth token lacks workflow scope; source and smoke tests are published. |
 | Python compatibility | Locally verified | Python 3.10.12 compiles and imports the package; the full pytest suite runs under the configured Python 3.13 environment. |

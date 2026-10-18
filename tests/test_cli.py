@@ -1,6 +1,6 @@
 import json
 
-from benchstudio.campaigns import load_campaign_document
+from benchstudio.campaigns import LocalArtifactStore, load_campaign_document
 from benchstudio.cli import main
 
 
@@ -196,3 +196,51 @@ def test_cli_can_execute_compiled_campaign_with_mock_backend(monkeypatch, tmp_pa
     assert "campaign_status=completed" in captured.out
     assert "audit_status=qualified" in captured.out
     assert "artifact_sha256=" in captured.out
+
+
+def test_cli_can_select_http_artifact_publication(monkeypatch, tmp_path, capsys):
+    spec_path = tmp_path / "campaign.json"
+    output = tmp_path / "run"
+    spec_path.write_text(
+        json.dumps(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "http-artifact"},
+                "task": {"task_id": "task"},
+                "environments": [{"id": "sim", "kind": "simulator"}],
+                "evaluation": {
+                    "seeds": [1],
+                    "paired": True,
+                    "conditions": [{"denoising_steps": 2, "action_prefix": 1}],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    seen = {}
+
+    class FakeHttpStore:
+        def __init__(self, url):
+            seen["url"] = url
+            self._local = LocalArtifactStore(tmp_path / "http-store")
+
+        def publish_archive(self, archive, *, digest_sha256):
+            return self._local.publish_archive(archive, digest_sha256=digest_sha256)
+
+    monkeypatch.setattr("benchstudio.cli.HttpArtifactStore", FakeHttpStore)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--campaign-spec",
+            str(spec_path),
+            "--output",
+            str(output),
+            "--execute-mock",
+            "--artifact-url",
+            "https://objects.example.test/benchstudio",
+        ],
+    )
+    assert main() == 0
+    assert seen["url"] == "https://objects.example.test/benchstudio"
+    assert "artifact_uri=" in capsys.readouterr().out

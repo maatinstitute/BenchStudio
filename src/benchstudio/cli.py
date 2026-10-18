@@ -7,6 +7,7 @@ from pathlib import Path
 from .adapters import default_registry
 from .campaigns import (
     CampaignExecutor,
+    HttpArtifactStore,
     LocalArtifactStore,
     compile_campaign_spec,
     load_campaign_document,
@@ -71,10 +72,15 @@ def main() -> int:
         type=Path,
         help="Write a deterministic immutable archive of the executed campaign evidence.",
     )
-    parser.add_argument(
+    artifact_group = parser.add_mutually_exclusive_group()
+    artifact_group.add_argument(
         "--artifact-store",
         type=Path,
         help="Publish the executed campaign bundle to a local content-addressed store.",
+    )
+    artifact_group.add_argument(
+        "--artifact-url",
+        help="Publish the executed campaign bundle to a digest-addressed HTTP object store.",
     )
     parser.add_argument(
         "--workers",
@@ -161,8 +167,13 @@ def main() -> int:
                     f"archive_output={archive['path']} archive_sha256={archive['sha256']} "
                     f"archive_bytes={archive['bytes']}"
                 )
+            artifact_store = None
             if args.artifact_store is not None:
-                reference = executor.publish_artifact(LocalArtifactStore(args.artifact_store))
+                artifact_store = LocalArtifactStore(args.artifact_store)
+            elif args.artifact_url is not None:
+                artifact_store = HttpArtifactStore(args.artifact_url)
+            if artifact_store is not None:
+                reference = executor.publish_artifact(artifact_store)
                 print(
                     f"artifact_uri={reference['uri']} artifact_sha256={reference['digest_sha256']} "
                     f"artifact_bytes={reference['bytes']}"
