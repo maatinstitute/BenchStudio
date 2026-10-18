@@ -97,3 +97,32 @@ def test_replay_timing_rejects_mixed_queue_clock_domains():
     audit = audit_action_queue(actions)
     assert audit.complete is False
     assert "action queue mixes clock domains" in audit.issues
+
+
+def test_replay_timing_rejects_malformed_runtime_types_without_raising():
+    action = ScheduledAction(
+        "bad",
+        "10",  # type: ignore[arg-type]
+        20,
+        [1],
+        command_clock_domain=["sim_time"],  # type: ignore[arg-type]
+        queue_sequence=True,  # type: ignore[arg-type]
+        deadline_ns="20",  # type: ignore[arg-type]
+    )
+    issues = validate_action_timing(action)
+    assert "action timestamps must be non-negative integers" in issues
+    assert any("clock domains must be one of" in issue for issue in issues)
+    assert any("queue_sequence must be a non-negative integer" in issue for issue in issues)
+    assert any("deadline_ns must be a non-negative integer" in issue for issue in issues)
+
+
+def test_replay_timing_rejects_duplicate_ids_and_drop_metadata():
+    actions = [
+        ScheduledAction("same", 0, 1, [1], dropped="yes"),  # type: ignore[arg-type]
+        ScheduledAction("same", 0, 1, [2], drop_reason="late"),
+    ]
+    audit = audit_action_queue(actions)
+    assert audit.complete is False
+    assert "action_id values must be unique" in audit.issues
+    assert any("dropped must be boolean" in issue for issue in audit.issues)
+    assert any("non-dropped actions cannot carry drop_reason" in issue for issue in audit.issues)
