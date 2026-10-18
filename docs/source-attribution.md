@@ -84,6 +84,15 @@ the following projects. Product runtimes are not vendored into this repository.
   `4199155ff47a1a2854a366e1b577ed870709190b8447595595f569fe8c3e6716`.
   The port preserves fail-closed development-only/science-ineligible flags,
   zero/one-update checks, digest identities, and atomic receipt publication.
+- RoboPAD hashed dataset-manifest resolution: `benchstudio.analysis.
+  dataset_manifest` is a direct port of `experiments/outcome_dataset.py` at
+  upstream commit `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
+  `05bc2d9e274050c2fe137573ec04a4c0acbeebd1a31e9978e15d3791d0cebad9` and
+  source-test digest
+  `88b46d96127a3cdda98ce36ba25b05bc6e1ecbe6b47efd06458df209f9006bc1`.
+  The port preserves path containment, SHA-256 binding for observations,
+  actions, and outcome evidence, fixed 50-action windows, split/lineage
+  checks, and explicit unknown-outcome exclusions.
 - AlpaBridge: `benchstudio.integrations.alpasim_metrics` is a direct
   dependency-free port of `src/alpabridge/neutral/alpasim_metrics.py` from
   upstream commit `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`. Its source digest

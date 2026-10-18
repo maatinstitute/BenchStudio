@@ -7,6 +7,7 @@ from .acceptance import (
 )
 from .campaign_audit import CampaignAudit, audit_campaign, audit_campaign_directory
 from .claims import ClaimDecision, ClaimType, validate_claim
+from .dataset_manifest import DatasetResolution, resolve_manifest
 from .development_receipts import (
     build_development_receipt,
     read_development_receipt,
@@ -132,6 +133,8 @@ __all__ = [
     "read_development_receipt",
     "validate_development_receipt",
     "write_development_receipt",
+    "DatasetResolution",
+    "resolve_manifest",
     "ScoreCoverage",
     "audit_score_coverage",
     "bookmark_critical_events",
