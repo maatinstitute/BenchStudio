@@ -92,7 +92,15 @@ from .evidence import (
 from .replay import ReplayPolicy, ReplaySimulator, load_joint_sequence
 from .reporting import build_evaluation_report, render_html_report, write_html_report
 from .runner import EpisodeResult, RunConfig, run_episodes
-from .scenarios import ScenarioPack, load_scenario_pack, validate_scenario_pack
+from .scenarios import (
+    ScenarioArchiveError,
+    ScenarioPack,
+    build_scenario_archive,
+    extract_verified_scenario_archive,
+    load_scenario_pack,
+    scenario_archive_digest,
+    validate_scenario_pack,
+)
 from .trajectory import compare_trajectories, load_trajectory
 
 __all__ = [
@@ -147,6 +155,10 @@ __all__ = [
     "FrozenCampaignPlan",
     "ScenarioContract",
     "ScenarioPack",
+    "ScenarioArchiveError",
+    "build_scenario_archive",
+    "extract_verified_scenario_archive",
+    "scenario_archive_digest",
     "ScoreCoverage",
     "ResourceAudit",
     "ResourceBudget",
