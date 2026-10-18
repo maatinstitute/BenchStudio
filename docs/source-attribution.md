@@ -379,6 +379,15 @@ the following projects. Product runtimes are not vendored into this repository.
   stable deterministic pair selection, explicit physical-validity handling,
   and outcome-free matching. Image provenance and simulator execution remain
   caller-owned.
+- RoboPAD assay reservations: `benchstudio.campaigns.robopad_assay_claims`
+  directly ports `experiments/icra_assay_claims.py` at upstream commit
+  `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
+  `36217f6f2db6e60d0ef2b2de5618f4e3917c51a6c9bcefa0b5325b3322337c51` and
+  source-test digest `3c05ed16a411bf5f948e55f17e73b95e5bd089e53ea3934aa2ede7b899fd2773`.
+  It preserves canonical fixed run allocation, exclusive no-retry claims,
+  binding-hash receipts, no-resume start markers, canonical JSON/regular-file
+  checks, and post-start tamper detection. This is reservation evidence, not
+  scientific claim scoring; the latter remains in `benchstudio.analysis.claims`.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment

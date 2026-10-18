@@ -94,6 +94,13 @@ from .refinement_plan import (
     make_plan,
     write_plan,
 )
+from .robopad_assay_claims import (
+    StartedReservation,
+    canonical_runs,
+    reserve_child,
+    validate_claim,
+    verify_and_start,
+)
 from .robopad_assay_plan import (
     CELLS,
     CONSUMED,
@@ -224,6 +231,11 @@ __all__ = [
     "reserve",
     "verify",
     "dispatch",
+    "StartedReservation",
+    "canonical_runs",
+    "reserve_child",
+    "validate_claim",
+    "verify_and_start",
     "PerturbationDimension",
     "SearchCase",
     "SearchCaseResult",
