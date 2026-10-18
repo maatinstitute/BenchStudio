@@ -5,6 +5,7 @@ from typing import Any, Iterable
 
 from ..calibration import calibration_from_environment, compare_calibrations
 from ..campaigns.frozen_plan import FrozenCampaignPlan
+from ..validity import BenchmarkValidityAudit, BenchmarkValidityRecord, audit_benchmark_validity
 from .claims import ClaimDecision, ClaimType, validate_claim
 from .outcomes import OutcomeProvenanceAudit, OutcomeRecord, audit_outcome_provenance
 
@@ -24,6 +25,7 @@ class CampaignAudit:
     claim: ClaimDecision
     outcome_provenance: OutcomeProvenanceAudit | None = None
     calibration_issues: tuple[str, ...] = ()
+    benchmark_validity: BenchmarkValidityAudit | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -41,6 +43,9 @@ class CampaignAudit:
             ),
             "calibration_issues": list(self.calibration_issues),
             "calibration_compatible": not self.calibration_issues,
+            "benchmark_validity": (
+                self.benchmark_validity.to_dict() if self.benchmark_validity is not None else None
+            ),
         }
 
 
@@ -82,8 +87,9 @@ def audit_campaign(
     outcome_audit = audit_outcome_provenance(outcome_list) if outcome_list is not None else None
     claim_evidence = dict(evidence or {})
     calibration_issues = _plan_calibration_issues(plan)
+    benchmark_validity = _plan_benchmark_validity(plan, planned_ids)
     if claim_type in {ClaimType.PAIRED_COMPARISON, ClaimType.REAL_WORLD_TRANSFER}:
-        if calibration_issues:
+        if calibration_issues or benchmark_validity is None or not benchmark_validity.valid:
             claim_evidence["semantic_match"] = False
     provenance_matches_plan = True
     if outcome_audit is not None:
@@ -118,7 +124,22 @@ def audit_campaign(
         decision,
         outcome_audit,
         tuple(calibration_issues),
+        benchmark_validity,
     )
+
+
+def _plan_benchmark_validity(
+    plan: FrozenCampaignPlan, planned_ids: set[str]
+) -> BenchmarkValidityAudit | None:
+    evaluation = (plan.protocol or {}).get("P", {}).get("evaluation", {})
+    value = evaluation.get("validity")
+    if value is None:
+        return None
+    try:
+        record = BenchmarkValidityRecord.from_mapping(value)
+    except ValueError as exc:
+        return BenchmarkValidityAudit(False, (str(exc),), ())
+    return audit_benchmark_validity(record, planned_ids)
 
 
 def _plan_calibration_issues(plan: FrozenCampaignPlan) -> tuple[str, ...]:

@@ -159,6 +159,7 @@ class CampaignExecutor:
                             "max_cache_entries", _max_cache_entries(self.plan)
                         ),
                         calibration=_calibration(self.plan, attempt.key.environment_id),
+                        benchmark_validity=_benchmark_validity(self.plan),
                         initial_condition_id=attempt.key.pair_id,
                         resource_budget=_resource_budget(self.plan),
                     )
@@ -339,3 +340,9 @@ def _calibration(plan: FrozenCampaignPlan, environment_id: str) -> dict[str, Any
             value = environment.get("calibration")
             return dict(value) if isinstance(value, dict) else None
     return None
+
+
+def _benchmark_validity(plan: FrozenCampaignPlan) -> dict[str, Any] | None:
+    evaluation = (plan.protocol or {}).get("P", {}).get("evaluation", {})
+    value = evaluation.get("validity")
+    return dict(value) if isinstance(value, dict) else None

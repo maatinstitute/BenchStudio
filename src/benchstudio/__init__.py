@@ -157,6 +157,7 @@ from .scenarios import (
     validate_scenario_pack,
 )
 from .trajectory import compare_trajectories, load_trajectory
+from .validity import BenchmarkValidityAudit, BenchmarkValidityRecord, audit_benchmark_validity
 
 __all__ = [
     "ActionChunk",
@@ -224,6 +225,9 @@ __all__ = [
     "CalibrationRecord",
     "calibration_from_environment",
     "compare_calibrations",
+    "BenchmarkValidityAudit",
+    "BenchmarkValidityRecord",
+    "audit_benchmark_validity",
     "ReplayPolicy",
     "ReplaySimulator",
     "FrozenCampaignPlan",

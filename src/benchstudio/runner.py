@@ -40,6 +40,7 @@ class RunConfig:
     execution_strategy: Literal["sync", "async", "streaming", "cached"] = "sync"
     max_cache_entries: int = 256
     calibration: dict[str, Any] | None = None
+    benchmark_validity: dict[str, Any] | None = None
     resource_budget: ResourceBudget | None = None
 
     def __post_init__(self) -> None:
@@ -59,6 +60,8 @@ class RunConfig:
             raise ValueError("max_cache_entries must be positive")
         if self.calibration is not None and not isinstance(self.calibration, dict):
             raise ValueError("calibration must be a mapping")
+        if self.benchmark_validity is not None and not isinstance(self.benchmark_validity, dict):
+            raise ValueError("benchmark_validity must be a mapping")
         if not self.environment_id:
             raise ValueError("environment_id must not be empty")
 
@@ -466,6 +469,12 @@ def _manifest(policy: Policy, simulator: Simulator, config: RunConfig) -> dict[s
         record = CalibrationRecord.from_mapping(config.calibration)
         manifest["calibration"] = record.to_dict()
         manifest["calibration_digest_sha256"] = record.digest_sha256()
+    if config.benchmark_validity is not None:
+        from .validity import BenchmarkValidityRecord
+
+        manifest["benchmark_validity"] = BenchmarkValidityRecord.from_mapping(
+            config.benchmark_validity
+        ).to_dict()
     return manifest
 
 

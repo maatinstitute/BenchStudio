@@ -169,6 +169,40 @@ def test_campaign_executor_persists_environment_calibration(tmp_path):
     assert manifest["calibration_digest_sha256"].startswith("sha256:")
 
 
+def test_campaign_executor_persists_benchmark_validity(tmp_path):
+    validity = {
+        "task_definition_revision": "task-v1",
+        "dataset_lineage_digest": "sha256:" + "1" * 64,
+        "contamination_review": "clear",
+        "excluded_attempt_ids": [],
+        "early_termination_policy": "success_allowed",
+        "metric_revision": "metric-v1",
+        "metric_scope": "official",
+        "metric_stability": "stable",
+    }
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "validity-evidence"},
+            "task": {"task_id": "task"},
+            "environments": [{"id": "sim", "kind": "simulator"}],
+            "evaluation": {
+                "seeds": [1],
+                "paired": True,
+                "validity": validity,
+                "conditions": [{"x": 1}],
+            },
+        }
+    )
+    CampaignExecutor(
+        plan, tmp_path / "campaign", lambda _: MockPolicy(), lambda _: MockSimulator()
+    ).run()
+    manifest = json.loads(
+        (tmp_path / "campaign" / "attempts" / "attempt-000000" / "manifest.json").read_text()
+    )
+    assert manifest["benchmark_validity"] == validity
+
+
 def test_campaign_executor_wires_resource_sampler_per_attempt(tmp_path):
     plan = CampaignPlanner(
         run_id="resource-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]

@@ -120,3 +120,26 @@ def test_campaign_audit_rejects_paired_claim_with_incompatible_calibration():
     assert audit.claim.status == "unsupported"
     assert "sim vs real: camera calibration differs" in audit.calibration_issues
     assert audit.claim.prerequisites["semantic_match"] is False
+
+
+def test_campaign_audit_exposes_missing_benchmark_validity():
+    plan = CampaignPlanner(
+        run_id="run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    records = [
+        {"attempt_id": attempt.key.attempt_id, "status": "completed", "evidence_verified": True}
+        for attempt in plan.attempts
+    ]
+    audit = audit_campaign(
+        plan,
+        records,
+        claim_type=ClaimType.PAIRED_COMPARISON,
+        evidence={
+            "outcome_present": True,
+            "paired_conditions": True,
+            "semantic_match": True,
+            "uncertainty_reported": True,
+        },
+    )
+    assert audit.benchmark_validity is None
+    assert audit.claim.prerequisites["semantic_match"] is False

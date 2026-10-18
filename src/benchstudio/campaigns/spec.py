@@ -7,6 +7,7 @@ from typing import Any
 
 from ..calibration import CalibrationRecord
 from ..contracts import ModelCapabilityProfile
+from ..validity import BenchmarkValidityRecord
 from .frozen_plan import CampaignPlanner, FrozenCampaignPlan
 
 
@@ -87,6 +88,8 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
         or max_cache_entries < 1
     ):
         raise ValueError("evaluation.max_cache_entries must be a positive integer")
+    if "validity" in evaluation:
+        BenchmarkValidityRecord.from_mapping(evaluation["validity"], field="evaluation.validity")
     checkpoint = model.get("checkpoint")
     if checkpoint is not None and (
         not isinstance(checkpoint, str) or re.fullmatch(r"sha256:[0-9a-f]{64}", checkpoint) is None
