@@ -45,6 +45,13 @@ def test_default_model_registry_exposes_named_vla_protocol_bridges():
         assert descriptor.capabilities.supports_variable_action_horizon is True
 
 
+def test_default_model_registry_exposes_digest_bound_trace_policy():
+    registry = default_model_registry(discover_external=False)
+    descriptor = registry.get("trace")
+    assert registry.readiness("trace")["ready"] is True
+    assert "digest_bound_observations" in descriptor.capabilities.runtime_controls
+
+
 def test_model_registry_reports_missing_dependency():
     registry = ModelAdapterRegistry()
     registry.register(

@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 from dataclasses import dataclass, field
 from importlib import metadata
+from pathlib import Path
 from typing import Any, Callable
 
 from .contracts import ModelCapabilityProfile, Policy
@@ -176,6 +177,7 @@ def default_model_registry(*, discover_external: bool = True) -> ModelAdapterReg
         external_vla_capabilities,
         persistent_external_command_capabilities,
     )
+    from .integrations.policy_trace import TracePolicy
     from .mock import MockPolicy
 
     registry = ModelAdapterRegistry()
@@ -193,6 +195,25 @@ def default_model_registry(*, discover_external: bool = True) -> ModelAdapterReg
                 supports_action_chunks=True,
                 supported_metrics=("success",),
                 supports_cached_predictions=True,
+            ),
+        )
+    )
+    registry.register(
+        ModelAdapterDescriptor(
+            adapter_id="trace",
+            label="Digest-bound frozen policy trace",
+            factory=lambda path, policy_id="trace_policy": TracePolicy.from_jsonl(
+                Path(path), policy_id=policy_id
+            ),
+            capabilities=ModelCapabilityProfile(
+                model_id="trace_policy",
+                family="custom",
+                input_modalities=("state", "image", "proprioception"),
+                output_representation="action_chunk",
+                supports_closed_loop=True,
+                supports_action_chunks=True,
+                supported_metrics=("success", "parity"),
+                runtime_controls=("path", "digest_bound_observations"),
             ),
         )
     )

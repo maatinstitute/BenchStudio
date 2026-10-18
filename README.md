@@ -156,6 +156,10 @@ observation digest, so altered preprocessing or state cannot silently reuse the
 recorded action sequence. `write_parity_report()` persists the policy and
 observation parity decisions as versioned JSON evidence.
 
+The registry also exposes this boundary as the `trace` model adapter, allowing a
+frozen campaign to execute a digest-bound reference trace through the normal
+campaign ledger and simulator path.
+
 Compare two or more completed or partially completed frozen campaigns directly
 from their evidence directories. Missing attempts stay missing, and malformed
 attempt summaries are reported as execution failures:
