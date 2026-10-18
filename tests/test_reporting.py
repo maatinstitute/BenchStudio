@@ -12,6 +12,7 @@ def test_paired_summary_reports_missingness_and_uncertainty():
     assert summary.wins_a == 1
     assert summary.wins_b == 1
     assert summary.success_gap_b_minus_a == 0.0
+    assert summary.success_gap_confidence_interval is not None
     assert summary.standard_error_numeric_delta == 1.0
 
 

@@ -15,6 +15,7 @@ class PairedOutcomeSummary:
     success_gap_b_minus_a: float | None
     mean_numeric_delta_b_minus_a: float | None
     standard_error_numeric_delta: float | None
+    success_gap_confidence_interval: tuple[float, float] | None = None
 
 
 def clopper_pearson_interval(
@@ -84,6 +85,8 @@ def summarize_paired_outcomes(
     outcomes_b: list[bool | None],
     numeric_a: list[float | None] | None = None,
     numeric_b: list[float | None] | None = None,
+    *,
+    alpha: float = 0.05,
 ) -> PairedOutcomeSummary:
     if len(outcomes_a) != len(outcomes_b):
         raise ValueError("paired outcome lists must have equal length")
@@ -112,6 +115,7 @@ def summarize_paired_outcomes(
     if len(deltas) > 1:
         variance = sum((delta - mean_delta) ** 2 for delta in deltas) / (len(deltas) - 1)
         standard_error = math.sqrt(variance / len(deltas))
+    interval = discordance_interval(wins_b, wins_a, len(pairs), alpha=alpha) if pairs else None
     return PairedOutcomeSummary(
         len(pairs),
         wins_a,
@@ -122,4 +126,5 @@ def summarize_paired_outcomes(
         rate_b - rate_a if rate_a is not None and rate_b is not None else None,
         mean_delta,
         standard_error,
+        interval,
     )
