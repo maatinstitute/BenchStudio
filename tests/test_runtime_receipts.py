@@ -88,6 +88,29 @@ def test_runtime_receipt_rejects_invalid_build_types():
         )
 
 
+def test_runtime_receipt_signature_verifier_rejects_non_mapping_record(tmp_path):
+    from benchstudio import verify_runtime_receipt_signature
+
+    receipt = build_runtime_receipt(
+        run_id="run",
+        attempt_id="attempt",
+        plan_digest_sha256=None,
+        worker_id=None,
+        status="completed",
+        started_monotonic_ns=0,
+        completed_monotonic_ns=1,
+        backend_id="sim",
+        environment={},
+    )
+    receipt_path = tmp_path / "receipt.json"
+    signature_path = tmp_path / "receipt.sig"
+    write_runtime_receipt(receipt_path, receipt)
+    signature_path.write_text("[]", encoding="utf-8")
+    _, public_key = generate_ed25519_keypair()
+    result = verify_runtime_receipt_signature(receipt_path, signature_path, public_key)
+    assert result == {"valid": False, "reason": "signature_not_mapping"}
+
+
 def test_runtime_receipt_signature_is_independently_verifiable(tmp_path):
     receipt = build_runtime_receipt(
         run_id="run",

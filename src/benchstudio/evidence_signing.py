@@ -65,20 +65,30 @@ def verify_manifest_signature(
         record = json.loads(signature_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         return {"valid": False, "reason": f"signature_read_error: {exc}"}
+    if not isinstance(record, dict):
+        return {"valid": False, "reason": "signature_not_mapping"}
     actual_digest = sha256_file(manifest_path)
     if record.get("schema") != "benchstudio_manifest_signature_v1":
         return {"valid": False, "reason": "signature_schema_mismatch"}
     if record.get("algorithm") != "ed25519":
         return {"valid": False, "reason": "signature_algorithm_mismatch"}
-    if record.get("manifest_sha256") != actual_digest:
+    signed_digest = record.get("manifest_sha256")
+    if not isinstance(signed_digest, str) or not _is_hex_digest(signed_digest):
+        return {"valid": False, "reason": "signed_manifest_digest_invalid"}
+    if signed_digest != actual_digest:
         return {
             "valid": False,
             "reason": "signed_manifest_digest_mismatch",
-            "signed_manifest_sha256": record.get("manifest_sha256"),
+            "signed_manifest_sha256": signed_digest,
             "actual_manifest_sha256": actual_digest,
         }
+    signature_value = record.get("signature_base64")
+    if not isinstance(signature_value, str):
+        return {"valid": False, "reason": "signature_value_invalid"}
+    if "key_id" in record and (not isinstance(record["key_id"], str) or not record["key_id"]):
+        return {"valid": False, "reason": "key_id_invalid"}
     try:
-        signature = base64.b64decode(record["signature_base64"], validate=True)
+        signature = base64.b64decode(signature_value, validate=True)
         public_key = serialization.load_pem_public_key(public_key_pem)
         public_key.verify(signature, _signature_payload(actual_digest))
     except Exception as exc:
@@ -102,6 +112,10 @@ def _signature_payload(manifest_sha256: str) -> bytes:
         sort_keys=True,
         separators=(",", ":"),
     ).encode("utf-8")
+
+
+def _is_hex_digest(value: str) -> bool:
+    return len(value) == 64 and all(character in "0123456789abcdef" for character in value)
 
 
 def _crypto() -> tuple[Any, Any]:

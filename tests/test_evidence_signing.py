@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from benchstudio.evidence import (
     build_artifact_manifest,
     verify_artifact_manifest,
@@ -54,3 +56,34 @@ def test_signature_requires_external_public_key(tmp_path):
     result = verify_artifact_manifest(root, signature_path=signature_path)
     assert result["valid"] is False
     assert "public_key_missing" in {item["reason"] for item in result["mismatches"]}
+
+
+def test_manifest_signature_verifier_rejects_malformed_signature_records(tmp_path):
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text("{}", encoding="utf-8")
+    signature_path = tmp_path / "manifest.sig"
+    signature_path.write_text("[]", encoding="utf-8")
+    _, public_key = generate_ed25519_keypair()
+    result = verify_manifest_signature(manifest_path, signature_path, public_key)
+    assert result == {"valid": False, "reason": "signature_not_mapping"}
+
+
+def test_manifest_signature_verifier_rejects_invalid_digest_and_key_id(tmp_path):
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text("{}", encoding="utf-8")
+    signature_path = tmp_path / "manifest.sig"
+    signature_path.write_text(
+        json.dumps(
+            {
+                "schema": "benchstudio_manifest_signature_v1",
+                "algorithm": "ed25519",
+                "manifest_sha256": "not-a-digest",
+                "signature_base64": "AA==",
+                "key_id": 3,
+            }
+        ),
+        encoding="utf-8",
+    )
+    _, public_key = generate_ed25519_keypair()
+    result = verify_manifest_signature(manifest_path, signature_path, public_key)
+    assert result == {"valid": False, "reason": "signed_manifest_digest_invalid"}
