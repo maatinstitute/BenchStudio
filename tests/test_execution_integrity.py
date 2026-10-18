@@ -8,6 +8,7 @@ import pytest
 from benchstudio.analysis import (
     compare_observation_streams,
     compare_policy_outputs,
+    compare_policy_trace_files,
     write_parity_report,
 )
 from benchstudio.campaigns import WorkerLeaseManager
@@ -100,6 +101,25 @@ def test_trace_policy_rejects_duplicate_sequences(tmp_path):
     path.write_text(json.dumps(row) + "\n" + json.dumps(row) + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="duplicate sequences"):
         TracePolicy.from_jsonl(path)
+
+
+def test_policy_trace_files_compare_action_and_observation_bindings(tmp_path):
+    reference = tmp_path / "reference.jsonl"
+    instrumented = tmp_path / "instrumented.jsonl"
+    rows = [
+        {"schema": POLICY_TRACE_SCHEMA, "sequence": 0, "actions": [1], "metadata": {"x": 1}},
+        {"schema": POLICY_TRACE_SCHEMA, "sequence": 1, "actions": [2], "metadata": {"x": 1}},
+    ]
+    reference.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
+    instrumented.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
+    assert compare_policy_trace_files(reference, instrumented).equivalent
+    changed = dict(rows[1], actions=[3])
+    instrumented.write_text(
+        json.dumps(rows[0]) + "\n" + json.dumps(changed) + "\n", encoding="utf-8"
+    )
+    report = compare_policy_trace_files(reference, instrumented)
+    assert report.equivalent is False
+    assert report.mismatches[0]["kind"] == "trace_row_mismatch"
 
 
 def test_observation_parity_compares_payload_identity_and_missing_sequences():

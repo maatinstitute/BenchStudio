@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Iterable
 
 from ..contracts import ActionChunk, Observation, Policy
+from ..integrations.policy_trace import TracePolicy
 
 
 @dataclass(frozen=True)
@@ -116,6 +117,51 @@ def compare_policy_outputs(
     return PolicyParityReport(checked, identical, tuple(mismatches))
 
 
+def compare_policy_trace_files(reference_path: Path, instrumented_path: Path) -> PolicyParityReport:
+    """Compare two frozen policy traces without importing either policy runtime.
+
+    The comparison includes action payloads, action metadata, sequence coverage,
+    and the observation digest binding carried by each trace row. It is evidence
+    of trace equivalence only; it does not establish model quality or task
+    correctness.
+    """
+    reference = TracePolicy.from_jsonl(reference_path, policy_id="reference")
+    instrumented = TracePolicy.from_jsonl(instrumented_path, policy_id="instrumented")
+    expected = {row.sequence: row for row in reference.rows}
+    actual = {row.sequence: row for row in instrumented.rows}
+    mismatches: list[dict[str, object]] = []
+    identical = 0
+    for sequence in sorted(set(expected) | set(actual)):
+        left = expected.get(sequence)
+        right = actual.get(sequence)
+        if left is None or right is None:
+            mismatches.append(
+                {
+                    "sequence": sequence,
+                    "kind": "missing_trace_row",
+                    "reference_present": left is not None,
+                    "instrumented_present": right is not None,
+                }
+            )
+            continue
+        left_action = _trace_action_digest(left.actions, left.metadata)
+        right_action = _trace_action_digest(right.actions, right.metadata)
+        if left_action == right_action and left.observation_sha256 == right.observation_sha256:
+            identical += 1
+            continue
+        mismatches.append(
+            {
+                "sequence": sequence,
+                "kind": "trace_row_mismatch",
+                "reference_action_sha256": left_action,
+                "instrumented_action_sha256": right_action,
+                "reference_observation_sha256": left.observation_sha256,
+                "instrumented_observation_sha256": right.observation_sha256,
+            }
+        )
+    return PolicyParityReport(len(set(expected) | set(actual)), identical, tuple(mismatches))
+
+
 def compare_observation_streams(
     reference: Iterable[Observation], instrumented: Iterable[Observation]
 ) -> ObservationParityReport:
@@ -169,6 +215,17 @@ def _digest(action: ActionChunk) -> str:
     payload = {"actions": action.actions, "metadata": action.metadata}
     return hashlib.sha256(
         json.dumps(payload, sort_keys=True, default=str, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def _trace_action_digest(actions: tuple[object, ...], metadata: dict[str, object]) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            {"actions": actions, "metadata": metadata},
+            sort_keys=True,
+            default=str,
+            separators=(",", ":"),
+        ).encode()
     ).hexdigest()
 
 

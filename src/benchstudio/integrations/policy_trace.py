@@ -79,6 +79,11 @@ class TracePolicy:
     def reset(self, *, seed: int) -> None:
         self._reset_seed = int(seed)
 
+    @property
+    def rows(self) -> tuple[PolicyTraceRow, ...]:
+        """Return trace rows in sequence order for independent parity checks."""
+        return tuple(self._rows[sequence] for sequence in sorted(self._rows))
+
     def predict(self, observation: Observation, *, denoising_steps: int | None) -> ActionChunk:
         del denoising_steps
         try:

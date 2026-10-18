@@ -24,6 +24,7 @@ from .parity import (
     PolicyParityReport,
     compare_observation_streams,
     compare_policy_outputs,
+    compare_policy_trace_files,
     write_parity_report,
 )
 from .recovery import (
@@ -89,6 +90,7 @@ __all__ = [
     "discordance_interval",
     "summarize_paired_outcomes",
     "compare_policy_outputs",
+    "compare_policy_trace_files",
     "compare_observation_streams",
     "write_parity_report",
     "validate_claim",
