@@ -4,7 +4,12 @@ from .claims import ClaimDecision, ClaimType, validate_claim
 from .failure_events import EventBookmark, bookmark_critical_events
 from .inference_schedule import InferenceEvent, InferenceScheduleAudit, audit_inference_schedule
 from .missingness import MissingOutcomeBounds, missing_outcome_bounds
-from .paired import PairedOutcomeSummary, summarize_paired_outcomes
+from .paired import (
+    PairedOutcomeSummary,
+    clopper_pearson_interval,
+    discordance_interval,
+    summarize_paired_outcomes,
+)
 from .parity import PolicyParityReport, compare_policy_outputs
 from .recovery import RecoverySummary, summarize_recovery_outcomes
 from .resources import (
@@ -47,6 +52,8 @@ __all__ = [
     "summarize_transfer_fidelity",
     "PolicyParityReport",
     "PairedOutcomeSummary",
+    "clopper_pearson_interval",
+    "discordance_interval",
     "summarize_paired_outcomes",
     "compare_policy_outputs",
     "validate_claim",

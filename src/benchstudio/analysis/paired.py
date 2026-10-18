@@ -17,6 +17,68 @@ class PairedOutcomeSummary:
     standard_error_numeric_delta: float | None
 
 
+def clopper_pearson_interval(
+    successes: int, trials: int, *, alpha: float = 0.05
+) -> tuple[float, float]:
+    """Return an exact two-sided binomial interval without SciPy."""
+    if type(successes) is not int or type(trials) is not int:
+        raise ValueError("successes and trials must be integers")
+    if trials <= 0 or successes < 0 or successes > trials:
+        raise ValueError("expected 0 <= successes <= trials with positive trials")
+    if not 0 < alpha < 1:
+        raise ValueError("alpha must lie in (0, 1)")
+    tail = alpha / 2
+    lower = 0.0 if successes == 0 else _binomial_tail_quantile(successes - 1, trials, tail)
+    upper = 1.0 if successes == trials else _binomial_cdf_quantile(successes, trials, tail)
+    return lower, upper
+
+
+def discordance_interval(
+    wins: int, losses: int, trials: int, *, alpha: float = 0.05
+) -> tuple[float, float]:
+    """Bound paired success difference from discordant outcomes."""
+    if type(wins) is not int or type(losses) is not int or type(trials) is not int:
+        raise ValueError("discordance counts must be integers")
+    if wins < 0 or losses < 0 or trials <= 0 or wins + losses > trials:
+        raise ValueError("invalid discordance counts")
+    low_w, high_w = clopper_pearson_interval(wins, trials, alpha=alpha)
+    low_l, high_l = clopper_pearson_interval(losses, trials, alpha=alpha)
+    return low_w - high_l, high_w - low_l
+
+
+def _binomial_cdf(k: int, trials: int, probability: float) -> float:
+    if k < 0:
+        return 0.0
+    if k >= trials:
+        return 1.0
+    return math.fsum(
+        math.comb(trials, index) * probability**index * (1 - probability) ** (trials - index)
+        for index in range(k + 1)
+    )
+
+
+def _binomial_tail_quantile(k: int, trials: int, tail: float) -> float:
+    left, right = 0.0, 1.0
+    for _ in range(100):
+        middle = (left + right) / 2
+        if 1.0 - _binomial_cdf(k, trials, middle) > tail:
+            right = middle
+        else:
+            left = middle
+    return (left + right) / 2
+
+
+def _binomial_cdf_quantile(k: int, trials: int, tail: float) -> float:
+    left, right = 0.0, 1.0
+    for _ in range(100):
+        middle = (left + right) / 2
+        if _binomial_cdf(k, trials, middle) > tail:
+            left = middle
+        else:
+            right = middle
+    return (left + right) / 2
+
+
 def summarize_paired_outcomes(
     outcomes_a: list[bool | None],
     outcomes_b: list[bool | None],
