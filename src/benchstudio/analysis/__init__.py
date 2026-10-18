@@ -7,7 +7,12 @@ from .paired import PairedOutcomeSummary, summarize_paired_outcomes
 from .parity import PolicyParityReport, compare_policy_outputs
 from .resources import ResourceAudit, ResourceBudget, audit_resources
 from .score_coverage import ScoreCoverage, audit_score_coverage
-from .transfer import TransferGap, estimate_transfer_gap
+from .transfer import (
+    TransferFidelityReport,
+    TransferGap,
+    estimate_transfer_gap,
+    summarize_transfer_fidelity,
+)
 
 __all__ = [
     "MissingOutcomeBounds",
@@ -23,6 +28,8 @@ __all__ = [
     "ResourceAudit",
     "ResourceBudget",
     "TransferGap",
+    "TransferFidelityReport",
+    "summarize_transfer_fidelity",
     "PolicyParityReport",
     "PairedOutcomeSummary",
     "summarize_paired_outcomes",

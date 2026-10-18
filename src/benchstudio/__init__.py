@@ -11,6 +11,7 @@ from .analysis import (
     ResourceAudit,
     ResourceBudget,
     ScoreCoverage,
+    TransferFidelityReport,
     TransferGap,
     audit_resources,
     audit_score_coverage,
@@ -19,6 +20,7 @@ from .analysis import (
     estimate_transfer_gap,
     missing_outcome_bounds,
     summarize_paired_outcomes,
+    summarize_transfer_fidelity,
     validate_claim,
 )
 from .campaigns import (
@@ -121,6 +123,7 @@ __all__ = [
     "ResourceAudit",
     "ResourceBudget",
     "TransferGap",
+    "TransferFidelityReport",
     "ValidationIssue",
     "build_comparison_report",
     "default_registry",
@@ -140,6 +143,7 @@ __all__ = [
     "audit_score_coverage",
     "audit_resources",
     "estimate_transfer_gap",
+    "summarize_transfer_fidelity",
     "audit_deadlines",
     "bookmark_critical_events",
     "compare_policy_outputs",
