@@ -42,6 +42,7 @@ from .replay_timing import (
     audit_action_queue,
     validate_action_timing,
 )
+from .robopad_intervention import irrelevant_candidates, screen_supported_body
 from .scenario_validation import ScenarioContract, validate_scenario_pair
 from .world_state import (
     ValidationIssue,
@@ -95,4 +96,6 @@ __all__ = [
     "validate_representation_mapping",
     "validate_scenario_pair",
     "swept_box_intersects",
+    "irrelevant_candidates",
+    "screen_supported_body",
 ]

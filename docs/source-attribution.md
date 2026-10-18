@@ -358,6 +358,18 @@ the following projects. Product runtimes are not vendored into this repository.
   It preserves explicit NumPy scalar/array JSON conversion and rejects unknown
   metadata instead of stringifying it. The simulator restoration, physics
   inspection, and no-action probe remain external.
+- RoboPAD intervention preflight: `benchstudio.conformance.
+  robopad_intervention` ports the fixed distractor grid from
+  `experiments/icra_b_candidates.py` and the conservative support/contact
+  screen from `experiments/icra_b_physics.py` at upstream commit
+  `4ecd468cc67cc40681ca2af9097b7ade5825fadd`. Source digests are
+  `51d11a546370f70fdbeebeb40bf79231c75ea1d0eca805495ea8713c85086619` and
+  `0e754cf9974bef714ad6ce4a4e09b35eb1426aac331ffe7e6a2ec104d2fe7c42`; source-test
+  digests are `05472f0cc96f16e2a71de5b3bbbc06e7ae20caaa3af5ccf2551084a4634a2bb2`
+  and `72d530d29964b07b5eed8c64927c770286ba824c0f5a86ec275311456b20d9b5`.
+  The port preserves outcome-free state proposals, untouched-coordinate
+  guarantees, support inset/penetration thresholds, and contact rejection;
+  policy search, simulator restoration, and dynamic stability remain external.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment
