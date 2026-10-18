@@ -7,7 +7,7 @@ has been evaluated.
 
 | Capability | Current status | Evidence / boundary |
 | --- | --- | --- |
-| Frozen campaign execution | Verified | `CampaignExecutor`, append-only `AttemptLedger`, atomic cross-worker ledger commits, leases, cancellation, resumable evidence, and 201 tests. |
+| Frozen campaign execution | Verified | `CampaignExecutor`, append-only `AttemptLedger`, atomic cross-worker ledger commits, leases, cancellation, resumable evidence, and 202 tests. |
 | Stable paired identities | Verified | `pair_id` is shared across enabled environments; `environment_id` is frozen in `AttemptKey` and manifests. |
 | Declarative protocol | Verified | `benchstudio.campaign.v1` compiles into a plan carrying the frozen `(P,M,S,X,D,O,R)` envelope and source digest. |
 | Scenario identity | Verified | `ScenarioPack` and deterministic content-addressed archives bind task revisions, assets, initial conditions, and success criteria. |
@@ -23,7 +23,7 @@ has been evaluated.
 | Calibration provenance | Implemented at protocol boundary | Camera, action-transform, controller, physical-parameter, and clock calibration identities can be frozen per environment, compared for compatibility, and persisted in run manifests. |
 | Robustness and recovery | Analysis-ready | Counterfactual pairing, frozen branch-lineage audits, confirmation plans, missing-outcome bounds, and recovery summaries are implemented; no disturbance campaign has been run. |
 | Frozen counterfactual plans | Implemented | Nominal and intervention branches share frozen pair identities, receive deterministic branch IDs, and carry a separately validated counterfactual plan digest. |
-| Counterfactual execution | Implemented | `execute_counterfactual_plan()` evaluates nominal and intervention branches through an external evaluator, preserves frozen branch lineage, writes deterministic evidence, and leaves missing outcomes explicit. |
+| Counterfactual execution | Implemented | `execute_counterfactual_plan()` evaluates nominal and intervention branches through an external evaluator, preserves frozen branch lineage, writes deterministic evidence incrementally, and leaves missing or failed branches explicit for recovery. |
 | Counterexample search integrity | Implemented | Search plans can be serialized and independently validated for case identity, scenario consistency, and digest integrity; `execute_search_plan()` persists deterministic case results and exposes only observed failures as confirmation candidates. |
 | Counterexample confirmation | Implemented | `execute_confirmation_plan()` evaluates an independent holdout matrix, links results to the frozen search digest, and records failure reproduction separately from discovery evidence. |
 | WorldEpisode binding | Boundary verified | The optional reference validator is used when installed; the strict local fallback reports missing canonical metadata instead of fabricating it. |

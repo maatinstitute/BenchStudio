@@ -66,3 +66,24 @@ def test_execute_counterfactual_plan_rejects_negative_recovery_time():
         execute_counterfactual_plan(
             _plan(), lambda _: CounterfactualEvaluation(success=False, recovery_time_ms=-1)
         )
+
+
+def test_execute_counterfactual_plan_preserves_partial_results_on_evaluator_failure(tmp_path):
+    def evaluator(cell):
+        if cell.branch == "intervention":
+            raise RuntimeError("simulator unavailable")
+        return CounterfactualEvaluation(success=True)
+
+    with pytest.raises(RuntimeError, match="simulator unavailable"):
+        execute_counterfactual_plan(_plan(), evaluator, output=tmp_path)
+
+    records = [
+        json.loads(line)
+        for line in (tmp_path / "counterfactual-results.jsonl").read_text().splitlines()
+    ]
+    assert len(records) == 1
+    summary = json.loads((tmp_path / "counterfactual-summary.json").read_text())
+    assert summary["scheduled_branch_count"] == 2
+    assert summary["completed_branch_count"] == 1
+    assert summary["missing_branch_count"] == 1
+    assert summary["status"] == "failed"
