@@ -24,6 +24,7 @@ from benchstudio.integrations import (
     run_replay_conformance,
     validate_robochallenge_message,
 )
+from benchstudio.integrations.policy_trace import PolicyTraceRow
 from benchstudio.mock import MockPolicy
 
 
@@ -68,6 +69,13 @@ def test_policy_parity_records_instrumentation_failures():
     )
     assert report.equivalent is False
     assert report.mismatches[0]["actual_error"] == "RuntimeError: instrumentation failure"
+
+
+@pytest.mark.parametrize("seed", [True, 1.0, "1"])
+def test_trace_policy_rejects_coerced_reset_seeds(seed):
+    policy = TracePolicy((PolicyTraceRow(0, (0,), {}),))
+    with pytest.raises(ValueError, match="seed must be an integer"):
+        policy.reset(seed=seed)  # type: ignore[arg-type]
 
 
 def test_trace_policy_replays_actions_and_binds_observation_digest(tmp_path):

@@ -93,7 +93,9 @@ class TracePolicy:
         return cls(tuple(rows), policy_id=policy_id)
 
     def reset(self, *, seed: int) -> None:
-        self._reset_seed = int(seed)
+        if isinstance(seed, bool) or not isinstance(seed, int):
+            raise ValueError("seed must be an integer")
+        self._reset_seed = seed
 
     @property
     def rows(self) -> tuple[PolicyTraceRow, ...]:
