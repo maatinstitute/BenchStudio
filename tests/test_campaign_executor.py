@@ -144,6 +144,31 @@ def test_campaign_executor_preserves_environment_identity_in_evidence(tmp_path):
     assert environments == ["sim-a", "sim-b"]
 
 
+def test_campaign_executor_persists_environment_calibration(tmp_path):
+    calibration = {
+        "revision": "cal-v1",
+        "camera": "sha256:" + "1" * 64,
+        "action_transform": "sha256:" + "2" * 64,
+    }
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "calibrated"},
+            "task": {"task_id": "task"},
+            "environments": [{"id": "sim", "kind": "simulator", "calibration": calibration}],
+            "evaluation": {"seeds": [1], "paired": True, "conditions": [{"x": 1}]},
+        }
+    )
+    CampaignExecutor(
+        plan, tmp_path / "campaign", lambda _: MockPolicy(), lambda _: MockSimulator()
+    ).run()
+    manifest = json.loads(
+        (tmp_path / "campaign" / "attempts" / "attempt-000000" / "manifest.json").read_text()
+    )
+    assert manifest["calibration"] == calibration
+    assert manifest["calibration_digest_sha256"].startswith("sha256:")
+
+
 def test_campaign_executor_wires_resource_sampler_per_attempt(tmp_path):
     plan = CampaignPlanner(
         run_id="resource-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]

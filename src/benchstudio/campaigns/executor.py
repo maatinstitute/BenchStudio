@@ -158,6 +158,7 @@ class CampaignExecutor:
                         max_cache_entries=condition.get(
                             "max_cache_entries", _max_cache_entries(self.plan)
                         ),
+                        calibration=_calibration(self.plan, attempt.key.environment_id),
                         initial_condition_id=attempt.key.pair_id,
                         resource_budget=_resource_budget(self.plan),
                     )
@@ -329,3 +330,12 @@ def _execution_strategy(plan: FrozenCampaignPlan) -> str:
 def _max_cache_entries(plan: FrozenCampaignPlan) -> int:
     evaluation = (plan.protocol or {}).get("P", {}).get("evaluation", {})
     return evaluation.get("max_cache_entries", 256)
+
+
+def _calibration(plan: FrozenCampaignPlan, environment_id: str) -> dict[str, Any] | None:
+    environments = (plan.protocol or {}).get("S", {}).get("environments", [])
+    for environment in environments:
+        if isinstance(environment, dict) and environment.get("id") == environment_id:
+            value = environment.get("calibration")
+            return dict(value) if isinstance(value, dict) else None
+    return None

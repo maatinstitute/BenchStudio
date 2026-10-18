@@ -5,6 +5,7 @@ import json
 import re
 from typing import Any
 
+from ..calibration import CalibrationRecord
 from ..contracts import ModelCapabilityProfile
 from .frozen_plan import CampaignPlanner, FrozenCampaignPlan
 
@@ -107,6 +108,10 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
             raise ValueError(f"environment {environment_id} requires kind")
         if "adapter" in item and (not isinstance(item["adapter"], str) or not item["adapter"]):
             raise ValueError(f"environment {environment_id} adapter must be a non-empty string")
+        if "calibration" in item:
+            CalibrationRecord.from_mapping(
+                item["calibration"], field=f"environment {environment_id}.calibration"
+            )
         requirements = item.get("required_capabilities", {})
         if not isinstance(requirements, dict) or any(
             not isinstance(name, str) or not isinstance(value, bool)

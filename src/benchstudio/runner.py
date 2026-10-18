@@ -39,6 +39,7 @@ class RunConfig:
     policy_timeout_ns: int | None = None
     execution_strategy: Literal["sync", "async", "streaming", "cached"] = "sync"
     max_cache_entries: int = 256
+    calibration: dict[str, Any] | None = None
     resource_budget: ResourceBudget | None = None
 
     def __post_init__(self) -> None:
@@ -56,6 +57,8 @@ class RunConfig:
             raise ValueError(f"unsupported execution strategy: {self.execution_strategy}")
         if self.max_cache_entries < 1:
             raise ValueError("max_cache_entries must be positive")
+        if self.calibration is not None and not isinstance(self.calibration, dict):
+            raise ValueError("calibration must be a mapping")
         if not self.environment_id:
             raise ValueError("environment_id must not be empty")
 
@@ -457,6 +460,12 @@ def _manifest(policy: Policy, simulator: Simulator, config: RunConfig) -> dict[s
     if capability_record is not None:
         manifest["model_capabilities"] = capability_record
         manifest["model_adapter_id"] = getattr(policy, "__benchstudio_adapter_id__", None)
+    if config.calibration is not None:
+        from .calibration import CalibrationRecord
+
+        record = CalibrationRecord.from_mapping(config.calibration)
+        manifest["calibration"] = record.to_dict()
+        manifest["calibration_digest_sha256"] = record.digest_sha256()
     return manifest
 
 
@@ -544,6 +553,7 @@ def _condition_id(config: RunConfig) -> str:
         "max_episode_steps": config.max_episode_steps,
         "execution_strategy": config.execution_strategy,
         "max_cache_entries": config.max_cache_entries,
+        "calibration": config.calibration,
     }
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:16]
 

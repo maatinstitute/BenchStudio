@@ -49,6 +49,12 @@ from .analysis import (
     validate_claim,
     validate_outcome_record,
 )
+from .calibration import (
+    CalibrationComparison,
+    CalibrationRecord,
+    calibration_from_environment,
+    compare_calibrations,
+)
 from .campaigns import (
     AttemptKey,
     AttemptLedger,
@@ -211,6 +217,10 @@ __all__ = [
     "RunConfig",
     "Simulator",
     "Timestamp",
+    "CalibrationComparison",
+    "CalibrationRecord",
+    "calibration_from_environment",
+    "compare_calibrations",
     "ReplayPolicy",
     "ReplaySimulator",
     "FrozenCampaignPlan",

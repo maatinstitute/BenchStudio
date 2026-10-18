@@ -18,6 +18,7 @@ has been evaluated.
 | Inference efficiency | Verified as instrumentation | Latency, observation age, action chunks, resource points, overhead, Pareto helpers, and concrete synchronous/asynchronous/streaming/cached policy execution strategies are implemented; no production checkpoint result is claimed. |
 | Paired statistics | Verified | Exact binomial and discordance intervals, matched deltas, missingness, and standard errors are exposed in analysis results. |
 | Sim-to-real fidelity | Analysis-ready | Transfer gaps, failure-category agreement, observation-age summaries, and ranking concordance are implemented; physical data is not present. |
+| Calibration provenance | Implemented at protocol boundary | Camera, action-transform, controller, physical-parameter, and clock calibration identities can be frozen per environment, compared for compatibility, and persisted in run manifests. |
 | Robustness and recovery | Analysis-ready | Counterfactual pairing, confirmation plans, missing-outcome bounds, and recovery summaries are implemented; no disturbance campaign has been run. |
 | Frozen counterfactual plans | Implemented | Nominal and intervention branches share frozen pair identities, receive deterministic branch IDs, and carry a separately validated counterfactual plan digest. |
 | Counterexample search integrity | Implemented | Search plans can be serialized and independently validated for case identity, scenario consistency, and digest integrity before confirmation. |
