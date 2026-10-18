@@ -5,6 +5,7 @@ from .archive import (
     build_campaign_archive,
     campaign_archive_digest,
     extract_verified_campaign_archive,
+    verify_campaign_archive,
     write_campaign_archive,
 )
 from .artifacts import (
@@ -85,6 +86,7 @@ __all__ = [
     "build_campaign_archive",
     "campaign_archive_digest",
     "extract_verified_campaign_archive",
+    "verify_campaign_archive",
     "write_campaign_archive",
     "ArtifactReference",
     "ArtifactStore",

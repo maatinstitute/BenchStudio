@@ -55,6 +55,49 @@ def campaign_archive_digest(archive: bytes) -> str:
     return hashlib.sha256(archive).hexdigest()
 
 
+def verify_campaign_archive(
+    archive: bytes, *, expected_sha256: str | None = None
+) -> dict[str, object]:
+    """Verify archive integrity and structure without extracting it."""
+    digest = campaign_archive_digest(archive)
+    issues: list[dict[str, str]] = []
+    if expected_sha256 is not None and digest != expected_sha256:
+        issues.append({"reason": "trusted_digest_mismatch"})
+    if len(archive) > _MAX_CAMPAIGN_ARCHIVE_BYTES:
+        issues.append({"reason": "archive_too_large"})
+    names: list[str] = []
+    try:
+        with zipfile.ZipFile(io.BytesIO(archive)) as package:
+            for member in package.infolist():
+                name = member.filename
+                names.append(name)
+                path = Path(name)
+                if path.is_absolute() or ".." in path.parts:
+                    issues.append({"reason": "unsafe_path", "name": name})
+                if member.is_dir():
+                    continue
+                mode = (member.external_attr >> 16) & 0o170000
+                if mode == 0o120000:
+                    issues.append({"reason": "symlink_entry", "name": name})
+            if package.testzip() is not None:
+                issues.append({"reason": "corrupt_member"})
+    except zipfile.BadZipFile:
+        issues.append({"reason": "invalid_zip"})
+    if len(names) != len(set(names)):
+        issues.append({"reason": "duplicate_entry_names"})
+    required = {"campaign-plan.json", "attempt-results.jsonl"}
+    missing = sorted(required - set(names))
+    issues.extend({"reason": "required_file_missing", "name": name} for name in missing)
+    return {
+        "schema": "benchstudio_campaign_archive_verification_v1",
+        "digest_sha256": digest,
+        "trusted_digest_supplied": expected_sha256 is not None,
+        "entry_count": len(names),
+        "issues": issues,
+        "valid": not issues,
+    }
+
+
 def write_campaign_archive(root: Path, destination: Path) -> dict[str, str | int]:
     """Write a content-addressed campaign bundle without overwriting one."""
     if destination.exists():

@@ -25,6 +25,7 @@ from benchstudio.campaigns import (
     campaign_archive_digest,
     compile_campaign_spec,
     extract_verified_campaign_archive,
+    verify_campaign_archive,
     write_campaign_archive,
 )
 from benchstudio.mock import MockPolicy, MockSimulator
@@ -702,3 +703,18 @@ def test_campaign_archive_rejects_symlinks_and_traversal(tmp_path):
         package.writestr("../escape.txt", "no")
     with pytest.raises(CampaignArchiveError, match="unsafe path"):
         extract_verified_campaign_archive(malicious.getvalue(), tmp_path / "unsafe")
+
+
+def test_campaign_archive_can_be_verified_without_extraction(tmp_path):
+    plan = CampaignPlanner(
+        run_id="verify-archive", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    output = tmp_path / "campaign"
+    CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
+    archive = build_campaign_archive(output)
+    result = verify_campaign_archive(archive, expected_sha256=campaign_archive_digest(archive))
+    assert result["valid"] is True
+    tampered = verify_campaign_archive(
+        archive + b"x", expected_sha256=campaign_archive_digest(archive)
+    )
+    assert tampered["valid"] is False

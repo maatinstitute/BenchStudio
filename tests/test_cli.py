@@ -309,6 +309,24 @@ def test_cli_verifies_existing_artifact_without_execution(monkeypatch, tmp_path,
     assert result["trust_anchor"]["external_reference_supplied"] is True
 
 
+def test_cli_verifies_campaign_archive_without_extraction(monkeypatch, tmp_path, capsys):
+    from benchstudio.campaigns import CampaignExecutor, CampaignPlanner, build_campaign_archive
+    from benchstudio.mock import MockPolicy, MockSimulator
+
+    plan = CampaignPlanner(
+        run_id="archive-cli", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    campaign = tmp_path / "campaign"
+    CampaignExecutor(plan, campaign, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
+    archive = tmp_path / "campaign.zip"
+    archive.write_bytes(build_campaign_archive(campaign))
+    monkeypatch.setattr("sys.argv", ["benchstudio-run", "--verify-archive", str(archive)])
+    assert main() == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["schema"] == "benchstudio_campaign_archive_verification_v1"
+    assert result["valid"] is True
+
+
 def test_cli_returns_nonzero_for_invalid_artifact(monkeypatch, tmp_path, capsys):
     run_dir = tmp_path / "missing"
     monkeypatch.setattr("sys.argv", ["benchstudio-run", "--verify-artifact", str(run_dir)])

@@ -24,6 +24,7 @@ from .campaigns import (
     LocalArtifactStore,
     compile_campaign_spec,
     load_campaign_document,
+    verify_campaign_archive,
 )
 from .compare import build_campaign_comparison_report
 from .evidence import verify_artifact_manifest
@@ -112,6 +113,15 @@ def main() -> int:
         "--verify-artifact",
         type=Path,
         help="Verify an existing run artifact directory without executing it.",
+    )
+    parser.add_argument(
+        "--verify-archive",
+        type=Path,
+        help="Verify a campaign ZIP without extracting it.",
+    )
+    parser.add_argument(
+        "--trusted-archive-sha256",
+        help="Require --verify-archive to match this independent archive digest.",
     )
     parser.add_argument(
         "--audit-output",
@@ -210,6 +220,14 @@ def main() -> int:
         help="PEM public key used to verify --manifest-signature.",
     )
     args = parser.parse_args()
+    if args.verify_archive is not None:
+        result = verify_campaign_archive(
+            args.verify_archive.read_bytes(), expected_sha256=args.trusted_archive_sha256
+        )
+        print(json.dumps(result, sort_keys=True))
+        return 0 if result["valid"] else 2
+    if args.trusted_archive_sha256 is not None:
+        parser.error("--trusted-archive-sha256 requires --verify-archive")
     if args.validate_search_plan is not None and args.validate_confirmation_plan is not None:
         parser.error("plan validation options are mutually exclusive")
     if args.validate_search_plan is not None:

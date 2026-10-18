@@ -111,6 +111,7 @@ from .campaigns import (
     validate_counterfactual_pair,
     validate_counterfactual_plan,
     validate_search_plan,
+    verify_campaign_archive,
     write_campaign_archive,
 )
 from .compare import build_campaign_comparison_report, build_comparison_report
@@ -268,6 +269,7 @@ __all__ = [
     "audit_search_results",
     "HttpArtifactStore",
     "validate_search_plan",
+    "verify_campaign_archive",
     "MinimizedCounterexample",
     "Observation",
     "ModelCapabilityProfile",
