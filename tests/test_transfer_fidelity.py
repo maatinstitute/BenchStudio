@@ -1,4 +1,10 @@
-from benchstudio.analysis import summarize_transfer_fidelity
+import json
+
+from benchstudio.analysis import (
+    load_transfer_records,
+    summarize_transfer_fidelity,
+    write_transfer_fidelity_report,
+)
 
 
 def test_transfer_fidelity_preserves_missingness_and_estimates_paired_gap():
@@ -62,3 +68,22 @@ def test_transfer_fidelity_only_reports_ranking_with_sufficient_pairs():
             )
     report = summarize_transfer_fidelity(rows)
     assert report.ranking_concordance == 1.0
+
+
+def test_transfer_fidelity_artifact_round_trip(tmp_path):
+    records = [
+        {
+            "system_id": "a",
+            "pair_id": "p1",
+            "simulation_success": True,
+            "physical_success": True,
+        }
+    ]
+    records_path = tmp_path / "records.json"
+    records_path.write_text(json.dumps({"records": records}), encoding="utf-8")
+    report = summarize_transfer_fidelity(load_transfer_records(records_path))
+    output = tmp_path / "transfer.json"
+    write_transfer_fidelity_report(report, output)
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert payload["schema"] == "benchstudio_transfer_fidelity_report_v1"
+    assert payload["complete_pairs"] == 1

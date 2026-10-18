@@ -10,6 +10,9 @@ from .analysis import (
     audit_campaign_directory,
     audit_evaluation_acceptance,
     compare_policy_trace_files,
+    load_transfer_records,
+    summarize_transfer_fidelity,
+    write_transfer_fidelity_report,
 )
 from .campaigns import (
     CampaignExecutor,
@@ -129,6 +132,16 @@ def main() -> int:
     parser.add_argument("--statistics-report", type=Path)
     parser.add_argument("--reproducibility-report", type=Path)
     parser.add_argument(
+        "--transfer-records",
+        type=Path,
+        help="JSON/JSONL matched simulation/physical records for transfer analysis.",
+    )
+    parser.add_argument(
+        "--transfer-output",
+        type=Path,
+        help="Write the serialized transfer-fidelity report.",
+    )
+    parser.add_argument(
         "--claim-type",
         choices=[claim.value for claim in ClaimType],
         default=ClaimType.SINGLE_RUN_OUTCOME.value,
@@ -193,6 +206,12 @@ def main() -> int:
             )
         print(json.dumps(payload, sort_keys=True))
         return 0 if report.equivalent else 2
+    if args.transfer_records is not None:
+        report = summarize_transfer_fidelity(load_transfer_records(args.transfer_records))
+        if args.transfer_output is not None:
+            write_transfer_fidelity_report(report, args.transfer_output)
+        print(json.dumps(report.to_dict(), sort_keys=True))
+        return 0 if report.complete_pairs > 0 and not report.issues else 2
     if args.compare_campaign is not None:
         if not args.comparison_scenario_id:
             parser.error("--compare-campaign requires --comparison-scenario-id")

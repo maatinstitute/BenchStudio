@@ -81,6 +81,37 @@ def test_cli_compares_frozen_campaign_directories(monkeypatch, tmp_path, capsys)
     assert json.loads(capsys.readouterr().out)["schema"] == "benchstudio_comparison_report_v1"
 
 
+def test_cli_writes_transfer_fidelity_report(monkeypatch, tmp_path):
+    records = tmp_path / "transfer.jsonl"
+    records.write_text(
+        json.dumps(
+            {
+                "system_id": "policy-a",
+                "pair_id": "pair-1",
+                "simulation_success": True,
+                "physical_success": False,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "transfer-report.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--transfer-records",
+            str(records),
+            "--transfer-output",
+            str(output),
+        ],
+    )
+    assert main() == 0
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["schema"] == "benchstudio_transfer_fidelity_report_v1"
+    assert report["success_gap_physical_minus_simulation"] == -1.0
+
+
 def test_cli_compares_frozen_policy_traces(monkeypatch, tmp_path, capsys):
     from benchstudio.integrations import POLICY_TRACE_SCHEMA
 

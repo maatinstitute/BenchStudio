@@ -150,6 +150,15 @@ The reusable evidence layer also provides digest-tracked NDJSON artifacts and
 cross-backend comparison reports for simulator-to-simulator or sim-to-real
 analysis.
 
+Matched transfer records can be analyzed and serialized directly:
+
+```bash
+python -m benchstudio.cli --transfer-records transfer.jsonl \
+  --transfer-output transfer-report.json
+```
+
+Missing outcomes remain explicit and cause a non-zero validation status.
+
 Recorded policy traces can be used as a fail-closed parity reference. The
 `benchstudio.integrations.TracePolicy` adapter binds each action to its expected
 observation digest, so altered preprocessing or state cannot silently reuse the

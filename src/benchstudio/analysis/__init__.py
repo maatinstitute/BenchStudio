@@ -56,7 +56,9 @@ from .transfer import (
     TransferFidelityReport,
     TransferGap,
     estimate_transfer_gap,
+    load_transfer_records,
     summarize_transfer_fidelity,
+    write_transfer_fidelity_report,
 )
 
 __all__ = [
@@ -100,6 +102,8 @@ __all__ = [
     "TransferGap",
     "TransferFidelityReport",
     "summarize_transfer_fidelity",
+    "load_transfer_records",
+    "write_transfer_fidelity_report",
     "PolicyParityReport",
     "ObservationParityReport",
     "PairedOutcomeSummary",

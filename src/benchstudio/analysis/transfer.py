@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from .paired import summarize_paired_outcomes
@@ -64,6 +66,26 @@ class TransferFidelityReport:
             "mean_observation_age_ms": self.mean_observation_age_ms,
             "issues": list(self.issues),
         }
+
+
+def load_transfer_records(path: Path) -> list[dict[str, Any]]:
+    """Load transfer records from a JSON array, object, or JSONL file."""
+    text = path.read_text(encoding="utf-8")
+    if path.suffix.lower() in {".jsonl", ".ndjson"}:
+        values = [json.loads(line) for line in text.splitlines() if line.strip()]
+    else:
+        values = json.loads(text)
+        if isinstance(values, dict):
+            values = values.get("records")
+    if not isinstance(values, list) or not all(isinstance(value, dict) for value in values):
+        raise ValueError("transfer records must be a JSON array or {records: [...]} mapping")
+    return values
+
+
+def write_transfer_fidelity_report(report: TransferFidelityReport, path: Path) -> None:
+    """Write deterministic transfer-fidelity evidence."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(report.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def summarize_transfer_fidelity(records: list[dict[str, Any]]) -> TransferFidelityReport:
