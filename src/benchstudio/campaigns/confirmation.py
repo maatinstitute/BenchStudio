@@ -51,6 +51,33 @@ class FrozenConfirmationPlan:
         )
 
 
+@dataclass(frozen=True)
+class ConfirmationEvaluation:
+    """Evaluator output for one independent holdout case."""
+
+    failure_reproduced: bool
+    failure_digest_sha256: str | None = None
+    metadata: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True)
+class ConfirmationCaseResult:
+    """Immutable result linked to both the confirmation and search plans."""
+
+    case_id: str
+    candidate_id: str
+    scenario_id: str
+    initial_condition_id: str
+    confirmation_seed: int
+    source_search_run_id: str
+    failure_reproduced: bool
+    failure_digest_sha256: str | None
+    metadata: dict[str, Any]
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
 def compile_confirmation_plan(
     *,
     run_id: str,
@@ -123,12 +150,82 @@ def validate_confirmation_plan(plan: FrozenConfirmationPlan) -> list[str]:
     except ValueError as exc:
         issues.append(str(exc))
     case_ids = [case.case_id for case in plan.cases]
+    if not plan.cases:
+        issues.append("confirmation plan must contain at least one case")
     if len(set(case_ids)) != len(case_ids):
         issues.append("confirmation case IDs must be unique")
+    for case in plan.cases:
+        if not case.candidate_id or not case.scenario_id or not case.source_search_run_id:
+            issues.append(f"case {case.case_id}: identity fields are required")
+        if case.confirmation_seed < 0:
+            issues.append(f"case {case.case_id}: confirmation_seed must be non-negative")
     expected = _digest([asdict(case) for case in plan.cases])
     if expected != plan.plan_digest_sha256:
         issues.append("plan_digest_sha256 does not match cases")
     return issues
+
+
+def execute_confirmation_plan(
+    plan: FrozenConfirmationPlan,
+    evaluator: Any,
+    *,
+    output: Path | None = None,
+) -> tuple[ConfirmationCaseResult, ...]:
+    """Evaluate independent holdout cases without changing the search plan.
+
+    The evaluator owns simulator/model execution. BenchStudio records whether
+    the discovered failure reproduced, links each result to the frozen source
+    search digest, and keeps the confirmation evidence separate from discovery.
+    """
+    issues = validate_confirmation_plan(plan)
+    if issues:
+        raise ValueError("invalid confirmation plan: " + "; ".join(issues))
+    results: list[ConfirmationCaseResult] = []
+    for case in plan.cases:
+        evaluation = evaluator(case)
+        if not isinstance(evaluation, ConfirmationEvaluation):
+            raise TypeError("confirmation evaluator must return ConfirmationEvaluation")
+        metadata = dict(evaluation.metadata or {})
+        failure_digest = evaluation.failure_digest_sha256
+        if evaluation.failure_reproduced:
+            if failure_digest is None:
+                failure_digest = _digest({"case": asdict(case), "metadata": metadata})
+            _require_sha256(failure_digest, "failure_digest_sha256")
+        elif failure_digest is not None:
+            raise ValueError(f"non-reproducing case {case.case_id} cannot have a failure digest")
+        results.append(
+            ConfirmationCaseResult(
+                case.case_id,
+                case.candidate_id,
+                case.scenario_id,
+                case.initial_condition_id,
+                case.confirmation_seed,
+                case.source_search_run_id,
+                evaluation.failure_reproduced,
+                failure_digest,
+                metadata,
+            )
+        )
+    frozen_results = tuple(results)
+    if output is not None:
+        output.mkdir(parents=True, exist_ok=True)
+        with (output / "confirmation-results.jsonl").open("w", encoding="utf-8") as handle:
+            for result in frozen_results:
+                handle.write(json.dumps(result.to_dict(), sort_keys=True) + "\n")
+        summary = {
+            "schema": "benchstudio.confirmation_results.v1",
+            "run_id": plan.run_id,
+            "source_search_digest_sha256": plan.source_search_digest_sha256,
+            "plan_digest_sha256": plan.plan_digest_sha256,
+            "result_digest_sha256": _digest([result.to_dict() for result in frozen_results]),
+            "scheduled_case_count": len(frozen_results),
+            "completed_case_count": len(frozen_results),
+            "failure_reproduced_count": sum(result.failure_reproduced for result in frozen_results),
+        }
+        (output / "confirmation-summary.json").write_text(
+            json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+    return frozen_results
 
 
 def _require_sha256(value: str, field: str) -> None:

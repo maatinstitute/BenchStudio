@@ -1,8 +1,12 @@
+import json
+
 import pytest
 
 from benchstudio.campaigns import (
+    ConfirmationEvaluation,
     SearchCandidate,
     compile_confirmation_plan,
+    execute_confirmation_plan,
     validate_confirmation_plan,
 )
 
@@ -39,4 +43,44 @@ def test_confirmation_plan_rejects_search_seed_reuse_and_unknown_holdout():
             candidates=[_candidate("c1")],
             confirmation_seeds=[3],
             holdout_candidate_ids=["missing"],
+        )
+
+
+def test_confirmation_execution_is_separate_and_persists_reproduction_evidence(tmp_path):
+    plan = compile_confirmation_plan(
+        run_id="confirm-run",
+        source_search_digest_sha256="b" * 64,
+        candidates=[_candidate("c1"), _candidate("c2", 2)],
+        confirmation_seeds=[10, 11],
+        holdout_candidate_ids=["c2"],
+    )
+    results = execute_confirmation_plan(
+        plan,
+        lambda case: ConfirmationEvaluation(
+            failure_reproduced=case.confirmation_seed == 11,
+            metadata={"seed": case.confirmation_seed},
+        ),
+        output=tmp_path / "confirmation-evidence",
+    )
+    assert len(results) == 2
+    assert sum(result.failure_reproduced for result in results) == 1
+    assert all(result.source_search_run_id == "search-run" for result in results)
+    summary = json.loads(
+        (tmp_path / "confirmation-evidence" / "confirmation-summary.json").read_text()
+    )
+    assert summary["source_search_digest_sha256"] == "b" * 64
+    assert summary["failure_reproduced_count"] == 1
+
+
+def test_confirmation_execution_rejects_digest_on_non_reproduction():
+    plan = compile_confirmation_plan(
+        run_id="confirm-run",
+        source_search_digest_sha256="b" * 64,
+        candidates=[_candidate("c1")],
+        confirmation_seeds=[10],
+    )
+    with pytest.raises(ValueError, match="non-reproducing case"):
+        execute_confirmation_plan(
+            plan,
+            lambda _: ConfirmationEvaluation(False, "a" * 64),
         )

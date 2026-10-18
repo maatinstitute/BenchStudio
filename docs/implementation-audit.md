@@ -23,6 +23,7 @@ has been evaluated.
 | Robustness and recovery | Analysis-ready | Counterfactual pairing, frozen branch-lineage audits, confirmation plans, missing-outcome bounds, and recovery summaries are implemented; no disturbance campaign has been run. |
 | Frozen counterfactual plans | Implemented | Nominal and intervention branches share frozen pair identities, receive deterministic branch IDs, and carry a separately validated counterfactual plan digest. |
 | Counterexample search integrity | Implemented | Search plans can be serialized and independently validated for case identity, scenario consistency, and digest integrity; `execute_search_plan()` persists deterministic case results and exposes only observed failures as confirmation candidates. |
+| Counterexample confirmation | Implemented | `execute_confirmation_plan()` evaluates an independent holdout matrix, links results to the frozen search digest, and records failure reproduction separately from discovery evidence. |
 | WorldEpisode binding | Boundary verified | The optional reference validator is used when installed; the strict local fallback reports missing canonical metadata instead of fabricating it. |
 | RoboChallenge integration | Observe-only verified | Opaque observation/action digests and acknowledgments are validated; safety, execution, and official scoring remain external. |
 | AlpaBridge integration | Telemetry verified | Driver telemetry schema and deadline/load-failure audits are dependency-free; AlpaSim serving remains external. |

@@ -15,9 +15,12 @@ from .artifacts import (
 )
 from .confirmation import (
     ConfirmationCase,
+    ConfirmationCaseResult,
+    ConfirmationEvaluation,
     FrozenConfirmationPlan,
     SearchCandidate,
     compile_confirmation_plan,
+    execute_confirmation_plan,
     validate_confirmation_plan,
 )
 from .counterfactual import (
@@ -75,9 +78,12 @@ __all__ = [
     "FrozenCounterfactualPlan",
     "compile_counterfactual_plan",
     "ConfirmationCase",
+    "ConfirmationCaseResult",
+    "ConfirmationEvaluation",
     "FrozenConfirmationPlan",
     "SearchCandidate",
     "compile_confirmation_plan",
+    "execute_confirmation_plan",
     "validate_confirmation_plan",
     "FrozenCampaignPlan",
     "Intervention",
