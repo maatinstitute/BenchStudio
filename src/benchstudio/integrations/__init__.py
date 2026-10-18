@@ -6,6 +6,7 @@ from .alpabridge import (
     audit_alpabridge_telemetry,
     load_alpabridge_telemetry,
 )
+from .genesis import GenesisSimulator
 from .gymnasium import GymnasiumSimulator
 from .mujoco import MujocoSimulator
 from .policy_trace import POLICY_TRACE_SCHEMA, TracePolicy, observation_digest_sha256
@@ -35,6 +36,7 @@ __all__ = [
     "load_alpabridge_telemetry",
     "MujocoSimulator",
     "GymnasiumSimulator",
+    "GenesisSimulator",
     "POLICY_TRACE_SCHEMA",
     "TracePolicy",
     "observation_digest_sha256",
