@@ -55,16 +55,23 @@ class ModelAdapterRegistry:
 
     def readiness(self, adapter_id: str) -> dict[str, Any]:
         descriptor = self.get(adapter_id)
-        dependencies = [
-            {
-                "name": dependency.name,
-                "import_name": dependency.import_name,
-                "available": _module_available(dependency.import_name),
-                "required": dependency.required,
-                "scope": dependency.scope,
-            }
-            for dependency in descriptor.dependencies
-        ]
+        dependencies = []
+        for dependency in descriptor.dependencies:
+            available = _module_available(dependency.import_name)
+            try:
+                version = metadata.version(dependency.name)
+            except metadata.PackageNotFoundError:
+                version = None
+            dependencies.append(
+                {
+                    "name": dependency.name,
+                    "import_name": dependency.import_name,
+                    "available": available,
+                    "version": version,
+                    "required": dependency.required,
+                    "scope": dependency.scope,
+                }
+            )
         missing_required = [
             item["name"] for item in dependencies if item["required"] and not item["available"]
         ]

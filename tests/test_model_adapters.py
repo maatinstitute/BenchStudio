@@ -76,6 +76,33 @@ def test_model_registry_reports_missing_dependency():
         registry.create("missing")
 
 
+def test_model_registry_readiness_reports_dependency_version(monkeypatch):
+    import benchstudio.model_adapters as model_adapters
+
+    monkeypatch.setattr(model_adapters.metadata, "version", lambda _name: "1.2.3")
+    registry = ModelAdapterRegistry()
+    registry.register(
+        ModelAdapterDescriptor(
+            "versioned",
+            "Versioned model",
+            MockPolicy,
+            ModelCapabilityProfile(
+                model_id="versioned",
+                family="custom",
+                input_modalities=("state",),
+                output_representation="action_chunk",
+                supports_closed_loop=True,
+                supports_action_chunks=True,
+                supported_metrics=("success",),
+            ),
+            dependencies=(ModelDependency("json", "json"),),
+        )
+    )
+    readiness = registry.readiness("versioned")
+    assert readiness["ready"] is True
+    assert readiness["dependencies"][0]["version"] == "1.2.3"
+
+
 def test_model_registry_rejects_invalid_capability_profile():
     with pytest.raises(ValueError, match="invalid capabilities"):
         ModelAdapterRegistry().register(
