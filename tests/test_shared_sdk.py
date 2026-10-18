@@ -141,3 +141,24 @@ def test_score_coverage_rejects_invalid_success_identity_and_termination():
         termination_reason="unknown",  # type: ignore[arg-type]
     )
     assert "termination_reason is invalid" in invalid.issues
+
+
+def test_score_coverage_rejects_non_integer_counts_without_raising():
+    audit = audit_score_coverage(
+        scheduled_steps=True,
+        observed_steps="2",  # type: ignore[arg-type]
+        scored_steps=1,
+    )
+    assert audit.complete is False
+    assert any("non-negative integers" in issue for issue in audit.issues)
+
+
+def test_score_coverage_rejects_non_string_termination_without_raising():
+    audit = audit_score_coverage(
+        scheduled_steps=2,
+        observed_steps=2,
+        scored_steps=2,
+        termination_reason=["success"],  # type: ignore[arg-type]
+    )
+    assert audit.complete is False
+    assert "termination_reason is invalid" in audit.issues
