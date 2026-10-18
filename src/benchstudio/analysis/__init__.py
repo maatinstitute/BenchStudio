@@ -2,6 +2,7 @@
 
 from .claims import ClaimDecision, ClaimType, validate_claim
 from .failure_events import EventBookmark, bookmark_critical_events
+from .inference_schedule import InferenceEvent, InferenceScheduleAudit, audit_inference_schedule
 from .missingness import MissingOutcomeBounds, missing_outcome_bounds
 from .paired import PairedOutcomeSummary, summarize_paired_outcomes
 from .parity import PolicyParityReport, compare_policy_outputs
@@ -18,6 +19,9 @@ from .transfer import (
 __all__ = [
     "MissingOutcomeBounds",
     "EventBookmark",
+    "InferenceEvent",
+    "InferenceScheduleAudit",
+    "audit_inference_schedule",
     "ClaimDecision",
     "ClaimType",
     "ScoreCoverage",
