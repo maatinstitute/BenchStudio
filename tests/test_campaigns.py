@@ -41,3 +41,16 @@ def test_attempt_ledger_is_append_only_and_reports_missing(tmp_path):
     )
     with pytest.raises(ValueError, match="identity"):
         ledger.append(wrong, {"status": "success"})
+
+
+def test_attempt_ledger_rejects_reopening_with_a_different_plan(tmp_path):
+    path = tmp_path / "attempts.jsonl"
+    plan = CampaignPlanner(
+        run_id="run-1", scenario_id="pick", conditions=[{"budget": 2}], seeds=[1]
+    ).freeze()
+    AttemptLedger(path, plan).append(plan.attempts[0].key, {"status": "success"})
+    other = CampaignPlanner(
+        run_id="run-1", scenario_id="pick", conditions=[{"budget": 4}], seeds=[1]
+    ).freeze()
+    with pytest.raises(ValueError, match="plan digest"):
+        AttemptLedger(path, other)

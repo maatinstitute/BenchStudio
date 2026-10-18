@@ -114,10 +114,21 @@ def _index_reports(reports: list[dict[str, Any] | None]) -> dict[str, dict[str, 
 def _joint_rmse(report_a: dict[str, Any], report_b: dict[str, Any]) -> float | None:
     joints_a = report_a.get("final_joint_positions", {})
     joints_b = report_b.get("final_joint_positions", {})
-    shared = sorted(set(joints_a) & set(joints_b))
-    if not shared:
+    if not isinstance(joints_a, dict) or not isinstance(joints_b, dict):
         return None
-    return math.sqrt(sum((joints_a[name] - joints_b[name]) ** 2 for name in shared) / len(shared))
+    shared = sorted(set(joints_a) & set(joints_b))
+    pairs: list[tuple[float, float]] = []
+    for name in shared:
+        try:
+            value_a = float(joints_a[name])
+            value_b = float(joints_b[name])
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(value_a) and math.isfinite(value_b):
+            pairs.append((value_a, value_b))
+    if not pairs:
+        return None
+    return math.sqrt(sum((value_a - value_b) ** 2 for value_a, value_b in pairs) / len(pairs))
 
 
 def _mean(values: Any) -> float | None:

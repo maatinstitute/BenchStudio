@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
+from enum import Enum
 
 
-class LifecycleState(StrEnum):
+class LifecycleState(str, Enum):
     CREATED = "created"
     INITIALIZED = "initialized"
     RUNNING = "running"

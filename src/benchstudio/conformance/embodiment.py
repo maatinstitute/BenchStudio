@@ -40,6 +40,12 @@ def validate_mapping(
     target_labels = set(target.labels)
     mapped_sources = {rule.source_label for rule in rules}
     mapped_targets = {rule.target_label for rule in rules}
+    if len(mapped_sources) != len(rules):
+        issues.append("source labels are duplicated")
+    if mapped_sources - source_labels:
+        issues.append("mapping references unknown source labels")
+    if mapped_targets - target_labels:
+        issues.append("mapping references unknown target labels")
     if source_labels - mapped_sources:
         issues.append("source labels are unmapped")
     if target_labels - mapped_targets:

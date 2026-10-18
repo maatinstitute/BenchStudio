@@ -69,7 +69,9 @@ def verify_artifact_manifest(root: Path, trust_anchor_path: Path | None = None) 
     mismatches: list[dict[str, Any]] = []
     anchor = trust_anchor_path or root.parent / f"{root.name}.artifact-manifest.sha256"
     trust_anchor: dict[str, Any] = {"path": str(anchor), "checked": anchor.is_file()}
-    if anchor.is_file():
+    if not anchor.is_file():
+        mismatches.append({"file": manifest_path.name, "reason": "trust_anchor_missing"})
+    else:
         parts = anchor.read_text(encoding="utf-8").strip().split()
         expected_digest = parts[-1] if parts else ""
         actual_digest = sha256_file(manifest_path)

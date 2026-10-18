@@ -45,6 +45,8 @@ def test_embodiment_mapping_requires_complete_semantics():
     rules = (MappingRule("j1", "left"), MappingRule("j2", "right", invert=True))
     assert validate_mapping(source, target, rules) == []
     assert MappingRule("j1", "left", scale=2).apply(0.5) == 1.0
+    duplicate = (MappingRule("j1", "left"), MappingRule("j1", "right"))
+    assert "source labels are duplicated" in validate_mapping(source, target, duplicate)
 
 
 def test_score_coverage_and_missing_outcome_bounds_are_explicit():

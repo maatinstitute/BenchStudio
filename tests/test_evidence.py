@@ -56,6 +56,17 @@ def test_comparison_rejects_reports_without_stable_identity():
         )
 
 
+def test_comparison_ignores_nonfinite_joint_values():
+    report = build_comparison_report(
+        scenario_id="task",
+        per_backend_reports={
+            "a": [{"pair_id": "p", "success": True, "final_joint_positions": {"j": "bad"}}],
+            "b": [{"pair_id": "p", "success": True, "final_joint_positions": {"j": 0.2}}],
+        },
+    )
+    assert report["divergence"]["a_vs_b"]["episodes"][0]["final_joint_rmse_rad"] is None
+
+
 def test_run_artifact_manifest_detects_trace_tampering(tmp_path):
     run_dir = tmp_path / "run"
     run_episodes(MockPolicy(), MockSimulator(), RunConfig(episodes=1), run_dir)
@@ -76,3 +87,12 @@ def test_artifact_manifest_rejects_unbound_files(tmp_path):
     result = verify_artifact_manifest(run_dir)
     assert result["valid"] is False
     assert {item["reason"] for item in result["mismatches"]} == {"unbound_artifact"}
+
+
+def test_artifact_manifest_requires_external_trust_anchor(tmp_path):
+    run_dir = tmp_path / "run"
+    run_episodes(MockPolicy(), MockSimulator(), RunConfig(episodes=1), run_dir)
+    (tmp_path / "run.artifact-manifest.sha256").unlink()
+    result = verify_artifact_manifest(run_dir)
+    assert result["valid"] is False
+    assert {item["reason"] for item in result["mismatches"]} == {"trust_anchor_missing"}
