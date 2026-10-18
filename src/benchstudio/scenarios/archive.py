@@ -30,10 +30,17 @@ def build_scenario_archive(root: Path, *, max_bytes: int = _MAX_ARCHIVE_BYTES) -
     root = root.resolve()
     if not root.is_dir():
         raise ScenarioArchiveError(f"scenario root is not a directory: {root}")
-    files = sorted(
-        (path for path in root.rglob("*") if path.is_file() and not _is_scratch(path, root)),
-        key=lambda path: path.relative_to(root).as_posix(),
-    )
+    files: list[Path] = []
+    for path in root.rglob("*"):
+        if _is_scratch(path, root):
+            continue
+        if path.is_symlink():
+            raise ScenarioArchiveError(
+                f"scenario contains symlink: {path.relative_to(root).as_posix()}"
+            )
+        if path.is_file():
+            files.append(path)
+    files.sort(key=lambda path: path.relative_to(root).as_posix())
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for path in files:
@@ -72,15 +79,26 @@ def extract_verified_scenario_archive(
     if destination.exists():
         raise ScenarioArchiveError(f"destination already exists: {destination}")
     destination_root = destination.resolve()
-    with zipfile.ZipFile(io.BytesIO(archive)) as package:
-        members = package.infolist()
-        for member in members:
-            target = (destination / member.filename).resolve()
-            if not target.is_relative_to(destination_root):
-                raise ScenarioArchiveError(f"archive contains unsafe path: {member.filename}")
-        destination.mkdir(parents=True)
-        for member in members:
-            package.extract(member, destination)
+    try:
+        with zipfile.ZipFile(io.BytesIO(archive)) as package:
+            members = package.infolist()
+            names = [member.filename for member in members]
+            if len(names) != len(set(names)):
+                raise ScenarioArchiveError("archive contains duplicate entries")
+            for member in members:
+                target = (destination / member.filename).resolve()
+                if not target.is_relative_to(destination_root):
+                    raise ScenarioArchiveError(f"archive contains unsafe path: {member.filename}")
+                mode = (member.external_attr >> 16) & 0o170000
+                if mode == 0o120000:
+                    raise ScenarioArchiveError(f"archive contains symlink: {member.filename}")
+            if package.testzip() is not None:
+                raise ScenarioArchiveError("archive contains a corrupt member")
+            destination.mkdir(parents=True)
+            for member in members:
+                package.extract(member, destination)
+    except zipfile.BadZipFile as exc:
+        raise ScenarioArchiveError("scenario archive is not a valid ZIP") from exc
     return digest
 
 

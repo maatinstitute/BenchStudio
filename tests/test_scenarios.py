@@ -119,3 +119,25 @@ def test_scenario_archive_verifies_and_rejects_traversal(tmp_path):
         package.writestr("../escape.txt", "no")
     with pytest.raises(ScenarioArchiveError, match="unsafe path"):
         extract_verified_scenario_archive(malicious.getvalue(), tmp_path / "unsafe")
+
+
+def test_scenario_archive_rejects_symlinks_and_duplicate_entries(tmp_path):
+    root = tmp_path / "scenario"
+    root.mkdir()
+    outside = tmp_path / "outside.txt"
+    outside.write_text("outside")
+    (root / "linked.txt").symlink_to(outside)
+    with pytest.raises(ScenarioArchiveError, match="symlink"):
+        build_scenario_archive(root)
+
+    duplicate = io.BytesIO()
+    with zipfile.ZipFile(duplicate, "w") as package:
+        package.writestr("task.json", "{}")
+        package.writestr("task.json", "tampered")
+    with pytest.raises(ScenarioArchiveError, match="duplicate"):
+        extract_verified_scenario_archive(duplicate.getvalue(), tmp_path / "duplicate")
+
+
+def test_scenario_archive_rejects_invalid_zip(tmp_path):
+    with pytest.raises(ScenarioArchiveError, match="valid ZIP"):
+        extract_verified_scenario_archive(b"not-a-zip", tmp_path / "invalid")
