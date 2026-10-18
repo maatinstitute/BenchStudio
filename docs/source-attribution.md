@@ -56,6 +56,12 @@ the following projects. Product runtimes are not vendored into this repository.
   `cd380c740ef5957d3f980188a3b726c33504cf1662c566684cf30bbf06f9cf24`.
   The port preserves structured lifecycle events, hardened late-message
   handling, cleanup/isolation behavior, and strict-mode failure evidence.
+- AlpaBridge policy registry: `benchstudio.integrations.alpabridge_policy_registry`
+  ports the reusable registry/precondition/configuration core from
+  `src/alpabridge/driver/policy_registry.py` at commit
+  `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`; source digest
+  `b4c4fb44bf95e296363866aec2f19ea096b817f837dd423ed7a39651108780da`.
+  AlpaSim-specific factories remain injected by the owning runtime.
 - URDF Studio / `urdf-ops`: `benchstudio.conformance.dataset_alignment` ports
   the dataset-alignment registry boundary from `backend/services/
   dataset_alignment.py` at upstream commit

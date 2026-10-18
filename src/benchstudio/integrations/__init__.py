@@ -11,6 +11,13 @@ from .alpabridge_lifecycle import (
     SyntheticLifecycleService,
     run_synthetic_lifecycle_cycle,
 )
+from .alpabridge_policy_registry import (
+    DriverPolicy,
+    PolicyRegistry,
+    load_external_policy_modules,
+    read_finite_float_tuple,
+    read_positive_finite_float,
+)
 from .alpasim_metrics import (
     AlpaSimEvidence,
     AlpaSimEvidenceConfig,
@@ -60,6 +67,11 @@ __all__ = [
     "LifecycleEvent",
     "SyntheticLifecycleService",
     "run_synthetic_lifecycle_cycle",
+    "DriverPolicy",
+    "PolicyRegistry",
+    "load_external_policy_modules",
+    "read_positive_finite_float",
+    "read_finite_float_tuple",
     "AlpaSimEvidence",
     "AlpaSimEvidenceConfig",
     "AlpaSimEvidenceThresholds",
