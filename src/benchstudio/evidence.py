@@ -220,7 +220,15 @@ def _verification_result(
 
 def environment_fingerprint(backend_id: str | None = None) -> dict[str, Any]:
     """Capture reproducibility facts without embedding private paths or secrets."""
-    package_names = ("mujoco", "genesis-world", "usd-core", "numpy", "scipy")
+    package_names = (
+        "mujoco",
+        "gymnasium",
+        "genesis-world",
+        "isaaclab",
+        "usd-core",
+        "numpy",
+        "scipy",
+    )
     result: dict[str, Any] = {
         "python": sys.version.split()[0],
         "platform": platform.platform(),

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 from benchstudio.compare import build_comparison_report
-from benchstudio.evidence import NdjsonWriter, verify_artifact_manifest
+from benchstudio.evidence import NdjsonWriter, environment_fingerprint, verify_artifact_manifest
 from benchstudio.mock import MockPolicy, MockSimulator
 from benchstudio.runner import RunConfig, run_episodes
 
@@ -15,6 +15,29 @@ def test_ndjson_writer_returns_digest_and_count(tmp_path):
     assert artifact["record_count"] == 1
     assert len(artifact["digest_sha256"]) == 64
     assert json.loads((tmp_path / "trace.ndjson").read_text())["t_ms"] == 0
+
+
+def test_environment_fingerprint_records_optional_backend_versions(monkeypatch):
+    from benchstudio import evidence
+
+    versions = {
+        "mujoco": "3.3.0",
+        "gymnasium": "1.0.0",
+        "genesis-world": "1.4.0",
+        "isaaclab": "2.0.0",
+        "usd-core": "24.0",
+        "numpy": "2.0.0",
+        "scipy": "1.14.0",
+    }
+
+    def fake_version(name):
+        return versions[name]
+
+    monkeypatch.setattr(evidence.metadata, "version", fake_version)
+    fingerprint = environment_fingerprint("isaaclab")
+    assert fingerprint["backend_id"] == "isaaclab"
+    assert fingerprint["packages"]["gymnasium"] == "1.0.0"
+    assert fingerprint["packages"]["isaaclab"] == "2.0.0"
 
 
 def test_comparison_preserves_backend_divergence():
