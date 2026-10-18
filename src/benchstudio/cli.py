@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from .adapters import default_registry
 from .campaigns import CampaignExecutor, compile_campaign_spec, load_campaign_document
 from .mock import MockPolicy, MockSimulator
 from .runner import RunConfig, run_episodes
@@ -57,6 +58,7 @@ def main() -> int:
                 args.output,
                 lambda _: MockPolicy(),
                 lambda _: MockSimulator(),
+                adapter_registry=default_registry(),
             )
             summary = executor.run()
             print(

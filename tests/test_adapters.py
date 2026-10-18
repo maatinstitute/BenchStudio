@@ -82,3 +82,25 @@ def test_capability_gate_rejects_facade_for_physics_authority():
     assert registry.capability_issues("mock", {"owns_physics": True}) == ("owns_physics",)
     with pytest.raises(RuntimeError, match="owns_physics"):
         registry.create("mock", required_capabilities={"owns_physics": True})
+
+
+def test_registry_validates_backend_requirements_frozen_in_plan():
+    plan = type(
+        "Plan",
+        (),
+        {
+            "protocol": {
+                "S": {
+                    "environments": [
+                        {
+                            "id": "sim",
+                            "adapter": "mock",
+                            "required_capabilities": {"owns_physics": True},
+                        }
+                    ]
+                }
+            }
+        },
+    )()
+    registry = default_registry(discover_external=False)
+    assert registry.validate_plan(plan) == ("sim: adapter mock lacks owns_physics",)

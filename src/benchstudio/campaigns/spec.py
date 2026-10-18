@@ -94,6 +94,16 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
         environment_ids.add(environment_id)
         if not isinstance(item.get("kind"), str) or not item["kind"]:
             raise ValueError(f"environment {environment_id} requires kind")
+        if "adapter" in item and (not isinstance(item["adapter"], str) or not item["adapter"]):
+            raise ValueError(f"environment {environment_id} adapter must be a non-empty string")
+        requirements = item.get("required_capabilities", {})
+        if not isinstance(requirements, dict) or any(
+            not isinstance(name, str) or not isinstance(value, bool)
+            for name, value in requirements.items()
+        ):
+            raise ValueError(
+                f"environment {environment_id} required_capabilities must map names to booleans"
+            )
         if item["kind"] == "physical" and item.get("enabled", False):
             if item.get("requires_authorization") is not True:
                 raise ValueError(

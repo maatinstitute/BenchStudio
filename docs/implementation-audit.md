@@ -22,6 +22,7 @@ has been evaluated.
 | RoboChallenge integration | Observe-only verified | Opaque observation/action digests and acknowledgments are validated; safety, execution, and official scoring remain external. |
 | AlpaBridge integration | Telemetry verified | Driver telemetry schema and deadline/load-failure audits are dependency-free; AlpaSim serving remains external. |
 | External simulator backends | Adapter boundary and readiness only | Mock and trace-replay facades are included. Backend capability declarations and entry-point discovery now gate authority-sensitive construction, while MuJoCo, Genesis, Isaac Lab–Arena, and physical execution still require their pinned runtimes and approved assets. |
+| Frozen backend requirements | Implemented | Environment declarations can pin an adapter and required authority capabilities; `CampaignExecutor` rejects unmet or unavailable requirements before scheduling attempts. |
 | Sim-to-real statistical uncertainty | Implemented for matched records | Transfer reports preserve missing outcomes and now include an exact paired discordance confidence interval alongside the point gap and standard error. |
 | RoboChallenge observe-only evidence | Implemented at protocol boundary | Validated opaque observation/action bytes are retained as canonical base64 plus SHA-256 digests; execution and official scoring remain external. |
 | End-to-end campaign audit | Implemented | `CampaignExecutor.audit()` reads the append-only ledger and validates frozen-plan completeness, artifact verification, and claim prerequisites in one path. |

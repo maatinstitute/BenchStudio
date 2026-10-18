@@ -6,6 +6,7 @@ import zipfile
 
 import pytest
 
+from benchstudio.adapters import default_registry
 from benchstudio.analysis import ClaimType
 from benchstudio.campaigns import (
     CampaignArchiveError,
@@ -178,6 +179,37 @@ def test_campaign_executor_exposes_frozen_plan_audit(tmp_path):
     assert audit.attempts_complete is True
     assert audit.evidence_verified is True
     assert audit.claim.status == "supported"
+
+
+def test_campaign_executor_rejects_unsatisfied_frozen_backend_requirement(tmp_path):
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "backend-gated"},
+            "task": {"task_id": "task"},
+            "environments": [
+                {
+                    "id": "sim",
+                    "kind": "simulator",
+                    "adapter": "mock",
+                    "required_capabilities": {"owns_physics": True},
+                }
+            ],
+            "evaluation": {
+                "seeds": [1],
+                "paired": True,
+                "conditions": [{"x": 1}],
+            },
+        }
+    )
+    with pytest.raises(ValueError, match="backend requirements"):
+        CampaignExecutor(
+            plan,
+            tmp_path / "campaign",
+            lambda _: MockPolicy(),
+            lambda _: MockSimulator(),
+            adapter_registry=default_registry(discover_external=False),
+        )
 
 
 def test_expired_worker_lease_is_reclaimed_by_next_worker(tmp_path):

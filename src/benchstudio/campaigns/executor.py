@@ -15,6 +15,7 @@ from .ledger import AttemptLedger
 from .worker import WorkerLeaseManager
 
 if TYPE_CHECKING:
+    from ..adapters import AdapterRegistry
     from ..analysis.campaign_audit import CampaignAudit
     from ..analysis.claims import ClaimType
     from ..analysis.outcomes import OutcomeRecord
@@ -48,6 +49,7 @@ class CampaignExecutor:
         lease_manager: WorkerLeaseManager | None = None,
         cancelled_attempts: Iterable[str] = (),
         resource_sampler_factory: ResourceSamplerFactory | None = None,
+        adapter_registry: "AdapterRegistry | None" = None,
     ) -> None:
         self.plan = plan
         self.output = output
@@ -57,6 +59,12 @@ class CampaignExecutor:
         self.lease_manager = lease_manager
         self.cancelled_attempts = frozenset(cancelled_attempts)
         self.resource_sampler_factory = resource_sampler_factory
+        if adapter_registry is not None:
+            issues = adapter_registry.validate_plan(plan)
+            if issues:
+                raise ValueError(
+                    "campaign backend requirements are not satisfied: " + "; ".join(issues)
+                )
         planned_ids = {attempt.key.attempt_id for attempt in plan.attempts}
         unknown = self.cancelled_attempts - planned_ids
         if unknown:

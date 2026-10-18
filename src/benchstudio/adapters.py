@@ -124,6 +124,38 @@ class AdapterRegistry:
                 issues.append(name)
         return tuple(issues)
 
+    def validate_plan(self, plan: Any) -> tuple[str, ...]:
+        """Validate backend declarations frozen in a campaign plan."""
+        protocol = getattr(plan, "protocol", None) or {}
+        environments = protocol.get("S", {}).get("environments", [])
+        issues: list[str] = []
+        for environment in environments:
+            if not isinstance(environment, dict) or not environment.get("adapter"):
+                continue
+            environment_id = environment.get("id", "<unknown>")
+            simulator_id = environment["adapter"]
+            try:
+                readiness = self.readiness(simulator_id)
+            except KeyError:
+                issues.append(f"{environment_id}: unknown adapter {simulator_id}")
+                continue
+            if not readiness["ready"]:
+                issues.append(
+                    f"{environment_id}: adapter {simulator_id} missing "
+                    + ", ".join(readiness["missing_required"])
+                )
+            required = environment.get("required_capabilities", {})
+            try:
+                capability_issues = self.capability_issues(simulator_id, required)
+            except (TypeError, ValueError) as exc:
+                issues.append(f"{environment_id}: {exc}")
+            else:
+                issues.extend(
+                    f"{environment_id}: adapter {simulator_id} lacks {name}"
+                    for name in capability_issues
+                )
+        return tuple(issues)
+
     def discover(self, group: str = "benchstudio.simulators") -> tuple[dict[str, str], ...]:
         """Load optional simulator adapters exposed through package entry points."""
         entries = metadata.entry_points()
