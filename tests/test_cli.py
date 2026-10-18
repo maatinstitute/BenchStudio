@@ -183,6 +183,24 @@ def test_cli_writes_recovery_report(monkeypatch, tmp_path):
     assert report["recovery_rate"] == 1.0
 
 
+def test_acceptance_evidence_rejects_invalid_recovery_lineage(tmp_path):
+    from benchstudio.cli import _load_report_acceptance_evidence
+
+    path = tmp_path / "recovery-report.json"
+    path.write_text(
+        json.dumps(
+            {
+                "schema": "benchstudio_recovery_report_v1",
+                "lineage_valid": False,
+                "issues": [],
+                "matched_pairs": 3,
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert _load_report_acceptance_evidence(None, path, None, None) == {"recovery_verified": False}
+
+
 def test_cli_validates_recovery_report_against_frozen_counterfactual_plan(monkeypatch, tmp_path):
     from benchstudio.campaigns import (
         CampaignPlanner,

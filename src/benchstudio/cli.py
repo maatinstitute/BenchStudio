@@ -522,9 +522,12 @@ def _load_report_acceptance_evidence(
     if recovery_path is not None:
         payload = _load_json_mapping(recovery_path)
         evidence["recovery_verified"] = bool(
-            payload.get("complete") is True
-            or payload.get("passed") is True
-            or (payload.get("issues") == [] and payload.get("matched_pairs", 0) > 0)
+            payload.get("lineage_valid") is not False
+            and (
+                payload.get("complete") is True
+                or payload.get("passed") is True
+                or (payload.get("issues") == [] and payload.get("matched_pairs", 0) > 0)
+            )
         )
     if statistics_path is not None:
         payload = _load_json_mapping(statistics_path)
