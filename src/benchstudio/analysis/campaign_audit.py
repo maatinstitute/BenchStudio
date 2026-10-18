@@ -11,7 +11,13 @@ from .claims import ClaimDecision, ClaimType, validate_claim
 from .outcomes import OutcomeProvenanceAudit, OutcomeRecord, audit_outcome_provenance
 from .overhead import ExecutionOverhead, load_execution_overhead
 
-_FINAL_STATUSES = {"completed", "failed", "failed_cleanup", "cancelled"}
+_FINAL_STATUSES = {
+    "completed",
+    "failed",
+    "failed_cleanup",
+    "cancelled",
+    "infrastructure_failure",
+}
 
 
 @dataclass(frozen=True)

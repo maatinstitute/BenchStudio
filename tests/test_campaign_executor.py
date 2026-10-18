@@ -129,6 +129,7 @@ def test_campaign_executor_commits_infrastructure_failure_and_does_not_retry(tmp
     assert second.skipped_attempt_ids == ("attempt-000000",)
     record = json.loads((tmp_path / "campaign" / "attempt-results.jsonl").read_text().strip())
     assert record["status"] == "infrastructure_failure"
+    assert executor.audit().attempts_complete is True
 
 
 def test_campaign_executor_reports_runner_failure_status_as_failed_attempt(tmp_path):
