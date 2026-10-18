@@ -4,7 +4,7 @@ import hashlib
 
 import pytest
 
-from benchstudio.analysis import compare_policy_outputs
+from benchstudio.analysis import compare_observation_streams, compare_policy_outputs
 from benchstudio.campaigns import WorkerLeaseManager
 from benchstudio.contracts import Observation
 from benchstudio.integrations import (
@@ -36,6 +36,27 @@ def test_policy_parity_detects_instrumentation_output_changes():
     )
     assert report.equivalent
     assert report.identical_actions == 2
+
+
+def test_policy_parity_records_instrumentation_failures():
+    class FailingPolicy(MockPolicy):
+        def predict(self, observation, *, denoising_steps):
+            raise RuntimeError("instrumentation failure")
+
+    report = compare_policy_outputs(
+        MockPolicy(), FailingPolicy(), [Observation(0, 0.0)], seed=1, denoising_steps=2
+    )
+    assert report.equivalent is False
+    assert report.mismatches[0]["actual_error"] == "RuntimeError: instrumentation failure"
+
+
+def test_observation_parity_compares_payload_identity_and_missing_sequences():
+    reference = [Observation(0, 0.0, payload={"camera": 1}), Observation(1, 0.1)]
+    instrumented = [Observation(0, 0.0, payload={"camera": 2})]
+    report = compare_observation_streams(reference, instrumented)
+    assert report.checked_observations == 2
+    assert report.identical_observations == 0
+    assert {item["sequence"] for item in report.mismatches} == {0, 1}
 
 
 def test_robochallenge_adapter_preserves_opaque_payload_digests():

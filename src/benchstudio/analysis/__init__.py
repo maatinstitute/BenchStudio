@@ -12,7 +12,12 @@ from .paired import (
     discordance_interval,
     summarize_paired_outcomes,
 )
-from .parity import PolicyParityReport, compare_policy_outputs
+from .parity import (
+    ObservationParityReport,
+    PolicyParityReport,
+    compare_observation_streams,
+    compare_policy_outputs,
+)
 from .recovery import RecoverySummary, summarize_recovery_outcomes
 from .resources import (
     ResourceAudit,
@@ -57,10 +62,12 @@ __all__ = [
     "TransferFidelityReport",
     "summarize_transfer_fidelity",
     "PolicyParityReport",
+    "ObservationParityReport",
     "PairedOutcomeSummary",
     "clopper_pearson_interval",
     "discordance_interval",
     "summarize_paired_outcomes",
     "compare_policy_outputs",
+    "compare_observation_streams",
     "validate_claim",
 ]
