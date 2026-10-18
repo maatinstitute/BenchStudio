@@ -163,6 +163,11 @@ def main() -> int:
         help="Write the JSON comparison report to this path.",
     )
     parser.add_argument(
+        "--transfer-backends",
+        metavar="SIMULATION=PHYSICAL",
+        help="Add transfer-fidelity analysis for two named --compare-campaign backends.",
+    )
+    parser.add_argument(
         "--compare-policy-traces",
         nargs=2,
         metavar=("REFERENCE", "INSTRUMENTED"),
@@ -223,9 +228,16 @@ def main() -> int:
             if backend in backend_campaigns:
                 parser.error(f"duplicate comparison backend: {backend}")
             backend_campaigns[backend] = Path(path)
+        transfer_backends = None
+        if args.transfer_backends is not None:
+            simulation, separator, physical = args.transfer_backends.partition("=")
+            if not separator or not simulation or not physical:
+                parser.error("--transfer-backends must use SIMULATION=PHYSICAL")
+            transfer_backends = (simulation, physical)
         report = build_campaign_comparison_report(
             scenario_id=args.comparison_scenario_id,
             backend_campaigns=backend_campaigns,
+            transfer_backends=transfer_backends,
         )
         if args.comparison_output is not None:
             args.comparison_output.parent.mkdir(parents=True, exist_ok=True)

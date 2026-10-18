@@ -126,6 +126,10 @@ immutable object path and treating an existing object as idempotent.
 The CLI selects that publisher with `--artifact-url URL`; `--artifact-store`
 and `--artifact-url` are mutually exclusive.
 
+When comparing frozen simulation and physical campaign directories, add
+`--transfer-backends SIMULATION=PHYSICAL` to include paired transfer-fidelity
+statistics in the comparison report. Missing physical outcomes remain missing.
+
 Model runtimes can also be kept outside BenchStudio behind the registered
 `external_command` adapter. It sends one JSON request per inference and
 requires a JSON response containing an `actions` array, preserving the model

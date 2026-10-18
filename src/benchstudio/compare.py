@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from .analysis.paired import clopper_pearson_interval
+from .analysis.transfer import summarize_transfer_fidelity
 
 COMPARISON_SCHEMA = "benchstudio_comparison_report_v1"
 
@@ -43,6 +44,8 @@ def build_campaign_comparison_report(
     *,
     scenario_id: str,
     backend_campaigns: dict[str, Path],
+    transfer_backends: tuple[str, str] | None = None,
+    transfer_system_id: str = "campaign",
 ) -> dict[str, Any]:
     """Compare attempt evidence from completed or partially completed campaigns.
 
@@ -57,11 +60,27 @@ def build_campaign_comparison_report(
         reports[backend] = backend_reports
         if backend_errors:
             errors[backend] = backend_errors
-    return build_comparison_report(
+    report = build_comparison_report(
         scenario_id=scenario_id,
         per_backend_reports=reports,
         per_backend_errors=errors,
     )
+    if transfer_backends is not None:
+        simulation_backend, physical_backend = transfer_backends
+        if simulation_backend not in reports or physical_backend not in reports:
+            errors.setdefault("transfer", []).append(
+                "transfer backends must both be present in --compare-campaign"
+            )
+        else:
+            report["transfer_fidelity"] = summarize_transfer_fidelity(
+                _transfer_records(
+                    reports[simulation_backend],
+                    reports[physical_backend],
+                    system_id=transfer_system_id,
+                )
+            ).to_dict()
+        report["errors"] = {k: v for k, v in errors.items() if v}
+    return report
 
 
 def _load_campaign_reports(root: Path) -> tuple[list[dict[str, Any] | None], list[str]]:
@@ -116,6 +135,53 @@ def _load_campaign_reports(root: Path) -> tuple[list[dict[str, Any] | None], lis
         report["attempt_id"] = attempt_id
         reports.append(report)
     return reports, errors
+
+
+def _transfer_records(
+    simulation: list[dict[str, Any] | None],
+    physical: list[dict[str, Any] | None],
+    *,
+    system_id: str,
+) -> list[dict[str, Any]]:
+    """Convert paired campaign episode reports into transfer-analysis records."""
+    indexed_simulation = _index_all_reports(simulation)
+    indexed_physical = _index_all_reports(physical)
+    records: list[dict[str, Any]] = []
+    for pair_id in sorted(set(indexed_simulation) | set(indexed_physical)):
+        simulation_report = indexed_simulation.get(pair_id)
+        physical_report = indexed_physical.get(pair_id)
+        record: dict[str, Any] = {
+            "system_id": system_id,
+            "pair_id": pair_id,
+            "simulation_success": _success_or_missing(simulation_report),
+            "physical_success": _success_or_missing(physical_report),
+        }
+        if simulation_report is not None:
+            age = simulation_report.get("mean_observation_age_ms")
+            if isinstance(age, (int, float)):
+                record["observation_age_ms"] = age
+        records.append(record)
+    return records
+
+
+def _index_all_reports(
+    reports: list[dict[str, Any] | None],
+) -> dict[str, dict[str, Any] | None]:
+    indexed: dict[str, dict[str, Any] | None] = {}
+    for report in reports:
+        if report is None:
+            continue
+        pair_id = report.get("pair_id")
+        if isinstance(pair_id, str) and pair_id:
+            indexed[pair_id] = report
+    return indexed
+
+
+def _success_or_missing(report: dict[str, Any] | None) -> bool | None:
+    if report is None or not _is_task_outcome(report):
+        return None
+    value = report.get("success")
+    return value if isinstance(value, bool) else None
 
 
 def _summarize(reports: list[dict[str, Any] | None]) -> dict[str, Any]:

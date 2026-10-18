@@ -104,3 +104,44 @@ def test_campaign_comparison_preserves_malformed_attempts_as_failures(tmp_path):
     report = build_campaign_comparison_report(scenario_id="task", backend_campaigns={"x": root})
     assert report["summary"]["x"]["failed"] == 1
     assert report["errors"]["x"]
+
+
+def test_campaign_comparison_adds_transfer_fidelity_for_named_backends(tmp_path):
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "transfer-compare"},
+            "task": {"task_id": "task"},
+            "environments": [{"id": "sim", "kind": "simulator"}],
+            "evaluation": {"seeds": [1], "paired": True, "conditions": [{"id": "base"}]},
+        }
+    )
+    roots = {name: tmp_path / name for name in ("simulation", "physical")}
+    for root in roots.values():
+        attempt = plan.attempts[0]
+        attempt_dir = root / "attempts" / attempt.key.attempt_id
+        attempt_dir.mkdir(parents=True)
+        (root / "campaign-plan.json").write_text(json.dumps(plan.to_dict()), encoding="utf-8")
+        (attempt_dir / "summary.json").write_text(
+            json.dumps(
+                {
+                    "episodes": [
+                        {
+                            "pair_id": attempt.key.pair_id,
+                            "condition_id": attempt.key.condition_id,
+                            "status": "success",
+                            "success": root.name == "simulation",
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+    report = build_campaign_comparison_report(
+        scenario_id="task",
+        backend_campaigns=roots,
+        transfer_backends=("simulation", "physical"),
+    )
+    transfer = report["transfer_fidelity"]
+    assert transfer["schema"] == "benchstudio_transfer_fidelity_report_v1"
+    assert transfer["success_gap_physical_minus_simulation"] == -1.0
