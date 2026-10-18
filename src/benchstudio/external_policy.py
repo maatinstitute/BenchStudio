@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import selectors
 import subprocess
@@ -34,10 +35,7 @@ class ExternalCommandPolicy:
     ) -> None:
         if not command or any(not isinstance(part, str) or not part for part in command):
             raise ValueError("command must contain non-empty strings")
-        if timeout_s <= 0:
-            raise ValueError("timeout_s must be positive")
-        if not policy_id:
-            raise ValueError("policy_id must not be empty")
+        _validate_command_options(policy_id, timeout_s, environment)
         self.command = tuple(command)
         self.policy_id = policy_id
         self.timeout_s = timeout_s
@@ -46,7 +44,9 @@ class ExternalCommandPolicy:
         self._seed: int | None = None
 
     def reset(self, *, seed: int) -> None:
-        self._seed = int(seed)
+        if isinstance(seed, bool) or not isinstance(seed, int):
+            raise ValueError("seed must be an integer")
+        self._seed = seed
 
     def predict(self, observation: Observation, *, denoising_steps: int | None) -> ActionChunk:
         request = {
@@ -111,10 +111,7 @@ class PersistentExternalCommandPolicy:
     ) -> None:
         if not command or any(not isinstance(part, str) or not part for part in command):
             raise ValueError("command must contain non-empty strings")
-        if timeout_s <= 0:
-            raise ValueError("timeout_s must be positive")
-        if not policy_id:
-            raise ValueError("policy_id must not be empty")
+        _validate_command_options(policy_id, timeout_s, environment)
         self.command = tuple(command)
         self.policy_id = policy_id
         self.timeout_s = timeout_s
@@ -124,16 +121,18 @@ class PersistentExternalCommandPolicy:
         self._seed: int | None = None
 
     def reset(self, *, seed: int) -> None:
+        if isinstance(seed, bool) or not isinstance(seed, int):
+            raise ValueError("seed must be an integer")
         self._ensure_started()
         response = self._request(
             {
                 "schema": "benchstudio.policy_request.v1",
                 "operation": "reset",
-                "seed": int(seed),
+                "seed": seed,
             }
         )
         _validate_policy_status(response)
-        self._seed = int(seed)
+        self._seed = seed
 
     def predict(self, observation: Observation, *, denoising_steps: int | None) -> ActionChunk:
         response = self._request(
@@ -220,6 +219,24 @@ def external_command_capabilities() -> ModelCapabilityProfile:
         runtime_controls=("timeout_s", "command", "environment"),
         timing_signals=("host_monotonic",),
     )
+
+
+def _validate_command_options(
+    identifier: str, timeout_s: float, environment: Mapping[str, str] | None
+) -> None:
+    if not isinstance(identifier, str) or not identifier:
+        raise ValueError("policy_id must be a non-empty string")
+    if (
+        isinstance(timeout_s, bool)
+        or not isinstance(timeout_s, (int, float))
+        or not math.isfinite(timeout_s)
+        or timeout_s <= 0
+    ):
+        raise ValueError("timeout_s must be a finite positive number")
+    if environment is not None and any(
+        not isinstance(key, str) or not isinstance(value, str) for key, value in environment.items()
+    ):
+        raise ValueError("environment keys and values must be strings")
 
 
 def persistent_external_command_capabilities() -> ModelCapabilityProfile:

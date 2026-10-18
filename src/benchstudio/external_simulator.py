@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import selectors
 import subprocess
@@ -34,10 +35,20 @@ class ExternalCommandSimulator:
     ) -> None:
         if not command or any(not isinstance(part, str) or not part for part in command):
             raise ValueError("command must contain non-empty strings")
-        if timeout_s <= 0:
-            raise ValueError("timeout_s must be positive")
-        if not simulator_id:
-            raise ValueError("simulator_id must not be empty")
+        if not isinstance(simulator_id, str) or not simulator_id:
+            raise ValueError("simulator_id must be a non-empty string")
+        if (
+            isinstance(timeout_s, bool)
+            or not isinstance(timeout_s, (int, float))
+            or not math.isfinite(timeout_s)
+            or timeout_s <= 0
+        ):
+            raise ValueError("timeout_s must be a finite positive number")
+        if environment is not None and any(
+            not isinstance(key, str) or not isinstance(value, str)
+            for key, value in environment.items()
+        ):
+            raise ValueError("environment keys and values must be strings")
         self.command = tuple(command)
         self.simulator_id = simulator_id
         self.timeout_s = timeout_s
@@ -48,6 +59,8 @@ class ExternalCommandSimulator:
         self._success = False
 
     def reset(self, *, seed: int) -> Observation:
+        if isinstance(seed, bool) or not isinstance(seed, int):
+            raise ValueError("seed must be an integer")
         self._ensure_started()
         response = self._request(
             {"schema": "benchstudio.simulator_request.v1", "operation": "reset", "seed": seed}
@@ -153,13 +166,47 @@ def _observation(response: dict[str, Any]) -> Observation:
     if source is not None:
         if not isinstance(source, dict) or not isinstance(source.get("domain"), str):
             raise ValueError("observation source_timestamp is invalid")
-        timestamp = Timestamp(
-            int(source["value_ns"]), source["domain"], source.get("uncertainty_ns")
-        )
+        source_value = source.get("value_ns")
+        uncertainty = source.get("uncertainty_ns")
+        if (
+            isinstance(source_value, bool)
+            or not isinstance(source_value, int)
+            or source_value < 0
+            or (
+                uncertainty is not None
+                and (
+                    isinstance(uncertainty, bool)
+                    or not isinstance(uncertainty, int)
+                    or uncertainty < 0
+                )
+            )
+        ):
+            raise ValueError("observation source_timestamp values are invalid")
+        timestamp = Timestamp(source_value, source["domain"], uncertainty)
+    sequence = value.get("sequence")
+    sim_time_s = value.get("sim_time_s")
+    received_monotonic_ns = value.get("received_monotonic_ns")
+    payload = value.get("payload", {})
+    if isinstance(sequence, bool) or not isinstance(sequence, int) or sequence < 0:
+        raise ValueError("observation sequence must be a non-negative integer")
+    if (
+        isinstance(sim_time_s, bool)
+        or not isinstance(sim_time_s, (int, float))
+        or not math.isfinite(sim_time_s)
+    ):
+        raise ValueError("observation sim_time_s must be a finite number")
+    if received_monotonic_ns is not None and (
+        isinstance(received_monotonic_ns, bool)
+        or not isinstance(received_monotonic_ns, int)
+        or received_monotonic_ns < 0
+    ):
+        raise ValueError("observation received_monotonic_ns must be a non-negative integer")
+    if not isinstance(payload, dict):
+        raise ValueError("observation payload must be a mapping")
     return Observation(
-        sequence=int(value["sequence"]),
-        sim_time_s=float(value["sim_time_s"]),
-        payload=dict(value.get("payload", {})),
+        sequence=sequence,
+        sim_time_s=float(sim_time_s),
+        payload=dict(payload),
         source_timestamp=timestamp,
-        received_monotonic_ns=value.get("received_monotonic_ns"),
+        received_monotonic_ns=received_monotonic_ns,
     )

@@ -69,3 +69,11 @@ def test_persistent_external_command_policy_keeps_runtime_alive():
     process = policy._process
     policy.close()
     assert process is not None and process.poll() is not None
+
+
+@pytest.mark.parametrize("seed", [True, 1.5])
+def test_external_policies_reject_non_integer_seeds(seed):
+    with pytest.raises(ValueError, match="seed must be an integer"):
+        ExternalCommandPolicy(_command("print('{}')")).reset(seed=seed)
+    with pytest.raises(ValueError, match="seed must be an integer"):
+        PersistentExternalCommandPolicy(_command("print('{}')")).reset(seed=seed)

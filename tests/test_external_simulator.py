@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import sys
 
-from benchstudio.external_simulator import ExternalCommandSimulator
+import pytest
+
+from benchstudio.external_simulator import ExternalCommandSimulator, _observation
 
 
 def test_external_command_simulator_preserves_reset_step_state():
@@ -36,3 +38,24 @@ def test_external_command_simulator_is_registered_and_ready():
     readiness = registry.readiness("external_command")
     assert readiness["ready"] is True
     assert readiness["capabilities"]["closed_loop"] is True
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        {"observation": {"sequence": "0", "sim_time_s": 0.0, "payload": {}}},
+        {"observation": {"sequence": 0, "sim_time_s": "0.0", "payload": {}}},
+        {"observation": {"sequence": 0, "sim_time_s": 0.0, "payload": []}},
+        {
+            "observation": {
+                "sequence": 0,
+                "sim_time_s": 0.0,
+                "payload": {},
+                "source_timestamp": {"value_ns": "0", "domain": "sim_time"},
+            }
+        },
+    ],
+)
+def test_external_simulator_rejects_coerced_observation_fields(response):
+    with pytest.raises(ValueError, match="observation"):
+        _observation(response)
