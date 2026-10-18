@@ -55,6 +55,41 @@ class MinimizedCounterexample:
     failure_preserved: bool
 
 
+@dataclass(frozen=True)
+class SearchEvaluation:
+    """Evaluator output for one frozen search case."""
+
+    failed: bool
+    failure_digest_sha256: str | None = None
+    metadata: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True)
+class SearchCaseResult:
+    """Immutable, digest-addressable result of evaluating one search case."""
+
+    case_id: str
+    scenario_id: str
+    base_condition_id: str
+    seed: int
+    parameters: dict[str, Any]
+    failed: bool
+    failure_digest_sha256: str | None
+    metadata: dict[str, Any]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "case_id": self.case_id,
+            "scenario_id": self.scenario_id,
+            "base_condition_id": self.base_condition_id,
+            "seed": self.seed,
+            "parameters": self.parameters,
+            "failed": self.failed,
+            "failure_digest_sha256": self.failure_digest_sha256,
+            "metadata": self.metadata,
+        }
+
+
 def compile_search_plan(
     *,
     run_id: str,
@@ -130,6 +165,107 @@ def minimize_counterexample(
     return MinimizedCounterexample(current, tested, changed, True)
 
 
+def execute_search_plan(
+    plan: FrozenSearchPlan,
+    evaluator: Callable[[SearchCase], SearchEvaluation],
+    *,
+    output: Path | None = None,
+) -> tuple[SearchCaseResult, ...]:
+    """Evaluate every frozen search case and optionally persist search evidence.
+
+    The evaluator owns simulator/model execution. BenchStudio owns case order,
+    identity, failure digest normalization, and the immutable result record.
+    A failed case may provide a digest over its trace; when omitted, a stable
+    digest over the case and evaluator metadata is generated.
+    """
+    issues = validate_search_plan(plan)
+    if issues:
+        raise ValueError("invalid search plan: " + "; ".join(issues))
+    results: list[SearchCaseResult] = []
+    for case in plan.cases:
+        evaluation = evaluator(case)
+        if not isinstance(evaluation, SearchEvaluation):
+            raise TypeError("search evaluator must return SearchEvaluation")
+        metadata = dict(evaluation.metadata or {})
+        failure_digest = evaluation.failure_digest_sha256
+        if evaluation.failed:
+            if failure_digest is None:
+                failure_digest = _digest({"case": asdict(case), "metadata": metadata})
+            _require_sha256(failure_digest, "failure_digest_sha256")
+        elif failure_digest is not None:
+            raise ValueError(f"successful case {case.case_id} cannot have a failure digest")
+        results.append(
+            SearchCaseResult(
+                case.case_id,
+                case.scenario_id,
+                case.base_condition_id,
+                case.seed,
+                dict(case.parameters),
+                evaluation.failed,
+                failure_digest,
+                metadata,
+            )
+        )
+    frozen_results = tuple(results)
+    if output is not None:
+        output.mkdir(parents=True, exist_ok=True)
+        with (output / "search-results.jsonl").open("w", encoding="utf-8") as handle:
+            for result in frozen_results:
+                handle.write(json.dumps(result.to_dict(), sort_keys=True) + "\n")
+        summary = {
+            "schema": "benchstudio.counterexample_search_results.v1",
+            "run_id": plan.run_id,
+            "plan_digest_sha256": plan.plan_digest_sha256,
+            "result_digest_sha256": _digest([result.to_dict() for result in frozen_results]),
+            "scheduled_case_count": len(frozen_results),
+            "completed_case_count": len(frozen_results),
+            "failed_case_count": sum(result.failed for result in frozen_results),
+        }
+        (output / "search-summary.json").write_text(
+            json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+    return frozen_results
+
+
+def build_search_candidates(
+    plan: FrozenSearchPlan, results: Iterable[SearchCaseResult]
+) -> tuple[Any, ...]:
+    """Convert only observed failures into candidates for separate confirmation."""
+    from .confirmation import SearchCandidate
+
+    by_id = {case.case_id: case for case in plan.cases}
+    candidates: list[SearchCandidate] = []
+    for result in results:
+        case = by_id.get(result.case_id)
+        if case is None:
+            raise ValueError(f"search result is outside the frozen plan: {result.case_id}")
+        if not result.failed:
+            continue
+        if result.failure_digest_sha256 is None:
+            raise ValueError(f"failed search case has no failure digest: {result.case_id}")
+        candidate_id = (
+            "candidate-"
+            + _digest(
+                {
+                    "run_id": plan.run_id,
+                    "case_id": case.case_id,
+                    "failure": result.failure_digest_sha256,
+                }
+            )[:16]
+        )
+        candidates.append(
+            SearchCandidate(
+                candidate_id,
+                case.scenario_id,
+                case.case_id,
+                plan.run_id,
+                case.seed,
+                result.failure_digest_sha256,
+            )
+        )
+    return tuple(candidates)
+
+
 def validate_search_plan(plan: FrozenSearchPlan) -> list[str]:
     """Validate a serialized or transported search plan before execution."""
     issues: list[str] = []
@@ -155,3 +291,12 @@ def _digest(value: Any) -> str:
     return hashlib.sha256(
         json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
     ).hexdigest()
+
+
+def _require_sha256(value: str, field: str) -> None:
+    if (
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(character not in "0123456789abcdef" for character in value)
+    ):
+        raise ValueError(f"{field} must be a lowercase SHA-256 hex digest")

@@ -4,7 +4,10 @@ import pytest
 
 from benchstudio.campaigns import (
     PerturbationDimension,
+    SearchEvaluation,
+    build_search_candidates,
     compile_search_plan,
+    execute_search_plan,
     minimize_counterexample,
     validate_search_plan,
 )
@@ -75,3 +78,48 @@ def test_search_plan_can_be_written_and_validated_before_confirmation(tmp_path):
     assert validate_search_plan(plan) == []
     tampered = type(plan)(plan.run_id, plan.scenario_id, plan.cases[:-1], plan.plan_digest_sha256)
     assert "plan_digest_sha256 does not match cases" in validate_search_plan(tampered)
+
+
+def test_search_execution_persists_failures_as_confirmation_candidates(tmp_path):
+    plan = compile_search_plan(
+        run_id="search-run",
+        scenario_id="task",
+        base_condition_id="base",
+        dimensions=(PerturbationDimension("delay_ms", (0, 20)),),
+        seeds=[1, 2],
+    )
+
+    results = execute_search_plan(
+        plan,
+        lambda case: SearchEvaluation(
+            failed=case.parameters["delay_ms"] == 20,
+            metadata={"observed_steps": case.seed},
+        ),
+        output=tmp_path / "search-evidence",
+    )
+    assert len(results) == 4
+    assert sum(result.failed for result in results) == 2
+    assert all(result.failure_digest_sha256 is not None for result in results if result.failed)
+    candidates = build_search_candidates(plan, results)
+    assert len(candidates) == 2
+    assert {candidate.source_seed for candidate in candidates} == {1, 2}
+    summary = __import__("json").loads(
+        (tmp_path / "search-evidence" / "search-summary.json").read_text()
+    )
+    assert summary["scheduled_case_count"] == 4
+    assert summary["failed_case_count"] == 2
+
+
+def test_search_execution_rejects_failure_digest_on_success():
+    plan = compile_search_plan(
+        run_id="search-run",
+        scenario_id="task",
+        base_condition_id="base",
+        dimensions=(PerturbationDimension("x", (0,)),),
+        seeds=[1],
+    )
+    with pytest.raises(ValueError, match="successful case"):
+        execute_search_plan(
+            plan,
+            lambda _: SearchEvaluation(False, "a" * 64),
+        )
