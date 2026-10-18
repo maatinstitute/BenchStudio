@@ -13,6 +13,14 @@ from .frozen_plan import AttemptKey, CampaignPlanner, FrozenCampaignPlan, Planne
 from .io import load_campaign_document
 from .ledger import AttemptLedger
 from .paired_design import compile_balanced_paired_plan
+from .search import (
+    FrozenSearchPlan,
+    MinimizedCounterexample,
+    PerturbationDimension,
+    SearchCase,
+    compile_search_plan,
+    minimize_counterexample,
+)
 from .spec import compile_campaign_spec
 from .worker import WorkerLease, WorkerLeaseManager
 
@@ -37,4 +45,10 @@ __all__ = [
     "Intervention",
     "PlannedAttempt",
     "validate_counterfactual_pair",
+    "PerturbationDimension",
+    "SearchCase",
+    "FrozenSearchPlan",
+    "MinimizedCounterexample",
+    "compile_search_plan",
+    "minimize_counterexample",
 ]
