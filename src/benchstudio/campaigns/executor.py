@@ -12,7 +12,7 @@ from ..evidence import verify_artifact_manifest
 from ..measurement import ResourceSampler
 from ..runner import RunConfig, run_episodes
 from ..runtime_receipts import load_runtime_receipt, verify_runtime_receipt
-from .frozen_plan import FrozenCampaignPlan, PlannedAttempt
+from .frozen_plan import FrozenCampaignPlan, PlannedAttempt, load_frozen_campaign_plan
 from .ledger import AttemptLedger
 from .worker import WorkerLeaseManager
 
@@ -95,8 +95,11 @@ class CampaignExecutor:
         self.output.mkdir(parents=True, exist_ok=True)
         plan_path = self.output / "campaign-plan.json"
         if plan_path.is_file():
-            existing = json.loads(plan_path.read_text(encoding="utf-8"))
-            if existing.get("plan_digest_sha256") != plan.plan_digest_sha256:
+            try:
+                existing_plan = load_frozen_campaign_plan(plan_path)
+            except ValueError as exc:
+                raise ValueError("existing campaign plan is invalid") from exc
+            if existing_plan != plan:
                 raise ValueError("existing campaign plan does not match frozen plan")
         else:
             self.plan.write(plan_path)

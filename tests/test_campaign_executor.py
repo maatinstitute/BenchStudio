@@ -770,6 +770,30 @@ def test_campaign_archive_verifier_rejects_invalid_embedded_plan(tmp_path):
     assert any(issue["reason"] == "invalid_campaign_plan" for issue in result["issues"])
 
 
+def test_campaign_executor_rejects_tampered_existing_plan_envelope(tmp_path):
+    plan = CampaignPlanner(
+        run_id="plan-binding", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    output = tmp_path / "campaign"
+    output.mkdir()
+    payload = plan.to_dict()
+    payload["run_id"] = "different-run"
+    (output / "campaign-plan.json").write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="does not match frozen plan"):
+        CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator())
+
+
+def test_campaign_executor_rejects_malformed_existing_plan(tmp_path):
+    plan = CampaignPlanner(
+        run_id="invalid-plan", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    output = tmp_path / "campaign"
+    output.mkdir()
+    (output / "campaign-plan.json").write_text("[]\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="existing campaign plan is invalid"):
+        CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator())
+
+
 def test_campaign_archive_verifier_rejects_invalid_ledger_status(tmp_path):
     plan = CampaignPlanner(
         run_id="invalid-status", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
