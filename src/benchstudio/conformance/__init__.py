@@ -2,7 +2,17 @@
 
 from .action_semantics import ActionSpec, validate_action
 from .deadlines import DeadlineAudit, audit_deadlines
-from .embodiment import MappingRule, SignalSpec, validate_mapping
+from .embodiment import (
+    EmbodimentRef,
+    MappingEndpoint,
+    MappingRule,
+    MappingSpec,
+    RepresentationSignalSpec,
+    RepresentationSpec,
+    SignalSpec,
+    validate_mapping,
+    validate_representation_mapping,
+)
 from .policy_lifecycle import LifecycleState, LifecycleTracker, validate_lifecycle_events
 from .replay_protocol import AdapterCapabilities, validate_adapter_capabilities
 from .replay_timing import ScheduledAction, apply_zero_order_hold, validate_action_timing
@@ -18,6 +28,11 @@ __all__ = [
     "LifecycleState",
     "LifecycleTracker",
     "MappingRule",
+    "MappingEndpoint",
+    "MappingSpec",
+    "EmbodimentRef",
+    "RepresentationSignalSpec",
+    "RepresentationSpec",
     "ScheduledAction",
     "SignalSpec",
     "apply_zero_order_hold",
@@ -28,5 +43,6 @@ __all__ = [
     "validate_observation",
     "validate_lifecycle_events",
     "validate_mapping",
+    "validate_representation_mapping",
     "validate_scenario_pair",
 ]

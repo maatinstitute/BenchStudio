@@ -4,15 +4,21 @@ import pytest
 
 from benchstudio.analysis import audit_score_coverage, missing_outcome_bounds
 from benchstudio.conformance import (
+    EmbodimentRef,
     LifecycleState,
     LifecycleTracker,
+    MappingEndpoint,
     MappingRule,
+    MappingSpec,
+    RepresentationSignalSpec,
+    RepresentationSpec,
     ScheduledAction,
     SignalSpec,
     apply_zero_order_hold,
     validate_action_timing,
     validate_lifecycle_events,
     validate_mapping,
+    validate_representation_mapping,
 )
 
 
@@ -47,6 +53,32 @@ def test_embodiment_mapping_requires_complete_semantics():
     assert MappingRule("j1", "left", scale=2).apply(0.5) == 1.0
     duplicate = (MappingRule("j1", "left"), MappingRule("j1", "right"))
     assert "source labels are duplicated" in validate_mapping(source, target, duplicate)
+
+
+def test_urdf_ops_style_representation_mapping_is_content_addressed():
+    source = EmbodimentRef("source", urdf_sha256="a" * 64)
+    target = EmbodimentRef("target", urdf_sha256="b" * 64)
+    source_rep = RepresentationSpec(
+        "source-joints",
+        RepresentationSignalSpec("state", "rad", "source-order", ("j1",)),
+        RepresentationSignalSpec(
+            "joint_position", "rad", "source-order", ("j1",), base_frame="base"
+        ),
+    )
+    target_rep = RepresentationSpec(
+        "target-joints",
+        RepresentationSignalSpec("state", "rad", "target-order", ("q1",)),
+        RepresentationSignalSpec(
+            "joint_position", "rad", "target-order", ("q1",), base_frame="base"
+        ),
+    )
+    mapping = MappingSpec(
+        MappingEndpoint("source", "source-joints"),
+        MappingEndpoint("target", "target-joints"),
+        (MappingRule("j1", "q1", invert=True),),
+    )
+    assert validate_representation_mapping(source, source_rep, target, target_rep, mapping) == []
+    assert len(mapping.content_id()) == 64
 
 
 def test_score_coverage_and_missing_outcome_bounds_are_explicit():

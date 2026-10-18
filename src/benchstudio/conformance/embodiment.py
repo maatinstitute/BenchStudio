@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import hashlib
+import json
+from dataclasses import dataclass, field
 from typing import Literal
 
 
@@ -24,6 +26,59 @@ class MappingRule:
     def apply(self, value: float) -> float:
         mapped = value * self.scale + self.offset
         return -mapped if self.invert else mapped
+
+
+@dataclass(frozen=True)
+class EmbodimentRef:
+    embodiment_id: str
+    kinematic_fingerprint: str | None = None
+    urdf_sha256: str | None = None
+    srdf_sha256: str | None = None
+    robot_type: str | None = None
+    base_frame: str | None = None
+    ee_frame: str | None = None
+
+
+@dataclass(frozen=True)
+class RepresentationSignalSpec:
+    signal_type: str
+    units: str
+    ordering: str
+    joints: tuple[str, ...] = ()
+    dt_s: float | None = None
+    base_frame: str | None = None
+
+
+@dataclass(frozen=True)
+class RepresentationSpec:
+    representation_id: str
+    state: RepresentationSignalSpec
+    action: RepresentationSignalSpec
+    version: str = "v1"
+
+
+@dataclass(frozen=True)
+class MappingEndpoint:
+    embodiment_id: str
+    representation_id: str
+
+
+@dataclass(frozen=True)
+class MappingSpec:
+    source: MappingEndpoint
+    target: MappingEndpoint
+    rules: tuple[MappingRule, ...] = field(default_factory=tuple)
+    mapping_id: str | None = None
+
+    def content_id(self) -> str:
+        payload = {
+            "source": self.source.__dict__,
+            "target": self.target.__dict__,
+            "rules": [rule.__dict__ for rule in self.rules],
+        }
+        return hashlib.sha256(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
 
 
 def validate_mapping(
@@ -52,4 +107,44 @@ def validate_mapping(
         issues.append("target labels are unmapped")
     if len(mapped_targets) != len(rules):
         issues.append("target labels are duplicated")
+    return issues
+
+
+def validate_representation_mapping(
+    source: EmbodimentRef,
+    source_representation: RepresentationSpec,
+    target: EmbodimentRef,
+    target_representation: RepresentationSpec,
+    mapping: MappingSpec,
+) -> list[str]:
+    issues = validate_mapping(
+        SignalSpec(
+            "source_action",
+            "joint_position",
+            source_representation.action.units,
+            source_representation.action.joints,
+            source_representation.action.base_frame,
+        ),
+        SignalSpec(
+            "target_action",
+            "joint_position",
+            target_representation.action.units,
+            target_representation.action.joints,
+            target_representation.action.base_frame,
+        ),
+        mapping.rules,
+    )
+    if mapping.source.embodiment_id != source.embodiment_id:
+        issues.append("mapping source embodiment differs")
+    if mapping.target.embodiment_id != target.embodiment_id:
+        issues.append("mapping target embodiment differs")
+    if mapping.source.representation_id != source_representation.representation_id:
+        issues.append("mapping source representation differs")
+    if mapping.target.representation_id != target_representation.representation_id:
+        issues.append("mapping target representation differs")
+    if (
+        source_representation.action.ordering == target_representation.action.ordering
+        and not mapping.rules
+    ):
+        issues.append("explicit mapping rules are required at the evaluation boundary")
     return issues
