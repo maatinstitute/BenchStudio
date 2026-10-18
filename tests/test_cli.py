@@ -49,6 +49,38 @@ def test_cli_reports_adapter_readiness(monkeypatch, capsys):
     assert {item["adapter_id"] for item in report["models"]} >= {"mock"}
 
 
+def test_cli_verifies_existing_artifact_without_execution(monkeypatch, tmp_path, capsys):
+    from benchstudio.evidence import sha256_file
+    from benchstudio.mock import MockPolicy, MockSimulator
+    from benchstudio.runner import RunConfig, run_episodes
+
+    run_dir = tmp_path / "run"
+    run_episodes(MockPolicy(), MockSimulator(), RunConfig(), run_dir)
+    digest = sha256_file(run_dir / "artifact-manifest.json")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--verify-artifact",
+            str(run_dir),
+            "--trusted-manifest-sha256",
+            digest,
+        ],
+    )
+    assert main() == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["valid"] is True
+    assert result["trust_anchor"]["external_reference_supplied"] is True
+
+
+def test_cli_returns_nonzero_for_invalid_artifact(monkeypatch, tmp_path, capsys):
+    run_dir = tmp_path / "missing"
+    monkeypatch.setattr("sys.argv", ["benchstudio-run", "--verify-artifact", str(run_dir)])
+    assert main() == 2
+    result = json.loads(capsys.readouterr().out)
+    assert result["valid"] is False
+
+
 def test_cli_executes_declared_registry_adapters(monkeypatch, tmp_path, capsys):
     spec_path = tmp_path / "registry-campaign.json"
     output = tmp_path / "run"

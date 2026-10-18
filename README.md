@@ -22,6 +22,14 @@ Inspect optional backend and model-adapter readiness before scheduling work:
 python -m benchstudio.cli --readiness
 ```
 
+Verify an existing run artifact offline, optionally against a digest held by
+an independent reviewer or CI system:
+
+```bash
+python -m benchstudio.cli --verify-artifact runs/smoke \
+  --trusted-manifest-sha256 <manifest-sha256>
+```
+
 The end-to-end frozen-campaign CI gate can be run directly with:
 
 ```bash

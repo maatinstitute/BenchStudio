@@ -12,6 +12,7 @@ from .campaigns import (
     compile_campaign_spec,
     load_campaign_document,
 )
+from .evidence import verify_artifact_manifest
 from .mock import MockPolicy, MockSimulator
 from .model_adapters import default_model_registry
 from .runner import RunConfig, run_episodes
@@ -93,7 +94,25 @@ def main() -> int:
         action="store_true",
         help="Print dependency readiness and declared capabilities for available adapters.",
     )
+    parser.add_argument(
+        "--verify-artifact",
+        type=Path,
+        help="Verify an existing run artifact directory without executing it.",
+    )
+    parser.add_argument(
+        "--trusted-manifest-sha256",
+        help="Require --verify-artifact to match this independently supplied manifest digest.",
+    )
     args = parser.parse_args()
+    if args.trusted_manifest_sha256 is not None and args.verify_artifact is None:
+        parser.error("--trusted-manifest-sha256 requires --verify-artifact")
+    if args.verify_artifact is not None:
+        result = verify_artifact_manifest(
+            args.verify_artifact,
+            trusted_manifest_sha256=args.trusted_manifest_sha256,
+        )
+        print(json.dumps(result, sort_keys=True))
+        return 0 if result["valid"] else 2
     if args.readiness:
         simulator_registry = default_registry(discover_external=False)
         model_registry = default_model_registry(discover_external=False)
