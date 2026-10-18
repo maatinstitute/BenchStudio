@@ -470,8 +470,17 @@ class CampaignExecutor:
                     f"{verification.get('mismatches', ())}"
                 )
                 continue
+            if verification.get("status") != record.get("status"):
+                issues.append(
+                    f"{attempt_id}: artifact manifest status does not match ledger status"
+                )
             try:
                 self._verify_runtime_receipt(attempt, attempt_dir)
+                receipt = load_runtime_receipt(attempt_dir / "runtime-receipt.json")
+                if receipt.get("status") != record.get("status"):
+                    issues.append(
+                        f"{attempt_id}: runtime receipt status does not match ledger status"
+                    )
             except RuntimeError as exc:
                 issues.append(str(exc))
         return tuple(issues)

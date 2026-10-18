@@ -195,12 +195,20 @@ def audit_campaign_directory(
                 f"{attempt_id}: artifact manifest is invalid: {verification['mismatches']}"
             )
             continue
+        if verification.get("status") != record.get("status"):
+            evidence_issues.append(
+                f"{attempt_id}: artifact manifest status does not match ledger status"
+            )
         receipt_path = attempt_dir / "runtime-receipt.json"
         receipt_check = verify_runtime_receipt(receipt_path)
         if not receipt_check["valid"]:
             evidence_issues.append(f"{attempt_id}: runtime receipt is invalid")
             continue
         receipt = load_runtime_receipt(receipt_path)
+        if receipt.get("status") != record.get("status"):
+            evidence_issues.append(
+                f"{attempt_id}: runtime receipt status does not match ledger status"
+            )
         for field, expected in (
             ("run_id", plan.run_id),
             ("attempt_id", attempt_id),
