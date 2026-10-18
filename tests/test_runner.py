@@ -161,6 +161,10 @@ def test_policy_exception_is_recorded_as_episode_failure(tmp_path):
     assert episode["status"] == "policy_inference_error"
     assert "inference offline" in episode["error"]
     assert summary["scheduled_success_rate"] == 0.0
+    assert summary["completed_episode_count"] == 0
+    assert summary["failed_episode_count"] == 1
+    assert summary["missing_episode_count"] == 0
+    assert summary["episode_status_counts"] == {"policy_inference_error": 1}
 
 
 def test_partial_trace_is_persisted_when_policy_crashes(tmp_path):
@@ -183,6 +187,8 @@ def test_partial_trace_is_persisted_when_policy_crashes(tmp_path):
     assert summary["campaign_status"] == "failed"
     assert summary["episodes"][0]["status"] == "policy_inference_error"
     assert summary["completed_episode_count"] == 0
+    assert summary["failed_episode_count"] == 1
+    assert summary["missing_episode_count"] == 0
 
 
 def test_invalid_simulator_observation_is_recorded_as_conformance_failure(tmp_path):

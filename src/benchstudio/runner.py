@@ -508,7 +508,14 @@ def _summary(
 ) -> dict[str, Any]:
     successes = sum(result.success for result in results)
     completed = sum(result.status in {"success", "failure"} for result in results)
+    failed = sum(
+        result.condition_id != "campaign" and result.status not in {"success", "failure"}
+        for result in results
+    )
     scheduled = config.episodes
+    status_counts: dict[str, int] = {}
+    for result in results:
+        status_counts[result.status] = status_counts.get(result.status, 0) + 1
     summary = {
         "schema": "benchstudio_run_summary_v1",
         "task_id": config.task_id,
@@ -517,7 +524,9 @@ def _summary(
         "episode_count": len(results),
         "scheduled_episode_count": scheduled,
         "completed_episode_count": completed,
-        "missing_episode_count": max(0, scheduled - len(results)),
+        "failed_episode_count": failed,
+        "missing_episode_count": max(0, scheduled - completed - failed),
+        "episode_status_counts": status_counts,
         "success_count": successes,
         "completed_success_rate": successes / completed if completed else None,
         "scheduled_success_rate": successes / scheduled if scheduled else None,
