@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from .adapters import default_registry
-from .analysis import audit_campaign_directory
+from .analysis import ClaimType, audit_campaign_directory
 from .campaigns import (
     CampaignExecutor,
     HttpArtifactStore,
@@ -106,6 +106,12 @@ def main() -> int:
         help="Audit an existing campaign directory without executing adapters.",
     )
     parser.add_argument(
+        "--claim-type",
+        choices=[claim.value for claim in ClaimType],
+        default=ClaimType.SINGLE_RUN_OUTCOME.value,
+        help="Claim contract to apply when auditing an existing campaign.",
+    )
+    parser.add_argument(
         "--trusted-manifest-sha256",
         help="Require --verify-artifact to match this independently supplied manifest digest.",
     )
@@ -120,7 +126,7 @@ def main() -> int:
         print(json.dumps(result, sort_keys=True))
         return 0 if result["valid"] else 2
     if args.audit_output is not None:
-        audit = audit_campaign_directory(args.audit_output)
+        audit = audit_campaign_directory(args.audit_output, claim_type=ClaimType(args.claim_type))
         print(json.dumps(audit.to_dict(), sort_keys=True))
         return 0 if audit.attempts_complete and audit.evidence_verified else 2
     if args.readiness:

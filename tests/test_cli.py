@@ -97,6 +97,34 @@ def test_cli_audits_existing_campaign_without_execution(monkeypatch, tmp_path, c
     assert audit["evidence_verified"] is True
 
 
+def test_cli_campaign_audit_reopens_persisted_outcomes(monkeypatch, tmp_path, capsys):
+    from benchstudio.analysis import OutcomeRecord
+    from benchstudio.campaigns import CampaignExecutor, CampaignPlanner
+    from benchstudio.mock import MockPolicy, MockSimulator
+
+    plan = CampaignPlanner(
+        run_id="audit-outcomes", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    output = tmp_path / "campaign"
+    executor = CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator())
+    executor.run()
+    executor.outcome_ledger().append(
+        OutcomeRecord(
+            plan.attempts[0].key.attempt_id,
+            True,
+            "declared",
+            evaluator_id="mock-scorer",
+            evaluator_revision="v1",
+            authoritative=True,
+        )
+    )
+    monkeypatch.setattr("sys.argv", ["benchstudio-run", "--audit-output", str(output)])
+    assert main() == 0
+    audit = json.loads(capsys.readouterr().out)
+    assert audit["outcome_provenance"]["authoritative_records"] == 1
+    assert audit["claim"]["prerequisites"]["authoritative_scorer_declared"] is True
+
+
 def test_cli_executes_declared_registry_adapters(monkeypatch, tmp_path, capsys):
     spec_path = tmp_path / "registry-campaign.json"
     output = tmp_path / "run"

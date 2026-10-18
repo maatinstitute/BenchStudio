@@ -150,6 +150,7 @@ def audit_campaign_directory(
     from ..campaigns.ledger import AttemptLedger
     from ..evidence import verify_artifact_manifest
     from ..runtime_receipts import load_runtime_receipt, verify_runtime_receipt
+    from .outcomes import OutcomeLedger
 
     plan = load_frozen_campaign_plan(root / "campaign-plan.json")
     ledger = AttemptLedger(root / "attempt-results.jsonl", plan)
@@ -185,11 +186,20 @@ def audit_campaign_directory(
                 )
     claim_evidence = dict(evidence or {})
     claim_evidence["trusted_artifacts"] = not evidence_issues
+    outcome_records = None
+    outcomes_path = root / "outcomes.jsonl"
+    if outcomes_path.is_file():
+        outcome_records = OutcomeLedger(
+            outcomes_path,
+            attempt_ids=frozenset(attempt.key.attempt_id for attempt in plan.attempts),
+            plan_digest_sha256=plan.plan_digest_sha256,
+        ).records
     return audit_campaign(
         plan,
         records,
         claim_type=claim_type,
         evidence=claim_evidence,
+        outcome_records=outcome_records,
         evidence_issues=evidence_issues,
     )
 

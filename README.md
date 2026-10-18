@@ -37,6 +37,9 @@ its model and simulator adapters:
 python -m benchstudio.cli --audit-output runs/campaign
 ```
 
+Use `--claim-type paired_comparison` or `--claim-type real_world_transfer` to
+apply the corresponding stricter claim prerequisites during the audit.
+
 The end-to-end frozen-campaign CI gate can be run directly with:
 
 ```bash
