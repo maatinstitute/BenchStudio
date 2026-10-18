@@ -39,6 +39,27 @@ def test_worker_lease_is_exclusive_and_owner_bound(tmp_path):
     assert manager.acquire("attempt-1", "worker-b") is not None
 
 
+@pytest.mark.parametrize("lease_seconds", [True, 0, float("nan"), float("inf")])
+def test_worker_lease_rejects_invalid_duration(tmp_path, lease_seconds):
+    with pytest.raises(ValueError, match="finite positive number"):
+        WorkerLeaseManager(tmp_path / "leases", lease_seconds=lease_seconds)
+
+
+def test_worker_lease_does_not_reclaim_malformed_persisted_lease(tmp_path):
+    leases = WorkerLeaseManager(tmp_path / "leases", clock_ns=lambda: 100)
+    path = tmp_path / "leases" / "attempt-1.lease"
+    path.write_text(
+        json.dumps(
+            {
+                "attempt_id": "attempt-1",
+                "worker_id": "worker-a",
+                "expires_at_ns": "0",
+            }
+        )
+    )
+    assert leases.acquire("attempt-1", "worker-b") is None
+
+
 def test_policy_parity_detects_instrumentation_output_changes():
     observations = [Observation(0, 0.0), Observation(1, 0.1)]
     report = compare_policy_outputs(
