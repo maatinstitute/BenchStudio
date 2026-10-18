@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import tempfile
 import urllib.error
 import urllib.request
@@ -49,6 +50,7 @@ class LocalArtifactStore:
         root.mkdir(parents=True, exist_ok=True)
 
     def publish_archive(self, archive: bytes, *, digest_sha256: str) -> ArtifactReference:
+        _validate_digest(digest_sha256)
         actual = hashlib.sha256(archive).hexdigest()
         if actual != digest_sha256:
             raise ValueError(f"artifact digest mismatch: expected {digest_sha256}, got {actual}")
@@ -74,6 +76,7 @@ class LocalArtifactStore:
         )
 
     def fetch_archive(self, *, digest_sha256: str) -> bytes:
+        _validate_digest(digest_sha256)
         path = self.root / digest_sha256[:2] / f"{digest_sha256}.zip"
         try:
             archive = path.read_bytes()
@@ -102,6 +105,7 @@ class HttpArtifactStore:
         self.timeout_s = timeout_s
 
     def publish_archive(self, archive: bytes, *, digest_sha256: str) -> ArtifactReference:
+        _validate_digest(digest_sha256)
         actual = hashlib.sha256(archive).hexdigest()
         if actual != digest_sha256:
             raise ValueError(f"artifact digest mismatch: expected {digest_sha256}, got {actual}")
@@ -134,6 +138,7 @@ class HttpArtifactStore:
         )
 
     def fetch_archive(self, *, digest_sha256: str) -> bytes:
+        _validate_digest(digest_sha256)
         uri = f"{self.base_url}/{digest_sha256[:2]}/{digest_sha256}.zip"
         request = urllib.request.Request(uri, method="GET", headers=self.headers)
         try:
@@ -166,8 +171,14 @@ def retrieve_campaign_archive(store: ArtifactReader, digest_sha256: str, destina
 
 
 def _verify_fetched_archive(archive: bytes, digest_sha256: str) -> None:
+    _validate_digest(digest_sha256)
     actual = hashlib.sha256(archive).hexdigest()
     if actual != digest_sha256:
         raise ValueError(
             f"downloaded artifact digest mismatch: expected {digest_sha256}, got {actual}"
         )
+
+
+def _validate_digest(value: str) -> None:
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+        raise ValueError("artifact digest must be a lowercase SHA-256 hex digest")

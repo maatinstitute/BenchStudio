@@ -130,6 +130,13 @@ Published bundles can be fetched through the Python API with
 `retrieve_campaign_archive()`. Retrieval verifies the content digest and
 archive structure before extraction.
 
+The same flow is available from the CLI:
+
+```bash
+python -m benchstudio.cli --fetch-artifact SHA256 \
+  --artifact-store runs/artifacts --extract-output runs/retrieved-campaign
+```
+
 When comparing frozen simulation and physical campaign directories, add
 `--transfer-backends SIMULATION=PHYSICAL` to include paired transfer-fidelity
 statistics in the comparison report. Missing physical outcomes remain missing.

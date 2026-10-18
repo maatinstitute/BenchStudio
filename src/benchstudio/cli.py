@@ -24,6 +24,7 @@ from .campaigns import (
     LocalArtifactStore,
     compile_campaign_spec,
     load_campaign_document,
+    retrieve_campaign_archive,
     verify_campaign_archive,
 )
 from .compare import build_campaign_comparison_report
@@ -122,6 +123,16 @@ def main() -> int:
     parser.add_argument(
         "--trusted-archive-sha256",
         help="Require --verify-archive to match this independent archive digest.",
+    )
+    parser.add_argument(
+        "--fetch-artifact",
+        metavar="SHA256",
+        help="Fetch a content-addressed campaign archive from --artifact-store or --artifact-url.",
+    )
+    parser.add_argument(
+        "--extract-output",
+        type=Path,
+        help="Destination for --fetch-artifact extraction.",
     )
     parser.add_argument(
         "--audit-output",
@@ -228,6 +239,20 @@ def main() -> int:
         return 0 if result["valid"] else 2
     if args.trusted_archive_sha256 is not None:
         parser.error("--trusted-archive-sha256 requires --verify-archive")
+    if args.fetch_artifact is not None:
+        if args.extract_output is None:
+            parser.error("--fetch-artifact requires --extract-output")
+        if args.artifact_store is not None:
+            store = LocalArtifactStore(args.artifact_store)
+        elif args.artifact_url is not None:
+            store = HttpArtifactStore(args.artifact_url)
+        else:
+            parser.error("--fetch-artifact requires --artifact-store or --artifact-url")
+        digest = retrieve_campaign_archive(store, args.fetch_artifact, args.extract_output)
+        print(json.dumps({"digest_sha256": digest, "extracted_to": str(args.extract_output)}))
+        return 0
+    if args.extract_output is not None:
+        parser.error("--extract-output requires --fetch-artifact")
     if args.validate_search_plan is not None and args.validate_confirmation_plan is not None:
         parser.error("plan validation options are mutually exclusive")
     if args.validate_search_plan is not None:

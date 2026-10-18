@@ -31,6 +31,8 @@ def test_local_artifact_store_rejects_bad_digest(tmp_path):
     store = LocalArtifactStore(tmp_path / "store")
     with pytest.raises(ValueError, match="digest mismatch"):
         store.publish_archive(b"payload", digest_sha256="0" * 64)
+    with pytest.raises(ValueError, match="lowercase SHA-256"):
+        store.fetch_archive(digest_sha256="../escape")
 
 
 def test_local_artifact_store_retrieves_and_verifies_campaign_archive(tmp_path):

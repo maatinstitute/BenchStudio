@@ -327,6 +327,41 @@ def test_cli_verifies_campaign_archive_without_extraction(monkeypatch, tmp_path,
     assert result["valid"] is True
 
 
+def test_cli_fetches_and_extracts_local_artifact(monkeypatch, tmp_path, capsys):
+    from benchstudio.campaigns import (
+        CampaignExecutor,
+        CampaignPlanner,
+        LocalArtifactStore,
+        publish_campaign_archive,
+    )
+    from benchstudio.mock import MockPolicy, MockSimulator
+
+    plan = CampaignPlanner(
+        run_id="fetch-cli", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    campaign = tmp_path / "campaign"
+    CampaignExecutor(plan, campaign, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
+    store_path = tmp_path / "store"
+    reference = publish_campaign_archive(campaign, LocalArtifactStore(store_path))
+    destination = tmp_path / "extracted"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--fetch-artifact",
+            reference.digest_sha256,
+            "--artifact-store",
+            str(store_path),
+            "--extract-output",
+            str(destination),
+        ],
+    )
+    assert main() == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["digest_sha256"] == reference.digest_sha256
+    assert (destination / "campaign-plan.json").is_file()
+
+
 def test_cli_returns_nonzero_for_invalid_artifact(monkeypatch, tmp_path, capsys):
     run_dir = tmp_path / "missing"
     monkeypatch.setattr("sys.argv", ["benchstudio-run", "--verify-artifact", str(run_dir)])
