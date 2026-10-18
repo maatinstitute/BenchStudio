@@ -127,11 +127,39 @@ def test_confirmation_result_audit_rejects_tampered_candidate_lineage():
                 "initial_condition_id": case.initial_condition_id,
                 "confirmation_seed": case.confirmation_seed,
                 "source_search_run_id": case.source_search_run_id,
+                "failure_reproduced": False,
             }
         ],
     )
     assert audit.complete is False
     assert any("candidate_id does not match frozen plan" in issue for issue in audit.lineage_issues)
+
+
+def test_confirmation_result_audit_rejects_invalid_failure_evidence():
+    plan = compile_confirmation_plan(
+        run_id="confirm-run",
+        source_search_digest_sha256="b" * 64,
+        candidates=[_candidate("c1")],
+        confirmation_seeds=[10],
+    )
+    case = plan.cases[0]
+    audit = audit_confirmation_results(
+        plan,
+        [
+            {
+                "case_id": case.case_id,
+                "candidate_id": case.candidate_id,
+                "scenario_id": case.scenario_id,
+                "initial_condition_id": case.initial_condition_id,
+                "confirmation_seed": case.confirmation_seed,
+                "source_search_run_id": case.source_search_run_id,
+                "failure_reproduced": True,
+                "failure_digest_sha256": "not-a-digest",
+            }
+        ],
+    )
+    assert audit.complete is False
+    assert any("lowercase SHA-256" in issue for issue in audit.lineage_issues)
 
 
 def test_confirmation_execution_rejects_digest_on_non_reproduction():

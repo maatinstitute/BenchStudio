@@ -161,10 +161,38 @@ def test_search_result_audit_rejects_tampered_case_lineage():
         "base_condition_id": plan.cases[0].base_condition_id,
         "seed": 999,
         "parameters": dict(plan.cases[0].parameters),
+        "failed": False,
     }
     audit = audit_search_results(plan, [result])
     assert audit.complete is False
     assert any("seed does not match frozen plan" in issue for issue in audit.lineage_issues)
+
+
+def test_search_result_audit_rejects_invalid_failure_evidence():
+    plan = compile_search_plan(
+        run_id="search-run",
+        scenario_id="task",
+        base_condition_id="base",
+        dimensions=(PerturbationDimension("x", (0,)),),
+        seeds=[1],
+    )
+    case = plan.cases[0]
+    audit = audit_search_results(
+        plan,
+        [
+            {
+                "case_id": case.case_id,
+                "scenario_id": case.scenario_id,
+                "base_condition_id": case.base_condition_id,
+                "seed": case.seed,
+                "parameters": dict(case.parameters),
+                "failed": True,
+                "failure_digest_sha256": "not-a-digest",
+            }
+        ],
+    )
+    assert audit.complete is False
+    assert any("lowercase SHA-256" in issue for issue in audit.lineage_issues)
 
 
 def test_search_execution_rejects_failure_digest_on_success():

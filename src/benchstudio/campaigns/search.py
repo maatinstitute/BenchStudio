@@ -182,7 +182,7 @@ def load_search_results(path: Path) -> list[dict[str, Any]]:
 def audit_search_results(
     plan: FrozenSearchPlan, records: list[dict[str, Any]]
 ) -> SearchResultAudit:
-    """Verify search result identity and parameters against a frozen plan."""
+    """Verify search result identity, parameters, and failure evidence."""
     expected = {
         case.case_id: (case.scenario_id, case.base_condition_id, case.seed, case.parameters)
         for case in plan.cases
@@ -200,6 +200,22 @@ def audit_search_results(
         if expected_row is None:
             unknown.add(case_id)
             continue
+        failed = record.get("failed")
+        failure_digest = record.get("failure_digest_sha256")
+        if not isinstance(failed, bool):
+            lineage.append(f"{case_id}: failed must be a boolean")
+        elif failed and failure_digest is None:
+            lineage.append(f"{case_id}: failed result requires failure_digest_sha256")
+        elif not failed and failure_digest is not None:
+            lineage.append(f"{case_id}: successful result cannot have failure_digest_sha256")
+        if failure_digest is not None and (
+            not isinstance(failure_digest, str)
+            or len(failure_digest) != 64
+            or any(character not in "0123456789abcdef" for character in failure_digest)
+        ):
+            lineage.append(
+                f"{case_id}: failure_digest_sha256 must be a lowercase SHA-256 hex digest"
+            )
         scenario_id, base_condition_id, seed, parameters = expected_row
         for field, value in (
             ("scenario_id", scenario_id),

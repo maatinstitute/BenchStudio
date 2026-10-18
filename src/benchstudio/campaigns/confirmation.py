@@ -168,7 +168,7 @@ def load_confirmation_results(path: Path) -> list[dict[str, Any]]:
 def audit_confirmation_results(
     plan: FrozenConfirmationPlan, records: list[dict[str, Any]]
 ) -> ConfirmationResultAudit:
-    """Verify confirmation result identity against an independent holdout plan."""
+    """Verify confirmation identity and reproduction evidence against a holdout plan."""
     expected = {
         case.case_id: (
             case.candidate_id,
@@ -192,6 +192,22 @@ def audit_confirmation_results(
         if expected_row is None:
             unknown.add(case_id)
             continue
+        reproduced = record.get("failure_reproduced")
+        failure_digest = record.get("failure_digest_sha256")
+        if not isinstance(reproduced, bool):
+            lineage.append(f"{case_id}: failure_reproduced must be a boolean")
+        elif reproduced and failure_digest is None:
+            lineage.append(f"{case_id}: reproduced failure requires failure_digest_sha256")
+        elif not reproduced and failure_digest is not None:
+            lineage.append(f"{case_id}: non-reproducing result cannot have failure_digest_sha256")
+        if failure_digest is not None and (
+            not isinstance(failure_digest, str)
+            or len(failure_digest) != 64
+            or any(character not in "0123456789abcdef" for character in failure_digest)
+        ):
+            lineage.append(
+                f"{case_id}: failure_digest_sha256 must be a lowercase SHA-256 hex digest"
+            )
         for field, value in zip(
             (
                 "candidate_id",

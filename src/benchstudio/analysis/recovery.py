@@ -124,6 +124,17 @@ def audit_counterfactual_outcomes(
         if expected_row is None:
             unknown.add(branch_attempt_id)
             continue
+        success = record.get("success")
+        if success is not None and not isinstance(success, bool):
+            lineage.append(f"{branch_attempt_id}: success must be boolean or None")
+        recovery_time = record.get("recovery_time_ms")
+        if recovery_time is not None and (
+            isinstance(recovery_time, bool)
+            or not isinstance(recovery_time, (int, float))
+            or not math.isfinite(float(recovery_time))
+            or recovery_time < 0
+        ):
+            lineage.append(f"{branch_attempt_id}: recovery_time_ms must be finite and non-negative")
         pair_id, branch, transition_index, intervention_id = expected_row
         if record.get("pair_id") != pair_id:
             lineage.append(f"{branch_attempt_id}: pair_id does not match frozen plan")
