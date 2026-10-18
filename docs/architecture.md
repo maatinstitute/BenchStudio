@@ -40,6 +40,11 @@ signal mappings, score-coverage audits, and conservative missing-outcome
 bounds. These are analysis and conformance primitives: they do not replace a
 simulator, official scorer, robot driver, or WorldEpisode implementation.
 
+Counterfactual cells can pair a nominal attempt with an intervention branch at
+the same transition index and `pair_id`. Deadline audits and critical-event
+bookmarks make incomplete execution, timing misses, stale observations, and
+unverified execution timestamps explicit without inferring unavailable facts.
+
 Simulator implementations register an `AdapterDescriptor`. Optional simulator
 dependencies are probed only when readiness is requested; the mock adapter
 therefore remains usable in a clean Python environment.

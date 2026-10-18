@@ -1,6 +1,7 @@
 """Preflight checks for semantic and temporal compatibility."""
 
 from .action_semantics import ActionSpec, validate_action
+from .deadlines import DeadlineAudit, audit_deadlines
 from .embodiment import MappingRule, SignalSpec, validate_mapping
 from .policy_lifecycle import LifecycleState, LifecycleTracker, validate_lifecycle_events
 from .replay_protocol import AdapterCapabilities, validate_adapter_capabilities
@@ -11,6 +12,7 @@ from .world_state import ValidationIssue, validate_observation
 __all__ = [
     "ActionSpec",
     "AdapterCapabilities",
+    "DeadlineAudit",
     "ScenarioContract",
     "ValidationIssue",
     "LifecycleState",
@@ -19,6 +21,7 @@ __all__ = [
     "ScheduledAction",
     "SignalSpec",
     "apply_zero_order_hold",
+    "audit_deadlines",
     "validate_action",
     "validate_action_timing",
     "validate_adapter_capabilities",

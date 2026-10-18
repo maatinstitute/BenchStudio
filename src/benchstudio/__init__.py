@@ -2,18 +2,29 @@
 
 from .adapters import AdapterDescriptor, AdapterRegistry, Dependency, default_registry
 from .analysis import (
+    EventBookmark,
     MissingOutcomeBounds,
     ScoreCoverage,
     audit_score_coverage,
+    bookmark_critical_events,
     missing_outcome_bounds,
 )
-from .campaigns import AttemptKey, AttemptLedger, CampaignPlanner, FrozenCampaignPlan
+from .campaigns import (
+    AttemptKey,
+    AttemptLedger,
+    CampaignPlanner,
+    CounterfactualCell,
+    FrozenCampaignPlan,
+    Intervention,
+    validate_counterfactual_pair,
+)
 from .compare import build_comparison_report
 from .conformance import (
     ActionSpec,
     AdapterCapabilities,
     ScenarioContract,
     ValidationIssue,
+    audit_deadlines,
     validate_action,
     validate_adapter_capabilities,
     validate_observation,
@@ -38,12 +49,15 @@ __all__ = [
     "AdapterCapabilities",
     "AdapterRegistry",
     "MissingOutcomeBounds",
+    "EventBookmark",
     "AttemptKey",
     "AttemptLedger",
     "CampaignPlanner",
+    "CounterfactualCell",
     "Dependency",
     "NdjsonWriter",
     "EpisodeResult",
+    "Intervention",
     "Observation",
     "ObservationFrame",
     "Policy",
@@ -67,9 +81,12 @@ __all__ = [
     "load_trajectory",
     "run_episodes",
     "audit_score_coverage",
+    "audit_deadlines",
+    "bookmark_critical_events",
     "missing_outcome_bounds",
     "validate_action",
     "validate_adapter_capabilities",
     "validate_observation",
     "validate_scenario_pair",
+    "validate_counterfactual_pair",
 ]
