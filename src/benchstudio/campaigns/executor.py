@@ -224,7 +224,10 @@ class CampaignExecutor:
                         "resource_budget_audit": summary.get("resource_budget_audit"),
                     },
                 )
-                committed.append(attempt_id)
+                if summary.get("campaign_status") == "completed":
+                    committed.append(attempt_id)
+                else:
+                    failed.append(attempt_id)
             except Exception as exc:
                 self.ledger.append(
                     attempt.key,

@@ -131,6 +131,45 @@ def test_campaign_executor_commits_infrastructure_failure_and_does_not_retry(tmp
     assert record["status"] == "infrastructure_failure"
 
 
+def test_campaign_executor_reports_runner_failure_status_as_failed_attempt(tmp_path):
+    class BrokenPolicy(MockPolicy):
+        def predict(self, observation, *, denoising_steps):
+            raise RuntimeError("policy unavailable")
+
+    plan = CampaignPlanner(
+        run_id="policy-failure-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    executor = CampaignExecutor(
+        plan, tmp_path / "campaign", lambda _: BrokenPolicy(), lambda _: MockSimulator()
+    )
+    result = executor.run()
+    assert result.committed_attempt_ids == ()
+    assert result.failed_attempt_ids == ("attempt-000000",)
+    assert result.missing_attempt_ids == ()
+    assert executor.audit().attempts_complete is True
+
+
+def test_campaign_executor_treats_cleanup_failure_as_final_failed_attempt(tmp_path):
+    class CloseFailureSimulator(MockSimulator):
+        def close(self):
+            super().close()
+            raise RuntimeError("cleanup unavailable")
+
+    plan = CampaignPlanner(
+        run_id="cleanup-failure-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    executor = CampaignExecutor(
+        plan, tmp_path / "campaign", lambda _: MockPolicy(), lambda _: CloseFailureSimulator()
+    )
+    result = executor.run()
+    assert result.committed_attempt_ids == ()
+    assert result.failed_attempt_ids == ("attempt-000000",)
+    assert result.missing_attempt_ids == ()
+    audit = executor.audit()
+    assert audit.attempts_complete is True
+    assert audit.status_counts == {"failed_cleanup": 1}
+
+
 def test_campaign_executor_rejects_a_different_plan_at_existing_output(tmp_path):
     first = CampaignPlanner(
         run_id="run-1", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
