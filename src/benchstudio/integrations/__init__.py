@@ -86,6 +86,7 @@ from .robopad_competence import (
 )
 from .robopad_reference import FixedReference
 from .robopad_reference_adapter import CandidateGoals, SourceGeometry, build_goals, extract_geometry
+from .robopad_reference_cache import SourceCache, cache_executed_source, select_prefix
 from .robopad_supervisor import (
     KILL_AFTER,
     LOG_CAP,
@@ -170,6 +171,9 @@ __all__ = [
     "SourceGeometry",
     "build_goals",
     "extract_geometry",
+    "SourceCache",
+    "cache_executed_source",
+    "select_prefix",
     "MAX_BYTES",
     "checked_rotation_delta",
     "compact_record",

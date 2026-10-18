@@ -298,6 +298,19 @@ the following projects. Product runtimes are not vendored into this repository.
   timeout escalation, exclusive attempted-run logs, reviewed parent envelopes,
   and atomic bounded receipts. It deliberately does not import RoboPAD's
   campaign manifest, child runtime, or claims authority.
+- RoboPAD fixed assay allocation and source cache: `benchstudio.campaigns.
+  robopad_assay_plan` directly ports `experiments/icra_assay_plan.py` at
+  upstream commit `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
+  `d4683e2f81e1ac0f332fb3c92c6d06ac39128f3242a5443107e14926d61c565f` and
+  source-test digest `743a2649bcf5a3a3cdf31df32d1385c4eb4268228c5208f35b4b50873c0e253f`.
+  `benchstudio.integrations.robopad_reference_cache` ports
+  `experiments/icra_reference_cache.py`; source digest
+  `6cdc72219d25b9a0c08ec2bc8ba0d9f39fc2acb34b640b4fc42b77a3054d2939` and
+  source-test digest `d0c7b5a183abec174cc745d8bca531992b79755c44a2df85d5faec5e3a31b83f`.
+  These ports preserve the 360-slot fixed design, consumed-slot exclusion,
+  deterministic suffix seeds, source-attempt hash binding, no-padding
+  semantics, held-source selection, and immutable retained actions; NumPy
+  trace decoding remains lazy and physical/source authority remains external.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment
