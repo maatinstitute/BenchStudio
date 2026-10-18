@@ -71,6 +71,11 @@ Model runtimes can also be kept outside BenchStudio behind the registered
 requires a JSON response containing an `actions` array, preserving the model
 runtime's ownership while retaining BenchStudio timing and evidence capture.
 
+External simulators can use the simulator registry's `external_command`
+adapter as a persistent JSON-line process. It supports `reset`, `observe`,
+`step`, and `close` messages while leaving physics and safety authority in
+the external runtime.
+
 The reusable evidence layer also provides digest-tracked NDJSON artifacts and
 cross-backend comparison reports for simulator-to-simulator or sim-to-real
 analysis.

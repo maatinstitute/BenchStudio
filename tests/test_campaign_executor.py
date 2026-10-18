@@ -469,6 +469,46 @@ def test_campaign_executor_can_run_external_command_model_adapter(tmp_path):
     assert result.missing_attempt_ids == ()
 
 
+def test_campaign_executor_can_run_external_command_simulator_adapter(tmp_path):
+    simulator_script = (
+        "import json,sys; step=0;\n"
+        "for line in sys.stdin:\n"
+        " request=json.loads(line); op=request['operation'];\n"
+        " if op=='reset': step=0;\n"
+        " if op=='step': step+=1;\n"
+        " if op=='close': break;\n"
+        " print(json.dumps({'observation':{'sequence':step,'sim_time_s':step/10,'payload':{}},"
+        "'done':step>=1,'success':step>=1}), flush=True)\n"
+    )
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "external-simulator"},
+            "task": {"task_id": "task"},
+            "environments": [
+                {
+                    "id": "sim",
+                    "kind": "simulator",
+                    "adapter": "external_command",
+                    "adapter_config": {"command": [sys.executable, "-u", "-c", simulator_script]},
+                }
+            ],
+            "evaluation": {
+                "seeds": [1],
+                "paired": True,
+                "conditions": [{"denoising_steps": 2, "action_prefix": 1}],
+            },
+        }
+    )
+    result = CampaignExecutor(
+        plan,
+        tmp_path / "campaign",
+        policy_factory=lambda _: MockPolicy(),
+        adapter_registry=default_registry(discover_external=False),
+    ).run()
+    assert result.missing_attempt_ids == ()
+
+
 def test_registry_backed_manifest_records_model_capabilities(tmp_path):
     plan = compile_campaign_spec(
         {

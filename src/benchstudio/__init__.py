@@ -137,6 +137,7 @@ from .evidence_signing import (
     verify_manifest_signature,
 )
 from .external_policy import ExternalCommandPolicy, external_command_capabilities
+from .external_simulator import ExternalCommandSimulator
 from .measurement import ResourceSampler, delta_resources, sample_resources
 from .model_adapters import (
     ModelAdapterDescriptor,
@@ -272,6 +273,7 @@ __all__ = [
     "write_manifest_trust_anchor",
     "ExternalCommandPolicy",
     "external_command_capabilities",
+    "ExternalCommandSimulator",
     "generate_ed25519_keypair",
     "sign_manifest",
     "verify_manifest_signature",

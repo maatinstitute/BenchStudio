@@ -19,6 +19,11 @@ invokes a supplied executable without a shell, sends a versioned JSON request
 for each inference, and accepts only a JSON action-chunk response. This is a
 process boundary, not a claim that BenchStudio owns the model runtime.
 
+The simulator registry provides a corresponding persistent JSON-line bridge
+with `reset`, `observe`, `step`, and `close` operations. The external process
+retains physics and safety authority; BenchStudio records the resulting
+observations, actions, timing, and evidence.
+
 The evidence schema is intentionally JSON-compatible and does not persist raw
 images by default. Checkpoint paths and private environment values must be
 represented by identifiers or digests, not copied into artifacts.

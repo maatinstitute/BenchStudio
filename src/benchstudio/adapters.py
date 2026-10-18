@@ -208,6 +208,7 @@ def module_available(import_name: str) -> bool:
 
 
 def default_registry(*, discover_external: bool = True) -> AdapterRegistry:
+    from .external_simulator import ExternalCommandSimulator
     from .integrations.gymnasium import GymnasiumSimulator
     from .integrations.mujoco import MujocoSimulator
     from .mock import MockSimulator
@@ -250,6 +251,17 @@ def default_registry(*, discover_external: bool = True) -> AdapterRegistry:
             capabilities=BackendCapabilities(
                 closed_loop=True,
                 evidence_authority="gymnasium",
+            ),
+        )
+    )
+    registry.register(
+        AdapterDescriptor(
+            simulator_id="external_command",
+            label="External JSON-line simulator process",
+            factory=ExternalCommandSimulator,
+            capabilities=BackendCapabilities(
+                closed_loop=True,
+                evidence_authority="external_process",
             ),
         )
     )
