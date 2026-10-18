@@ -89,6 +89,15 @@ the following projects. Product runtimes are not vendored into this repository.
   `1a281a6b43c32e3e8c79ac57eb28f765e1677a0e7e1b646c909cc139a9d17c79`.
   The port is an intervention preflight only; full robot geometry, tracking
   error, and physical safety remain external.
+- RoboPAD fixed reference controller: `benchstudio.integrations.FixedReference`
+  is a source-backed port of `experiments/icra_reference.py` at the same
+  upstream commit. Source digest is
+  `3ed7717336846e0ef18841f7193984d0d095d9b55016f23a0568f0f8b68d5f84`, and
+  the upstream test digest is
+  `106d94c558db3f5f67f0d0f6b719a764202564b7d4e43a5a090ef6d2bbd0980f`.
+  The fixed horizon, source-held conditioning, action clipping, and defensive
+  copy semantics are preserved; waypoint derivation and execution authority
+  remain external.
 - RoboPAD campaign resource limits: the existing `ResourceBudget` and frozen
   campaign compiler now carry the source campaign manifest's GPU-hour, output
   byte, policy-query, retry, and per-cell timeout ceilings. The shared runner

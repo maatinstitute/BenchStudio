@@ -46,6 +46,7 @@ from .robochallenge import (
     RoboChallengeProtocolAudit,
     validate_robochallenge_message,
 )
+from .robopad_reference import FixedReference
 from .teleop_replay_timing import (
     LogicalReplayClock,
     ReplayScheduleEntry,
@@ -90,6 +91,7 @@ __all__ = [
     "audit_alpabridge_telemetry",
     "load_alpabridge_telemetry",
     "route_arc_length_m",
+    "FixedReference",
     "LifecycleEvent",
     "SyntheticLifecycleService",
     "run_synthetic_lifecycle_cycle",
