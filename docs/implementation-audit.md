@@ -33,6 +33,7 @@ has been evaluated.
 | CLI campaign workflow | Implemented | Declarative mock execution can now audit its ledger and write the immutable campaign bundle from one command. |
 | SmolVLA/DM0.5 parity | Harness ready, external run pending | The parity and schedule contracts are implemented; no checkpoint is bundled or silently downloaded. |
 | CI workflow | Prepared locally, not uploaded | `.github/workflows/ci.yml` exists locally. GitHub rejected its upload because the current OAuth token lacks workflow scope; source and smoke tests are published. |
+| Python compatibility | Locally verified | Python 3.10.12 compiles and imports the package; the full pytest suite runs under the configured Python 3.13 environment. |
 
 The repository remains private and proprietary. External benchmark scoring,
 physical safety, emergency stops, and hardware authorization are intentionally
