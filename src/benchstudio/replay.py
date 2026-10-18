@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from .contracts import ActionChunk, Observation
+from .contracts import ActionChunk, Observation, Timestamp
 
 
 class ReplayTraceError(ValueError):
@@ -76,6 +76,7 @@ class ReplaySimulator:
             sequence=0,
             sim_time_s=0.0,
             payload={"seed": seed},
+            source_timestamp=Timestamp(0, "sim_time"),
             received_monotonic_ns=time.monotonic_ns(),
         )
 
@@ -83,6 +84,7 @@ class ReplaySimulator:
         return Observation(
             sequence=self._cursor,
             sim_time_s=self._cursor * self._sim_step_s,
+            source_timestamp=Timestamp(round(self._cursor * self._sim_step_s * 1e9), "sim_time"),
             received_monotonic_ns=time.monotonic_ns(),
         )
 

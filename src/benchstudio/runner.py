@@ -9,10 +9,15 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from statistics import mean
-from typing import Any
+from typing import Any, Callable
 
 from .contracts import Policy, Simulator
-from .evidence import NdjsonWriter, build_artifact_manifest, environment_fingerprint
+from .evidence import (
+    NdjsonWriter,
+    build_artifact_manifest,
+    environment_fingerprint,
+    write_manifest_trust_anchor,
+)
 
 
 @dataclass(frozen=True)
@@ -25,6 +30,7 @@ class RunConfig:
     action_prefix: int = 2
     observation_refresh_ticks: int = 1
     max_episode_steps: int = 100
+    initial_condition_id: str = "default"
 
     def __post_init__(self) -> None:
         if self.episodes < 1:
@@ -40,6 +46,8 @@ class RunConfig:
 @dataclass(frozen=True)
 class EpisodeResult:
     episode_id: str
+    pair_id: str
+    condition_id: str
     success: bool
     status: str
     termination_reason: str
@@ -66,15 +74,23 @@ def run_episodes(
     campaign_status = "completed"
     try:
         for index in range(config.episodes):
-            result, events = _run_episode(policy, simulator, config, index)
+            result, _events = _run_episode(
+                policy, simulator, config, index, emit=trace_writer.write
+            )
             episode_results.append(result)
-            for event in events:
-                trace_writer.write(event)
+            if result.status not in {"success", "failure"}:
+                campaign_status = "failed"
     except Exception as exc:
         campaign_status = "failed"
         episode_results.append(_campaign_failure(len(episode_results), exc))
     finally:
-        trace_writer.close()
+        try:
+            trace_writer.close()
+        except Exception as exc:
+            campaign_status = "failed_cleanup"
+            episode_results.append(
+                _campaign_failure_with_status(len(episode_results), exc, status="trace_close_error")
+            )
         try:
             simulator.close()
         except Exception as exc:
@@ -87,18 +103,34 @@ def run_episodes(
         json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     artifact_manifest = build_artifact_manifest(output, status=campaign_status)
-    (output / "artifact-manifest.json").write_text(
+    artifact_manifest_path = output / "artifact-manifest.json"
+    artifact_manifest_path.write_text(
         json.dumps(artifact_manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    write_manifest_trust_anchor(
+        artifact_manifest_path, output.parent / f"{output.name}.artifact-manifest.sha256"
     )
     return summary
 
 
 def _run_episode(
-    policy: Policy, simulator: Simulator, config: RunConfig, index: int
+    policy: Policy,
+    simulator: Simulator,
+    config: RunConfig,
+    index: int,
+    emit: Callable[[dict[str, Any]], None] | None = None,
 ) -> tuple[EpisodeResult, list[dict[str, Any]]]:
     episode_id = f"episode-{index:04d}"
     seed = config.seed + index
+    pair_id = _pair_id(config, seed)
+    condition_id = _condition_id(config)
     events: list[dict[str, Any]] = []
+
+    def record(event: dict[str, Any]) -> None:
+        events.append(event)
+        if emit is not None:
+            emit(event)
+
     ages: list[float] = []
     latencies: list[float] = []
     policy_calls = 0
@@ -118,6 +150,8 @@ def _run_episode(
             latencies,
             config,
             events,
+            pair_id=pair_id,
+            condition_id=condition_id,
             status="policy_reset_error",
             error=exc,
         )
@@ -134,6 +168,8 @@ def _run_episode(
             latencies,
             config,
             events,
+            pair_id=pair_id,
+            condition_id=condition_id,
             status="simulator_reset_error",
             error=exc,
         )
@@ -157,6 +193,8 @@ def _run_episode(
                 latencies,
                 config,
                 events,
+                pair_id=pair_id,
+                condition_id=condition_id,
                 status="policy_inference_error",
                 error=exc,
             )
@@ -187,6 +225,8 @@ def _run_episode(
                     latencies,
                     config,
                     events,
+                    pair_id=pair_id,
+                    condition_id=condition_id,
                     status="simulator_step_error",
                     error=exc,
                 )
@@ -194,11 +234,13 @@ def _run_episode(
             execution_ms = (executed_ns - step_start) / 1_000_000
             age_ms = max(0.0, (next_observation.sim_time_s - source_observation.sim_time_s) * 1000)
             ages.append(age_ms)
-            events.append(
+            record(
                 {
                     "schema": "benchstudio.event.v1",
                     "event_type": "action_executed",
                     "episode_id": episode_id,
+                    "pair_id": pair_id,
+                    "condition_id": condition_id,
                     "action_id": action_id,
                     "step": steps,
                     "inference_id": inference_id,
@@ -214,6 +256,11 @@ def _run_episode(
                     "execution_timestamp_domain": "host_monotonic",
                     "execution_timestamp_status": "simulator_step_returned",
                     "source_sim_time_ns": round(source_observation.sim_time_s * 1_000_000_000),
+                    "source_timestamp_domain": (
+                        source_observation.source_timestamp.domain
+                        if source_observation.source_timestamp is not None
+                        else "sim_time"
+                    ),
                     "action_digest_sha256": _digest_action(action),
                     "observation_age_ms": round(age_ms, 6),
                     "observation_age_status": "sim_time_delta",
@@ -247,6 +294,8 @@ def _run_episode(
     duration_ms = (time.perf_counter_ns() - start) / 1_000_000
     return EpisodeResult(
         episode_id=episode_id,
+        pair_id=pair_id,
+        condition_id=condition_id,
         success=simulator.is_success(),
         status="success" if simulator.is_success() else "failure",
         termination_reason=termination_reason,
@@ -272,12 +321,16 @@ def _failed_episode(
     latencies: list[float],
     config: RunConfig,
     events: list[dict[str, Any]],
+    pair_id: str,
+    condition_id: str,
     *,
     status: str,
     error: Exception,
 ) -> tuple[EpisodeResult, list[dict[str, Any]]]:
     return EpisodeResult(
         episode_id=episode_id,
+        pair_id=pair_id,
+        condition_id=condition_id,
         success=False,
         status=status,
         termination_reason=status,
@@ -320,6 +373,7 @@ def _manifest(policy: Policy, simulator: Simulator, config: RunConfig) -> dict[s
         "simulator_id": simulator.simulator_id,
         "config": config_payload,
         "config_digest_sha256": digest,
+        "condition_id": _condition_id(config),
         "runtime": {"python": sys.version, "platform": platform.platform()},
         "environment": environment_fingerprint(simulator.simulator_id),
     }
@@ -340,7 +394,6 @@ def _summary(
         "completed_episode_count": completed,
         "missing_episode_count": max(0, scheduled - len(results)),
         "success_count": successes,
-        "success_rate": successes / scheduled if scheduled else 0.0,
         "completed_success_rate": successes / completed if completed else None,
         "scheduled_success_rate": successes / scheduled if scheduled else None,
         "campaign_status": campaign_status,
@@ -355,6 +408,8 @@ def _campaign_failure(index: int, error: Exception) -> EpisodeResult:
 def _campaign_failure_with_status(index: int, error: Exception, *, status: str) -> EpisodeResult:
     return EpisodeResult(
         episode_id=f"episode-{index:04d}",
+        pair_id=f"campaign-{index:04d}",
+        condition_id="campaign",
         success=False,
         status=status,
         termination_reason=status,
@@ -369,6 +424,29 @@ def _campaign_failure_with_status(index: int, error: Exception, *, status: str) 
         action_prefix=0,
         error=f"{type(error).__name__}: {error}",
     )
+
+
+def _condition_id(config: RunConfig) -> str:
+    payload = {
+        "task_id": config.task_id,
+        "robot_id": config.robot_id,
+        "initial_condition_id": config.initial_condition_id,
+        "denoising_steps": config.denoising_steps,
+        "action_prefix": config.action_prefix,
+        "observation_refresh_ticks": config.observation_refresh_ticks,
+        "max_episode_steps": config.max_episode_steps,
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:16]
+
+
+def _pair_id(config: RunConfig, seed: int) -> str:
+    payload = {
+        "task_id": config.task_id,
+        "robot_id": config.robot_id,
+        "initial_condition_id": config.initial_condition_id,
+        "seed": seed,
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:16]
 
 
 def _percentile(values: list[float], fraction: float) -> float:

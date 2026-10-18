@@ -17,4 +17,4 @@ def test_replay_trace_can_drive_benchstudio(tmp_path):
         RunConfig(episodes=1, action_prefix=1),
         tmp_path / "run",
     )
-    assert summary["success_rate"] == 1.0
+    assert summary["scheduled_success_rate"] == 1.0

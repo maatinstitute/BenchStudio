@@ -20,7 +20,10 @@ def main() -> int:
         denoising_steps=args.denoising_steps,
     )
     summary = run_episodes(MockPolicy(), MockSimulator(), config, args.output)
-    print(f"success_rate={summary['success_rate']:.3f} episodes={summary['episode_count']}")
+    print(
+        f"scheduled_success_rate={summary['scheduled_success_rate']:.3f} "
+        f"episodes={summary['episode_count']} status={summary['campaign_status']}"
+    )
     return 0
 
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 
-from .contracts import ActionChunk, Observation
+from .contracts import ActionChunk, Observation, Timestamp
 
 
 class MockPolicy:
@@ -31,6 +31,7 @@ class MockSimulator:
             sequence=0,
             sim_time_s=0.0,
             payload={"seed": seed},
+            source_timestamp=Timestamp(0, "sim_time"),
             received_monotonic_ns=time.monotonic_ns(),
         )
 
@@ -38,6 +39,7 @@ class MockSimulator:
         return Observation(
             sequence=self._step,
             sim_time_s=self._step * 0.1,
+            source_timestamp=Timestamp(self._step * 100_000_000, "sim_time"),
             received_monotonic_ns=time.monotonic_ns(),
         )
 

@@ -8,6 +8,7 @@ from .evidence import (
     build_artifact_manifest,
     environment_fingerprint,
     verify_artifact_manifest,
+    write_manifest_trust_anchor,
 )
 from .replay import ReplayPolicy, ReplaySimulator, load_joint_sequence
 from .runner import EpisodeResult, RunConfig, run_episodes
@@ -33,6 +34,7 @@ __all__ = [
     "environment_fingerprint",
     "build_artifact_manifest",
     "verify_artifact_manifest",
+    "write_manifest_trust_anchor",
     "load_joint_sequence",
     "compare_trajectories",
     "load_trajectory",

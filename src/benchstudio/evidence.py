@@ -55,11 +55,27 @@ def build_artifact_manifest(root: Path, *, status: str) -> dict[str, Any]:
     }
 
 
-def verify_artifact_manifest(root: Path) -> dict[str, Any]:
+def write_manifest_trust_anchor(manifest_path: Path, anchor_path: Path) -> dict[str, Any]:
+    """Write a digest outside the artifact directory for independent verification."""
+    digest = sha256_file(manifest_path)
+    anchor_path.write_text(f"sha256  {manifest_path.name}  {digest}\n", encoding="utf-8")
+    return {"path": str(anchor_path), "sha256": digest}
+
+
+def verify_artifact_manifest(root: Path, trust_anchor_path: Path | None = None) -> dict[str, Any]:
     """Verify every file bound by an artifact manifest and report mismatches."""
     manifest_path = root / "artifact-manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     mismatches: list[dict[str, Any]] = []
+    anchor = trust_anchor_path or root.parent / f"{root.name}.artifact-manifest.sha256"
+    trust_anchor: dict[str, Any] = {"path": str(anchor), "checked": anchor.is_file()}
+    if anchor.is_file():
+        parts = anchor.read_text(encoding="utf-8").strip().split()
+        expected_digest = parts[-1] if parts else ""
+        actual_digest = sha256_file(manifest_path)
+        trust_anchor.update({"expected_sha256": expected_digest, "actual_sha256": actual_digest})
+        if expected_digest != actual_digest:
+            mismatches.append({"file": manifest_path.name, "reason": "trust_anchor_mismatch"})
     bound_names = set(manifest.get("files", {}))
     for name, expected in manifest.get("files", {}).items():
         path = root / name
@@ -80,6 +96,7 @@ def verify_artifact_manifest(root: Path) -> dict[str, Any]:
         "valid": not mismatches,
         "status": manifest.get("status"),
         "mismatches": mismatches,
+        "trust_anchor": trust_anchor,
     }
 
 

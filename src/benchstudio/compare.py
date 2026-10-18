@@ -52,8 +52,6 @@ def _summarize(reports: list[dict[str, Any] | None]) -> dict[str, Any]:
         "success_count": len(successes),
         "completed_success_rate": len(successes) / len(completed) if completed else None,
         "scheduled_success_rate": len(successes) / len(reports) if reports else None,
-        # Compatibility alias uses the conservative scheduled denominator.
-        "success_rate": len(successes) / len(reports) if reports else None,
         "mean_time_to_success_s": _mean(report.get("sim_time_s") for report in successes),
         "mean_wall_time_s": sum(wall_times) / len(wall_times) if wall_times else None,
     }
@@ -70,9 +68,9 @@ def _pair_divergence(
     episodes = []
     agreements = 0
     compared = 0
-    for episode_id in shared_ids:
-        report_a = indexed_a[episode_id]
-        report_b = indexed_b[episode_id]
+    for pair_id in shared_ids:
+        report_a = indexed_a[pair_id]
+        report_b = indexed_b[pair_id]
         if report_a is None or report_b is None:
             continue
         compared += 1
@@ -80,7 +78,9 @@ def _pair_divergence(
         agreements += int(agree)
         episodes.append(
             {
-                "episode_id": episode_id,
+                "pair_id": pair_id,
+                "condition_id_a": report_a.get("condition_id"),
+                "condition_id_b": report_b.get("condition_id"),
                 "success_agreement": agree,
                 "final_joint_rmse_rad": _joint_rmse(report_a, report_b),
             }
@@ -99,15 +99,15 @@ def _index_reports(reports: list[dict[str, Any] | None]) -> dict[str, dict[str, 
     for index, report in enumerate(reports):
         if report is None:
             continue
-        episode_id = report.get("episode_id")
-        if not isinstance(episode_id, str) or not episode_id:
+        pair_id = report.get("pair_id")
+        if not isinstance(pair_id, str) or not pair_id:
             raise ValueError(
-                "every completed report requires a stable episode_id; "
+                "every completed report requires a stable pair_id; "
                 f"missing at list position {index}"
             )
-        if episode_id in indexed:
-            raise ValueError(f"duplicate episode_id: {episode_id}")
-        indexed[episode_id] = report
+        if pair_id in indexed:
+            raise ValueError(f"duplicate pair_id: {pair_id}")
+        indexed[pair_id] = report
     return indexed
 
 

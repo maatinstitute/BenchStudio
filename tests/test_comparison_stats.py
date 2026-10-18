@@ -8,7 +8,7 @@ def test_comparison_exposes_scheduled_and_completed_denominators():
         scenario_id="task",
         per_backend_reports={
             "sim-a": [
-                {"episode_id": "seed-1", "success": True},
+                {"pair_id": "seed-1", "condition_id": "condition-a", "success": True},
                 None,
             ],
         },

@@ -8,7 +8,7 @@ from benchstudio.runner import RunConfig, run_episodes
 
 def test_run_emits_reproducible_artifact_set(tmp_path):
     summary = run_episodes(MockPolicy(), MockSimulator(), RunConfig(episodes=2), tmp_path / "run")
-    assert summary["success_rate"] == 1.0
+    assert summary["scheduled_success_rate"] == 1.0
     assert (tmp_path / "run" / "manifest.json").exists()
     assert (tmp_path / "run" / "episodes.jsonl").exists()
     assert (tmp_path / "run" / "summary.json").exists()
@@ -40,7 +40,7 @@ def test_observation_refresh_interval_creates_stale_observations(tmp_path):
         json.loads(line)
         for line in (tmp_path / "stale" / "episodes.jsonl").read_text().splitlines()
     ]
-    assert summary["success_rate"] == 1.0
+    assert summary["scheduled_success_rate"] == 1.0
     assert records[1]["observation_age_ms"] > records[0]["observation_age_ms"]
 
 
@@ -75,7 +75,29 @@ def test_policy_exception_is_recorded_as_episode_failure(tmp_path):
         BrokenPolicy(), MockSimulator(), RunConfig(episodes=1), tmp_path / "failure"
     )
     episode = summary["episodes"][0]
-    assert summary["campaign_status"] == "completed"
+    assert summary["campaign_status"] == "failed"
     assert episode["status"] == "policy_inference_error"
     assert "inference offline" in episode["error"]
     assert summary["scheduled_success_rate"] == 0.0
+
+
+def test_partial_trace_is_persisted_when_policy_crashes(tmp_path):
+    class CrashAfterTwoCalls(MockPolicy):
+        def __init__(self):
+            self.calls = 0
+
+        def predict(self, observation, *, denoising_steps):
+            self.calls += 1
+            if self.calls == 3:
+                raise RuntimeError("simulated crash")
+            return super().predict(observation, denoising_steps=denoising_steps)
+
+    run_dir = tmp_path / "partial"
+    summary = run_episodes(
+        CrashAfterTwoCalls(), MockSimulator(), RunConfig(episodes=1, action_prefix=1), run_dir
+    )
+    records = [json.loads(line) for line in (run_dir / "episodes.jsonl").read_text().splitlines()]
+    assert len(records) == 2
+    assert summary["campaign_status"] == "failed"
+    assert summary["episodes"][0]["status"] == "policy_inference_error"
+    assert summary["completed_episode_count"] == 0

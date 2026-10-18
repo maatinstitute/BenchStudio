@@ -23,7 +23,8 @@ def test_comparison_preserves_backend_divergence():
         per_backend_reports={
             "sim-a": [
                 {
-                    "episode_id": "seed-1",
+                    "pair_id": "seed-1",
+                    "condition_id": "condition-a",
                     "success": True,
                     "sim_time_s": 1.0,
                     "final_joint_positions": {"j1": 0.0},
@@ -31,7 +32,8 @@ def test_comparison_preserves_backend_divergence():
             ],
             "sim-b": [
                 {
-                    "episode_id": "seed-1",
+                    "pair_id": "seed-1",
+                    "condition_id": "condition-b",
                     "success": False,
                     "sim_time_s": 2.0,
                     "final_joint_positions": {"j1": 0.2},
@@ -47,7 +49,7 @@ def test_comparison_preserves_backend_divergence():
 def test_comparison_rejects_reports_without_stable_identity():
     import pytest
 
-    with pytest.raises(ValueError, match="episode_id"):
+    with pytest.raises(ValueError, match="pair_id"):
         build_comparison_report(
             scenario_id="task",
             per_backend_reports={"a": [{"success": True}], "b": [{"success": True}]},
@@ -57,7 +59,9 @@ def test_comparison_rejects_reports_without_stable_identity():
 def test_run_artifact_manifest_detects_trace_tampering(tmp_path):
     run_dir = tmp_path / "run"
     run_episodes(MockPolicy(), MockSimulator(), RunConfig(episodes=1), run_dir)
-    assert verify_artifact_manifest(run_dir)["valid"] is True
+    result = verify_artifact_manifest(run_dir)
+    assert result["valid"] is True
+    assert result["trust_anchor"]["checked"] is True
     with (run_dir / "episodes.jsonl").open("a", encoding="utf-8") as handle:
         handle.write("tampered\n")
     result = verify_artifact_manifest(run_dir)
