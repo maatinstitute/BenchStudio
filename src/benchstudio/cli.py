@@ -4,7 +4,12 @@ import argparse
 from pathlib import Path
 
 from .adapters import default_registry
-from .campaigns import CampaignExecutor, compile_campaign_spec, load_campaign_document
+from .campaigns import (
+    CampaignExecutor,
+    LocalArtifactStore,
+    compile_campaign_spec,
+    load_campaign_document,
+)
 from .mock import MockPolicy, MockSimulator
 from .runner import RunConfig, run_episodes
 
@@ -43,6 +48,11 @@ def main() -> int:
         type=Path,
         help="Write a deterministic immutable archive of the executed campaign evidence.",
     )
+    parser.add_argument(
+        "--artifact-store",
+        type=Path,
+        help="Publish the executed campaign bundle to a local content-addressed store.",
+    )
     args = parser.parse_args()
     if args.campaign_spec is not None:
         spec = load_campaign_document(args.campaign_spec)
@@ -77,6 +87,12 @@ def main() -> int:
                 print(
                     f"archive_output={archive['path']} archive_sha256={archive['sha256']} "
                     f"archive_bytes={archive['bytes']}"
+                )
+            if args.artifact_store is not None:
+                reference = executor.publish_artifact(LocalArtifactStore(args.artifact_store))
+                print(
+                    f"artifact_uri={reference['uri']} artifact_sha256={reference['digest_sha256']} "
+                    f"artifact_bytes={reference['bytes']}"
                 )
         return 0
     config = RunConfig(

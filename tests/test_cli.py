@@ -46,6 +46,7 @@ def test_cli_can_execute_compiled_campaign_with_mock_backend(monkeypatch, tmp_pa
     plan_path = tmp_path / "plan.json"
     output = tmp_path / "run"
     archive = tmp_path / "campaign.zip"
+    artifact_store = tmp_path / "artifact-store"
     spec_path.write_text(
         json.dumps(
             {
@@ -76,11 +77,15 @@ def test_cli_can_execute_compiled_campaign_with_mock_backend(monkeypatch, tmp_pa
             "--audit",
             "--archive-output",
             str(archive),
+            "--artifact-store",
+            str(artifact_store),
         ],
     )
     assert main() == 0
     assert (output / "attempt-results.jsonl").is_file()
     assert archive.is_file()
+    assert list(artifact_store.rglob("*.zip"))
     captured = capsys.readouterr()
     assert "campaign_status=completed" in captured.out
     assert "audit_status=qualified" in captured.out
+    assert "artifact_sha256=" in captured.out

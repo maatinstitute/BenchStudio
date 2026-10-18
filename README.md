@@ -38,6 +38,14 @@ python -m benchstudio.cli --campaign-spec campaign.json --execute-mock \
   --audit --archive-output runs/campaign.zip
 ```
 
+The same command can publish the deterministic bundle to a local
+content-addressed artifact store:
+
+```bash
+python -m benchstudio.cli --campaign-spec campaign.json --execute-mock \
+  --artifact-store runs/artifacts
+```
+
 The reusable evidence layer also provides digest-tracked NDJSON artifacts and
 cross-backend comparison reports for simulator-to-simulator or sim-to-real
 analysis.
