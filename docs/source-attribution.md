@@ -75,6 +75,15 @@ the following projects. Product runtimes are not vendored into this repository.
   `abf10ecf2733aad3167e9a2b0d6d642a469c5f3d52f03f45b719d48e0517a280`.
   The port preserves arm prompt roles, pre-policy/contact exclusions, first
   attainment semantics, and independent replay checks for evaluation branches.
+- RoboPAD development-only receipt safeguards:
+  `benchstudio.analysis.development_receipts` is a direct port of
+  `experiments/outcome_development.py` at upstream commit
+  `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
+  `8d7bd15c273684bd992d57141d6ac880f5d169655103c57429455ecf44a06fd3` and
+  source-test digest
+  `4199155ff47a1a2854a366e1b577ed870709190b8447595595f569fe8c3e6716`.
+  The port preserves fail-closed development-only/science-ineligible flags,
+  zero/one-update checks, digest identities, and atomic receipt publication.
 - AlpaBridge: `benchstudio.integrations.alpasim_metrics` is a direct
   dependency-free port of `src/alpabridge/neutral/alpasim_metrics.py` from
   upstream commit `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`. Its source digest
