@@ -11,7 +11,7 @@ from pathlib import Path
 from statistics import mean
 from typing import Any, Callable
 
-from .conformance import validate_observation
+from .conformance import ActionSpec, PolicySession, validate_observation
 from .contracts import Policy, Simulator
 from .evidence import (
     NdjsonWriter,
@@ -32,6 +32,8 @@ class RunConfig:
     observation_refresh_ticks: int = 1
     max_episode_steps: int = 100
     initial_condition_id: str = "default"
+    action_spec: ActionSpec | None = None
+    policy_timeout_ns: int | None = None
 
     def __post_init__(self) -> None:
         if self.episodes < 1:
@@ -42,6 +44,8 @@ class RunConfig:
             raise ValueError("observation_refresh_ticks must be positive")
         if self.max_episode_steps < 1:
             raise ValueError("max_episode_steps must be positive")
+        if self.policy_timeout_ns is not None and self.policy_timeout_ns < 0:
+            raise ValueError("policy_timeout_ns must be non-negative")
 
 
 @dataclass(frozen=True)
@@ -127,6 +131,11 @@ def _run_episode(
     pair_id = _pair_id(config, seed)
     condition_id = _condition_id(config)
     events: list[dict[str, Any]] = []
+    session = PolicySession(
+        f"{episode_id}-policy-session",
+        policy,
+        action_spec=config.action_spec,
+    )
 
     def record(event: dict[str, Any]) -> None:
         if retain_events:
@@ -141,7 +150,8 @@ def _run_episode(
     steps = 0
     start = time.perf_counter_ns()
     try:
-        policy.reset(seed=seed)
+        session.initialize(seed=seed)
+        session.start()
     except Exception as exc:
         return _failed_episode(
             episode_id,
@@ -187,9 +197,14 @@ def _run_episode(
         inference_id = f"{episode_id}-inference-{policy_calls:04d}"
         inference_started_ns = time.monotonic_ns()
         try:
-            action_chunk = policy.predict(
-                source_observation, denoising_steps=config.denoising_steps
+            prediction = session.predict(
+                source_observation,
+                denoising_steps=config.denoising_steps,
+                timeout_ns=config.policy_timeout_ns,
             )
+            if not prediction.accepted or prediction.action_chunk is None:
+                raise RuntimeError(f"{prediction.status}: " + "; ".join(prediction.errors))
+            action_chunk = prediction.action_chunk
         except Exception as exc:
             return _failed_episode(
                 episode_id,
@@ -305,6 +320,7 @@ def _run_episode(
         termination_reason = "success"
     elif simulator.is_done() and termination_reason != "success":
         termination_reason = "failure"
+    session.stop()
     duration_ms = (time.perf_counter_ns() - start) / 1_000_000
     return EpisodeResult(
         episode_id=episode_id,

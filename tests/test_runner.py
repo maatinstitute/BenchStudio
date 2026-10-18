@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 
+from benchstudio.conformance import ActionSpec
+from benchstudio.contracts import ActionChunk
 from benchstudio.mock import MockPolicy, MockSimulator
 from benchstudio.runner import RunConfig, run_episodes
 
@@ -64,6 +66,25 @@ def test_invalid_schedule_is_rejected():
 
     with pytest.raises(ValueError, match="action_prefix"):
         RunConfig(action_prefix=0)
+
+
+def test_runner_uses_action_contract_and_reports_invalid_policy_output(tmp_path):
+    class BadPolicy(MockPolicy):
+        def predict(self, observation, *, denoising_steps):
+            return ActionChunk((1,))
+
+    summary = run_episodes(
+        BadPolicy(),
+        MockSimulator(),
+        RunConfig(
+            episodes=1,
+            action_prefix=1,
+            action_spec=ActionSpec("arm", "joint_position", "rad", 2),
+        ),
+        tmp_path / "invalid-action",
+    )
+    assert summary["episodes"][0]["status"] == "policy_inference_error"
+    assert "invalid_action" in summary["episodes"][0]["error"]
 
 
 def test_policy_exception_is_recorded_as_episode_failure(tmp_path):
