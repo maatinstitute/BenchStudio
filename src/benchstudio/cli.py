@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from .adapters import default_registry
-from .analysis import ClaimType, audit_campaign_directory
+from .analysis import ClaimType, audit_campaign_directory, compare_policy_trace_files
 from .campaigns import (
     CampaignExecutor,
     HttpArtifactStore,
@@ -128,6 +128,17 @@ def main() -> int:
         help="Write the JSON comparison report to this path.",
     )
     parser.add_argument(
+        "--compare-policy-traces",
+        nargs=2,
+        metavar=("REFERENCE", "INSTRUMENTED"),
+        help="Compare two frozen benchstudio.policy_trace.v1 JSONL files.",
+    )
+    parser.add_argument(
+        "--parity-output",
+        type=Path,
+        help="Write the policy-trace parity evidence to this path.",
+    )
+    parser.add_argument(
         "--trusted-manifest-sha256",
         help="Require --verify-artifact to match this independently supplied manifest digest.",
     )
@@ -142,6 +153,24 @@ def main() -> int:
         help="PEM public key used to verify --manifest-signature.",
     )
     args = parser.parse_args()
+    if args.compare_policy_traces is not None:
+        reference, instrumented = map(Path, args.compare_policy_traces)
+        report = compare_policy_trace_files(reference, instrumented)
+        payload = {
+            "schema": "benchstudio_parity_report_v1",
+            "metadata": {
+                "reference_trace": str(reference),
+                "instrumented_trace": str(instrumented),
+            },
+            "policy": report.to_dict(),
+        }
+        if args.parity_output is not None:
+            args.parity_output.parent.mkdir(parents=True, exist_ok=True)
+            args.parity_output.write_text(
+                json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+            )
+        print(json.dumps(payload, sort_keys=True))
+        return 0 if report.equivalent else 2
     if args.compare_campaign is not None:
         if not args.comparison_scenario_id:
             parser.error("--compare-campaign requires --comparison-scenario-id")

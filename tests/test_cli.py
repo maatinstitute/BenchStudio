@@ -81,6 +81,32 @@ def test_cli_compares_frozen_campaign_directories(monkeypatch, tmp_path, capsys)
     assert json.loads(capsys.readouterr().out)["schema"] == "benchstudio_comparison_report_v1"
 
 
+def test_cli_compares_frozen_policy_traces(monkeypatch, tmp_path, capsys):
+    from benchstudio.integrations import POLICY_TRACE_SCHEMA
+
+    reference = tmp_path / "reference.jsonl"
+    instrumented = tmp_path / "instrumented.jsonl"
+    row = {"schema": POLICY_TRACE_SCHEMA, "sequence": 0, "actions": [1], "metadata": {}}
+    reference.write_text(json.dumps(row) + "\n", encoding="utf-8")
+    instrumented.write_text(json.dumps(row) + "\n", encoding="utf-8")
+    output = tmp_path / "parity.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--compare-policy-traces",
+            str(reference),
+            str(instrumented),
+            "--parity-output",
+            str(output),
+        ],
+    )
+    assert main() == 0
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["policy"]["equivalent"] is True
+    assert json.loads(capsys.readouterr().out)["schema"] == "benchstudio_parity_report_v1"
+
+
 def test_cli_verifies_existing_artifact_without_execution(monkeypatch, tmp_path, capsys):
     from benchstudio.evidence import sha256_file
     from benchstudio.mock import MockPolicy, MockSimulator
