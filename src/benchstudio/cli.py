@@ -16,6 +16,13 @@ from .model_adapters import default_model_registry
 from .runner import RunConfig, run_episodes
 
 
+def _positive_int(value: str) -> int:
+    parsed = int(value)
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("must be positive")
+    return parsed
+
+
 def _mock_policy_factory(_attempt):
     return MockPolicy()
 
@@ -68,6 +75,12 @@ def main() -> int:
         "--artifact-store",
         type=Path,
         help="Publish the executed campaign bundle to a local content-addressed store.",
+    )
+    parser.add_argument(
+        "--workers",
+        type=_positive_int,
+        default=1,
+        help="Number of lease-owning workers for a compiled campaign (default: 1).",
     )
     parser.add_argument(
         "--readiness",
@@ -130,7 +143,7 @@ def main() -> int:
                 adapter_registry=default_registry(),
                 model_registry=model_registry,
             )
-            summary = executor.run()
+            summary = executor.run_parallel(args.workers) if args.workers > 1 else executor.run()
             print(
                 f"campaign_status=completed committed={len(summary.committed_attempt_ids)} "
                 f"missing={len(summary.missing_attempt_ids)}"

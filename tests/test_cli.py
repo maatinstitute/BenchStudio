@@ -85,6 +85,69 @@ def test_cli_executes_declared_registry_adapters(monkeypatch, tmp_path, capsys):
     assert "campaign_status=completed" in capsys.readouterr().out
 
 
+def test_cli_executes_a_frozen_campaign_with_multiple_workers(monkeypatch, tmp_path, capsys):
+    spec_path = tmp_path / "parallel-campaign.json"
+    output = tmp_path / "parallel-run"
+    spec_path.write_text(
+        json.dumps(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "parallel-cli"},
+                "task": {"task_id": "task"},
+                "environments": [{"id": "sim", "kind": "simulator"}],
+                "evaluation": {
+                    "seeds": [1, 2, 3, 4],
+                    "paired": True,
+                    "conditions": [{"denoising_steps": 2, "action_prefix": 1}],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--campaign-spec",
+            str(spec_path),
+            "--output",
+            str(output),
+            "--execute-mock",
+            "--workers",
+            "2",
+        ],
+    )
+    assert main() == 0
+    assert len((output / "attempt-results.jsonl").read_text().splitlines()) == 4
+    assert "missing=0" in capsys.readouterr().out
+
+
+def test_cli_rejects_non_positive_worker_count(monkeypatch, tmp_path):
+    spec_path = tmp_path / "campaign.json"
+    spec_path.write_text(
+        json.dumps(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "invalid-workers"},
+                "task": {"task_id": "task"},
+                "environments": [{"id": "sim", "kind": "simulator"}],
+                "evaluation": {
+                    "seeds": [1],
+                    "paired": True,
+                    "conditions": [{"denoising_steps": 2, "action_prefix": 1}],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        ["benchstudio-run", "--campaign-spec", str(spec_path), "--workers", "0"],
+    )
+    with __import__("pytest").raises(SystemExit):
+        main()
+
+
 def test_cli_can_execute_compiled_campaign_with_mock_backend(monkeypatch, tmp_path, capsys):
     spec_path = tmp_path / "campaign.json"
     plan_path = tmp_path / "plan.json"

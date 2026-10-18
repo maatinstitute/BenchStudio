@@ -51,6 +51,13 @@ directly (optional dependencies are checked before work is scheduled):
 python -m benchstudio.cli --campaign-spec campaign.json --execute-registry
 ```
 
+Frozen attempts can be distributed across local lease-owning workers while
+retaining one append-only campaign ledger:
+
+```bash
+python -m benchstudio.cli --campaign-spec campaign.json --execute-mock --workers 4
+```
+
 The same command can publish the deterministic bundle to a local
 content-addressed artifact store:
 
