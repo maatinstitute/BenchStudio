@@ -76,3 +76,14 @@ class AttemptLedger:
             for attempt in self.plan.attempts
             if attempt.key.attempt_id not in self._seen
         ]
+
+    @property
+    def records(self) -> tuple[dict[str, Any], ...]:
+        """Return the append-only records in ledger order for auditing."""
+        if not self.path.is_file():
+            return ()
+        return tuple(
+            json.loads(line)
+            for line in self.path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        )

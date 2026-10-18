@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import TYPE_CHECKING, Any, Callable, Iterable
 
 from ..analysis.resources import ResourceBudget
 from ..contracts import Policy, Simulator
@@ -13,6 +13,11 @@ from ..runner import RunConfig, run_episodes
 from .frozen_plan import FrozenCampaignPlan, PlannedAttempt
 from .ledger import AttemptLedger
 from .worker import WorkerLeaseManager
+
+if TYPE_CHECKING:
+    from ..analysis.campaign_audit import CampaignAudit
+    from ..analysis.claims import ClaimType
+    from ..analysis.outcomes import OutcomeRecord
 
 PolicyFactory = Callable[[PlannedAttempt], Policy]
 SimulatorFactory = Callable[[PlannedAttempt], Simulator]
@@ -163,6 +168,27 @@ class CampaignExecutor:
             tuple(self.ledger.missing_attempt_ids),
             tuple(leased_out),
             tuple(cancelled),
+        )
+
+    def audit(
+        self,
+        *,
+        claim_type: "ClaimType | None" = None,
+        evidence: dict[str, Any] | None = None,
+        outcome_records: Iterable["OutcomeRecord"] | None = None,
+    ) -> "CampaignAudit":
+        """Audit the current ledger against this executor's frozen plan."""
+        from ..analysis.campaign_audit import audit_campaign
+        from ..analysis.claims import ClaimType
+
+        if claim_type is None:
+            claim_type = ClaimType.SINGLE_RUN_OUTCOME
+        return audit_campaign(
+            self.plan,
+            self.ledger.records,
+            claim_type=claim_type,
+            evidence=evidence,
+            outcome_records=outcome_records,
         )
 
 

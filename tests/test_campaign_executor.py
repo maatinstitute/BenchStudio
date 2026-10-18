@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+from benchstudio.analysis import ClaimType
 from benchstudio.campaigns import (
     CampaignExecutor,
     CampaignPlanner,
@@ -151,3 +152,20 @@ def test_campaign_executor_wires_resource_sampler_per_attempt(tmp_path):
     ).run()
     summary = json.loads((output / "attempts" / "attempt-000000" / "summary.json").read_text())
     assert summary["episodes"][0]["resource_metrics"]["inference_calls"] == 3
+
+
+def test_campaign_executor_exposes_frozen_plan_audit(tmp_path):
+    plan = CampaignPlanner(
+        run_id="audit-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    executor = CampaignExecutor(
+        plan, tmp_path / "campaign", lambda _: MockPolicy(), lambda _: MockSimulator()
+    )
+    executor.run()
+    audit = executor.audit(
+        claim_type=ClaimType.SINGLE_RUN_OUTCOME,
+        evidence={"authoritative_scorer_declared": True},
+    )
+    assert audit.attempts_complete is True
+    assert audit.evidence_verified is True
+    assert audit.claim.status == "supported"
