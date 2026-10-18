@@ -14,7 +14,15 @@ from .confirmation import (
     compile_confirmation_plan,
     validate_confirmation_plan,
 )
-from .counterfactual import CounterfactualCell, Intervention, validate_counterfactual_pair
+from .counterfactual import (
+    CounterfactualCell,
+    CounterfactualPair,
+    FrozenCounterfactualPlan,
+    Intervention,
+    compile_counterfactual_plan,
+    validate_counterfactual_pair,
+    validate_counterfactual_plan,
+)
 from .executor import CampaignExecutionSummary, CampaignExecutor
 from .frozen_plan import AttemptKey, CampaignPlanner, FrozenCampaignPlan, PlannedAttempt
 from .io import load_campaign_document
@@ -48,6 +56,9 @@ __all__ = [
     "load_campaign_document",
     "compile_campaign_spec",
     "CounterfactualCell",
+    "CounterfactualPair",
+    "FrozenCounterfactualPlan",
+    "compile_counterfactual_plan",
     "ConfirmationCase",
     "FrozenConfirmationPlan",
     "SearchCandidate",
@@ -57,6 +68,7 @@ __all__ = [
     "Intervention",
     "PlannedAttempt",
     "validate_counterfactual_pair",
+    "validate_counterfactual_plan",
     "PerturbationDimension",
     "SearchCase",
     "FrozenSearchPlan",

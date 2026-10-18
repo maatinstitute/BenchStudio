@@ -4,7 +4,13 @@ import json
 
 import pytest
 
-from benchstudio.campaigns import AttemptLedger, CampaignPlanner
+from benchstudio.campaigns import (
+    AttemptLedger,
+    CampaignPlanner,
+    Intervention,
+    compile_counterfactual_plan,
+    validate_counterfactual_plan,
+)
 
 
 def test_frozen_campaign_has_stable_complete_matrix(tmp_path):
@@ -54,3 +60,33 @@ def test_attempt_ledger_rejects_reopening_with_a_different_plan(tmp_path):
     ).freeze()
     with pytest.raises(ValueError, match="plan digest"):
         AttemptLedger(path, other)
+
+
+def test_counterfactual_plan_binds_nominal_and_intervention_branches():
+    nominal = CampaignPlanner(
+        run_id="robustness", scenario_id="pick", conditions=[{"budget": 2}], seeds=[7, 8]
+    ).freeze()
+    plan = compile_counterfactual_plan(
+        nominal,
+        [Intervention("occlusion", 3, "partial_occlusion", {"fraction": 0.25})],
+    )
+    assert len(plan.pairs) == len(nominal.attempts)
+    assert all(
+        pair.nominal.pair_id == pair.intervention.pair_id
+        and pair.nominal.branch == "nominal"
+        and pair.intervention.branch == "intervention"
+        for pair in plan.pairs
+    )
+    assert validate_counterfactual_plan(plan) == []
+    assert len({pair.intervention.branch_attempt_id for pair in plan.pairs}) == len(plan.pairs)
+
+
+def test_counterfactual_plan_rejects_reserved_or_duplicate_interventions():
+    nominal = CampaignPlanner(
+        run_id="robustness", scenario_id="pick", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    with pytest.raises(ValueError, match="reserved"):
+        compile_counterfactual_plan(nominal, [Intervention("none", 0, "none", {})])
+    intervention = Intervention("delay", 1, "sensor_delay", {"ms": 10})
+    with pytest.raises(ValueError, match="unique"):
+        compile_counterfactual_plan(nominal, [intervention, intervention])
