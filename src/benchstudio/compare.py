@@ -38,7 +38,8 @@ def write_comparison_report(report: dict[str, Any], path: Path) -> None:
 
 
 def _summarize(reports: list[dict[str, Any] | None]) -> dict[str, Any]:
-    completed = [report for report in reports if report is not None]
+    completed = [report for report in reports if report is not None and _is_task_outcome(report)]
+    failed = [report for report in reports if report is not None and not _is_task_outcome(report)]
     successes = [report for report in completed if report.get("success")]
     wall_times = [
         float(report["wall_time_s"])
@@ -47,8 +48,11 @@ def _summarize(reports: list[dict[str, Any] | None]) -> dict[str, Any]:
     ]
     return {
         "episodes": len(reports),
+        "scheduled": len(reports),
         "completed": len(completed),
-        "missing": len(reports) - len(completed),
+        "failed": len(failed),
+        "missing": len(reports) - len(completed) - len(failed),
+        "status_counts": _status_counts(reports),
         "success_count": len(successes),
         "completed_success_rate": len(successes) / len(completed) if completed else None,
         "scheduled_success_rate": len(successes) / len(reports) if reports else None,
@@ -90,6 +94,8 @@ def _pair_divergence(
         "success_agreement_rate": agreements / compared if compared else None,
         "unmatched_a": unmatched_a,
         "unmatched_b": unmatched_b,
+        "failed_a": _failed_pair_ids(reports_a),
+        "failed_b": _failed_pair_ids(reports_b),
         "episodes": episodes,
     }
 
@@ -107,8 +113,35 @@ def _index_reports(reports: list[dict[str, Any] | None]) -> dict[str, dict[str, 
             )
         if pair_id in indexed:
             raise ValueError(f"duplicate pair_id: {pair_id}")
-        indexed[pair_id] = report
+        if _is_task_outcome(report):
+            indexed[pair_id] = report
     return indexed
+
+
+def _is_task_outcome(report: dict[str, Any]) -> bool:
+    status = report.get("status")
+    return status is None or status in {"success", "failure"}
+
+
+def _status_counts(reports: list[dict[str, Any] | None]) -> dict[str, int]:
+    counts: dict[str, int] = {"missing": sum(report is None for report in reports)}
+    for report in reports:
+        if report is None:
+            continue
+        status = str(report.get("status", "observed"))
+        counts[status] = counts.get(status, 0) + 1
+    return counts
+
+
+def _failed_pair_ids(reports: list[dict[str, Any] | None]) -> list[str]:
+    failed: list[str] = []
+    for report in reports:
+        if report is None or _is_task_outcome(report):
+            continue
+        pair_id = report.get("pair_id")
+        if isinstance(pair_id, str) and pair_id:
+            failed.append(pair_id)
+    return sorted(failed)
 
 
 def _joint_rmse(report_a: dict[str, Any], report_b: dict[str, Any]) -> float | None:
