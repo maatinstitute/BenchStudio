@@ -86,6 +86,14 @@ Simulator implementations register an `AdapterDescriptor`. Optional simulator
 dependencies are probed only when readiness is requested; the mock adapter
 therefore remains usable in a clean Python environment.
 
+Descriptors also expose explicit `BackendCapabilities`. Campaign tooling can
+require properties such as `owns_physics`, `closed_loop`, or
+`owns_official_scoring` before construction. This prevents a replay or mock
+facade from being silently used as evidence-bearing simulator authority. A
+MuJoCo, Genesis, Isaac Lab, or robot adapter may register through the
+`benchstudio.simulators` entry-point group when its pinned runtime is supplied;
+the core package does not install or pretend to provide those runtimes.
+
 ## Replay boundary
 
 `benchstudio.replay` accepts the `robot_joints` NDJSON stream emitted by URDF

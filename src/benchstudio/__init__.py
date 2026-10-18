@@ -1,6 +1,12 @@
 """BenchStudio temporal-fidelity evaluation core."""
 
-from .adapters import AdapterDescriptor, AdapterRegistry, Dependency, default_registry
+from .adapters import (
+    AdapterDescriptor,
+    AdapterRegistry,
+    BackendCapabilities,
+    Dependency,
+    default_registry,
+)
 from .analysis import (
     CampaignAudit,
     ClaimDecision,
@@ -132,6 +138,7 @@ __all__ = [
     "AdapterDescriptor",
     "AdapterCapabilities",
     "AdapterRegistry",
+    "BackendCapabilities",
     "MissingOutcomeBounds",
     "PolicyParityReport",
     "ObservationParityReport",

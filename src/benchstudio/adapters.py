@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib
 from dataclasses import dataclass, field
 from importlib import metadata
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 from .contracts import Simulator
 
@@ -17,11 +17,23 @@ class Dependency:
 
 
 @dataclass(frozen=True)
+class BackendCapabilities:
+    """Declared authority and fidelity properties of an execution backend."""
+
+    owns_physics: bool = False
+    owns_official_scoring: bool = False
+    owns_hardware_safety: bool = False
+    closed_loop: bool = False
+    evidence_authority: str = "benchstudio"
+
+
+@dataclass(frozen=True)
 class AdapterDescriptor:
     simulator_id: str
     label: str
     factory: Callable[..., Simulator]
     dependencies: tuple[Dependency, ...] = field(default_factory=tuple)
+    capabilities: BackendCapabilities = field(default_factory=BackendCapabilities)
 
 
 class AdapterRegistry:
@@ -68,15 +80,49 @@ class AdapterRegistry:
             "ready": not missing_required,
             "missing_required": missing_required,
             "dependencies": dependencies,
+            "capabilities": {
+                "owns_physics": descriptor.capabilities.owns_physics,
+                "owns_official_scoring": descriptor.capabilities.owns_official_scoring,
+                "owns_hardware_safety": descriptor.capabilities.owns_hardware_safety,
+                "closed_loop": descriptor.capabilities.closed_loop,
+                "evidence_authority": descriptor.capabilities.evidence_authority,
+            },
         }
 
-    def create(self, simulator_id: str, **kwargs: Any) -> Simulator:
+    def create(
+        self,
+        simulator_id: str,
+        *,
+        required_capabilities: Mapping[str, bool] | None = None,
+        **kwargs: Any,
+    ) -> Simulator:
         descriptor = self.get(simulator_id)
         readiness = self.readiness(simulator_id)
         if not readiness["ready"]:
             missing = ", ".join(readiness["missing_required"])
             raise RuntimeError(f"simulator {simulator_id} is not ready; missing: {missing}")
+        issues = self.capability_issues(simulator_id, required_capabilities or {})
+        if issues:
+            raise RuntimeError(
+                f"simulator {simulator_id} does not satisfy required capabilities: "
+                + ", ".join(issues)
+            )
         return descriptor.factory(**kwargs)
+
+    def capability_issues(self, simulator_id: str, required: Mapping[str, bool]) -> tuple[str, ...]:
+        """Return unmet boolean capability requirements in stable order."""
+        capabilities = self.get(simulator_id).capabilities
+        issues: list[str] = []
+        for name in sorted(required):
+            expected = required[name]
+            if not isinstance(expected, bool):
+                raise TypeError(f"capability requirement {name!r} must be boolean")
+            actual = getattr(capabilities, name, None)
+            if actual is None:
+                raise ValueError(f"unknown backend capability: {name}")
+            if expected and not actual:
+                issues.append(name)
+        return tuple(issues)
 
     def discover(self, group: str = "benchstudio.simulators") -> tuple[dict[str, str], ...]:
         """Load optional simulator adapters exposed through package entry points."""
