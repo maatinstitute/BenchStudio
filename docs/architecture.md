@@ -68,6 +68,10 @@ reference and instrumented adapter. The RoboChallenge integration is
 observe-only: it validates opaque message digests and records acknowledgments,
 while execution, safety, and official scoring remain external.
 
+Paired summaries retain matched-unit counts, success gaps, numeric deltas, and
+standard errors. `benchstudio.reporting` writes a dependency-free JSON-shaped
+report and escaped offline HTML, suitable for artifact bundles and CI review.
+
 Simulator implementations register an `AdapterDescriptor`. Optional simulator
 dependencies are probed only when readiness is requested; the mock adapter
 therefore remains usable in a clean Python environment.

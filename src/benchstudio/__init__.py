@@ -6,6 +6,7 @@ from .analysis import (
     ClaimType,
     EventBookmark,
     MissingOutcomeBounds,
+    PairedOutcomeSummary,
     PolicyParityReport,
     ResourceAudit,
     ResourceBudget,
@@ -17,6 +18,7 @@ from .analysis import (
     compare_policy_outputs,
     estimate_transfer_gap,
     missing_outcome_bounds,
+    summarize_paired_outcomes,
     validate_claim,
 )
 from .campaigns import (
@@ -60,6 +62,7 @@ from .evidence import (
     write_manifest_trust_anchor,
 )
 from .replay import ReplayPolicy, ReplaySimulator, load_joint_sequence
+from .reporting import build_evaluation_report, render_html_report, write_html_report
 from .runner import EpisodeResult, RunConfig, run_episodes
 from .scenarios import ScenarioPack, load_scenario_pack, validate_scenario_pack
 from .trajectory import compare_trajectories, load_trajectory
@@ -74,6 +77,7 @@ __all__ = [
     "AdapterRegistry",
     "MissingOutcomeBounds",
     "PolicyParityReport",
+    "PairedOutcomeSummary",
     "EventBookmark",
     "AttemptKey",
     "AttemptLedger",
@@ -110,6 +114,9 @@ __all__ = [
     "verify_artifact_manifest",
     "write_manifest_trust_anchor",
     "load_joint_sequence",
+    "build_evaluation_report",
+    "render_html_report",
+    "write_html_report",
     "compare_trajectories",
     "load_trajectory",
     "run_episodes",
@@ -121,6 +128,7 @@ __all__ = [
     "audit_deadlines",
     "bookmark_critical_events",
     "compare_policy_outputs",
+    "summarize_paired_outcomes",
     "missing_outcome_bounds",
     "validate_action",
     "validate_adapter_capabilities",
