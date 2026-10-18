@@ -47,6 +47,7 @@ def test_execute_counterfactual_plan_persists_paired_lineage(tmp_path):
     recovery = summarize_recovery_outcomes(records)
     assert recovery.matched_pairs == 1
     assert recovery.recovery_rate == 0.0
+    assert recovery.recovery_confidence_interval is not None
     summary = json.loads((output / "counterfactual-summary.json").read_text())
     assert summary["unknown_outcome_count"] == 0
 

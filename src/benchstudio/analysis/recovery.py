@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..campaigns.counterfactual import FrozenCounterfactualPlan
+from .paired import clopper_pearson_interval
 
 
 @dataclass(frozen=True)
@@ -17,6 +18,7 @@ class RecoverySummary:
     recovery_rate: float | None
     mean_recovery_time_ms: float | None
     issues: tuple[str, ...]
+    recovery_confidence_interval: tuple[float, float] | None = None
 
 
 @dataclass(frozen=True)
@@ -148,6 +150,7 @@ def summarize_recovery_outcomes(records: list[dict[str, Any]]) -> RecoverySummar
             None,
             None,
             tuple(issues + ["no complete recovery pairs"]),
+            None,
         )
     recovery_times = [
         float(branches["intervention"]["recovery_time_ms"])
@@ -168,4 +171,8 @@ def summarize_recovery_outcomes(records: list[dict[str, Any]]) -> RecoverySummar
         intervention_rate,
         sum(recovery_times) / len(recovery_times) if recovery_times else None,
         tuple(issues),
+        clopper_pearson_interval(
+            sum(branches["intervention"]["success"] for branches in complete),
+            len(complete),
+        ),
     )

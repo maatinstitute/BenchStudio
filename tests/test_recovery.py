@@ -18,6 +18,7 @@ def test_recovery_summary_preserves_missing_branches_and_latency():
     assert report.matched_pairs == 1
     assert report.missing_pairs == 1
     assert report.recovery_rate == 1.0
+    assert report.recovery_confidence_interval is not None
     assert report.mean_recovery_time_ms == 120
     assert report.issues == ("some nominal/intervention branches are missing",)
 
