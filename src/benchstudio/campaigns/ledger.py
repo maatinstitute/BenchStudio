@@ -1,0 +1,51 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any
+
+from .frozen_plan import AttemptKey, FrozenCampaignPlan
+
+
+class AttemptLedger:
+    """Append-only result ledger that rejects reassignment and duplicate attempts."""
+
+    def __init__(self, path: Path, plan: FrozenCampaignPlan) -> None:
+        self.path = path
+        self.plan = plan
+        self._planned = {attempt.key.attempt_id: attempt.key for attempt in plan.attempts}
+        self._seen: set[str] = set()
+        if path.exists():
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    self._seen.add(json.loads(line)["attempt_id"])
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    def append(self, key: AttemptKey, result: dict[str, Any]) -> None:
+        planned = self._planned.get(key.attempt_id)
+        if planned is None:
+            raise ValueError(f"attempt is not in frozen plan: {key.attempt_id}")
+        if planned != key:
+            raise ValueError(f"attempt identity does not match frozen plan: {key.attempt_id}")
+        if key.attempt_id in self._seen:
+            raise ValueError(f"attempt already recorded: {key.attempt_id}")
+        record = {
+            **result,
+            "run_id": key.run_id,
+            "scenario_id": key.scenario_id,
+            "pair_id": key.pair_id,
+            "condition_id": key.condition_id,
+            "attempt_id": key.attempt_id,
+            "plan_digest_sha256": self.plan.plan_digest_sha256,
+        }
+        with self.path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, sort_keys=True) + "\n")
+        self._seen.add(key.attempt_id)
+
+    @property
+    def missing_attempt_ids(self) -> list[str]:
+        return [
+            attempt.key.attempt_id
+            for attempt in self.plan.attempts
+            if attempt.key.attempt_id not in self._seen
+        ]

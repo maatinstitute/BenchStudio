@@ -11,6 +11,7 @@ from pathlib import Path
 from statistics import mean
 from typing import Any, Callable
 
+from .conformance import validate_observation
 from .contracts import Policy, Simulator
 from .evidence import (
     NdjsonWriter,
@@ -157,6 +158,11 @@ def _run_episode(
         )
     try:
         observation = simulator.reset(seed=seed)
+        observation_issues = validate_observation(observation)
+        if observation_issues:
+            raise ValueError(
+                "invalid observation: " + "; ".join(issue.code for issue in observation_issues)
+            )
     except Exception as exc:
         return _failed_episode(
             episode_id,
@@ -214,6 +220,12 @@ def _run_episode(
             step_start = time.monotonic_ns()
             try:
                 next_observation = simulator.step(action)
+                observation_issues = validate_observation(next_observation)
+                if observation_issues:
+                    raise ValueError(
+                        "invalid observation: "
+                        + "; ".join(issue.code for issue in observation_issues)
+                    )
             except Exception as exc:
                 return _failed_episode(
                     episode_id,

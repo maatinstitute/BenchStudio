@@ -1,7 +1,18 @@
 """BenchStudio temporal-fidelity evaluation core."""
 
 from .adapters import AdapterDescriptor, AdapterRegistry, Dependency, default_registry
+from .campaigns import AttemptKey, AttemptLedger, CampaignPlanner, FrozenCampaignPlan
 from .compare import build_comparison_report
+from .conformance import (
+    ActionSpec,
+    AdapterCapabilities,
+    ScenarioContract,
+    ValidationIssue,
+    validate_action,
+    validate_adapter_capabilities,
+    validate_observation,
+    validate_scenario_pair,
+)
 from .contracts import ActionChunk, Observation, ObservationFrame, Policy, Simulator, Timestamp
 from .evidence import (
     NdjsonWriter,
@@ -16,8 +27,13 @@ from .trajectory import compare_trajectories, load_trajectory
 
 __all__ = [
     "ActionChunk",
+    "ActionSpec",
     "AdapterDescriptor",
+    "AdapterCapabilities",
     "AdapterRegistry",
+    "AttemptKey",
+    "AttemptLedger",
+    "CampaignPlanner",
     "Dependency",
     "NdjsonWriter",
     "EpisodeResult",
@@ -29,6 +45,9 @@ __all__ = [
     "Timestamp",
     "ReplayPolicy",
     "ReplaySimulator",
+    "FrozenCampaignPlan",
+    "ScenarioContract",
+    "ValidationIssue",
     "build_comparison_report",
     "default_registry",
     "environment_fingerprint",
@@ -39,4 +58,8 @@ __all__ = [
     "compare_trajectories",
     "load_trajectory",
     "run_episodes",
+    "validate_action",
+    "validate_adapter_capabilities",
+    "validate_observation",
+    "validate_scenario_pair",
 ]

@@ -101,3 +101,16 @@ def test_partial_trace_is_persisted_when_policy_crashes(tmp_path):
     assert summary["campaign_status"] == "failed"
     assert summary["episodes"][0]["status"] == "policy_inference_error"
     assert summary["completed_episode_count"] == 0
+
+
+def test_invalid_simulator_observation_is_recorded_as_conformance_failure(tmp_path):
+    class InvalidSimulator(MockSimulator):
+        def reset(self, *, seed):
+            observation = super().reset(seed=seed)
+            from benchstudio.contracts import Observation
+
+            return Observation(-1, float("nan"), payload=observation.payload)
+
+    summary = run_episodes(MockPolicy(), InvalidSimulator(), RunConfig(), tmp_path / "invalid")
+    assert summary["episodes"][0]["status"] == "simulator_reset_error"
+    assert "invalid_sim_time" in summary["episodes"][0]["error"]

@@ -22,6 +22,19 @@ The reusable evidence layer also provides digest-tracked NDJSON artifacts and
 cross-backend comparison reports for simulator-to-simulator or sim-to-real
 analysis.
 
+The expanded foundation adds two opt-in layers:
+
+- `benchstudio.conformance` checks observation validity, action representation,
+  adapter timing capabilities, and scenario comparability at an integration
+  boundary. It does not fabricate missing WorldEpisode metadata.
+- `benchstudio.campaigns` freezes scenario/condition/seed/repetition matrices
+  and records results in an append-only ledger keyed by `run_id`, `pair_id`,
+  `condition_id`, and `attempt_id`.
+
+These layers keep campaign methodology and evidence ownership in BenchStudio
+while leaving physics engines, dataset conversion, hardware control, and
+official benchmark scoring in their source repositories.
+
 ## Scope
 
 The current release includes mock adapters for deterministic development. The

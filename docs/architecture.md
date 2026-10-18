@@ -22,6 +22,19 @@ Trajectory comparison is available through `benchstudio.trajectory`. It uses
 the same time-alignment and first-split approach as the existing URDF Studio
 rollout analysis, while remaining independent of Pydantic and the web backend.
 
+## Semantic and campaign boundaries
+
+`benchstudio.conformance` provides a deliberately narrow adapter boundary for
+WorldEpisode-like observations, action representations, clock capability
+declarations, and scenario contracts. It reports missing or unverifiable
+metadata instead of fabricating full world-revision conformance.
+
+`benchstudio.campaigns` freezes the evaluation matrix before execution. A plan
+separates `scenario_id`, `pair_id`, `condition_id`, and `attempt_id`; its digest
+is carried into an append-only attempt ledger. Interrupted campaigns therefore
+retain prior results and expose missing attempts without silently reassigning a
+result to another condition.
+
 Simulator implementations register an `AdapterDescriptor`. Optional simulator
 dependencies are probed only when readiness is requested; the mock adapter
 therefore remains usable in a clean Python environment.
