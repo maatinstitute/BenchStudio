@@ -40,20 +40,32 @@ def validate_robochallenge_message(
     message: RoboChallengeObservation | RoboChallengeAction,
 ) -> list[str]:
     issues: list[str] = []
-    if (
-        not message.observation_id
+    if not isinstance(message, (RoboChallengeObservation, RoboChallengeAction)):
+        return ["message must be a RoboChallenge observation or action"]
+    identifier = (
+        message.observation_id
         if isinstance(message, RoboChallengeObservation)
-        else not message.action_id
-    ):
+        else message.action_id
+    )
+    timestamp = (
+        message.timestamp_ns
+        if isinstance(message, RoboChallengeObservation)
+        else message.command_timestamp_ns
+    )
+    if not isinstance(identifier, str) or not identifier:
         issues.append("message identifier is required")
-    if (
-        message.timestamp_ns < 0
-        if isinstance(message, RoboChallengeObservation)
-        else message.command_timestamp_ns < 0
-    ):
+    if not isinstance(timestamp, int) or isinstance(timestamp, bool):
+        issues.append("message timestamp must be a non-negative integer")
+    elif timestamp < 0:
         issues.append("message timestamp must be non-negative")
-    expected = hashlib.sha256(message.payload).hexdigest()
-    if expected != message.payload_digest_sha256:
+    if not isinstance(message.payload, bytes):
+        issues.append("payload must be bytes")
+    if not isinstance(message.payload_digest_sha256, str):
+        issues.append("payload digest must be a string")
+    elif (
+        isinstance(message.payload, bytes)
+        and hashlib.sha256(message.payload).hexdigest() != message.payload_digest_sha256
+    ):
         issues.append("payload digest mismatch")
     return issues
 
@@ -103,7 +115,11 @@ class RoboChallengeObserveOnlyAdapter:
         self, message: RoboChallengeAction, *, execution_timestamp_ns: int | None
     ) -> None:
         issues = validate_robochallenge_message(message)
-        if execution_timestamp_ns is not None and execution_timestamp_ns < 0:
+        if execution_timestamp_ns is not None and (
+            not isinstance(execution_timestamp_ns, int) or isinstance(execution_timestamp_ns, bool)
+        ):
+            issues.append("execution timestamp must be a non-negative integer or None")
+        elif execution_timestamp_ns is not None and execution_timestamp_ns < 0:
             issues.append("execution timestamp must be non-negative")
         if issues:
             self._issues.extend(f"action {issue}" for issue in issues)

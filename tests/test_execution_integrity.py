@@ -216,6 +216,26 @@ def test_robochallenge_adapter_audits_rejected_message_failures():
     assert any("action execution timestamp must be non-negative" in issue for issue in audit.issues)
 
 
+def test_robochallenge_validation_rejects_malformed_runtime_types():
+    malformed = RoboChallengeObservation(
+        "",
+        "10",
+        "payload",
+        "not-a-digest",  # type: ignore[arg-type]
+    )
+    issues = validate_robochallenge_message(malformed)
+    assert "message identifier is required" in issues
+    assert "message timestamp must be a non-negative integer" in issues
+    assert "payload must be bytes" in issues
+    assert "payload digest must be a string" not in issues
+
+    records: list[dict[str, object]] = []
+    adapter = RoboChallengeObserveOnlyAdapter(records.append)
+    action = RoboChallengeAction("action-1", 1, b"action", hashlib.sha256(b"action").hexdigest())
+    with pytest.raises(ValueError, match="execution timestamp must be a non-negative integer"):
+        adapter.action_acknowledged(action, execution_timestamp_ns=True)  # type: ignore[arg-type]
+
+
 def test_worldepisode_binding_is_explicit_about_fallback_profile():
     result = preflight_worldepisode({"episode_id": "episode-1", "schema": "worldepisode"})
     assert result.valid
