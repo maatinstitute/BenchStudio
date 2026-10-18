@@ -153,3 +153,29 @@ def straight_trajectory(*, speed_mps: float, horizon_seconds: float, point_count
     )
     x = times * max(0.0, speed_mps)
     return np.stack((x, np.zeros_like(x)), axis=1).astype(np.float32)
+
+
+def segment_point_distance(
+    start: tuple[float, float], end: tuple[float, float], point: tuple[float, float]
+) -> float:
+    """Return the 2-D distance to a segment with a clamped projection."""
+    segment = (end[0] - start[0], end[1] - start[1])
+    length_squared = segment[0] * segment[0] + segment[1] * segment[1]
+    if length_squared == 0.0:
+        return math.dist(start, point)
+    offset = (point[0] - start[0], point[1] - start[1])
+    projection = (offset[0] * segment[0] + offset[1] * segment[1]) / length_squared
+    projection = min(1.0, max(0.0, projection))
+    nearest = (
+        start[0] + segment[0] * projection,
+        start[1] + segment[1] * projection,
+    )
+    return math.dist(nearest, point)
+
+
+def distance_to_polyline(point: tuple[float, float], polyline: list[tuple[float, float]]) -> float:
+    """Return perpendicular distance to the nearest clamped polyline segment."""
+    return min(
+        segment_point_distance(polyline[index], polyline[index + 1], point)
+        for index in range(len(polyline) - 1)
+    )

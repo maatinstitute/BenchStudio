@@ -221,9 +221,10 @@ the following projects. Product runtimes are not vendored into this repository.
   upstream commit; source-test digest
   `58367c9cd0eebf40ad77c826b56c4a3306ace532e5ee6f2dc254c0f9f84c016e`.
   The full driver-service digest above remains authoritative.
-- AlpaBridge route-follower ramp: `benchstudio.integrations.alpabridge_route`
+- AlpaBridge route-follower geometry: `benchstudio.integrations.alpabridge_route`
   ports the dependency-free speed-ramp, per-scene target scaling, no-braking
-  guard, route sampling, and straight-trajectory helpers from
+  guard, route sampling, straight-trajectory, clamped segment-distance, and
+  nearest-polyline helpers from
   `src/alpabridge/simulator/baseline_drivers.py` at upstream commit
   `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`. Source digest is
   `6e2fca16528f78758b4af6ed62fee672ffbf880e7731253335488d37276d0250`, and
@@ -231,6 +232,14 @@ the following projects. Product runtimes are not vendored into this repository.
   `c1cf7a0c13d190806de2c80e879279d22c28a9a77f0c46eb3135f521ec83a42c`.
   The ramp remains disabled by default to preserve historical constant-speed
   samples; AlpaSim serving and driver authority remain external.
+- The same route module ports `segment_point_distance` from
+  `src/alpabridge/simulator/environment.py` and `_distance_to_polyline` from
+  `src/alpabridge/simulator/mpc_planner.py` at the same upstream commit.
+  Source digests are
+  `1cb8028276ca34d7bee2f8e4b1787fad282ce7250ff776eca47554d81300d6c6` and
+  `bf67ad43c767bf81d3f07e45af1a3e7990b48d925cd776195311573043a3621d`;
+  their conformance-test digest is
+  `4a5003fe9f5b9c53371192f8451338a64174d0585942a9d2930a46e38bc7d589`.
 - AlpaBridge camera-frame preparation: `benchstudio.integrations.alpabridge_image`
   ports the cover-resize/center-crop utility from
   `src/alpabridge/simulator/image_ops.py` and the fail-soft optional

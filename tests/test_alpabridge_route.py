@@ -2,12 +2,14 @@ import numpy as np
 import pytest
 
 from benchstudio.integrations import (
+    distance_to_polyline,
     effective_ramp_target_mps,
     ramp_scale,
     ramp_settings,
     ramp_up_only,
     ramped_distances,
     sample_route,
+    segment_point_distance,
 )
 
 TIMES = np.linspace(0.25, 5.0, 20)
@@ -75,3 +77,13 @@ def test_ramp_up_only_never_brakes():
     assert ramp_up_only(9.0, current_speed_mps=9.0) == 0.0
     assert ramp_up_only(9.0, current_speed_mps=2.0) == 9.0
     assert ramp_up_only(0.0, current_speed_mps=5.0) == 0.0
+
+
+def test_polyline_distance_uses_clamped_segments_and_handles_degenerate_waypoints():
+    polyline = [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0)]
+    assert segment_point_distance(polyline[0], polyline[1], (4.0, 3.0)) == pytest.approx(3.0)
+    assert distance_to_polyline((4.0, 3.0), polyline) == pytest.approx(3.0)
+    assert distance_to_polyline((20.0, 0.0), [(0.0, 0.0), (10.0, 0.0)]) == pytest.approx(10.0)
+    repeated = [(0.0, 0.0), (10.0, 0.0), (10.0, 0.0), (20.0, 0.0)]
+    assert distance_to_polyline((10.0, 5.0), repeated) == pytest.approx(5.0)
+    assert distance_to_polyline((9.0, 5.0), polyline) == pytest.approx(1.0)

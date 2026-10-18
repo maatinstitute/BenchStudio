@@ -34,6 +34,7 @@ from .alpabridge_policy_registry import (
     read_positive_finite_float,
 )
 from .alpabridge_route import (
+    distance_to_polyline,
     effective_ramp_target_mps,
     point_at_distance,
     ramp_scale,
@@ -41,6 +42,7 @@ from .alpabridge_route import (
     ramp_up_only,
     ramped_distances,
     sample_route,
+    segment_point_distance,
     straight_trajectory,
 )
 from .alpasim_metrics import (
@@ -126,6 +128,8 @@ __all__ = [
     "sample_route",
     "point_at_distance",
     "straight_trajectory",
+    "segment_point_distance",
+    "distance_to_polyline",
     "resize_and_center_crop",
     "rectification_disabled",
     "default_target_config",
