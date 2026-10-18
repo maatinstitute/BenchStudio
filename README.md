@@ -66,6 +66,11 @@ python -m benchstudio.cli --campaign-spec campaign.json --execute-mock \
   --artifact-store runs/artifacts
 ```
 
+Model runtimes can also be kept outside BenchStudio behind the registered
+`external_command` adapter. It sends one JSON request per inference and
+requires a JSON response containing an `actions` array, preserving the model
+runtime's ownership while retaining BenchStudio timing and evidence capture.
+
 The reusable evidence layer also provides digest-tracked NDJSON artifacts and
 cross-backend comparison reports for simulator-to-simulator or sim-to-real
 analysis.

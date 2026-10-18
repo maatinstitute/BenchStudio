@@ -14,6 +14,11 @@ termination state. A future RoboChallenge adapter should translate the public
 benchmark interface while leaving safety checks, emergency stops, and official
 scoring on the platform side.
 
+Independent model runtimes may use the built-in `external_command` adapter. It
+invokes a supplied executable without a shell, sends a versioned JSON request
+for each inference, and accepts only a JSON action-chunk response. This is a
+process boundary, not a claim that BenchStudio owns the model runtime.
+
 The evidence schema is intentionally JSON-compatible and does not persist raw
 images by default. Checkpoint paths and private environment values must be
 represented by identifiers or digests, not copied into artifacts.

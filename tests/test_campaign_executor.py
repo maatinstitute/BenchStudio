@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import sys
 import zipfile
 
 import pytest
@@ -416,6 +417,40 @@ def test_campaign_executor_can_instantiate_declared_model_adapter(tmp_path):
             "schema": "benchstudio.campaign.v1",
             "experiment": {"name": "model-registry-backed"},
             "model": {"adapter": "mock"},
+            "task": {"task_id": "task"},
+            "environments": [{"id": "sim", "kind": "simulator"}],
+            "evaluation": {
+                "seeds": [1],
+                "paired": True,
+                "conditions": [{"denoising_steps": 2, "action_prefix": 1}],
+            },
+        }
+    )
+    result = CampaignExecutor(
+        plan,
+        tmp_path / "campaign",
+        model_registry=default_model_registry(discover_external=False),
+        simulator_factory=lambda _: MockSimulator(),
+    ).run()
+    assert result.missing_attempt_ids == ()
+
+
+def test_campaign_executor_can_run_external_command_model_adapter(tmp_path):
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "external-model"},
+            "model": {
+                "adapter": "external_command",
+                "adapter_config": {
+                    "command": [
+                        sys.executable,
+                        "-c",
+                        "import json,sys; json.load(sys.stdin); "
+                        "print(json.dumps({'actions':[1,1]}))",
+                    ]
+                },
+            },
             "task": {"task_id": "task"},
             "environments": [{"id": "sim", "kind": "simulator"}],
             "evaluation": {

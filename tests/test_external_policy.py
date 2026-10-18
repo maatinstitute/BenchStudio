@@ -1,0 +1,49 @@
+from __future__ import annotations
+
+import sys
+
+import pytest
+
+from benchstudio.contracts import Observation, Timestamp
+from benchstudio.external_policy import ExternalCommandPolicy
+
+
+def _command(script: str) -> tuple[str, ...]:
+    return (sys.executable, "-c", script)
+
+
+def test_external_command_policy_uses_strict_json_boundary():
+    policy = ExternalCommandPolicy(
+        _command(
+            "import json,sys; request=json.load(sys.stdin); "
+            "print(json.dumps({'actions':[request['observation']['sequence']],"
+            "'metadata':{'seed':request['seed']}}))"
+        )
+    )
+    policy.reset(seed=7)
+    result = policy.predict(
+        Observation(
+            sequence=3,
+            sim_time_s=0.2,
+            payload={"joint": [1, 2]},
+            source_timestamp=Timestamp(200, "sim_time"),
+            received_monotonic_ns=100,
+        ),
+        denoising_steps=2,
+    )
+    assert result.actions == (3,)
+    assert result.metadata == {"seed": 7}
+
+
+def test_external_command_policy_reports_process_failures():
+    policy = ExternalCommandPolicy(_command("import sys; sys.stderr.write('bad'); sys.exit(3)"))
+    policy.reset(seed=1)
+    with pytest.raises(RuntimeError, match="code 3"):
+        policy.predict(Observation(0, 0.0), denoising_steps=None)
+
+
+def test_external_command_policy_rejects_malformed_responses():
+    policy = ExternalCommandPolicy(_command("print('{}')"))
+    policy.reset(seed=1)
+    with pytest.raises(ValueError, match="actions array"):
+        policy.predict(Observation(0, 0.0), denoising_steps=None)

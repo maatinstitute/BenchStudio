@@ -169,6 +169,7 @@ def _module_available(import_name: str) -> bool:
 
 
 def default_model_registry(*, discover_external: bool = True) -> ModelAdapterRegistry:
+    from .external_policy import ExternalCommandPolicy, external_command_capabilities
     from .mock import MockPolicy
 
     registry = ModelAdapterRegistry()
@@ -187,6 +188,14 @@ def default_model_registry(*, discover_external: bool = True) -> ModelAdapterReg
                 supported_metrics=("success",),
                 supports_cached_predictions=True,
             ),
+        )
+    )
+    registry.register(
+        ModelAdapterDescriptor(
+            adapter_id="external_command",
+            label="External JSON policy process",
+            factory=ExternalCommandPolicy,
+            capabilities=external_command_capabilities(),
         )
     )
     if discover_external:

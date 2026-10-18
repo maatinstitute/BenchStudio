@@ -20,6 +20,13 @@ def test_default_model_registry_is_ready():
     assert readiness["capabilities"].to_dict()["input_modalities"] == ["state"]
 
 
+def test_default_model_registry_exposes_external_command_policy():
+    registry = default_model_registry(discover_external=False)
+    descriptor = registry.get("external_command")
+    assert descriptor.capabilities.supports_closed_loop is True
+    assert registry.readiness("external_command")["ready"] is True
+
+
 def test_model_registry_reports_missing_dependency():
     registry = ModelAdapterRegistry()
     registry.register(
