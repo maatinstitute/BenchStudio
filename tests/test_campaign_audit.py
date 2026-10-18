@@ -67,6 +67,22 @@ def test_campaign_audit_requires_authoritative_outcome_provenance():
     assert audit.claim.status == "qualified"
 
 
+def test_campaign_audit_does_not_promote_infrastructure_failure_to_task_outcome():
+    plan = CampaignPlanner(
+        run_id="infra-outcome", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    attempt_id = plan.attempts[0].key.attempt_id
+    audit = audit_campaign(
+        plan,
+        [{"attempt_id": attempt_id, "status": "infrastructure_failure", "evidence_verified": True}],
+        claim_type=ClaimType.SINGLE_RUN_OUTCOME,
+        evidence={"authoritative_scorer_declared": True},
+        outcome_records=[OutcomeRecord(attempt_id, True, "official", "scorer", "rev", True)],
+    )
+    assert audit.claim.status == "unsupported"
+    assert audit.claim.prerequisites["outcome_present"] is False
+
+
 def test_campaign_audit_rejects_paired_claim_with_incompatible_calibration():
     def digest(char):
         return "sha256:" + char * 64

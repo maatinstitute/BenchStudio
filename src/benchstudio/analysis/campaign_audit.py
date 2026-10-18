@@ -122,15 +122,17 @@ def audit_campaign(
     if outcome_audit is not None:
         outcome_ids = {record.attempt_id for record in outcome_list or ()}
         provenance_matches_plan = outcome_ids == planned_ids
+    task_outcomes_resolved = bool(rows) and all(
+        row.get("status") in {"completed", "failed"} for row in rows
+    )
     claim_evidence.update(
         {
             "attempts_complete": attempts_complete,
             "trusted_artifacts": trusted,
             "outcome_present": (
-                outcome_audit.outcome_present
+                outcome_audit.outcome_present and task_outcomes_resolved
                 if outcome_audit is not None
-                else bool(rows)
-                and all(row.get("status") in {"completed", "failed", "cancelled"} for row in rows)
+                else task_outcomes_resolved
             ),
         }
     )
