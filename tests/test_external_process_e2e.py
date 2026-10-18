@@ -94,7 +94,7 @@ for line in sys.stdin:
             "schema": "benchstudio.campaign.v1",
             "experiment": {"name": "registry-external-process"},
             "model": {
-                "adapter": "persistent_external_command",
+                "adapter": "smolvla",
                 "adapter_config": {
                     "command": [sys.executable, "-c", policy_program],
                     "timeout_s": 5,

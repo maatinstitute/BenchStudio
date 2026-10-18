@@ -233,6 +233,31 @@ def persistent_external_command_capabilities() -> ModelCapabilityProfile:
     )
 
 
+def external_vla_capabilities(model_id: str) -> ModelCapabilityProfile:
+    """Describe a VLA protocol bridge without claiming ownership of its runtime.
+
+    Named model adapters use the same strict JSON-line boundary as the generic
+    persistent adapter.  Keeping the model identity in the capability record
+    lets a frozen campaign distinguish SmolVLA/DM0.5-style evaluations while
+    leaving checkpoint loading, preprocessing, and accelerator ownership in
+    the external process.
+    """
+    if not model_id:
+        raise ValueError("model_id must not be empty")
+    return ModelCapabilityProfile(
+        model_id=model_id,
+        family="vla",
+        input_modalities=("image", "language", "proprioception"),
+        output_representation="action_chunk",
+        supports_closed_loop=True,
+        supports_action_chunks=True,
+        supported_metrics=("success", "latency", "resource_use", "observation_age"),
+        runtime_controls=("timeout_s", "command", "environment", "persistent_process"),
+        timing_signals=("host_monotonic",),
+        supports_variable_action_horizon=True,
+    )
+
+
 def _jsonable_observation(observation: Observation) -> dict[str, Any]:
     source_timestamp = observation.source_timestamp
     return {

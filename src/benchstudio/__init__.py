@@ -148,6 +148,7 @@ from .external_policy import (
     ExternalCommandPolicy,
     PersistentExternalCommandPolicy,
     external_command_capabilities,
+    external_vla_capabilities,
     persistent_external_command_capabilities,
 )
 from .external_simulator import ExternalCommandSimulator
@@ -294,6 +295,7 @@ __all__ = [
     "ExternalCommandPolicy",
     "PersistentExternalCommandPolicy",
     "external_command_capabilities",
+    "external_vla_capabilities",
     "persistent_external_command_capabilities",
     "ExternalCommandSimulator",
     "generate_ed25519_keypair",

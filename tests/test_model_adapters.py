@@ -36,6 +36,15 @@ def test_default_model_registry_exposes_persistent_external_command_policy():
     )
 
 
+def test_default_model_registry_exposes_named_vla_protocol_bridges():
+    registry = default_model_registry(discover_external=False)
+    for adapter_id in ("smolvla", "opendm"):
+        descriptor = registry.get(adapter_id)
+        assert registry.readiness(adapter_id)["ready"] is True
+        assert descriptor.capabilities.family == "vla"
+        assert descriptor.capabilities.supports_variable_action_horizon is True
+
+
 def test_model_registry_reports_missing_dependency():
     registry = ModelAdapterRegistry()
     registry.register(

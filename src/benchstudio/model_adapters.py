@@ -173,6 +173,7 @@ def default_model_registry(*, discover_external: bool = True) -> ModelAdapterReg
         ExternalCommandPolicy,
         PersistentExternalCommandPolicy,
         external_command_capabilities,
+        external_vla_capabilities,
         persistent_external_command_capabilities,
     )
     from .mock import MockPolicy
@@ -211,6 +212,18 @@ def default_model_registry(*, discover_external: bool = True) -> ModelAdapterReg
             capabilities=external_command_capabilities(),
         )
     )
+    for adapter_id, label in (
+        ("smolvla", "SmolVLA external JSON-line protocol bridge"),
+        ("opendm", "OpenDM/DM0.5 external JSON-line protocol bridge"),
+    ):
+        registry.register(
+            ModelAdapterDescriptor(
+                adapter_id=adapter_id,
+                label=label,
+                factory=PersistentExternalCommandPolicy,
+                capabilities=external_vla_capabilities(adapter_id),
+            )
+        )
     if discover_external:
         registry.discover()
     return registry

@@ -114,6 +114,11 @@ For loaded checkpoints and accelerator-backed policies, use the registered
 `reset`, `predict`, and `close`, so process startup is not counted as inference
 latency and the runtime can retain its model state between requests.
 
+The same boundary is available under the named `smolvla` and `opendm` model
+adapters. These names identify the declared VLA protocol and capability profile;
+checkpoint loading, preprocessing, and accelerator ownership remain in the
+external process, so no model weights are downloaded implicitly.
+
 External simulators can use the simulator registry's `external_command`
 adapter as a persistent JSON-line process. It supports `reset`, `observe`,
 `step`, and `close` messages while leaving physics and safety authority in
