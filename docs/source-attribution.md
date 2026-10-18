@@ -50,6 +50,12 @@ the following projects. Product runtimes are not vendored into this repository.
   threshold gates, run-count accounting, and explicit distinction between
   sensor-realistic evidence and official policy benchmark scores. It does not
   import AlpaSim or claim official scoring authority.
+- AlpaBridge lifecycle: `benchstudio.integrations.alpabridge_lifecycle` is a
+  direct port of `src/alpabridge/simulator/lifecycle_service.py` from upstream
+  commit `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`, source digest
+  `cd380c740ef5957d3f980188a3b726c33504cf1662c566684cf30bbf06f9cf24`.
+  The port preserves structured lifecycle events, hardened late-message
+  handling, cleanup/isolation behavior, and strict-mode failure evidence.
 - URDF Studio / `urdf-ops`: `benchstudio.conformance.dataset_alignment` ports
   the dataset-alignment registry boundary from `backend/services/
   dataset_alignment.py` at upstream commit

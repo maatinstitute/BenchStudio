@@ -6,6 +6,11 @@ from .alpabridge import (
     audit_alpabridge_telemetry,
     load_alpabridge_telemetry,
 )
+from .alpabridge_lifecycle import (
+    LifecycleEvent,
+    SyntheticLifecycleService,
+    run_synthetic_lifecycle_cycle,
+)
 from .alpasim_metrics import (
     AlpaSimEvidence,
     AlpaSimEvidenceConfig,
@@ -52,6 +57,9 @@ __all__ = [
     "zero_order_hold_case",
     "audit_alpabridge_telemetry",
     "load_alpabridge_telemetry",
+    "LifecycleEvent",
+    "SyntheticLifecycleService",
+    "run_synthetic_lifecycle_cycle",
     "AlpaSimEvidence",
     "AlpaSimEvidenceConfig",
     "AlpaSimEvidenceThresholds",
