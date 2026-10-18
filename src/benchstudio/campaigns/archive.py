@@ -10,6 +10,7 @@ from pathlib import Path
 
 _FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 _MAX_CAMPAIGN_ARCHIVE_BYTES = 512 * 1024 * 1024
+_LEDGER_STATUSES = {"completed", "failed", "failed_cleanup", "cancelled", "infrastructure_failure"}
 
 
 class CampaignArchiveError(ValueError):
@@ -134,6 +135,17 @@ def _validate_campaign_contents(contents: dict[str, bytes]) -> list[dict[str, st
         seen.add(attempt_id)
         if record.get("plan_digest_sha256") != plan.plan_digest_sha256:
             issues.append({"reason": "ledger_plan_digest_mismatch", "detail": attempt_id})
+        status = record.get("status")
+        if status not in _LEDGER_STATUSES:
+            issues.append({"reason": "ledger_status_invalid", "detail": f"{attempt_id}:{status}"})
+        elif status == "cancelled":
+            if "evidence_verified" in record and not isinstance(record["evidence_verified"], bool):
+                issues.append({"reason": "ledger_evidence_flag_invalid", "detail": attempt_id})
+        elif status == "infrastructure_failure":
+            if record.get("evidence_verified") is not False:
+                issues.append({"reason": "ledger_evidence_flag_invalid", "detail": attempt_id})
+        elif record.get("evidence_verified") is not True:
+            issues.append({"reason": "ledger_evidence_flag_invalid", "detail": attempt_id})
         for field in ("run_id", "scenario_id", "pair_id", "condition_id", "environment_id"):
             if record.get(field) != getattr(expected, field):
                 issues.append(

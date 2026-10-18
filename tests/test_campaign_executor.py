@@ -767,3 +767,33 @@ def test_campaign_archive_verifier_rejects_invalid_embedded_plan(tmp_path):
     result = verify_campaign_archive(build_campaign_archive(root))
     assert result["valid"] is False
     assert any(issue["reason"] == "invalid_campaign_plan" for issue in result["issues"])
+
+
+def test_campaign_archive_verifier_rejects_invalid_ledger_status(tmp_path):
+    plan = CampaignPlanner(
+        run_id="invalid-status", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    output = tmp_path / "campaign"
+    CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
+    ledger_path = output / "attempt-results.jsonl"
+    record = json.loads(ledger_path.read_text(encoding="utf-8").strip())
+    record["status"] = "not-a-final-status"
+    ledger_path.write_text(json.dumps(record) + "\n", encoding="utf-8")
+    result = verify_campaign_archive(build_campaign_archive(output))
+    assert result["valid"] is False
+    assert any(issue["reason"] == "ledger_status_invalid" for issue in result["issues"])
+
+
+def test_campaign_archive_verifier_rejects_missing_evidence_flag(tmp_path):
+    plan = CampaignPlanner(
+        run_id="invalid-evidence", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    output = tmp_path / "campaign"
+    CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
+    ledger_path = output / "attempt-results.jsonl"
+    record = json.loads(ledger_path.read_text(encoding="utf-8").strip())
+    record["evidence_verified"] = False
+    ledger_path.write_text(json.dumps(record) + "\n", encoding="utf-8")
+    result = verify_campaign_archive(build_campaign_archive(output))
+    assert result["valid"] is False
+    assert any(issue["reason"] == "ledger_evidence_flag_invalid" for issue in result["issues"])
