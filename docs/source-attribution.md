@@ -28,6 +28,14 @@ the following projects. Product runtimes are not vendored into this repository.
   `tests/test_outcome_plan.py`. BenchStudio exposes the ports through its
   analysis and campaign packages; external training, checkpoint, simulator,
   and official outcome authority remain outside the repository.
+- AlpaBridge: `benchstudio.integrations.alpasim_metrics` is a direct
+  dependency-free port of `src/alpabridge/neutral/alpasim_metrics.py` from
+  upstream commit `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`. Its source digest
+  is `4e55083695485f7405f1bc6992699b16a747665513bd24036ddd29e67acc182c`.
+  The port retains the original text/JSON/CSV loaders, metric aliases,
+  threshold gates, run-count accounting, and explicit distinction between
+  sensor-realistic evidence and official policy benchmark scores. It does not
+  import AlpaSim or claim official scoring authority.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment

@@ -6,6 +6,13 @@ from .alpabridge import (
     audit_alpabridge_telemetry,
     load_alpabridge_telemetry,
 )
+from .alpasim_metrics import (
+    AlpaSimEvidence,
+    AlpaSimEvidenceConfig,
+    AlpaSimEvidenceThresholds,
+    build_alpasim_evidence,
+    load_alpasim_metrics,
+)
 from .genesis import GenesisSimulator
 from .gymnasium import GymnasiumSimulator
 from .isaaclab import IsaacLabSimulator
@@ -35,6 +42,11 @@ __all__ = [
     "zero_order_hold_case",
     "audit_alpabridge_telemetry",
     "load_alpabridge_telemetry",
+    "AlpaSimEvidence",
+    "AlpaSimEvidenceConfig",
+    "AlpaSimEvidenceThresholds",
+    "build_alpasim_evidence",
+    "load_alpasim_metrics",
     "MujocoSimulator",
     "GymnasiumSimulator",
     "IsaacLabSimulator",
