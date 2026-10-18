@@ -30,7 +30,11 @@ from .replay_timing import (
     validate_action_timing,
 )
 from .scenario_validation import ScenarioContract, validate_scenario_pair
-from .world_state import ValidationIssue, validate_observation
+from .world_state import (
+    ValidationIssue,
+    validate_observation,
+    validate_worldepisode_contract,
+)
 
 __all__ = [
     "ActionSpec",
@@ -61,6 +65,7 @@ __all__ = [
     "validate_action_timing",
     "validate_adapter_capabilities",
     "validate_observation",
+    "validate_worldepisode_contract",
     "validate_lifecycle_events",
     "validate_mapping",
     "validate_representation_mapping",

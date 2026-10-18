@@ -70,6 +70,19 @@ def test_worldepisode_binding_is_explicit_about_fallback_profile():
     }
 
 
+def test_worldepisode_strict_fallback_requires_semantic_contract():
+    result = preflight_worldepisode(
+        {"episode_id": "episode-1", "schema": "worldepisode"}, strict=True
+    )
+    assert result.valid is False
+    assert result.profile == "benchstudio_strict_worldepisode_profile"
+    assert {item["code"] for item in result.diagnostics} >= {
+        "missing_clock_graph",
+        "unbound_world_revision",
+        "missing_world_trace",
+    }
+
+
 def test_replay_conformance_reports_no_physics_coverage():
     result = run_replay_conformance()
     assert result["passed"] is True
