@@ -5,6 +5,12 @@ from .claims import ClaimDecision, ClaimType, validate_claim
 from .failure_events import EventBookmark, bookmark_critical_events
 from .inference_schedule import InferenceEvent, InferenceScheduleAudit, audit_inference_schedule
 from .missingness import MissingOutcomeBounds, missing_outcome_bounds
+from .outcomes import (
+    OutcomeProvenanceAudit,
+    OutcomeRecord,
+    audit_outcome_provenance,
+    validate_outcome_record,
+)
 from .overhead import ExecutionOverhead, audit_execution_overhead
 from .paired import (
     PairedOutcomeSummary,
@@ -37,6 +43,10 @@ from .transfer import (
 __all__ = [
     "MissingOutcomeBounds",
     "ExecutionOverhead",
+    "OutcomeRecord",
+    "OutcomeProvenanceAudit",
+    "audit_outcome_provenance",
+    "validate_outcome_record",
     "audit_execution_overhead",
     "EventBookmark",
     "InferenceEvent",

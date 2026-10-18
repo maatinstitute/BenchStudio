@@ -11,6 +11,8 @@ from .analysis import (
     InferenceScheduleAudit,
     MissingOutcomeBounds,
     ObservationParityReport,
+    OutcomeProvenanceAudit,
+    OutcomeRecord,
     PairedOutcomeSummary,
     PolicyParityReport,
     RecoverySummary,
@@ -23,6 +25,7 @@ from .analysis import (
     audit_campaign,
     audit_execution_overhead,
     audit_inference_schedule,
+    audit_outcome_provenance,
     audit_resources,
     audit_score_coverage,
     bookmark_critical_events,
@@ -37,6 +40,7 @@ from .analysis import (
     summarize_recovery_outcomes,
     summarize_transfer_fidelity,
     validate_claim,
+    validate_outcome_record,
 )
 from .campaigns import (
     AttemptKey,
@@ -125,6 +129,8 @@ __all__ = [
     "MissingOutcomeBounds",
     "PolicyParityReport",
     "ObservationParityReport",
+    "OutcomeRecord",
+    "OutcomeProvenanceAudit",
     "PairedOutcomeSummary",
     "clopper_pearson_interval",
     "discordance_interval",
@@ -196,6 +202,7 @@ __all__ = [
     "audit_resources",
     "pareto_frontier",
     "audit_inference_schedule",
+    "audit_outcome_provenance",
     "audit_campaign",
     "audit_execution_overhead",
     "estimate_transfer_gap",
@@ -213,5 +220,6 @@ __all__ = [
     "validate_representation_mapping",
     "validate_scenario_pair",
     "validate_claim",
+    "validate_outcome_record",
     "validate_counterfactual_pair",
 ]
