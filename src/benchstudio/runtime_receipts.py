@@ -24,10 +24,18 @@ def build_runtime_receipt(
     environment: dict[str, Any],
 ) -> dict[str, Any]:
     """Build a self-contained receipt without hashing itself recursively."""
+    if not isinstance(started_monotonic_ns, int) or isinstance(started_monotonic_ns, bool):
+        raise ValueError("started_monotonic_ns must be an integer")
+    if not isinstance(completed_monotonic_ns, int) or isinstance(completed_monotonic_ns, bool):
+        raise ValueError("completed_monotonic_ns must be an integer")
+    if not isinstance(status, str) or not status:
+        raise ValueError("status must be a non-empty string")
+    if not isinstance(backend_id, str) or not backend_id:
+        raise ValueError("backend_id must be a non-empty string")
+    if not isinstance(environment, dict):
+        raise ValueError("environment must be a mapping")
     if completed_monotonic_ns < started_monotonic_ns:
         raise ValueError("completed_monotonic_ns must not precede start")
-    if not backend_id or not status:
-        raise ValueError("backend_id and status are required")
     if plan_digest_sha256 is not None:
         _require_sha256(plan_digest_sha256, "plan_digest_sha256")
     payload = {
@@ -75,16 +83,41 @@ def verify_runtime_receipt(receipt: dict[str, Any] | Path) -> dict[str, Any]:
     if receipt.get("schema") != "benchstudio_runtime_receipt_v1":
         return {"valid": False, "reason": "schema_mismatch"}
     digest = receipt.get("receipt_digest_sha256")
-    if not isinstance(digest, str):
+    if not isinstance(digest, str) or not _is_hex_digest(digest):
         return {"valid": False, "reason": "receipt_digest_missing"}
     payload = {key: value for key, value in receipt.items() if key != "receipt_digest_sha256"}
-    if _digest(payload) != digest:
-        return {"valid": False, "reason": "receipt_digest_mismatch"}
     try:
-        started = int(receipt["started_monotonic_ns"])
-        completed = int(receipt["completed_monotonic_ns"])
-        duration = int(receipt["duration_ns"])
-    except (KeyError, TypeError, ValueError):
+        payload_digest = _digest(payload)
+    except (TypeError, ValueError):
+        return {"valid": False, "reason": "receipt_content_invalid"}
+    if payload_digest != digest:
+        return {"valid": False, "reason": "receipt_digest_mismatch"}
+    required = ("status", "backend_id", "clock_domain", "environment")
+    if any(key not in receipt for key in required):
+        return {"valid": False, "reason": "required_field_missing"}
+    if (
+        not isinstance(receipt["status"], str)
+        or not receipt["status"]
+        or not isinstance(receipt["backend_id"], str)
+        or not receipt["backend_id"]
+        or receipt["clock_domain"] != "host_monotonic"
+        or not isinstance(receipt["environment"], dict)
+    ):
+        return {"valid": False, "reason": "receipt_fields_invalid"}
+    for field in ("run_id", "attempt_id", "plan_digest_sha256", "worker_id"):
+        value = receipt.get(field)
+        if value is not None and not isinstance(value, str):
+            return {"valid": False, "reason": f"{field}_invalid"}
+    try:
+        started = receipt["started_monotonic_ns"]
+        completed = receipt["completed_monotonic_ns"]
+        duration = receipt["duration_ns"]
+        if any(
+            not isinstance(value, int) or isinstance(value, bool) or value < 0
+            for value in (started, completed, duration)
+        ):
+            raise TypeError
+    except (KeyError, TypeError):
         return {"valid": False, "reason": "timing_fields_invalid"}
     if completed < started or duration != completed - started:
         return {"valid": False, "reason": "timing_invariant_failed"}
@@ -94,9 +127,6 @@ def verify_runtime_receipt(receipt: dict[str, Any] | Path) -> dict[str, Any]:
             _require_sha256(plan_digest, "plan_digest_sha256")
         except ValueError as exc:
             return {"valid": False, "reason": str(exc)}
-    required = ("status", "backend_id", "clock_domain", "environment")
-    if any(key not in receipt for key in required):
-        return {"valid": False, "reason": "required_field_missing"}
     return {"valid": True, "reason": "ok", "receipt_digest_sha256": digest}
 
 
@@ -187,6 +217,10 @@ def _require_sha256(value: str, field: str) -> None:
         or any(character not in "0123456789abcdef" for character in value)
     ):
         raise ValueError(f"{field} must be a lowercase SHA-256 hex digest")
+
+
+def _is_hex_digest(value: str) -> bool:
+    return len(value) == 64 and all(character in "0123456789abcdef" for character in value)
 
 
 def _receipt_signature_payload(receipt_sha256: str) -> bytes:

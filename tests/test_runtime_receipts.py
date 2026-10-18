@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 
 from benchstudio import (
@@ -45,6 +46,46 @@ def test_runtime_receipt_detects_tampering():
     tampered = {**receipt, "status": "failed"}
     result = verify_runtime_receipt(tampered)
     assert result == {"valid": False, "reason": "receipt_digest_mismatch"}
+
+
+def test_runtime_receipt_rejects_rehashed_malformed_fields():
+    receipt = build_runtime_receipt(
+        run_id="run",
+        attempt_id="attempt",
+        plan_digest_sha256="a" * 64,
+        worker_id=None,
+        status="completed",
+        started_monotonic_ns=10,
+        completed_monotonic_ns=20,
+        backend_id="sim",
+        environment={},
+    )
+    malformed = {**receipt, "started_monotonic_ns": "10"}
+    payload = {key: value for key, value in malformed.items() if key != "receipt_digest_sha256"}
+    malformed["receipt_digest_sha256"] = hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    assert verify_runtime_receipt(malformed) == {
+        "valid": False,
+        "reason": "timing_fields_invalid",
+    }
+
+
+def test_runtime_receipt_rejects_invalid_build_types():
+    import pytest
+
+    with pytest.raises(ValueError, match="environment must be a mapping"):
+        build_runtime_receipt(
+            run_id="run",
+            attempt_id="attempt",
+            plan_digest_sha256=None,
+            worker_id=None,
+            status="completed",
+            started_monotonic_ns=0,
+            completed_monotonic_ns=1,
+            backend_id="sim",
+            environment=[],  # type: ignore[arg-type]
+        )
 
 
 def test_runtime_receipt_signature_is_independently_verifiable(tmp_path):
