@@ -13,7 +13,7 @@ has been evaluated.
 | Scenario identity | Verified | `ScenarioPack` and deterministic content-addressed archives bind task revisions, assets, initial conditions, and success criteria. |
 | Evidence integrity | Verified locally | Artifact manifests, sibling anchors, external digest verification, optional detached Ed25519 signatures, and safe archive extraction are implemented. Key custody and any remote trust service remain external. |
 | Policy lifecycle and timing | Verified as contracts | Lifecycle, action semantics, clock domains, queue/drop/deadline, and replay conformance validators are tested. |
-| Model capability declarations | Verified as data contracts | VLA, planner, world-model, monitor, timing, memory, streaming, and caching fields are represented and validated. |
+| Model capability declarations | Verified as data contracts and evidence | VLA, planner, world-model, monitor, timing, memory, streaming, and caching fields are represented, validated before execution, and persisted in registry-backed run manifests. |
 | Model adapter registry | Implemented | Policy adapters declare capabilities and dependencies, support optional entry-point discovery, and can be instantiated directly from frozen model declarations. |
 | Inference efficiency | Verified as instrumentation | Latency, observation age, action chunks, resource points, overhead, Pareto helpers, and concrete synchronous/asynchronous/streaming/cached policy execution strategies are implemented; no production checkpoint result is claimed. |
 | Paired statistics | Verified | Exact binomial and discordance intervals, matched deltas, missingness, and standard errors are exposed in analysis results. |

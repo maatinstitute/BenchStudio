@@ -17,6 +17,7 @@ def test_default_model_registry_is_ready():
     readiness = default_model_registry(discover_external=False).readiness("mock")
     assert readiness["ready"] is True
     assert readiness["capabilities"].model_id == "mock_policy"
+    assert readiness["capabilities"].to_dict()["input_modalities"] == ["state"]
 
 
 def test_model_registry_reports_missing_dependency():

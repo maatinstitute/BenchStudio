@@ -84,7 +84,15 @@ class ModelAdapterRegistry:
                 f"model adapter {adapter_id} is not ready; missing: "
                 + ", ".join(readiness["missing_required"])
             )
-        return descriptor.factory(**kwargs)
+        policy = descriptor.factory(**kwargs)
+        try:
+            setattr(policy, "__benchstudio_capabilities__", descriptor.capabilities)
+            setattr(policy, "__benchstudio_adapter_id__", descriptor.adapter_id)
+        except (AttributeError, TypeError):
+            # Immutable third-party policy objects can still execute; their
+            # adapter descriptor remains available from the registry audit.
+            pass
+        return policy
 
     def validate_plan(self, plan: Any) -> tuple[str, ...]:
         """Validate the model adapter frozen in a campaign plan."""

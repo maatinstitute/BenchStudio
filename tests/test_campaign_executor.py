@@ -287,6 +287,34 @@ def test_campaign_executor_can_instantiate_declared_model_adapter(tmp_path):
     assert result.missing_attempt_ids == ()
 
 
+def test_registry_backed_manifest_records_model_capabilities(tmp_path):
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "capability-evidence"},
+            "model": {"adapter": "mock"},
+            "task": {"task_id": "task"},
+            "environments": [{"id": "sim", "kind": "simulator"}],
+            "evaluation": {
+                "seeds": [1],
+                "paired": True,
+                "conditions": [{"x": 1}],
+            },
+        }
+    )
+    CampaignExecutor(
+        plan,
+        tmp_path / "campaign",
+        model_registry=default_model_registry(discover_external=False),
+        simulator_factory=lambda _: MockSimulator(),
+    ).run()
+    manifest = json.loads(
+        (tmp_path / "campaign" / "attempts" / "attempt-000000" / "manifest.json").read_text()
+    )
+    assert manifest["model_adapter_id"] == "mock"
+    assert manifest["model_capabilities"]["supports_cached_predictions"] is True
+
+
 def test_expired_worker_lease_is_reclaimed_by_next_worker(tmp_path):
     now = [1_000_000_000]
 

@@ -27,6 +27,27 @@ class ModelCapabilityProfile:
     supports_cached_predictions: bool = False
     supports_variable_action_horizon: bool = False
 
+    def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-compatible frozen capability record for evidence."""
+        return {
+            "model_id": self.model_id,
+            "family": self.family,
+            "input_modalities": list(self.input_modalities),
+            "output_representation": self.output_representation,
+            "supports_closed_loop": self.supports_closed_loop,
+            "supports_action_chunks": self.supports_action_chunks,
+            "supported_metrics": list(self.supported_metrics),
+            "input_contract": self.input_contract,
+            "inference_granularity": self.inference_granularity,
+            "runtime_controls": list(self.runtime_controls),
+            "memory_bytes": self.memory_bytes,
+            "timing_signals": list(self.timing_signals),
+            "supports_async": self.supports_async,
+            "supports_streaming": self.supports_streaming,
+            "supports_cached_predictions": self.supports_cached_predictions,
+            "supports_variable_action_horizon": self.supports_variable_action_horizon,
+        }
+
     def supports(self, metric: str) -> bool:
         return metric in self.supported_metrics
 

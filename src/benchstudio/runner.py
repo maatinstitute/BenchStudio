@@ -441,7 +441,9 @@ def _host_age_ms(observation: Any, end_ns: int) -> float | None:
 def _manifest(policy: Policy, simulator: Simulator, config: RunConfig) -> dict[str, Any]:
     config_payload = asdict(config)
     digest = hashlib.sha256(json.dumps(config_payload, sort_keys=True).encode()).hexdigest()
-    return {
+    capabilities = getattr(policy, "__benchstudio_capabilities__", None)
+    capability_record = capabilities.to_dict() if hasattr(capabilities, "to_dict") else capabilities
+    manifest = {
         "schema": "benchstudio_run_manifest_v1",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "policy_id": policy.policy_id,
@@ -452,6 +454,10 @@ def _manifest(policy: Policy, simulator: Simulator, config: RunConfig) -> dict[s
         "runtime": {"python": sys.version, "platform": platform.platform()},
         "environment": environment_fingerprint(simulator.simulator_id),
     }
+    if capability_record is not None:
+        manifest["model_capabilities"] = capability_record
+        manifest["model_adapter_id"] = getattr(policy, "__benchstudio_adapter_id__", None)
+    return manifest
 
 
 def _summary(
