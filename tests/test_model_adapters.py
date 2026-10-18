@@ -159,6 +159,8 @@ def test_model_registry_rejects_invalid_capability_profile():
         {"inference_granularity": "unknown"},
         {"input_modalities": [""]},
         {"memory_bytes": 1.5},
+        {"model_id": 123},
+        {"output_representation": 123},
     ],
 )
 def test_model_registry_rejects_malformed_capability_types(overrides):

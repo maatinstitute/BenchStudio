@@ -70,12 +70,12 @@ class ModelCapabilityProfile:
             "risk_score",
         }:
             issues.append(f"unsupported inference_granularity: {self.inference_granularity}")
-        if not self.model_id:
-            issues.append("model_id is required")
-        if not self.input_contract:
-            issues.append("input_contract is required")
-        if not self.output_representation:
-            issues.append("output_representation is required")
+        if not isinstance(self.model_id, str) or not self.model_id:
+            issues.append("model_id must be a non-empty string")
+        if not isinstance(self.input_contract, str) or not self.input_contract:
+            issues.append("input_contract must be a non-empty string")
+        if not isinstance(self.output_representation, str) or not self.output_representation:
+            issues.append("output_representation must be a non-empty string")
         for name in (
             "supports_closed_loop",
             "supports_action_chunks",
@@ -96,8 +96,6 @@ class ModelCapabilityProfile:
             issues.append("input_modalities must not be empty")
         if not self.supported_metrics:
             issues.append("supported_metrics must not be empty")
-        if not isinstance(self.input_contract, str) or not self.input_contract:
-            issues.append("input_contract is required")
         if self.memory_bytes is not None:
             if isinstance(self.memory_bytes, bool) or not isinstance(self.memory_bytes, int):
                 issues.append("memory_bytes must be an integer or null")
