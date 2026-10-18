@@ -7,6 +7,7 @@ from typing import Callable, Iterable
 
 from ..contracts import Policy, Simulator
 from ..evidence import verify_artifact_manifest
+from ..measurement import ResourceSampler
 from ..runner import RunConfig, run_episodes
 from .frozen_plan import FrozenCampaignPlan, PlannedAttempt
 from .ledger import AttemptLedger
@@ -14,6 +15,7 @@ from .worker import WorkerLeaseManager
 
 PolicyFactory = Callable[[PlannedAttempt], Policy]
 SimulatorFactory = Callable[[PlannedAttempt], Simulator]
+ResourceSamplerFactory = Callable[[PlannedAttempt], ResourceSampler]
 
 
 @dataclass(frozen=True)
@@ -39,6 +41,7 @@ class CampaignExecutor:
         worker_id: str | None = None,
         lease_manager: WorkerLeaseManager | None = None,
         cancelled_attempts: Iterable[str] = (),
+        resource_sampler_factory: ResourceSamplerFactory | None = None,
     ) -> None:
         self.plan = plan
         self.output = output
@@ -47,6 +50,7 @@ class CampaignExecutor:
         self.worker_id = worker_id
         self.lease_manager = lease_manager
         self.cancelled_attempts = frozenset(cancelled_attempts)
+        self.resource_sampler_factory = resource_sampler_factory
         planned_ids = {attempt.key.attempt_id for attempt in plan.attempts}
         unknown = self.cancelled_attempts - planned_ids
         if unknown:
@@ -121,6 +125,11 @@ class CampaignExecutor:
                         self.simulator_factory(attempt),
                         config,
                         attempt_dir,
+                        resource_sampler=(
+                            self.resource_sampler_factory(attempt)
+                            if self.resource_sampler_factory is not None
+                            else None
+                        ),
                     )
                 verification = verify_artifact_manifest(attempt_dir)
                 if not verification["valid"]:

@@ -130,3 +130,24 @@ def test_campaign_executor_preserves_environment_identity_in_evidence(tmp_path):
         )
         environments.append(manifest["config"]["environment_id"])
     assert environments == ["sim-a", "sim-b"]
+
+
+def test_campaign_executor_wires_resource_sampler_per_attempt(tmp_path):
+    plan = CampaignPlanner(
+        run_id="resource-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+
+    def sampler_factory(_attempt):
+        samples = iter([{"inference_calls": 2}, {"inference_calls": 5}])
+        return lambda: next(samples)
+
+    output = tmp_path / "campaign"
+    CampaignExecutor(
+        plan,
+        output,
+        lambda _: MockPolicy(),
+        lambda _: MockSimulator(),
+        resource_sampler_factory=sampler_factory,
+    ).run()
+    summary = json.loads((output / "attempts" / "attempt-000000" / "summary.json").read_text())
+    assert summary["episodes"][0]["resource_metrics"]["inference_calls"] == 3
