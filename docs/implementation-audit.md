@@ -7,7 +7,7 @@ has been evaluated.
 
 | Capability | Current status | Evidence / boundary |
 | --- | --- | --- |
-| Frozen campaign execution | Verified | `CampaignExecutor`, append-only `AttemptLedger`, atomic cross-worker ledger commits, leases, cancellation, resumable evidence, explicit completed/failed/missing episode denominators, pre-scheduling adapter/reproducibility validation, duplicate-safe parity checks, and 205 tests. |
+| Frozen campaign execution | Verified | `CampaignExecutor`, append-only `AttemptLedger`, atomic cross-worker ledger commits, leases, cancellation, resumable evidence, explicit completed/failed/missing episode denominators, pre-scheduling adapter/reproducibility validation, duplicate-safe parity checks, fail-closed artifact verification, and 208 tests. |
 | Stable paired identities | Verified | `pair_id` is shared across enabled environments; `environment_id` is frozen in `AttemptKey` and manifests. |
 | Declarative protocol | Verified | `benchstudio.campaign.v1` compiles into a plan carrying the frozen `(P,M,S,X,D,O,R)` envelope and source digest. |
 | Scenario identity | Verified | `ScenarioPack` and deterministic content-addressed archives bind task revisions, assets, initial conditions, and success criteria. |

@@ -76,7 +76,6 @@ def verify_artifact_manifest(
     and is checked independently when provided.
     """
     manifest_path = root / "artifact-manifest.json"
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     mismatches: list[dict[str, Any]] = []
     anchor = trust_anchor_path or root.parent / f"{root.name}.artifact-manifest.sha256"
     trust_anchor: dict[str, Any] = {
@@ -84,6 +83,25 @@ def verify_artifact_manifest(
         "checked": anchor.is_file(),
         "external_reference_supplied": trusted_manifest_sha256 is not None,
     }
+    signature: dict[str, Any] | None = None
+    if not root.is_dir():
+        mismatches.append({"file": str(root), "reason": "artifact_root_missing"})
+        return _verification_result(None, mismatches, trust_anchor, signature)
+    if not manifest_path.is_file():
+        mismatches.append({"file": manifest_path.name, "reason": "manifest_missing"})
+        return _verification_result(None, mismatches, trust_anchor, signature)
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        mismatches.append(
+            {"file": manifest_path.name, "reason": "manifest_invalid_json", "detail": str(exc)}
+        )
+        return _verification_result(None, mismatches, trust_anchor, signature)
+    if not isinstance(manifest, dict):
+        mismatches.append({"file": manifest_path.name, "reason": "manifest_not_mapping"})
+        return _verification_result(None, mismatches, trust_anchor, signature)
+    if manifest.get("schema") != "benchstudio_artifact_manifest_v1":
+        mismatches.append({"file": manifest_path.name, "reason": "manifest_schema_mismatch"})
     if not anchor.is_file():
         mismatches.append({"file": manifest_path.name, "reason": "trust_anchor_missing"})
     else:
@@ -101,7 +119,6 @@ def verify_artifact_manifest(
             mismatches.append(
                 {"file": manifest_path.name, "reason": "external_trust_reference_mismatch"}
             )
-    signature: dict[str, Any] | None = None
     if signature_path is not None or trusted_public_key is not None:
         resolved_signature_path = (
             signature_path or root.parent / f"{root.name}.artifact-manifest.sig"
@@ -120,8 +137,23 @@ def verify_artifact_manifest(
             )
             if not signature["valid"]:
                 mismatches.append({"file": manifest_path.name, "reason": signature["reason"]})
-    bound_names = set(manifest.get("files", {}))
-    for name, expected in manifest.get("files", {}).items():
+    files = manifest.get("files", {})
+    if not isinstance(files, dict):
+        mismatches.append({"file": manifest_path.name, "reason": "manifest_files_not_mapping"})
+        files = {}
+    bound_names: set[str] = set()
+    for name, expected in files.items():
+        if not isinstance(name, str):
+            mismatches.append({"file": manifest_path.name, "reason": "manifest_file_name_invalid"})
+            continue
+        relative_name = Path(name)
+        if relative_name.is_absolute() or ".." in relative_name.parts:
+            mismatches.append({"file": name, "reason": "manifest_path_escape"})
+            continue
+        bound_names.add(name)
+        if not isinstance(expected, dict):
+            mismatches.append({"file": name, "reason": "manifest_file_entry_invalid"})
+            continue
         path = root / name
         if not path.is_file():
             mismatches.append({"file": name, "reason": "missing"})
@@ -136,9 +168,18 @@ def verify_artifact_manifest(
             and path.name not in bound_names
         ):
             mismatches.append({"file": path.name, "reason": "unbound_artifact"})
+    return _verification_result(manifest.get("status"), mismatches, trust_anchor, signature)
+
+
+def _verification_result(
+    status: Any,
+    mismatches: list[dict[str, Any]],
+    trust_anchor: dict[str, Any],
+    signature: dict[str, Any] | None,
+) -> dict[str, Any]:
     return {
         "valid": not mismatches,
-        "status": manifest.get("status"),
+        "status": status,
         "mismatches": mismatches,
         "trust_anchor": trust_anchor,
         "signature": signature,

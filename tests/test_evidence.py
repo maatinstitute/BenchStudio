@@ -109,3 +109,35 @@ def test_artifact_manifest_can_check_independent_trusted_digest(tmp_path):
     result = verify_artifact_manifest(run_dir, trusted_manifest_sha256="0" * 64)
     assert result["valid"] is False
     assert "external_trust_reference_mismatch" in {item["reason"] for item in result["mismatches"]}
+
+
+def test_artifact_manifest_verifier_returns_structured_missing_manifest_error(tmp_path):
+    result = verify_artifact_manifest(tmp_path / "missing")
+    assert result["valid"] is False
+    assert "artifact_root_missing" in {item["reason"] for item in result["mismatches"]}
+
+
+def test_artifact_manifest_verifier_rejects_malformed_manifest(tmp_path):
+    run_dir = tmp_path / "malformed"
+    run_dir.mkdir()
+    (run_dir / "artifact-manifest.json").write_text("not-json")
+    result = verify_artifact_manifest(run_dir)
+    assert result["valid"] is False
+    assert "manifest_invalid_json" in {item["reason"] for item in result["mismatches"]}
+
+
+def test_artifact_manifest_verifier_rejects_path_escape(tmp_path):
+    run_dir = tmp_path / "escape"
+    run_dir.mkdir()
+    (run_dir / "artifact-manifest.json").write_text(
+        json.dumps(
+            {
+                "schema": "benchstudio_artifact_manifest_v1",
+                "status": "completed",
+                "files": {"../outside": {"sha256": "0" * 64, "bytes": 1}},
+            }
+        )
+    )
+    result = verify_artifact_manifest(run_dir)
+    assert result["valid"] is False
+    assert "manifest_path_escape" in {item["reason"] for item in result["mismatches"]}
