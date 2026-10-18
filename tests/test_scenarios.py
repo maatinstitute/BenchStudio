@@ -58,6 +58,33 @@ def test_invalid_scenario_pack_is_rejected(tmp_path):
         load_scenario_pack(path)
 
 
+def test_scenario_pack_rejects_non_hex_identity_digests():
+    pack = ScenarioPack(
+        scenario_id="task",
+        task_revision="rev-1",
+        asset_digests_sha256=("g" * 64,),
+        initial_condition_digest_sha256="not-a-digest",
+        success_criterion_version="success-v1",
+        pack_digest_sha256="z" * 64,
+    )
+    issues = validate_scenario_pack(pack)
+    assert "asset digests must be lowercase SHA-256 hex strings" in issues
+    assert "initial_condition_digest_sha256 must be lowercase SHA-256 hex" in issues
+    assert "pack_digest_sha256 must be lowercase SHA-256 hex" in issues
+
+
+def test_scenario_pack_requires_success_criterion_version():
+    pack = ScenarioPack(
+        scenario_id="task",
+        task_revision="rev-1",
+        asset_digests_sha256=("a" * 64,),
+        initial_condition_digest_sha256="b" * 64,
+        success_criterion_version="",
+        pack_digest_sha256="c" * 64,
+    )
+    assert "success_criterion_version is required" in validate_scenario_pack(pack)
+
+
 def test_scenario_archive_is_deterministic_and_excludes_scratch(tmp_path):
     root = tmp_path / "scenario"
     (root / "assets").mkdir(parents=True)

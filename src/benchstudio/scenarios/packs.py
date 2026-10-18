@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
+
+_SHA256_RE = re.compile(r"[0-9a-f]{64}\Z")
 
 
 @dataclass(frozen=True)
@@ -71,8 +74,17 @@ def validate_scenario_pack(pack: ScenarioPack) -> list[str]:
         issues.append("scenario_id and task_revision are required")
     if not pack.asset_digests_sha256:
         issues.append("at least one asset digest is required")
-    if any(len(digest) != 64 for digest in pack.asset_digests_sha256):
-        issues.append("asset digests must be SHA-256 hex strings")
+    if any(
+        not isinstance(digest, str) or _SHA256_RE.fullmatch(digest) is None
+        for digest in pack.asset_digests_sha256
+    ):
+        issues.append("asset digests must be lowercase SHA-256 hex strings")
+    if _SHA256_RE.fullmatch(pack.initial_condition_digest_sha256) is None:
+        issues.append("initial_condition_digest_sha256 must be lowercase SHA-256 hex")
+    if not pack.success_criterion_version:
+        issues.append("success_criterion_version is required")
+    if _SHA256_RE.fullmatch(pack.pack_digest_sha256) is None:
+        issues.append("pack_digest_sha256 must be lowercase SHA-256 hex")
     expected = ScenarioPack.create(
         scenario_id=pack.scenario_id,
         task_revision=pack.task_revision,
