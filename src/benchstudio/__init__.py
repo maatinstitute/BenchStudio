@@ -51,6 +51,7 @@ from .analysis import (
     summarize_transfer_fidelity,
     validate_claim,
     validate_outcome_record,
+    write_parity_report,
 )
 from .calibration import (
     CalibrationComparison,
@@ -334,6 +335,7 @@ __all__ = [
     "bookmark_critical_events",
     "compare_policy_outputs",
     "compare_observation_streams",
+    "write_parity_report",
     "summarize_paired_outcomes",
     "summarize_recovery_outcomes",
     "missing_outcome_bounds",

@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Iterable
 
 from ..contracts import ActionChunk, Observation, Policy
@@ -18,6 +19,15 @@ class PolicyParityReport:
     def equivalent(self) -> bool:
         return not self.mismatches
 
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "schema": "benchstudio_policy_parity_report_v1",
+            "checked_observations": self.checked_observations,
+            "identical_actions": self.identical_actions,
+            "equivalent": self.equivalent,
+            "mismatches": list(self.mismatches),
+        }
+
 
 @dataclass(frozen=True)
 class ObservationParityReport:
@@ -29,6 +39,38 @@ class ObservationParityReport:
     @property
     def equivalent(self) -> bool:
         return not self.mismatches
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "schema": "benchstudio_observation_parity_report_v1",
+            "checked_observations": self.checked_observations,
+            "identical_observations": self.identical_observations,
+            "duplicate_sequences": list(self.duplicate_sequences),
+            "equivalent": self.equivalent,
+            "mismatches": list(self.mismatches),
+        }
+
+
+def write_parity_report(
+    path: Path,
+    *,
+    policy: PolicyParityReport | None = None,
+    observations: ObservationParityReport | None = None,
+    metadata: dict[str, object] | None = None,
+) -> None:
+    """Write deterministic parity evidence without claiming model validity."""
+    if policy is None and observations is None:
+        raise ValueError("at least one parity report is required")
+    payload: dict[str, object] = {
+        "schema": "benchstudio_parity_report_v1",
+        "metadata": dict(metadata or {}),
+    }
+    if policy is not None:
+        payload["policy"] = policy.to_dict()
+    if observations is not None:
+        payload["observations"] = observations.to_dict()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def compare_policy_outputs(

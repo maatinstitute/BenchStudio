@@ -5,7 +5,11 @@ import json
 
 import pytest
 
-from benchstudio.analysis import compare_observation_streams, compare_policy_outputs
+from benchstudio.analysis import (
+    compare_observation_streams,
+    compare_policy_outputs,
+    write_parity_report,
+)
 from benchstudio.campaigns import WorkerLeaseManager
 from benchstudio.contracts import Observation
 from benchstudio.integrations import (
@@ -40,6 +44,17 @@ def test_policy_parity_detects_instrumentation_output_changes():
     )
     assert report.equivalent
     assert report.identical_actions == 2
+
+
+def test_parity_reports_are_serializable_evidence(tmp_path):
+    policy_report = compare_policy_outputs(
+        MockPolicy(), MockPolicy(), [Observation(0, 0.0)], seed=1, denoising_steps=2
+    )
+    path = tmp_path / "parity.json"
+    write_parity_report(path, policy=policy_report, metadata={"checkpoint": "sha256:x"})
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["schema"] == "benchstudio_parity_report_v1"
+    assert payload["policy"]["equivalent"] is True
 
 
 def test_policy_parity_records_instrumentation_failures():

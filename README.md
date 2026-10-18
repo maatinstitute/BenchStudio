@@ -116,7 +116,8 @@ analysis.
 Recorded policy traces can be used as a fail-closed parity reference. The
 `benchstudio.integrations.TracePolicy` adapter binds each action to its expected
 observation digest, so altered preprocessing or state cannot silently reuse the
-recorded action sequence.
+recorded action sequence. `write_parity_report()` persists the policy and
+observation parity decisions as versioned JSON evidence.
 
 Compare two or more completed or partially completed frozen campaigns directly
 from their evidence directories. Missing attempts stay missing, and malformed

@@ -24,6 +24,7 @@ from .parity import (
     PolicyParityReport,
     compare_observation_streams,
     compare_policy_outputs,
+    write_parity_report,
 )
 from .recovery import (
     CounterfactualOutcomeAudit,
@@ -89,5 +90,6 @@ __all__ = [
     "summarize_paired_outcomes",
     "compare_policy_outputs",
     "compare_observation_streams",
+    "write_parity_report",
     "validate_claim",
 ]
