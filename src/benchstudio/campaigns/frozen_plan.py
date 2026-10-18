@@ -57,7 +57,6 @@ class FrozenCampaignPlan:
             raise ValueError("frozen campaign plan attempts must be a list")
         attempts: list[PlannedAttempt] = []
         attempt_ids: set[str] = set()
-        attempt_identity_keys: set[tuple[str, str, str, str, str]] = set()
         for index, item in enumerate(attempts_payload):
             if not isinstance(item, dict):
                 raise ValueError(f"attempt {index} must be a mapping")
@@ -83,21 +82,7 @@ class FrozenCampaignPlan:
                 raise ValueError(f"attempt {index} run_id does not match frozen campaign plan")
             if attempt.key.attempt_id in attempt_ids:
                 raise ValueError(f"duplicate attempt_id: {attempt.key.attempt_id}")
-            identity = (
-                attempt.key.run_id,
-                attempt.key.scenario_id,
-                attempt.key.pair_id,
-                attempt.key.condition_id,
-                attempt.key.environment_id,
-            )
-            if identity in attempt_identity_keys:
-                raise ValueError(
-                    f"duplicate attempt identity: {attempt.key.scenario_id}/"
-                    f"{attempt.key.pair_id}/{attempt.key.condition_id}/"
-                    f"{attempt.key.environment_id}"
-                )
             attempt_ids.add(attempt.key.attempt_id)
-            attempt_identity_keys.add(identity)
             attempts.append(attempt)
         run_id = payload.get("run_id")
         digest = payload.get("plan_digest_sha256")
