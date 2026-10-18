@@ -16,6 +16,19 @@ class AttemptKey:
     attempt_id: str
     environment_id: str = "default"
 
+    def __post_init__(self) -> None:
+        for field in (
+            "run_id",
+            "scenario_id",
+            "pair_id",
+            "condition_id",
+            "attempt_id",
+            "environment_id",
+        ):
+            value = getattr(self, field)
+            if not isinstance(value, str) or not value:
+                raise ValueError(f"attempt key {field} must be a non-empty string")
+
 
 @dataclass(frozen=True)
 class PlannedAttempt:
@@ -43,6 +56,7 @@ class FrozenCampaignPlan:
         if not isinstance(attempts_payload, list):
             raise ValueError("frozen campaign plan attempts must be a list")
         attempts: list[PlannedAttempt] = []
+        attempt_ids: set[str] = set()
         for index, item in enumerate(attempts_payload):
             if not isinstance(item, dict):
                 raise ValueError(f"attempt {index} must be a mapping")
@@ -54,14 +68,21 @@ class FrozenCampaignPlan:
                 metadata = item.get("metadata", {})
                 if not isinstance(metadata, dict):
                     raise ValueError("metadata must be a mapping")
+                if type(item["task_seed"]) is not int or type(item["policy_seed"]) is not int:
+                    raise ValueError("task_seed and policy_seed must be integers")
                 attempt = PlannedAttempt(
                     key=key,
-                    task_seed=int(item["task_seed"]),
-                    policy_seed=int(item["policy_seed"]),
+                    task_seed=item["task_seed"],
+                    policy_seed=item["policy_seed"],
                     metadata=dict(metadata),
                 )
             except (KeyError, TypeError, ValueError) as exc:
                 raise ValueError(f"invalid attempt {index}: {exc}") from exc
+            if attempt.key.run_id != payload.get("run_id"):
+                raise ValueError(f"attempt {index} run_id does not match frozen campaign plan")
+            if attempt.key.attempt_id in attempt_ids:
+                raise ValueError(f"duplicate attempt_id: {attempt.key.attempt_id}")
+            attempt_ids.add(attempt.key.attempt_id)
             attempts.append(attempt)
         run_id = payload.get("run_id")
         digest = payload.get("plan_digest_sha256")
@@ -72,9 +93,6 @@ class FrozenCampaignPlan:
         protocol = payload.get("protocol")
         if protocol is not None and not isinstance(protocol, dict):
             raise ValueError("frozen campaign plan protocol must be a mapping")
-        expected = _plan_digest(attempts, protocol)
-        if expected != digest:
-            raise ValueError("frozen campaign plan digest does not match content")
         paired_schedule = payload.get("paired_schedule", ())
         if not isinstance(paired_schedule, list) or not all(
             isinstance(item, dict) for item in paired_schedule
@@ -83,6 +101,15 @@ class FrozenCampaignPlan:
         source_spec_sha256 = payload.get("source_spec_sha256")
         if source_spec_sha256 is not None and not isinstance(source_spec_sha256, str):
             raise ValueError("source_spec_sha256 must be a string or null")
+        expected = _plan_digest(
+            run_id,
+            attempts,
+            paired_schedule=paired_schedule,
+            source_spec_sha256=source_spec_sha256,
+            protocol=protocol,
+        )
+        if expected != digest:
+            raise ValueError("frozen campaign plan digest does not match content")
         return cls(
             run_id,
             tuple(attempts),
@@ -184,10 +211,13 @@ class CampaignPlanner:
                                 },
                             )
                         )
-        payload = {"attempts": [asdict(attempt) for attempt in attempts], "protocol": self.protocol}
-        digest = hashlib.sha256(
-            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest()
+        digest = _plan_digest(
+            self.run_id,
+            attempts,
+            paired_schedule=(),
+            source_spec_sha256=self.source_spec_sha256,
+            protocol=self.protocol,
+        )
         return FrozenCampaignPlan(
             self.run_id,
             tuple(attempts),
@@ -203,8 +233,21 @@ def _identity(value: Any) -> str:
     ).hexdigest()[:16]
 
 
-def _plan_digest(attempts: Iterable[PlannedAttempt], protocol: dict[str, Any] | None) -> str:
-    payload = {"attempts": [asdict(attempt) for attempt in attempts], "protocol": protocol}
+def _plan_digest(
+    run_id: str,
+    attempts: Iterable[PlannedAttempt],
+    *,
+    paired_schedule: Iterable[dict[str, Any]],
+    source_spec_sha256: str | None,
+    protocol: dict[str, Any] | None,
+) -> str:
+    payload = {
+        "run_id": run_id,
+        "attempts": [asdict(attempt) for attempt in attempts],
+        "paired_schedule": list(paired_schedule),
+        "source_spec_sha256": source_spec_sha256,
+        "protocol": protocol,
+    }
     return hashlib.sha256(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()

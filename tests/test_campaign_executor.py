@@ -779,7 +779,7 @@ def test_campaign_executor_rejects_tampered_existing_plan_envelope(tmp_path):
     payload = plan.to_dict()
     payload["run_id"] = "different-run"
     (output / "campaign-plan.json").write_text(json.dumps(payload), encoding="utf-8")
-    with pytest.raises(ValueError, match="does not match frozen plan"):
+    with pytest.raises(ValueError, match="existing campaign plan is invalid"):
         CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator())
 
 

@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict
 from typing import Any, Iterable
 
-from .frozen_plan import AttemptKey, FrozenCampaignPlan, PlannedAttempt
+from .frozen_plan import AttemptKey, FrozenCampaignPlan, PlannedAttempt, _plan_digest
 
 
 def compile_balanced_paired_plan(
@@ -96,7 +95,13 @@ def compile_balanced_paired_plan(
                     },
                 }
             )
-    digest = _digest([asdict(attempt) for attempt in attempts])
+    digest = _plan_digest(
+        run_id,
+        attempts,
+        paired_schedule=schedule,
+        source_spec_sha256=None,
+        protocol=None,
+    )
     return FrozenCampaignPlan(run_id, tuple(attempts), digest, tuple(schedule))
 
 

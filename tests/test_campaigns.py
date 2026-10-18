@@ -56,6 +56,46 @@ def test_frozen_campaign_plan_loader_rejects_digest_tampering(tmp_path):
         load_frozen_campaign_plan(path)
 
 
+@pytest.mark.parametrize("field", ["run_id", "source_spec_sha256", "paired_schedule"])
+def test_frozen_campaign_plan_digest_binds_full_envelope(tmp_path, field):
+    plan = CampaignPlanner(
+        run_id="full-envelope",
+        scenario_id="task",
+        conditions=[{"x": 1}],
+        seeds=[1],
+        source_spec_sha256="a" * 64,
+    ).freeze()
+    path = tmp_path / f"{field}.json"
+    payload = plan.to_dict()
+    if field == "run_id":
+        payload[field] = "different-run"
+    elif field == "source_spec_sha256":
+        payload[field] = "b" * 64
+    else:
+        payload[field] = [{"attempt_id": "unexpected"}]
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="digest|run_id"):
+        load_frozen_campaign_plan(path)
+
+
+def test_frozen_campaign_plan_loader_rejects_duplicate_or_mismatched_attempt_identity(tmp_path):
+    plan = CampaignPlanner(
+        run_id="identity-plan", scenario_id="task", conditions=[{"x": 1}], seeds=[1, 2]
+    ).freeze()
+    payload = plan.to_dict()
+    payload["attempts"][1]["key"]["attempt_id"] = payload["attempts"][0]["key"]["attempt_id"]
+    path = tmp_path / "duplicate.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="duplicate attempt_id"):
+        load_frozen_campaign_plan(path)
+
+    payload = plan.to_dict()
+    payload["attempts"][0]["key"]["run_id"] = "other-run"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="run_id"):
+        load_frozen_campaign_plan(path)
+
+
 def test_attempt_ledger_is_append_only_and_reports_missing(tmp_path):
     plan = CampaignPlanner(
         run_id="run-1", scenario_id="pick", conditions=[{"budget": 2}], seeds=[1, 2]
