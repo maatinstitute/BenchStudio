@@ -18,7 +18,9 @@ def test_comparison_exposes_scheduled_and_completed_denominators():
     assert summary["completed"] == 1
     assert summary["missing"] == 1
     assert summary["completed_success_rate"] == 1.0
+    assert summary["completed_success_confidence_interval"] is not None
     assert summary["scheduled_success_rate"] == 0.5
+    assert summary["scheduled_success_confidence_interval"] is not None
 
 
 def test_comparison_separates_execution_failures_from_task_outcomes():
@@ -42,4 +44,5 @@ def test_comparison_separates_execution_failures_from_task_outcomes():
     assert summary["missing"] == 0
     divergence = report["divergence"]["sim-a_vs_sim-b"]
     assert divergence["compared_episodes"] == 1
+    assert divergence["success_agreement_confidence_interval"] is not None
     assert divergence["failed_a"] == ["seed-1"]

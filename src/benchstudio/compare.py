@@ -5,6 +5,8 @@ import math
 from pathlib import Path
 from typing import Any
 
+from .analysis.paired import clopper_pearson_interval
+
 COMPARISON_SCHEMA = "benchstudio_comparison_report_v1"
 
 
@@ -55,7 +57,13 @@ def _summarize(reports: list[dict[str, Any] | None]) -> dict[str, Any]:
         "status_counts": _status_counts(reports),
         "success_count": len(successes),
         "completed_success_rate": len(successes) / len(completed) if completed else None,
+        "completed_success_confidence_interval": (
+            clopper_pearson_interval(len(successes), len(completed)) if completed else None
+        ),
         "scheduled_success_rate": len(successes) / len(reports) if reports else None,
+        "scheduled_success_confidence_interval": (
+            clopper_pearson_interval(len(successes), len(reports)) if reports else None
+        ),
         "mean_time_to_success_s": _mean(report.get("sim_time_s") for report in successes),
         "mean_wall_time_s": sum(wall_times) / len(wall_times) if wall_times else None,
     }
@@ -92,6 +100,9 @@ def _pair_divergence(
     return {
         "compared_episodes": compared,
         "success_agreement_rate": agreements / compared if compared else None,
+        "success_agreement_confidence_interval": (
+            clopper_pearson_interval(agreements, compared) if compared else None
+        ),
         "unmatched_a": unmatched_a,
         "unmatched_b": unmatched_b,
         "failed_a": _failed_pair_ids(reports_a),
