@@ -235,6 +235,33 @@ def test_campaign_executor_rejects_unsatisfied_frozen_backend_requirement(tmp_pa
         )
 
 
+def test_campaign_executor_can_instantiate_declared_adapter(tmp_path):
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "registry-backed"},
+            "task": {"task_id": "task"},
+            "environments": [{"id": "sim", "kind": "simulator", "adapter": "mock"}],
+            "evaluation": {
+                "seeds": [1],
+                "paired": True,
+                "conditions": [{"denoising_steps": 2, "action_prefix": 1}],
+            },
+        }
+    )
+    result = CampaignExecutor(
+        plan,
+        tmp_path / "campaign",
+        lambda _: MockPolicy(),
+        adapter_registry=default_registry(discover_external=False),
+    ).run()
+    assert result.missing_attempt_ids == ()
+    manifest = json.loads(
+        (tmp_path / "campaign" / "attempts" / "attempt-000000" / "manifest.json").read_text()
+    )
+    assert manifest["simulator_id"] == "mock_simulator"
+
+
 def test_expired_worker_lease_is_reclaimed_by_next_worker(tmp_path):
     now = [1_000_000_000]
 

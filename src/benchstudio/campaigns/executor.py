@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
 PolicyFactory = Callable[[PlannedAttempt], Policy]
 SimulatorFactory = Callable[[PlannedAttempt], Simulator]
+SimulatorKwargsFactory = Callable[[PlannedAttempt], dict[str, Any]]
 ResourceSamplerFactory = Callable[[PlannedAttempt], ResourceSampler]
 
 
@@ -44,17 +45,22 @@ class CampaignExecutor:
         plan: FrozenCampaignPlan,
         output: Path,
         policy_factory: PolicyFactory,
-        simulator_factory: SimulatorFactory,
+        simulator_factory: SimulatorFactory | None = None,
         worker_id: str | None = None,
         lease_manager: WorkerLeaseManager | None = None,
         cancelled_attempts: Iterable[str] = (),
         resource_sampler_factory: ResourceSamplerFactory | None = None,
         adapter_registry: "AdapterRegistry | None" = None,
+        simulator_kwargs_factory: SimulatorKwargsFactory | None = None,
     ) -> None:
         self.plan = plan
         self.output = output
         self.policy_factory = policy_factory
         self.simulator_factory = simulator_factory
+        self.adapter_registry = adapter_registry
+        self.simulator_kwargs_factory = simulator_kwargs_factory
+        if simulator_factory is None and adapter_registry is None:
+            raise ValueError("simulator_factory or adapter_registry is required")
         self.worker_id = worker_id
         self.lease_manager = lease_manager
         self.cancelled_attempts = frozenset(cancelled_attempts)
@@ -137,7 +143,7 @@ class CampaignExecutor:
                     )
                     summary = run_episodes(
                         self.policy_factory(attempt),
-                        self.simulator_factory(attempt),
+                        self._simulator_for_attempt(attempt),
                         config,
                         attempt_dir,
                         resource_sampler=(
@@ -176,6 +182,47 @@ class CampaignExecutor:
             tuple(self.ledger.missing_attempt_ids),
             tuple(leased_out),
             tuple(cancelled),
+        )
+
+    def _simulator_for_attempt(self, attempt: PlannedAttempt) -> Simulator:
+        """Resolve a custom factory or the adapter declared by the frozen plan."""
+        if self.simulator_factory is not None:
+            return self.simulator_factory(attempt)
+        if self.adapter_registry is None:  # guarded by __init__, explicit for typing
+            raise RuntimeError("no simulator factory or adapter registry is configured")
+
+        environments = self.plan.protocol.get("S", {}).get("environments", [])
+        environment = next(
+            (
+                item
+                for item in environments
+                if isinstance(item, dict) and item.get("id") == attempt.key.environment_id
+            ),
+            None,
+        )
+        if environment is None:
+            raise ValueError(
+                f"frozen plan has no environment declaration for {attempt.key.environment_id!r}"
+            )
+        simulator_id = environment.get("adapter")
+        if not isinstance(simulator_id, str) or not simulator_id:
+            raise ValueError(
+                f"environment {attempt.key.environment_id!r} requires an adapter "
+                "when no simulator_factory is supplied"
+            )
+        if self.simulator_kwargs_factory is not None:
+            kwargs = self.simulator_kwargs_factory(attempt)
+        else:
+            kwargs = environment.get("adapter_config", {})
+        if not isinstance(kwargs, dict):
+            raise ValueError(
+                f"environment {attempt.key.environment_id!r} adapter_config must be a mapping"
+            )
+        required = environment.get("required_capabilities", {})
+        return self.adapter_registry.create(
+            simulator_id,
+            required_capabilities=required,
+            **kwargs,
         )
 
     def audit(
