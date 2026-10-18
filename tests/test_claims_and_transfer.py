@@ -56,3 +56,24 @@ def test_model_capability_profile_declares_supported_metrics():
     )
     assert profile.supports("success")
     assert not profile.supports("latent_quality")
+    assert profile.validate() == []
+
+
+def test_model_capability_profile_declares_runtime_and_timing_contract():
+    profile = ModelCapabilityProfile(
+        "planner",
+        "planner",
+        ("state",),
+        "trajectory",
+        True,
+        False,
+        ("success",),
+        input_contract="worldepisode.observation.v1",
+        inference_granularity="trajectory",
+        runtime_controls=("horizon",),
+        memory_bytes=1024,
+        timing_signals=("host_monotonic", "gpu_event"),
+        supports_async=True,
+        supports_variable_action_horizon=True,
+    )
+    assert profile.validate() == []
