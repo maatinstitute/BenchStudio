@@ -143,9 +143,18 @@ def test_registry_validates_backend_requirements_frozen_in_plan():
         (["not-a-mapping"], "environment declaration must be a mapping"),
         ([{"adapter": "mock"}], "environment declaration requires a non-empty string id"),
         ([{"id": "sim", "adapter": None}], "sim: adapter must be a non-empty string"),
-        ([{"id": "sim", "adapter": "mock", "adapter_config": []}], "sim: adapter_config must be a mapping"),
-        ([{"id": "sim", "adapter": "mock", "required_capabilities": []}], "sim: required_capabilities must be a mapping"),
-        ([{"id": "sim", "adapter": "mock"}, {"id": "sim", "adapter": "mock"}], "duplicate environment id sim"),
+        (
+            [{"id": "sim", "adapter": "mock", "adapter_config": []}],
+            "sim: adapter_config must be a mapping",
+        ),
+        (
+            [{"id": "sim", "adapter": "mock", "required_capabilities": []}],
+            "sim: required_capabilities must be a mapping",
+        ),
+        (
+            [{"id": "sim", "adapter": "mock"}, {"id": "sim", "adapter": "mock"}],
+            "duplicate environment id sim",
+        ),
     ],
 )
 def test_registry_rejects_malformed_environment_declarations(environments, expected):
