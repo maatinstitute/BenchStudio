@@ -107,6 +107,7 @@ class CampaignExecutor:
                     condition = attempt.metadata.get("condition", {})
                     config = RunConfig(
                         task_id=attempt.key.scenario_id,
+                        environment_id=attempt.key.environment_id,
                         seed=attempt.task_seed,
                         episodes=1,
                         denoising_steps=condition.get("denoising_steps", 2),

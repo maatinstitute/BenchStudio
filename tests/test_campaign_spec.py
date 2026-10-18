@@ -82,3 +82,47 @@ def test_campaign_spec_rejects_unpinned_model_checkpoint():
                 "evaluation": {"seeds": [1], "paired": True, "conditions": [{"x": 1}]},
             }
         )
+
+
+def test_campaign_spec_freezes_enabled_environment_identity_and_protocol():
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "sim-real", "protocol_revision": "v1"},
+            "model": {"adapter": "mock", "checkpoint": "sha256:" + "a" * 64},
+            "task": {"task_id": "pick", "task_revision": "rev-1"},
+            "environments": [
+                {"id": "sim", "kind": "simulator"},
+                {"id": "real", "kind": "physical", "enabled": False},
+            ],
+            "evaluation": {
+                "seeds": [1],
+                "paired": True,
+                "conditions": [{"id": "baseline", "action_prefix": 2}],
+            },
+        }
+    )
+    assert len(plan.attempts) == 1
+    assert plan.attempts[0].key.environment_id == "sim"
+    assert plan.protocol["S"]["task"]["task_revision"] == "rev-1"
+
+
+def test_campaign_spec_expands_enabled_multiple_environments():
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "paired"},
+            "task": {"task_id": "pick"},
+            "environments": [
+                {"id": "sim", "kind": "simulator"},
+                {"id": "shadow", "kind": "simulator", "enabled": True},
+            ],
+            "evaluation": {
+                "seeds": [1],
+                "paired": True,
+                "conditions": [{"id": "baseline"}],
+            },
+        }
+    )
+    assert [attempt.key.environment_id for attempt in plan.attempts] == ["sim", "shadow"]
+    assert plan.attempts[0].key.pair_id == plan.attempts[1].key.pair_id

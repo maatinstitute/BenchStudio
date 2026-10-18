@@ -50,6 +50,8 @@ def compile_campaign_spec(spec: dict[str, Any]) -> FrozenCampaignPlan:
             else None
         ),
         source_spec_sha256=_digest(spec),
+        environment_ids=_enabled_environment_ids(spec["environments"]),
+        protocol=_protocol_record(spec),
     ).freeze()
 
 
@@ -87,6 +89,8 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
                 raise ValueError(
                     f"physical environment {environment_id} requires explicit authorization"
                 )
+    if not _enabled_environment_ids(environments):
+        raise ValueError("at least one environment must be enabled")
     for section in ("measurement", "outputs"):
         value = spec.get(section, {})
         if not isinstance(value, dict) or any(
@@ -99,3 +103,39 @@ def _digest(value: Any) -> str:
     return hashlib.sha256(
         json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
+
+
+def _enabled_environment_ids(environments: list[Any]) -> tuple[str, ...]:
+    enabled: list[str] = []
+    for environment in environments:
+        item = environment if isinstance(environment, dict) else {}
+        # Simulator entries are enabled by default; physical entries require an
+        # explicit opt-in so compiling a plan can never authorize hardware by
+        # implication.
+        default_enabled = item.get("kind") != "physical"
+        if item.get("enabled", default_enabled):
+            enabled.append(item.get("id", ""))
+    return tuple(enabled)
+
+
+def _protocol_record(spec: dict[str, Any]) -> dict[str, Any]:
+    """Return the frozen E=(P,M,S,X,D,O,R) protocol envelope.
+
+    The compiler keeps the user's declared sections intact and records the
+    source digest separately. Execution backends can add D/O/R evidence later,
+    but cannot replace the frozen protocol without changing the plan digest.
+    """
+    return {
+        "schema": spec["schema"],
+        "protocol": spec.get("experiment", {}).get("protocol_revision"),
+        "P": spec.get("experiment", {}),
+        "M": spec.get("model", {}),
+        "S": {
+            "task": spec.get("task", {}),
+            "environments": spec.get("environments", []),
+        },
+        "X": spec.get("execution", {}),
+        "D": {"measurement": spec.get("measurement", {})},
+        "O": {"outputs": spec.get("outputs", {})},
+        "R": {"source_spec_sha256": _digest(spec)},
+    }

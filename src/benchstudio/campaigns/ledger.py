@@ -28,7 +28,13 @@ class AttemptLedger:
                     expected = self._planned[attempt_id]
                     if any(
                         record.get(field) != getattr(expected, field)
-                        for field in ("run_id", "scenario_id", "pair_id", "condition_id")
+                        for field in (
+                            "run_id",
+                            "scenario_id",
+                            "pair_id",
+                            "condition_id",
+                            "environment_id",
+                        )
                     ):
                         raise ValueError("ledger record identity does not match frozen plan")
                     if attempt_id in self._seen:
@@ -50,6 +56,7 @@ class AttemptLedger:
             "scenario_id": key.scenario_id,
             "pair_id": key.pair_id,
             "condition_id": key.condition_id,
+            "environment_id": key.environment_id,
             "attempt_id": key.attempt_id,
             "plan_digest_sha256": self.plan.plan_digest_sha256,
         }

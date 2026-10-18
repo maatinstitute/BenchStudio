@@ -25,6 +25,7 @@ from .evidence import (
 class RunConfig:
     task_id: str = "mock_task"
     robot_id: str = "mock_robot"
+    environment_id: str = "default"
     seed: int = 42
     episodes: int = 1
     denoising_steps: int | None = 2
@@ -46,6 +47,8 @@ class RunConfig:
             raise ValueError("max_episode_steps must be positive")
         if self.policy_timeout_ns is not None and self.policy_timeout_ns < 0:
             raise ValueError("policy_timeout_ns must be non-negative")
+        if not self.environment_id:
+            raise ValueError("environment_id must not be empty")
 
 
 @dataclass(frozen=True)
@@ -419,6 +422,7 @@ def _summary(
         "schema": "benchstudio_run_summary_v1",
         "task_id": config.task_id,
         "robot_id": config.robot_id,
+        "environment_id": config.environment_id,
         "episode_count": len(results),
         "scheduled_episode_count": scheduled,
         "completed_episode_count": completed,
