@@ -269,14 +269,20 @@ def _validate_model_capabilities(model: dict[str, Any], evaluation: dict[str, An
     issues = profile.validate()
     if issues:
         raise ValueError("invalid model.capabilities: " + "; ".join(issues))
-    strategy = evaluation.get("execution_strategy")
-    if strategy == "async" and not profile.supports_async:
-        raise ValueError("execution_strategy async requires supports_async")
-    if strategy == "streaming" and not profile.supports_streaming:
-        raise ValueError("execution_strategy streaming requires supports_streaming")
-    if strategy == "cached" and not profile.supports_cached_predictions:
-        raise ValueError("execution_strategy cached requires supports_cached_predictions")
+    strategies = {evaluation.get("execution_strategy", "sync")}
     conditions = evaluation.get("conditions", [])
+    strategies.update(
+        condition["execution_strategy"]
+        for condition in conditions
+        if isinstance(condition, dict) and "execution_strategy" in condition
+    )
+    for strategy in strategies:
+        if strategy == "async" and not profile.supports_async:
+            raise ValueError(f"execution_strategy {strategy} requires supports_async")
+        if strategy == "streaming" and not profile.supports_streaming:
+            raise ValueError(f"execution_strategy {strategy} requires supports_streaming")
+        if strategy == "cached" and not profile.supports_cached_predictions:
+            raise ValueError(f"execution_strategy {strategy} requires supports_cached_predictions")
     if any(
         isinstance(condition, dict) and condition.get("action_prefix", 1) > 1
         for condition in conditions
