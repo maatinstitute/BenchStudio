@@ -32,11 +32,9 @@ def validate_action(action: Any, spec: ActionSpec) -> list[str]:
         return [f"expected {spec.dimensions} values, received {len(action)}"]
     errors = []
     for index, value in enumerate(action):
-        try:
-            numeric = float(value)
-        except (TypeError, ValueError):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
             errors.append(f"action[{index}] is not numeric")
             continue
-        if not math.isfinite(numeric):
+        if not math.isfinite(value):
             errors.append(f"action[{index}] is not finite")
     return errors

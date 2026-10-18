@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from benchstudio.conformance import (
     ActionSpec,
     AdapterCapabilities,
@@ -21,6 +23,12 @@ def test_action_validation_rejects_semantic_shape_and_nonfinite_values():
     assert validate_action([0.1], spec)
     assert validate_action([0.1, float("nan")], spec)
     assert validate_action([0.1, 0.2], spec) == []
+
+
+@pytest.mark.parametrize("value", [True, "0.1", "nan"])
+def test_action_validation_rejects_coerced_numeric_values(value):
+    spec = ActionSpec("arm", "joint_position", "rad", 1)
+    assert validate_action([value], spec) == ["action[0] is not numeric"]
 
 
 def test_adapter_capabilities_require_consistent_timing_signals():
