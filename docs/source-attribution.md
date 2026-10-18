@@ -38,6 +38,15 @@ the following projects. Product runtimes are not vendored into this repository.
   The port preserves refresh cadence, held-observation identity, recursive
   field-hash reconciliation, paired episode identities, and first-divergence
   reporting; historical runtime data and policy-quality claims remain external.
+- Refinement/Refresh paired protocol primitives: `benchstudio.analysis.
+  refinement_protocol` extracts the dependency-free identity, keyed-seed,
+  array/observation hashing, success-envelope, journal, development-schedule,
+  and parity-report functions from `experiments/tooling/run_paired.py` at
+  upstream commit `8c92e66c7ab19403822cb87908253260666fb3a6`; source digest
+  `09fbef924edbf075ea245db6d59ba4e181785e0d3a2f66d632f264d82970458f` and
+  source-test digest
+  `256e0e6ebbe34f5930ba1afb8d1d9b153ee84bd3d00bb5b4dd0a80e9d1562313`.
+  CUDA/LeRobot rollout execution and checkpoint ownership remain external.
 - Refinement/Refresh result analysis: `benchstudio.analysis.result_metrics`
   is a direct port of `experiments/real_smolvla/result_metrics.py` from the
   same upstream commit. The source digest is
