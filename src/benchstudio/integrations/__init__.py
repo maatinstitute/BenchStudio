@@ -26,6 +26,16 @@ from .robochallenge import (
     RoboChallengeProtocolAudit,
     validate_robochallenge_message,
 )
+from .teleop_replay_timing import (
+    LogicalReplayClock,
+    ReplayScheduleEntry,
+    ReplayTimingRecording,
+    ReplayTimingSample,
+    WallClockReplayClock,
+    build_replay_schedule,
+    replay_schedule_duration_ms,
+    resolve_command_time_ms,
+)
 from .worldepisode import WorldEpisodePreflight, preflight_worldepisode
 
 __all__ = [
@@ -54,4 +64,12 @@ __all__ = [
     "POLICY_TRACE_SCHEMA",
     "TracePolicy",
     "observation_digest_sha256",
+    "ReplayTimingSample",
+    "ReplayTimingRecording",
+    "ReplayScheduleEntry",
+    "LogicalReplayClock",
+    "WallClockReplayClock",
+    "build_replay_schedule",
+    "replay_schedule_duration_ms",
+    "resolve_command_time_ms",
 ]

@@ -61,6 +61,13 @@ the following projects. Product runtimes are not vendored into this repository.
   persistent registry round-trips, representation filtering, and fail-closed
   unnamed/mismatched dataset validation while injecting the owning runtime's
   kinematic fingerprint resolver.
+- URDF Studio / `urdf-ops` replay timing: `benchstudio.integrations.
+  teleop_replay_timing` extracts the source service's timestamp selection,
+  monotonic schedule construction, logical clock, and wall-clock clock. The
+  source file is `backend/services/teleop_replay.py` at commit
+  `561dc335cc7808f62d098dbaf7e05111ae444b28`, digest
+  `bdc27b654f8dd12c27f81e4b3e0ce898408b623bcc9ef129f4e4f8502b212190`.
+  Gateway execution and robot-state validation remain external to this core.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment
