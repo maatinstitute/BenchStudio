@@ -51,6 +51,46 @@ class FrozenConfirmationPlan:
         )
 
 
+def load_confirmation_plan(path: Path) -> FrozenConfirmationPlan:
+    """Load and validate a serialized independent confirmation plan."""
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict) or payload.get("schema") != "benchstudio.confirmation.v1":
+        raise ValueError("unsupported confirmation plan schema")
+    cases_payload = payload.get("cases")
+    if not isinstance(cases_payload, list):
+        raise ValueError("confirmation plan cases must be a list")
+    cases: list[ConfirmationCase] = []
+    for value in cases_payload:
+        if not isinstance(value, dict):
+            raise ValueError("confirmation case must be a mapping")
+        try:
+            cases.append(
+                ConfirmationCase(
+                    str(value["case_id"]),
+                    str(value["candidate_id"]),
+                    str(value["scenario_id"]),
+                    str(value["initial_condition_id"]),
+                    int(value["confirmation_seed"]),
+                    str(value["source_search_run_id"]),
+                )
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("invalid confirmation case") from exc
+    try:
+        plan = FrozenConfirmationPlan(
+            str(payload["run_id"]),
+            str(payload["source_search_digest_sha256"]),
+            tuple(cases),
+            str(payload["plan_digest_sha256"]),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("invalid confirmation plan") from exc
+    issues = validate_confirmation_plan(plan)
+    if issues:
+        raise ValueError("invalid confirmation plan: " + "; ".join(issues))
+    return plan
+
+
 @dataclass(frozen=True)
 class ConfirmationEvaluation:
     """Evaluator output for one independent holdout case."""

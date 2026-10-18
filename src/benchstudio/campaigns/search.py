@@ -47,6 +47,48 @@ class FrozenSearchPlan:
         )
 
 
+def load_search_plan(path: Path) -> FrozenSearchPlan:
+    """Load and validate a serialized frozen counterexample-search plan."""
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if (
+        not isinstance(payload, dict)
+        or payload.get("schema") != "benchstudio.counterexample_search.v1"
+    ):
+        raise ValueError("unsupported counterexample search plan schema")
+    cases_payload = payload.get("cases")
+    if not isinstance(cases_payload, list):
+        raise ValueError("counterexample search plan cases must be a list")
+    cases: list[SearchCase] = []
+    for value in cases_payload:
+        if not isinstance(value, dict) or not isinstance(value.get("parameters"), dict):
+            raise ValueError("counterexample search case must contain mapping parameters")
+        try:
+            cases.append(
+                SearchCase(
+                    str(value["case_id"]),
+                    str(value["scenario_id"]),
+                    str(value["base_condition_id"]),
+                    int(value["seed"]),
+                    dict(value["parameters"]),
+                )
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("invalid counterexample search case") from exc
+    try:
+        plan = FrozenSearchPlan(
+            str(payload["run_id"]),
+            str(payload["scenario_id"]),
+            tuple(cases),
+            str(payload["plan_digest_sha256"]),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("invalid counterexample search plan") from exc
+    issues = validate_search_plan(plan)
+    if issues:
+        raise ValueError("invalid counterexample search plan: " + "; ".join(issues))
+    return plan
+
+
 @dataclass(frozen=True)
 class MinimizedCounterexample:
     parameters: dict[str, Any]

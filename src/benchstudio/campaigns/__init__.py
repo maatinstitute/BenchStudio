@@ -22,6 +22,7 @@ from .confirmation import (
     SearchCandidate,
     compile_confirmation_plan,
     execute_confirmation_plan,
+    load_confirmation_plan,
     validate_confirmation_plan,
 )
 from .counterfactual import (
@@ -58,6 +59,7 @@ from .search import (
     build_search_candidates,
     compile_search_plan,
     execute_search_plan,
+    load_search_plan,
     minimize_counterexample,
     validate_search_plan,
 )
@@ -100,6 +102,7 @@ __all__ = [
     "SearchCandidate",
     "compile_confirmation_plan",
     "execute_confirmation_plan",
+    "load_confirmation_plan",
     "validate_confirmation_plan",
     "FrozenCampaignPlan",
     "load_frozen_campaign_plan",
@@ -116,6 +119,7 @@ __all__ = [
     "build_search_candidates",
     "compile_search_plan",
     "execute_search_plan",
+    "load_search_plan",
     "minimize_counterexample",
     "validate_search_plan",
 ]

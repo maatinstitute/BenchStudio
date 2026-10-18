@@ -7,6 +7,7 @@ from benchstudio.campaigns import (
     SearchCandidate,
     compile_confirmation_plan,
     execute_confirmation_plan,
+    load_confirmation_plan,
     validate_confirmation_plan,
 )
 
@@ -26,6 +27,34 @@ def test_confirmation_plan_freezes_holdout_and_separates_search_seeds():
     assert len(plan.cases) == 2
     assert {case.candidate_id for case in plan.cases} == {"c2"}
     assert validate_confirmation_plan(plan) == []
+
+
+def test_confirmation_plan_round_trips_through_independent_loader(tmp_path):
+    plan = compile_confirmation_plan(
+        run_id="confirm-run",
+        source_search_digest_sha256="b" * 64,
+        candidates=[_candidate("c1")],
+        confirmation_seeds=[10],
+    )
+    path = tmp_path / "confirmation-plan.json"
+    plan.write(path)
+    assert load_confirmation_plan(path) == plan
+
+
+def test_confirmation_plan_loader_rejects_digest_tampering(tmp_path):
+    plan = compile_confirmation_plan(
+        run_id="confirm-run",
+        source_search_digest_sha256="b" * 64,
+        candidates=[_candidate("c1")],
+        confirmation_seeds=[10],
+    )
+    path = tmp_path / "confirmation-plan.json"
+    plan.write(path)
+    payload = json.loads(path.read_text())
+    payload["cases"][0]["confirmation_seed"] = 11
+    path.write_text(json.dumps(payload))
+    with pytest.raises(ValueError, match="digest"):
+        load_confirmation_plan(path)
 
 
 def test_confirmation_plan_rejects_search_seed_reuse_and_unknown_holdout():

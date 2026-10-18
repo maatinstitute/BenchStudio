@@ -8,6 +8,7 @@ from benchstudio.campaigns import (
     build_search_candidates,
     compile_search_plan,
     execute_search_plan,
+    load_search_plan,
     minimize_counterexample,
     validate_search_plan,
 )
@@ -78,6 +79,36 @@ def test_search_plan_can_be_written_and_validated_before_confirmation(tmp_path):
     assert validate_search_plan(plan) == []
     tampered = type(plan)(plan.run_id, plan.scenario_id, plan.cases[:-1], plan.plan_digest_sha256)
     assert "plan_digest_sha256 does not match cases" in validate_search_plan(tampered)
+
+
+def test_search_plan_round_trips_through_independent_loader(tmp_path):
+    plan = compile_search_plan(
+        run_id="search",
+        scenario_id="task",
+        base_condition_id="base",
+        dimensions=(PerturbationDimension("x", (0, 1)),),
+        seeds=[1],
+    )
+    path = tmp_path / "search-plan.json"
+    plan.write(path)
+    assert load_search_plan(path) == plan
+
+
+def test_search_plan_loader_rejects_digest_tampering(tmp_path):
+    plan = compile_search_plan(
+        run_id="search",
+        scenario_id="task",
+        base_condition_id="base",
+        dimensions=(PerturbationDimension("x", (0, 1)),),
+        seeds=[1],
+    )
+    path = tmp_path / "search-plan.json"
+    plan.write(path)
+    payload = __import__("json").loads(path.read_text())
+    payload["cases"][0]["parameters"]["x"] = 99
+    path.write_text(__import__("json").dumps(payload))
+    with pytest.raises(ValueError, match="digest"):
+        load_search_plan(path)
 
 
 def test_search_execution_persists_failures_as_confirmation_candidates(tmp_path):
