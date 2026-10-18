@@ -1,5 +1,10 @@
 """Offline validity and uncertainty analyses."""
 
+from .acceptance import (
+    AcceptanceCheck,
+    EvaluationAcceptanceReport,
+    audit_evaluation_acceptance,
+)
 from .campaign_audit import CampaignAudit, audit_campaign, audit_campaign_directory
 from .claims import ClaimDecision, ClaimType, validate_claim
 from .failure_events import EventBookmark, bookmark_critical_events
@@ -71,6 +76,9 @@ __all__ = [
     "InferenceScheduleAudit",
     "audit_inference_schedule",
     "ClaimDecision",
+    "AcceptanceCheck",
+    "EvaluationAcceptanceReport",
+    "audit_evaluation_acceptance",
     "CampaignAudit",
     "audit_campaign",
     "audit_campaign_directory",

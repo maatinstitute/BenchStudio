@@ -72,6 +72,10 @@ Matched instrumented-versus-baseline timing can be persisted as
 load that artifact, retain clock/boundary uncertainty, and expose deadline
 misses through the `execution_overhead_valid` audit field.
 
+Use `audit_evaluation_acceptance()` to produce the proposal’s explicit
+scientific-contract gate report. It fails closed when parity, recovery,
+reproducibility, statistical, or timing evidence has not been supplied.
+
 Compiled mock campaigns can also be audited and packaged as immutable evidence
 bundles:
 

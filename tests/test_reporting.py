@@ -10,6 +10,7 @@ from benchstudio.analysis import (
     ClaimType,
     OutcomeRecord,
     audit_campaign,
+    audit_evaluation_acceptance,
     summarize_paired_outcomes,
 )
 from benchstudio.campaigns import CampaignPlanner
@@ -62,7 +63,15 @@ def test_audited_report_includes_claim_provenance_and_uncertainty():
         outcomes={"success_rate": 1.0},
         diagnostics={},
         paired_statistics=summarize_paired_outcomes([True], [False]),
+        acceptance=audit_evaluation_acceptance(
+            audit,
+            policy_transparent=True,
+            reproducible=True,
+            recovery_verified=True,
+            statistical_validity=True,
+        ),
     )
     assert report["claim_decisions"][0]["status"] == "supported"
     assert report["campaign"]["outcome_provenance"]["authoritative_scorer_declared"]
     assert report["outcomes"]["paired_statistics"]["matched_pairs"] == 1
+    assert report["acceptance"]["schema"] == "benchstudio_evaluation_acceptance_v1"

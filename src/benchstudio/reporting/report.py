@@ -31,6 +31,7 @@ def build_audited_evaluation_report(
     outcomes: dict[str, Any],
     diagnostics: dict[str, Any],
     paired_statistics: Any | None = None,
+    acceptance: Any | None = None,
 ) -> dict[str, Any]:
     """Build the canonical report shape from an audited campaign result."""
     outcome_payload = dict(outcomes)
@@ -38,13 +39,16 @@ def build_audited_evaluation_report(
         outcome_payload["provenance"] = audit.outcome_provenance.to_dict()
     if paired_statistics is not None:
         outcome_payload["paired_statistics"] = paired_statistics.to_dict()
-    return build_evaluation_report(
+    report = build_evaluation_report(
         title=title,
         campaign=audit.to_dict(),
         outcomes=outcome_payload,
         diagnostics=diagnostics,
         claim_decisions=[audit.claim.to_dict()],
     )
+    if acceptance is not None:
+        report["acceptance"] = acceptance.to_dict()
+    return report
 
 
 def render_html_report(report: dict[str, Any]) -> str:
