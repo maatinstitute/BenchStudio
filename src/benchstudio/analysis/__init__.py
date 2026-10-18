@@ -5,6 +5,7 @@ from .failure_events import EventBookmark, bookmark_critical_events
 from .missingness import MissingOutcomeBounds, missing_outcome_bounds
 from .paired import PairedOutcomeSummary, summarize_paired_outcomes
 from .parity import PolicyParityReport, compare_policy_outputs
+from .recovery import RecoverySummary, summarize_recovery_outcomes
 from .resources import ResourceAudit, ResourceBudget, audit_resources
 from .score_coverage import ScoreCoverage, audit_score_coverage
 from .transfer import (
@@ -27,6 +28,8 @@ __all__ = [
     "missing_outcome_bounds",
     "ResourceAudit",
     "ResourceBudget",
+    "RecoverySummary",
+    "summarize_recovery_outcomes",
     "TransferGap",
     "TransferFidelityReport",
     "summarize_transfer_fidelity",
