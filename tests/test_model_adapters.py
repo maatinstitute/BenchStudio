@@ -151,6 +151,33 @@ def test_model_registry_rejects_invalid_capability_profile():
         )
 
 
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"family": "unknown"},
+        {"supports_closed_loop": "yes"},
+        {"inference_granularity": "unknown"},
+        {"input_modalities": [""]},
+        {"memory_bytes": 1.5},
+    ],
+)
+def test_model_registry_rejects_malformed_capability_types(overrides):
+    profile = ModelCapabilityProfile(
+        model_id="typed",
+        family="custom",
+        input_modalities=("state",),
+        output_representation="action_chunk",
+        supports_closed_loop=True,
+        supports_action_chunks=True,
+        supported_metrics=("success",),
+    )
+    invalid = {**profile.__dict__, **overrides}
+    with pytest.raises(ValueError, match="invalid capabilities"):
+        ModelAdapterRegistry().register(
+            ModelAdapterDescriptor("typed", "Typed", MockPolicy, ModelCapabilityProfile(**invalid))
+        )
+
+
 def test_model_registry_gates_declared_execution_strategy():
     plan = compile_campaign_spec(
         {
