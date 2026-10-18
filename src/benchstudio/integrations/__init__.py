@@ -84,6 +84,18 @@ from .robopad_competence import (
     termination,
     world_rotation_delta,
 )
+from .robopad_evidence_codec import (
+    MAX_BYTES as EVIDENCE_CODEC_MAX_BYTES,
+)
+from .robopad_evidence_codec import (
+    decode,
+    digest,
+    encode,
+    identity,
+    layout,
+    relationship,
+)
+from .robopad_evidence_store import EvidenceStore
 from .robopad_reference import FixedReference
 from .robopad_reference_adapter import CandidateGoals, SourceGeometry, build_goals, extract_geometry
 from .robopad_reference_cache import SourceCache, cache_executed_source, select_prefix
@@ -227,6 +239,14 @@ __all__ = [
     "validate_joint_command_payload",
     "world_bridge_event_type_from_worldd",
     "worldd_event_type_from_world_bridge",
+    "EVIDENCE_CODEC_MAX_BYTES",
+    "decode",
+    "digest",
+    "encode",
+    "identity",
+    "layout",
+    "relationship",
+    "EvidenceStore",
     "KILL_AFTER",
     "LOG_CAP",
     "RECEIPT_CAP",

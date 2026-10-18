@@ -336,6 +336,19 @@ the following projects. Product runtimes are not vendored into this repository.
   It preserves all-existing preflight, immutable partial claims, staged hash
   ceilings, terminal child accounting, wall-time admission, and stop-on-failure;
   it does not launch RoboPAD runtimes or claim scientific validity.
+- RoboPAD evidence codec/store: `benchstudio.integrations.
+  robopad_evidence_codec` directly ports `experiments/icra_evidence_codec.py`
+  at upstream commit `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
+  `48c32db3190667ffd3dbcc0ad900672fe5e6b79c7cabb8f32ac8859a79c52d19` and
+  source-test digest `9b1681db4550062ab24ba5ca8599b3c247a59c7c02aa7811272acdf994e17bd6`.
+  `benchstudio.integrations.robopad_evidence_store` ports
+  `experiments/icra_evidence_store.py`; source digest
+  `405602183782f8f79e5275509bb077b8d04fa339c8b6ba16b82ee99c5600449b` and
+  source-test digest `ef9e9765654d4288617bb13c2580e2a9bc5ebce0142e533e4ce005d3f723d724`.
+  The ports preserve temporal predecessor identity, bit-exact bounded delta
+  encoding, persisted-byte rechecks, quota reserves, hard-link commit
+  visibility, orphan accounting, and fail-closed no-retry state. NumPy remains
+  optional until these integration boundaries are used.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment
