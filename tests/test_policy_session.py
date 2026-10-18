@@ -126,6 +126,32 @@ def test_policy_session_async_strategy_uses_async_method() -> None:
     assert result.execution_strategy == "async"
 
 
+def test_policy_session_async_strategy_awaits_coroutine_method() -> None:
+    class AsyncPolicy(StubPolicy):
+        async def predict_async(self, observation, *, denoising_steps):
+            return ActionChunk((0.1, 0.2))
+
+    session = PolicySession("async-coroutine", AsyncPolicy(), execution_strategy="async")
+    session.initialize(seed=1)
+    session.start()
+    result = session.predict(Observation(0, 0.0))
+    assert result.accepted
+
+
+def test_policy_session_streaming_strategy_consumes_async_stream() -> None:
+    class AsyncStreamingPolicy(StubPolicy):
+        async def predict_stream(self, observation, *, denoising_steps):
+            yield ActionChunk((0.1, 0.2))
+
+    session = PolicySession(
+        "streaming-async", AsyncStreamingPolicy(), execution_strategy="streaming"
+    )
+    session.initialize(seed=1)
+    session.start()
+    result = session.predict(Observation(0, 0.0))
+    assert result.accepted
+
+
 def test_policy_session_async_deadline_does_not_wait_for_worker() -> None:
     import time
 

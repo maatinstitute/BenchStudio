@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import inspect
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -202,15 +204,21 @@ class PolicySession:
             if stream is None:
                 raise RuntimeError("streaming execution requires policy.predict_stream")
             values = stream(observation, denoising_steps=denoising_steps)
+            if inspect.isawaitable(values):
+                values = _resolve_awaitable(values)
             if isinstance(values, ActionChunk):
                 return values
+            if hasattr(values, "__aiter__"):
+                return _first_async_value(values)
             for value in values:
                 if isinstance(value, ActionChunk):
                     return value
             raise RuntimeError("policy.predict_stream produced no ActionChunk")
         method = getattr(self.policy, "predict_async", self.policy.predict)
         pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="benchstudio-policy")
-        future = pool.submit(method, observation, denoising_steps=denoising_steps)
+        future = pool.submit(
+            _invoke_async_method, method, observation, denoising_steps=denoising_steps
+        )
         timeout_s = None if timeout_ns is None else timeout_ns / 1_000_000_000
         timed_out = False
         try:
@@ -281,3 +289,28 @@ class PolicySession:
             tuple(errors) or (detail,),
             execution_strategy=self.execution_strategy,
         )
+
+
+def _invoke_async_method(
+    method: Callable[..., Any], observation: Observation, **kwargs: Any
+) -> Any:
+    return _resolve_awaitable(method(observation, **kwargs))
+
+
+def _resolve_awaitable(value: Any) -> Any:
+    if not inspect.isawaitable(value):
+        return value
+    return asyncio.run(value)
+
+
+def _first_async_value(values: Any) -> Any:
+    async def consume() -> Any:
+        async for value in values:
+            if isinstance(value, ActionChunk):
+                return value
+        return None
+
+    result = asyncio.run(consume())
+    if result is None:
+        raise RuntimeError("policy.predict_stream produced no ActionChunk")
+    return result
