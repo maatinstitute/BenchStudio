@@ -60,9 +60,10 @@ has been evaluated.
 | RoboPAD assay reservation boundary | Implemented at reservation boundary | Source-backed canonical run allocation, exclusive no-retry claims, binding-hash receipts, no-resume start proofs, and post-start tamper detection are verified locally; scientific claim scoring remains separate. |
 | RoboPAD initialization/runtime plan | Implemented at preflight boundary | Source-backed restored-pose controller/gripper invariants, fixed child/replay ordering, allocation-manifest identity, and resource-limit validation are verified locally; simulator launch and policy execution remain external. |
 | RoboPAD cell-store runtime evidence | Implemented at evidence boundary | Source-backed semantic digests, bounded numeric auxiliaries, partial-action journals, pending-command uncertainty, and terminal receipts are verified locally; external rollout execution remains separate. |
+| RoboPAD rollout contract | Implemented at rollout boundary | Source-backed committed-prefix/suffix cadence, native-success gating, explicit terminal states, and pending-action uncertainty are verified locally; environment and policy execution remain external. |
 | CI workflow | Prepared locally, not uploaded | `.github/workflows/ci.yml` exists locally. GitHub rejected its upload because the current OAuth token lacks workflow scope; source and smoke tests are published. |
 | Python compatibility | Locally verified | Python 3.10.12 compiles and imports the package; the full pytest suite runs under the configured Python 3.13 environment. |
-| Current verification snapshot | Verified locally | Full suite: 676 passed, 1 expected ZIP duplicate-entry warning, 27 subtests passed. |
+| Current verification snapshot | Verified locally | Full suite: 680 passed, 1 expected ZIP duplicate-entry warning, 27 subtests passed. |
 
 The repository remains private and proprietary. External benchmark scoring,
 physical safety, emergency stops, and hardware authorization are intentionally

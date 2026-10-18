@@ -410,6 +410,15 @@ the following projects. Product runtimes are not vendored into this repository.
   `7566a00c11dfd4a636a0e5296424adad61f9e0ce188e6bdff3cd76cb88b79e22`.
   The extension reuses the ported bounded evidence store, retains partial
   failures without retry semantics, and does not launch the external runtime.
+- RoboPAD rollout semantics: `benchstudio.integrations.robopad_rollout` ports
+  `experiments/icra_rollout.py` at upstream commit
+  `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
+  `6c9b6f65c8c6e13951d83d2c4c6886c72d094fc58be792a90b169ae772a4aa25` and
+  source-test digest `696aa44655d4dd47766ccc9c1d2ca8c5177cda4a8de595d6bde2ad0fff69f7b1`.
+  The port preserves committed-prefix execution, absolute ten-step suffix
+  queries, native-success gating, explicit wall-clock/environment-terminal
+  outcomes, and pending-action execution-unknown evidence; environment,
+  policy, and persistence authorities remain external.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment
