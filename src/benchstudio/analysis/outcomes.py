@@ -41,7 +41,24 @@ class OutcomeRecord:
         unknown = set(value) - fields
         if unknown:
             raise ValueError(f"unknown outcome fields: {sorted(unknown)}")
-        return cls(**{field: value.get(field) for field in fields if field in value})
+        required = fields - {
+            "evaluator_id",
+            "evaluator_revision",
+            "source_artifact_sha256",
+            "authoritative",
+        }
+        missing = sorted(required - value.keys())
+        if missing:
+            raise ValueError(f"missing outcome fields: {missing}")
+        return cls(
+            attempt_id=value["attempt_id"],
+            success=value["success"],
+            source=value["source"],
+            evaluator_id=value.get("evaluator_id"),
+            evaluator_revision=value.get("evaluator_revision"),
+            source_artifact_sha256=value.get("source_artifact_sha256"),
+            authoritative=value.get("authoritative", False),
+        )
 
 
 class OutcomeLedger:
@@ -136,22 +153,30 @@ class OutcomeProvenanceAudit:
 
 def validate_outcome_record(record: OutcomeRecord) -> list[str]:
     issues: list[str] = []
-    if not record.attempt_id:
-        issues.append("attempt_id is required")
-    if record.source not in {"official", "declared", "supplementary"}:
+    if not isinstance(record.attempt_id, str) or not record.attempt_id:
+        issues.append("attempt_id must be a non-empty string")
+    if record.success is not None and not isinstance(record.success, bool):
+        issues.append("success must be boolean or None")
+    if not isinstance(record.source, str) or record.source not in {
+        "official",
+        "declared",
+        "supplementary",
+    }:
         issues.append("source must be official, declared, or supplementary")
+    if not isinstance(record.authoritative, bool):
+        issues.append("authoritative must be boolean")
     if record.source in {"official", "declared"}:
-        if not record.evaluator_id:
+        if not isinstance(record.evaluator_id, str) or not record.evaluator_id:
             issues.append("authoritative outcomes require evaluator_id")
-        if not record.evaluator_revision:
+        if not isinstance(record.evaluator_revision, str) or not record.evaluator_revision:
             issues.append("authoritative outcomes require evaluator_revision")
         if not record.authoritative:
             issues.append("authoritative outcomes must set authoritative=true")
     if record.source == "supplementary" and record.authoritative:
         issues.append("supplementary outcomes cannot be authoritative")
-    if (
-        record.source_artifact_sha256 is not None
-        and re.fullmatch(r"sha256:[0-9a-f]{64}", record.source_artifact_sha256) is None
+    if record.source_artifact_sha256 is not None and (
+        not isinstance(record.source_artifact_sha256, str)
+        or re.fullmatch(r"sha256:[0-9a-f]{64}", record.source_artifact_sha256) is None
     ):
         issues.append("source_artifact_sha256 must be sha256:<lowercase digest>")
     return issues
