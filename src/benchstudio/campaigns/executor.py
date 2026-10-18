@@ -176,6 +176,7 @@ class CampaignExecutor:
                         worker_id=self.worker_id,
                         task_id=attempt.key.scenario_id,
                         environment_id=attempt.key.environment_id,
+                        planned_condition_id=attempt.key.condition_id,
                         seed=attempt.task_seed,
                         episodes=1,
                         denoising_steps=condition.get("denoising_steps", 2),

@@ -106,6 +106,65 @@ def test_campaign_comparison_preserves_malformed_attempts_as_failures(tmp_path):
     assert report["errors"]["x"]
 
 
+def test_comparison_rejects_mismatched_frozen_episode_identity(tmp_path):
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "identity-check"},
+            "task": {"task_id": "task"},
+            "environments": [{"id": "sim", "kind": "simulator"}],
+            "evaluation": {
+                "seeds": [1],
+                "paired": True,
+                "conditions": [{"id": "base"}],
+            },
+        }
+    )
+    root = tmp_path / "backend"
+    attempt = plan.attempts[0]
+    attempt_dir = root / "attempts" / attempt.key.attempt_id
+    attempt_dir.mkdir(parents=True)
+    (root / "campaign-plan.json").write_text(json.dumps(plan.to_dict()), encoding="utf-8")
+    (attempt_dir / "summary.json").write_text(
+        json.dumps(
+            {
+                "episodes": [
+                    {
+                        "episode_id": attempt.key.attempt_id,
+                        "pair_id": attempt.key.pair_id,
+                        "condition_id": attempt.key.condition_id,
+                        "initial_condition_id": "tampered-pair",
+                        "planned_condition_id": attempt.key.condition_id,
+                        "status": "success",
+                        "success": True,
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    report = build_campaign_comparison_report(scenario_id="task", backend_campaigns={"sim": root})
+    assert report["summary"]["sim"]["completed"] == 0
+    assert report["summary"]["sim"]["failed"] == 1
+    assert any("initial_condition_id does not match" in item for item in report["errors"]["sim"])
+
+
+def test_comparison_does_not_count_non_boolean_success_as_completed():
+    report = build_comparison_report(
+        scenario_id="task",
+        per_backend_reports={
+            "sim": [
+                {"pair_id": "p1", "status": "success", "success": "yes"},
+                {"pair_id": "p2", "status": "failure", "success": False},
+            ]
+        },
+    )
+    summary = report["summary"]["sim"]
+    assert summary["completed"] == 1
+    assert summary["failed"] == 1
+    assert summary["success_count"] == 0
+
+
 def test_campaign_comparison_adds_transfer_fidelity_for_named_backends(tmp_path):
     plan = compile_campaign_spec(
         {

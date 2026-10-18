@@ -121,13 +121,30 @@ def _load_campaign_reports(root: Path) -> tuple[list[dict[str, Any] | None], lis
             continue
         report = dict(episodes[0])
         original_pair_id = report.get("pair_id")
-        condition_id = report.get("condition_id") or attempt.get("key", {}).get("condition_id")
+        key = attempt.get("key", {}) if isinstance(attempt, dict) else {}
+        expected_pair_id = key.get("pair_id")
+        expected_condition_id = key.get("condition_id")
+        condition_id = report.get("condition_id") or expected_condition_id
         if not isinstance(original_pair_id, str) or not original_pair_id:
             errors.append(f"{attempt_id}: episode report is missing pair_id")
             reports.append({"pair_id": attempt_id, "status": "summary_error"})
             continue
         if not isinstance(condition_id, str) or not condition_id:
             errors.append(f"{attempt_id}: episode report is missing condition_id")
+            reports.append({"pair_id": attempt_id, "status": "summary_error"})
+            continue
+        if not isinstance(expected_pair_id, str) or not expected_pair_id:
+            errors.append(f"{attempt_id}: frozen plan pair_id is missing")
+            reports.append({"pair_id": attempt_id, "status": "summary_error"})
+            continue
+        planned_condition_id = report.get("planned_condition_id")
+        if planned_condition_id is not None and planned_condition_id != expected_condition_id:
+            errors.append(f"{attempt_id}: planned_condition_id does not match frozen plan")
+            reports.append({"pair_id": attempt_id, "status": "summary_error"})
+            continue
+        initial_condition_id = report.get("initial_condition_id")
+        if initial_condition_id is not None and initial_condition_id != expected_pair_id:
+            errors.append(f"{attempt_id}: initial_condition_id does not match frozen plan")
             reports.append({"pair_id": attempt_id, "status": "summary_error"})
             continue
         report["pair_id"] = f"{condition_id}:{original_pair_id}"
@@ -276,7 +293,7 @@ def _index_reports(reports: list[dict[str, Any] | None]) -> dict[str, dict[str, 
 
 def _is_task_outcome(report: dict[str, Any]) -> bool:
     status = report.get("status")
-    return status is None or status in {"success", "failure"}
+    return status in {None, "success", "failure"} and isinstance(report.get("success"), bool)
 
 
 def _status_counts(reports: list[dict[str, Any] | None]) -> dict[str, int]:
@@ -321,5 +338,12 @@ def _joint_rmse(report_a: dict[str, Any], report_b: dict[str, Any]) -> float | N
 
 
 def _mean(values: Any) -> float | None:
-    numeric = [float(value) for value in values if isinstance(value, (int, float))]
+    numeric = [
+        float(value)
+        for value in values
+        if isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+        and value >= 0
+    ]
     return sum(numeric) / len(numeric) if numeric else None

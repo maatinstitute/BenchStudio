@@ -33,6 +33,7 @@ class RunConfig:
     task_id: str = "mock_task"
     robot_id: str = "mock_robot"
     environment_id: str = "default"
+    planned_condition_id: str | None = None
     seed: int = 42
     episodes: int = 1
     denoising_steps: int | None = 2
@@ -93,6 +94,8 @@ class EpisodeResult:
     action_prefix: int
     resource_metrics: dict[str, float | int | str] = field(default_factory=dict)
     error: str | None = None
+    initial_condition_id: str | None = None
+    planned_condition_id: str | None = None
 
 
 def run_episodes(
@@ -450,6 +453,8 @@ def _run_episode(
         p95_policy_latency_ms=round(_percentile(latencies, 0.95), 6),
         action_prefix=config.action_prefix,
         resource_metrics=resource_metrics,
+        initial_condition_id=config.initial_condition_id,
+        planned_condition_id=config.planned_condition_id,
     ), events
 
 
@@ -486,6 +491,8 @@ def _failed_episode(
         p95_policy_latency_ms=round(_percentile(latencies, 0.95), 6),
         action_prefix=config.action_prefix,
         error=f"{type(error).__name__}: {error}",
+        initial_condition_id=config.initial_condition_id,
+        planned_condition_id=config.planned_condition_id,
     ), events
 
 
