@@ -4,7 +4,7 @@ import importlib
 from dataclasses import dataclass, field
 from importlib import metadata
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 from .contracts import ModelCapabilityProfile, Policy
 
@@ -98,8 +98,10 @@ class ModelAdapterRegistry:
     def validate_plan(self, plan: Any) -> tuple[str, ...]:
         """Validate the model adapter frozen in a campaign plan."""
         protocol = getattr(plan, "protocol", None) or {}
+        if not isinstance(protocol, Mapping):
+            return ("protocol must be a mapping",)
         model = protocol.get("M", {})
-        if not isinstance(model, dict) or not model.get("adapter"):
+        if not isinstance(model, Mapping) or not model.get("adapter"):
             return ()
         adapter_id = model["adapter"]
         try:
@@ -110,6 +112,21 @@ class ModelAdapterRegistry:
             return (
                 f"model adapter {adapter_id} missing " + ", ".join(readiness["missing_required"]),
             )
+        declared = model.get("capabilities")
+        if declared is not None:
+            try:
+                declared_profile = _profile_from_mapping(declared)
+            except (TypeError, ValueError) as exc:
+                return (f"model adapter {adapter_id} has invalid frozen capabilities: {exc}",)
+            actual = self.get(adapter_id).capabilities.to_dict()
+            declared_values = declared_profile.to_dict()
+            mismatches = tuple(
+                name for name in sorted(declared) if declared_values[name] != actual.get(name)
+            )
+            if mismatches:
+                return (
+                    f"model adapter {adapter_id} capability mismatch: " + ", ".join(mismatches),
+                )
         evaluation = protocol.get("P", {}).get("evaluation", {})
         strategy = evaluation.get("execution_strategy", "sync")
         capability_name = {
@@ -167,6 +184,23 @@ def _module_available(import_name: str) -> bool:
             return False
         raise
     return True
+
+
+def _profile_from_mapping(value: Any) -> ModelCapabilityProfile:
+    if not isinstance(value, Mapping):
+        raise TypeError("capabilities must be a mapping")
+    payload = dict(value)
+    for name in ("input_modalities", "supported_metrics", "runtime_controls", "timing_signals"):
+        if name in payload:
+            raw = payload[name]
+            if isinstance(raw, (str, bytes)):
+                raise TypeError(f"{name} must be a sequence of strings")
+            payload[name] = tuple(raw)
+    profile = ModelCapabilityProfile(**payload)
+    issues = profile.validate()
+    if issues:
+        raise ValueError("; ".join(issues))
+    return profile
 
 
 def default_model_registry(*, discover_external: bool = True) -> ModelAdapterRegistry:

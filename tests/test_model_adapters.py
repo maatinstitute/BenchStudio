@@ -115,3 +115,34 @@ def test_model_registry_gates_declared_execution_strategy():
     assert default_model_registry(discover_external=False).validate_plan(plan) == (
         "model adapter mock does not support async execution",
     )
+
+
+def test_model_registry_binds_declared_capabilities_to_adapter():
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "capability-binding"},
+            "model": {
+                "adapter": "mock",
+                "capabilities": {
+                    "model_id": "different-policy",
+                    "family": "custom",
+                    "input_modalities": ["state"],
+                    "output_representation": "action_chunk",
+                    "supports_closed_loop": True,
+                    "supports_action_chunks": True,
+                    "supported_metrics": ["success"],
+                },
+            },
+            "task": {"task_id": "task"},
+            "environments": [{"id": "sim", "kind": "simulator"}],
+            "evaluation": {
+                "seeds": [1],
+                "paired": True,
+                "conditions": [{"x": 1}],
+            },
+        }
+    )
+    assert default_model_registry(discover_external=False).validate_plan(plan) == (
+        "model adapter mock capability mismatch: model_id",
+    )
