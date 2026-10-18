@@ -84,6 +84,11 @@ python -m benchstudio.cli --audit-output runs/campaign \
   --acceptance-evidence acceptance-evidence.json
 ```
 
+Parity, recovery, statistics, and reproducibility reports can also be supplied
+directly with `--policy-parity-report`, `--recovery-report`,
+`--statistics-report`, and `--reproducibility-report`; their schemas are
+interpreted conservatively and never promote missing evidence to a pass.
+
 Compiled mock campaigns can also be audited and packaged as immutable evidence
 bundles:
 

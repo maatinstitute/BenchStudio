@@ -124,6 +124,10 @@ def main() -> int:
             "policy_transparent or recovery_verified."
         ),
     )
+    parser.add_argument("--policy-parity-report", type=Path)
+    parser.add_argument("--recovery-report", type=Path)
+    parser.add_argument("--statistics-report", type=Path)
+    parser.add_argument("--reproducibility-report", type=Path)
     parser.add_argument(
         "--claim-type",
         choices=[claim.value for claim in ClaimType],
@@ -234,8 +238,25 @@ def main() -> int:
         return 0 if result["valid"] else 2
     if args.audit_output is not None:
         audit = audit_campaign_directory(args.audit_output, claim_type=ClaimType(args.claim_type))
-        if args.acceptance_output is not None or args.acceptance_evidence is not None:
+        if args.acceptance_output is not None or any(
+            value is not None
+            for value in (
+                args.acceptance_evidence,
+                args.policy_parity_report,
+                args.recovery_report,
+                args.statistics_report,
+                args.reproducibility_report,
+            )
+        ):
             evidence = _load_acceptance_evidence(args.acceptance_evidence)
+            evidence.update(
+                _load_report_acceptance_evidence(
+                    args.policy_parity_report,
+                    args.recovery_report,
+                    args.statistics_report,
+                    args.reproducibility_report,
+                )
+            )
             acceptance = audit_evaluation_acceptance(
                 audit,
                 policy_transparent=evidence.get("policy_transparent"),
@@ -376,6 +397,47 @@ def _load_acceptance_evidence(path: Path | None) -> dict[str, bool]:
         raise ValueError("unsupported acceptance evidence: " + ", ".join(sorted(unknown)))
     if any(not isinstance(item, bool) for item in value.values()):
         raise ValueError("acceptance evidence values must be booleans")
+    return value
+
+
+def _load_report_acceptance_evidence(
+    policy_path: Path | None,
+    recovery_path: Path | None,
+    statistics_path: Path | None,
+    reproducibility_path: Path | None,
+) -> dict[str, bool]:
+    evidence: dict[str, bool] = {}
+    if policy_path is not None:
+        payload = _load_json_mapping(policy_path)
+        policy = payload.get("policy", payload)
+        evidence["policy_transparent"] = bool(
+            isinstance(policy, dict) and policy.get("equivalent") is True
+        )
+    if recovery_path is not None:
+        payload = _load_json_mapping(recovery_path)
+        evidence["recovery_verified"] = bool(
+            payload.get("complete") is True
+            or payload.get("passed") is True
+            or (payload.get("issues") == [] and payload.get("matched_pairs", 0) > 0)
+        )
+    if statistics_path is not None:
+        payload = _load_json_mapping(statistics_path)
+        evidence["statistical_validity"] = bool(
+            payload.get("matched_pairs", 0) > 0
+            and payload.get("success_gap_confidence_interval") is not None
+        )
+    if reproducibility_path is not None:
+        payload = _load_json_mapping(reproducibility_path)
+        evidence["reproducible"] = bool(
+            payload.get("reproducible") is True or payload.get("verified") is True
+        )
+    return evidence
+
+
+def _load_json_mapping(path: Path) -> dict[str, object]:
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError(f"{path} must contain a JSON mapping")
     return value
 
 
