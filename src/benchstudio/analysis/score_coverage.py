@@ -37,18 +37,35 @@ def audit_score_coverage(
     termination_reason: TerminationReason | None = None,
 ) -> ScoreCoverage:
     issues: list[str] = []
+    valid_termination_reasons = {
+        None,
+        "success",
+        "failure",
+        "scheduled_end",
+        "censored",
+        "cancelled",
+        "infrastructure_failure",
+    }
     if min(scheduled_steps, observed_steps, scored_steps) < 0:
         issues.append("counts must be non-negative")
+    if termination_reason not in valid_termination_reasons:
+        issues.append("termination_reason is invalid")
     if observed_steps > scheduled_steps:
         issues.append("observed_steps exceeds scheduled_steps")
     if scored_steps > observed_steps:
         issues.append("scored_steps exceeds observed_steps")
     post_success_steps = 0
     if success_step is not None:
-        post_success_steps = max(0, observed_steps - success_step - 1)
-        if success_step >= observed_steps:
-            issues.append("success_step is outside observed steps")
+        valid_success_step = isinstance(success_step, int) and not isinstance(success_step, bool)
+        if not valid_success_step or success_step < 0:
+            issues.append("success_step must be a non-negative integer")
+        else:
+            post_success_steps = max(0, observed_steps - success_step - 1)
+            if success_step >= observed_steps:
+                issues.append("success_step is outside observed steps")
     declared_early_success = termination_reason == "success" and success_step is not None
+    if success_step is not None and termination_reason not in {None, "success"}:
+        issues.append("success_step requires success termination")
     if declared_early_success and success_step != observed_steps - 1:
         issues.append("success termination must be the final observed step")
     if declared_early_success and scored_steps != observed_steps:

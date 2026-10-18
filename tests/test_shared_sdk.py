@@ -114,3 +114,30 @@ def test_score_coverage_accepts_declared_early_success_but_not_censoring():
     )
     assert censored.complete is False
     assert censored.issues == ("evaluation is incomplete: censored",)
+
+
+def test_score_coverage_rejects_invalid_success_identity_and_termination():
+    negative = audit_score_coverage(
+        scheduled_steps=0,
+        observed_steps=0,
+        scored_steps=0,
+        success_step=-1,
+        termination_reason="success",
+    )
+    assert negative.complete is False
+    assert "success_step must be a non-negative integer" in negative.issues
+    inconsistent = audit_score_coverage(
+        scheduled_steps=2,
+        observed_steps=2,
+        scored_steps=2,
+        success_step=1,
+        termination_reason="failure",
+    )
+    assert "success_step requires success termination" in inconsistent.issues
+    invalid = audit_score_coverage(
+        scheduled_steps=1,
+        observed_steps=1,
+        scored_steps=1,
+        termination_reason="unknown",  # type: ignore[arg-type]
+    )
+    assert "termination_reason is invalid" in invalid.issues
