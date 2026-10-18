@@ -51,6 +51,7 @@ from .campaigns import (
     compile_balanced_paired_plan,
     compile_campaign_spec,
     compile_confirmation_plan,
+    load_campaign_document,
     validate_confirmation_plan,
     validate_counterfactual_pair,
 )
@@ -168,6 +169,7 @@ __all__ = [
     "TransferFidelityReport",
     "ValidationIssue",
     "build_comparison_report",
+    "load_campaign_document",
     "default_registry",
     "environment_fingerprint",
     "build_artifact_manifest",

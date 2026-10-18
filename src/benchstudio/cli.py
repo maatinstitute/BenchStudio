@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 
-from .campaigns import compile_campaign_spec
+from .campaigns import compile_campaign_spec, load_campaign_document
 from .mock import MockPolicy, MockSimulator
 from .runner import RunConfig, run_episodes
 
@@ -18,7 +17,9 @@ def main() -> int:
     parser.add_argument(
         "--campaign-spec",
         type=Path,
-        help="Compile a JSON benchstudio.campaign.v1 specification instead of running the mock.",
+        help=(
+            "Compile a JSON/YAML benchstudio.campaign.v1 specification instead of running the mock."
+        ),
     )
     parser.add_argument(
         "--plan-output",
@@ -28,7 +29,7 @@ def main() -> int:
     )
     args = parser.parse_args()
     if args.campaign_spec is not None:
-        spec = json.loads(args.campaign_spec.read_text(encoding="utf-8"))
+        spec = load_campaign_document(args.campaign_spec)
         plan = compile_campaign_spec(spec)
         plan.write(args.plan_output)
         print(

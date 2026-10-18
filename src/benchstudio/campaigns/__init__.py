@@ -10,6 +10,7 @@ from .confirmation import (
 from .counterfactual import CounterfactualCell, Intervention, validate_counterfactual_pair
 from .executor import CampaignExecutionSummary, CampaignExecutor
 from .frozen_plan import AttemptKey, CampaignPlanner, FrozenCampaignPlan, PlannedAttempt
+from .io import load_campaign_document
 from .ledger import AttemptLedger
 from .paired_design import compile_balanced_paired_plan
 from .spec import compile_campaign_spec
@@ -24,6 +25,7 @@ __all__ = [
     "CampaignPlanner",
     "CampaignExecutionSummary",
     "CampaignExecutor",
+    "load_campaign_document",
     "compile_campaign_spec",
     "CounterfactualCell",
     "ConfirmationCase",

@@ -1,5 +1,6 @@
 import json
 
+from benchstudio.campaigns import load_campaign_document
 from benchstudio.cli import main
 
 
@@ -29,3 +30,12 @@ def test_cli_compiles_campaign_spec(monkeypatch, tmp_path, capsys):
     assert main() == 0
     assert json.loads(plan_path.read_text(encoding="utf-8"))["run_id"] == "cli-run"
     assert "compiled_plan=" in capsys.readouterr().out
+
+
+def test_campaign_document_loader_rejects_non_mapping_json(tmp_path):
+    path = tmp_path / "campaign.json"
+    path.write_text("[]", encoding="utf-8")
+    import pytest
+
+    with pytest.raises(ValueError, match="top-level mapping"):
+        load_campaign_document(path)
