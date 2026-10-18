@@ -221,6 +221,16 @@ the following projects. Product runtimes are not vendored into this repository.
   upstream commit; source-test digest
   `58367c9cd0eebf40ad77c826b56c4a3306ace532e5ee6f2dc254c0f9f84c016e`.
   The full driver-service digest above remains authoritative.
+- AlpaBridge route-follower ramp: `benchstudio.integrations.alpabridge_route`
+  ports the dependency-free speed-ramp, per-scene target scaling, no-braking
+  guard, route sampling, and straight-trajectory helpers from
+  `src/alpabridge/simulator/baseline_drivers.py` at upstream commit
+  `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`. Source digest is
+  `6e2fca16528f78758b4af6ed62fee672ffbf880e7731253335488d37276d0250`, and
+  the upstream ramp-test digest is
+  `c1cf7a0c13d190806de2c80e879279d22c28a9a77f0c46eb3135f521ec83a42c`.
+  The ramp remains disabled by default to preserve historical constant-speed
+  samples; AlpaSim serving and driver authority remain external.
 - URDF Studio / `urdf-ops`: `benchstudio.conformance.dataset_alignment` ports
   the dataset-alignment registry boundary from `backend/services/
   dataset_alignment.py` at upstream commit

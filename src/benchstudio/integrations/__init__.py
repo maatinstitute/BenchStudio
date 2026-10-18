@@ -26,6 +26,16 @@ from .alpabridge_policy_registry import (
     read_finite_float_tuple,
     read_positive_finite_float,
 )
+from .alpabridge_route import (
+    effective_ramp_target_mps,
+    point_at_distance,
+    ramp_scale,
+    ramp_settings,
+    ramp_up_only,
+    ramped_distances,
+    sample_route,
+    straight_trajectory,
+)
 from .alpasim_metrics import (
     AlpaSimEvidence,
     AlpaSimEvidenceConfig,
@@ -101,6 +111,14 @@ __all__ = [
     "audit_alpabridge_telemetry",
     "load_alpabridge_telemetry",
     "route_arc_length_m",
+    "ramped_distances",
+    "ramp_settings",
+    "ramp_scale",
+    "effective_ramp_target_mps",
+    "ramp_up_only",
+    "sample_route",
+    "point_at_distance",
+    "straight_trajectory",
     "FixedReference",
     "CandidateGoals",
     "SourceGeometry",
