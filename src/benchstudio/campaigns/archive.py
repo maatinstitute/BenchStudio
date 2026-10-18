@@ -146,6 +146,18 @@ def _validate_campaign_contents(contents: dict[str, bytes]) -> list[dict[str, st
                 issues.append({"reason": "ledger_evidence_flag_invalid", "detail": attempt_id})
         elif record.get("evidence_verified") is not True:
             issues.append({"reason": "ledger_evidence_flag_invalid", "detail": attempt_id})
+        if status in {"completed", "failed", "failed_cleanup"}:
+            required_evidence = (
+                f"attempts/{attempt_id}/summary.json",
+                f"attempts/{attempt_id}/runtime-receipt.json",
+                f"attempts/{attempt_id}/artifact-manifest.json",
+                f"attempts/{attempt_id}.artifact-manifest.sha256",
+            )
+            for name in required_evidence:
+                if name not in contents:
+                    issues.append(
+                        {"reason": "ledger_evidence_missing", "detail": f"{attempt_id}:{name}"}
+                    )
         for field in ("run_id", "scenario_id", "pair_id", "condition_id", "environment_id"):
             if record.get(field) != getattr(expected, field):
                 issues.append(
