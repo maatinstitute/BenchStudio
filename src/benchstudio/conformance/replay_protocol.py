@@ -18,8 +18,6 @@ def validate_adapter_capabilities(
     issues: list[str] = []
     if capabilities.queue_consumption_feedback and not capabilities.asynchronous_action_queue:
         issues.append("queue_consumption_feedback requires asynchronous_action_queue")
-    if capabilities.command_acknowledgment and not capabilities.execution_timestamps:
-        issues.append("command_acknowledgment requires execution_timestamps")
     if require_execution_timestamps and not capabilities.execution_timestamps:
         issues.append("execution_timestamps are required by this evaluation profile")
     return issues

@@ -27,8 +27,8 @@ def test_adapter_capabilities_require_consistent_timing_signals():
     issues = validate_adapter_capabilities(
         AdapterCapabilities(command_acknowledgment=True), require_execution_timestamps=True
     )
-    assert "command_acknowledgment requires execution_timestamps" in issues
     assert "execution_timestamps are required by this evaluation profile" in issues
+    assert validate_adapter_capabilities(AdapterCapabilities(command_acknowledgment=True)) == []
 
 
 def test_scenario_pair_rejects_different_assets():
