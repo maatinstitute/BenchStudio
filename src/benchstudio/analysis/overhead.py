@@ -56,6 +56,53 @@ class ExecutionOverhead:
     def provenance_complete(self) -> bool:
         return self.timing_provenance is not None and not self.timing_provenance.validate()
 
+    def validate(self) -> tuple[str, ...]:
+        """Validate the report shape before it is used as evidence."""
+        issues: list[str] = []
+        if not isinstance(self.matched_samples, int) or isinstance(self.matched_samples, bool):
+            issues.append("matched_samples must be a non-negative integer")
+        elif self.matched_samples < 0:
+            issues.append("matched_samples must be non-negative")
+        for name, value in (
+            ("baseline_mean_ms", self.baseline_mean_ms),
+            ("instrumented_mean_ms", self.instrumented_mean_ms),
+        ):
+            if value is not None and (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(float(value))
+                or value < 0
+            ):
+                issues.append(f"{name} must be finite and non-negative")
+        for name, value in (
+            ("added_mean_ms", self.added_mean_ms),
+            ("relative_overhead", self.relative_overhead),
+        ):
+            if value is not None and (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(float(value))
+            ):
+                issues.append(f"{name} must be a finite number")
+        for name, value in (
+            ("baseline_deadline_misses", self.baseline_deadline_misses),
+            ("instrumented_deadline_misses", self.instrumented_deadline_misses),
+        ):
+            if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                issues.append(f"{name} must be a non-negative integer")
+        if not isinstance(self.valid, bool):
+            issues.append("valid must be boolean")
+        if not isinstance(self.issues, tuple) or not all(
+            isinstance(issue, str) for issue in self.issues
+        ):
+            issues.append("issues must be a tuple of strings")
+        if self.timing_provenance is not None:
+            if not isinstance(self.timing_provenance, TimingProvenance):
+                issues.append("timing_provenance must be TimingProvenance or None")
+            else:
+                issues.extend(self.timing_provenance.validate())
+        return tuple(issues)
+
     def to_dict(self) -> dict[str, object]:
         return {
             "matched_samples": self.matched_samples,
@@ -104,23 +151,29 @@ def load_execution_overhead(path: Path) -> ExecutionOverhead:
         if not isinstance(provenance_value, dict):
             raise ValueError("timing_provenance must be a mapping")
         provenance = TimingProvenance(
-            str(provenance_value.get("clock_domain", "")),
-            str(provenance_value.get("start_boundary", "")),
-            str(provenance_value.get("end_boundary", "")),
+            provenance_value.get("clock_domain", ""),
+            provenance_value.get("start_boundary", ""),
+            provenance_value.get("end_boundary", ""),
             provenance_value.get("uncertainty_ms"),
         )
+    raw_issues = values.get("issues", [])
+    if not isinstance(raw_issues, list):
+        raise ValueError("execution-overhead issues must be a list")
     report = ExecutionOverhead(
-        int(values.get("matched_samples", 0)),
+        values.get("matched_samples", 0),
         values.get("baseline_mean_ms"),
         values.get("instrumented_mean_ms"),
         values.get("added_mean_ms"),
         values.get("relative_overhead"),
-        int(values.get("baseline_deadline_misses", 0)),
-        int(values.get("instrumented_deadline_misses", 0)),
-        bool(values.get("valid", False)),
-        tuple(str(issue) for issue in values.get("issues", [])),
+        values.get("baseline_deadline_misses", 0),
+        values.get("instrumented_deadline_misses", 0),
+        values.get("valid", False),
+        tuple(raw_issues),
         provenance,
     )
+    structural_issues = report.validate()
+    if structural_issues:
+        raise ValueError("invalid execution-overhead report: " + "; ".join(structural_issues))
     if report.valid and not report.provenance_complete:
         raise ValueError("valid execution-overhead report lacks complete timing provenance")
     return report

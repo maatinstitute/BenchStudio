@@ -67,3 +67,24 @@ def test_execution_overhead_round_trips_as_a_campaign_evidence_artifact(tmp_path
     loaded = load_execution_overhead(path)
     assert loaded == report
     assert json.loads(path.read_text())["schema"] == "benchstudio_execution_overhead_v1"
+
+
+def test_execution_overhead_loader_rejects_coercible_malformed_reports(tmp_path):
+    path = tmp_path / "malformed-overhead.json"
+    path.write_text(
+        json.dumps(
+            {
+                "schema": "benchstudio_execution_overhead_v1",
+                "report": {
+                    "matched_samples": "2",
+                    "baseline_deadline_misses": 0,
+                    "instrumented_deadline_misses": 0,
+                    "valid": "true",
+                    "issues": [],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="invalid execution-overhead report"):
+        load_execution_overhead(path)
