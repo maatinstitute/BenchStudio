@@ -141,3 +141,24 @@ def test_artifact_manifest_verifier_rejects_path_escape(tmp_path):
     result = verify_artifact_manifest(run_dir)
     assert result["valid"] is False
     assert "manifest_path_escape" in {item["reason"] for item in result["mismatches"]}
+
+
+def test_artifact_manifest_verifier_rejects_symlinked_bound_file(tmp_path):
+    run_dir = tmp_path / "symlink"
+    run_dir.mkdir()
+    outside = tmp_path / "outside.txt"
+    outside.write_text("outside")
+    linked = run_dir / "linked.txt"
+    linked.symlink_to(outside)
+    (run_dir / "artifact-manifest.json").write_text(
+        json.dumps(
+            {
+                "schema": "benchstudio_artifact_manifest_v1",
+                "status": "completed",
+                "files": {"linked.txt": {"sha256": "0" * 64, "bytes": 7}},
+            }
+        )
+    )
+    result = verify_artifact_manifest(run_dir)
+    assert result["valid"] is False
+    assert "symlink_artifact" in {item["reason"] for item in result["mismatches"]}

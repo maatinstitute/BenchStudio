@@ -142,6 +142,7 @@ def verify_artifact_manifest(
         mismatches.append({"file": manifest_path.name, "reason": "manifest_files_not_mapping"})
         files = {}
     bound_names: set[str] = set()
+    resolved_root = root.resolve()
     for name, expected in files.items():
         if not isinstance(name, str):
             mismatches.append({"file": manifest_path.name, "reason": "manifest_file_name_invalid"})
@@ -155,6 +156,14 @@ def verify_artifact_manifest(
             mismatches.append({"file": name, "reason": "manifest_file_entry_invalid"})
             continue
         path = root / name
+        if path.is_symlink():
+            mismatches.append({"file": name, "reason": "symlink_artifact"})
+            continue
+        try:
+            path.resolve().relative_to(resolved_root)
+        except ValueError:
+            mismatches.append({"file": name, "reason": "manifest_path_escape"})
+            continue
         if not path.is_file():
             mismatches.append({"file": name, "reason": "missing"})
             continue
@@ -163,11 +172,16 @@ def verify_artifact_manifest(
             mismatches.append({"file": name, "reason": "digest_or_size_mismatch"})
     for path in root.iterdir():
         if (
-            path.is_file()
+            (path.is_file() or path.is_symlink())
             and path.name != "artifact-manifest.json"
             and path.name not in bound_names
         ):
-            mismatches.append({"file": path.name, "reason": "unbound_artifact"})
+            mismatches.append(
+                {
+                    "file": path.name,
+                    "reason": "symlink_artifact" if path.is_symlink() else "unbound_artifact",
+                }
+            )
     return _verification_result(manifest.get("status"), mismatches, trust_anchor, signature)
 
 
