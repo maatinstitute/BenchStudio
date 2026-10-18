@@ -204,6 +204,21 @@ def test_attempt_ledger_refreshes_between_workers_and_rejects_duplicate_commit(t
     assert first_worker.missing_attempt_ids == []
 
 
+def test_attempt_ledger_idempotent_commit_reconciles_identical_duplicate(tmp_path):
+    plan = CampaignPlanner(
+        run_id="idempotent", scenario_id="pick", conditions=[{"budget": 2}], seeds=[1]
+    ).freeze()
+    ledger = AttemptLedger(tmp_path / "attempts.jsonl", plan)
+    result = {"status": "completed", "evidence_verified": True}
+    assert ledger.append_idempotent(plan.attempts[0].key, result) is True
+    assert ledger.append_idempotent(plan.attempts[0].key, result) is False
+    with pytest.raises(ValueError, match="conflicting duplicate"):
+        ledger.append_idempotent(
+            plan.attempts[0].key,
+            {"status": "failed", "evidence_verified": True},
+        )
+
+
 def test_counterfactual_plan_binds_nominal_and_intervention_branches():
     nominal = CampaignPlanner(
         run_id="robustness", scenario_id="pick", conditions=[{"budget": 2}], seeds=[7, 8]

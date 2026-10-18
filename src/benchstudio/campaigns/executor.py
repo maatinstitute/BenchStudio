@@ -45,6 +45,31 @@ class CampaignExecutionSummary:
 class CampaignExecutor:
     """Execute exactly the attempts in a frozen plan with resumable commits."""
 
+    @classmethod
+    def from_plan_file(
+        cls,
+        plan_path: Path,
+        output: Path,
+        policy_factory: PolicyFactory | None = None,
+        simulator_factory: SimulatorFactory | None = None,
+        **kwargs: Any,
+    ) -> "CampaignExecutor":
+        """Construct an executor from an independently loaded frozen plan.
+
+        This is the scheduler-facing entry point: the worker does not receive
+        a mutable planner or reconstruct attempts from CLI flags. It loads and
+        digest-validates the serialized plan, then the normal constructor
+        binds that exact plan to the campaign output and ledger.
+        """
+        plan = load_frozen_campaign_plan(Path(plan_path))
+        return cls(
+            plan,
+            Path(output),
+            policy_factory=policy_factory,
+            simulator_factory=simulator_factory,
+            **kwargs,
+        )
+
     def __init__(
         self,
         plan: FrozenCampaignPlan,
@@ -147,11 +172,11 @@ class CampaignExecutor:
                 skipped.append(attempt_id)
                 continue
             if attempt_id in self.cancelled_attempts:
-                self.ledger.append(
+                committed_now = self.ledger.append_idempotent(
                     attempt.key,
                     {"status": "cancelled", "reason": "cancelled_before_execution"},
                 )
-                cancelled.append(attempt_id)
+                (cancelled if committed_now else skipped).append(attempt_id)
                 continue
             lease = None
             if self.worker_id is not None:
@@ -217,7 +242,7 @@ class CampaignExecutor:
                         f"{verification['mismatches']}"
                     )
                 self._verify_runtime_receipt(attempt, attempt_dir)
-                self.ledger.append(
+                committed_now = self.ledger.append_idempotent(
                     attempt.key,
                     {
                         "status": summary.get("campaign_status"),
@@ -229,12 +254,14 @@ class CampaignExecutor:
                         "resource_budget_audit": summary.get("resource_budget_audit"),
                     },
                 )
-                if summary.get("campaign_status") == "completed":
+                if not committed_now:
+                    skipped.append(attempt_id)
+                elif summary.get("campaign_status") == "completed":
                     committed.append(attempt_id)
                 else:
                     failed.append(attempt_id)
             except Exception as exc:
-                self.ledger.append(
+                committed_failure = self.ledger.append_idempotent(
                     attempt.key,
                     {
                         "status": "infrastructure_failure",
@@ -243,7 +270,10 @@ class CampaignExecutor:
                         "evidence_verified": False,
                     },
                 )
-                failed.append(attempt_id)
+                if committed_failure:
+                    failed.append(attempt_id)
+                else:
+                    skipped.append(attempt_id)
             finally:
                 if lease is not None:
                     self.lease_manager.release(lease)

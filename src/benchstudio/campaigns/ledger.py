@@ -96,6 +96,31 @@ class AttemptLedger:
                 os.fsync(handle.fileno())
             self._seen.add(key.attempt_id)
 
+    def append_idempotent(self, key: AttemptKey, result: dict[str, Any]) -> bool:
+        """Commit once, treating an identical concurrent commit as a no-op.
+
+        Returns ``True`` when this call appended a new record and ``False``
+        when another worker already committed the same result. A conflicting
+        duplicate remains an error: idempotency must not hide divergent worker
+        evidence for one frozen attempt.
+        """
+        try:
+            self.append(key, result)
+        except ValueError as exc:
+            if "already recorded" not in str(exc):
+                raise
+            existing = self.record_for(key.attempt_id)
+            if existing is None:
+                raise RuntimeError(
+                    f"attempt {key.attempt_id} disappeared during duplicate commit reconciliation"
+                ) from exc
+            if any(existing.get(field) != value for field, value in result.items()):
+                raise ValueError(
+                    f"conflicting duplicate commit for attempt {key.attempt_id}"
+                ) from exc
+            return False
+        return True
+
     def contains(self, attempt_id: str) -> bool:
         with self._locked():
             self._seen = self._load_seen()

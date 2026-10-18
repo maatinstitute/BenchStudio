@@ -61,6 +61,22 @@ def test_campaign_executor_uses_frozen_attempts_and_resumes_idempotently(tmp_pat
     }
 
 
+def test_campaign_executor_can_load_the_frozen_plan_from_disk(tmp_path):
+    plan = CampaignPlanner(
+        run_id="file-plan", scenario_id="mock-task", conditions=[{"x": 1}], seeds=[3]
+    ).freeze()
+    plan_path = tmp_path / "frozen-plan.json"
+    plan.write(plan_path)
+    executor = CampaignExecutor.from_plan_file(
+        plan_path,
+        tmp_path / "campaign",
+        policy_factory=lambda _: MockPolicy(),
+        simulator_factory=lambda _: MockSimulator(),
+    )
+    assert executor.plan == plan
+    assert executor.run().committed_attempt_ids == ("attempt-000000",)
+
+
 def test_campaign_executor_can_run_pending_attempts_with_multiple_workers(tmp_path):
     plan = CampaignPlanner(
         run_id="parallel-run",
