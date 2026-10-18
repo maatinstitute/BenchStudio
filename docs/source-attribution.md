@@ -326,6 +326,16 @@ the following projects. Product runtimes are not vendored into this repository.
   source-test digest `3c3d76ce31057826752027e824b0e0701e1af7506b7dfac10dc649f8dd0a6362`.
   The audit remains explicitly provisional and freshness-ineligible; dataset
   bytes, aliases, and broader parent coverage are not certified.
+- RoboPAD reference batch controls: `benchstudio.campaigns.
+  robopad_reference_batch` ports the reservation, staged-input verification,
+  and sequential no-retry dispatch boundary from
+  `experiments/icra_reference_batch.py` at upstream commit
+  `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
+  `d4cc890351ad5cbe2d99a8d4c712aacff279bcfd5422efc1d8133a7f97e7da0d` and
+  source-test digest `1a7b33ea4c43c0ca9cab8f64bb552fabc18552802c70a3cdee32994494a3ecbc`.
+  It preserves all-existing preflight, immutable partial claims, staged hash
+  ceilings, terminal child accounting, wall-time admission, and stop-on-failure;
+  it does not launch RoboPAD runtimes or claim scientific validity.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment

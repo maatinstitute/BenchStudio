@@ -106,6 +106,7 @@ from .robopad_assay_plan import (
     sha,
     suffix_seed,
 )
+from .robopad_reference_batch import FILES, NAMES, dispatch, reserve, slots, verify
 from .search import (
     FrozenSearchPlan,
     MinimizedCounterexample,
@@ -217,6 +218,12 @@ __all__ = [
     "suffix_seed",
     "load_reference_attempt",
     "sha",
+    "NAMES",
+    "FILES",
+    "slots",
+    "reserve",
+    "verify",
+    "dispatch",
     "PerturbationDimension",
     "SearchCase",
     "SearchCaseResult",

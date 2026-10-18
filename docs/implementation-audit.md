@@ -52,9 +52,10 @@ has been evaluated.
 | RoboPAD supervisor boundary | Implemented at process boundary | Source-backed bounded child supervision preserves owned process-group cleanup, timeout escalation, merged-log ceilings, exclusive attempted-run logs, reviewed parent envelopes, and atomic bounded receipts; campaign manifests, child runtime, scheduler, and claims authority remain external. |
 | RoboPAD fixed assay/cache boundary | Implemented at source-evidence boundary | Source-backed 360-slot assay allocation, consumed-slot exclusion, deterministic suffix seeds, hash-bound native reference-attempt loading, no-padding source prefixes, held-source selection, and immutable retained action bytes are verified locally; source runtime and official outcome authority remain external. |
 | RoboPAD missingness/exposure analysis | Implemented with explicit limits | Source-backed fixed-weight paired missing-outcome bounds preserve planned denominators and unknown arms; quarantine-only family/split auditing rejects overlaps while never certifying dataset freshness. |
+| RoboPAD reference batch boundary | Implemented at scheduler boundary | Source-backed immutable slot claims, staged-input hash verification, sequential no-retry dispatch, terminal child accounting, and wall-time admission are verified locally; external child execution and scientific validity remain out of scope. |
 | CI workflow | Prepared locally, not uploaded | `.github/workflows/ci.yml` exists locally. GitHub rejected its upload because the current OAuth token lacks workflow scope; source and smoke tests are published. |
 | Python compatibility | Locally verified | Python 3.10.12 compiles and imports the package; the full pytest suite runs under the configured Python 3.13 environment. |
-| Current verification snapshot | Verified locally | Full suite: 647 passed, 1 expected ZIP duplicate-entry warning, 27 subtests passed. |
+| Current verification snapshot | Verified locally | Full suite: 651 passed, 1 expected ZIP duplicate-entry warning, 27 subtests passed. |
 
 The repository remains private and proprietary. External benchmark scoring,
 physical safety, emergency stops, and hardware authorization are intentionally
