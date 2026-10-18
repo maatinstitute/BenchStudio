@@ -683,6 +683,33 @@ def test_registry_backed_manifest_records_model_capabilities(tmp_path):
     assert manifest["model_dependencies"] == []
 
 
+def test_registry_backed_manifest_records_simulator_dependencies(tmp_path):
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "simulator-dependency-evidence"},
+            "model": {"adapter": "mock"},
+            "task": {"task_id": "task"},
+            "environments": [{"id": "sim", "kind": "simulator", "adapter": "mock"}],
+            "evaluation": {
+                "seeds": [1],
+                "paired": True,
+                "conditions": [{"x": 1}],
+            },
+        }
+    )
+    CampaignExecutor(
+        plan,
+        tmp_path / "campaign",
+        model_registry=default_model_registry(discover_external=False),
+        adapter_registry=default_registry(discover_external=False),
+    ).run()
+    manifest = json.loads(
+        (tmp_path / "campaign" / "attempts" / "attempt-000000" / "manifest.json").read_text()
+    )
+    assert manifest["simulator_dependencies"] == []
+
+
 def test_expired_worker_lease_is_reclaimed_by_next_worker(tmp_path):
     now = [1_000_000_000]
 

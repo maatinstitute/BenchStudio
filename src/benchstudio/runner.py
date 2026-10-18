@@ -542,6 +542,9 @@ def _manifest(policy: Policy, simulator: Simulator, config: RunConfig) -> dict[s
         dependencies = getattr(policy, "__benchstudio_dependencies__", None)
         if dependencies is not None:
             manifest["model_dependencies"] = list(dependencies)
+    simulator_dependencies = getattr(simulator, "__benchstudio_dependencies__", None)
+    if simulator_dependencies is not None:
+        manifest["simulator_dependencies"] = list(simulator_dependencies)
     if config.calibration is not None:
         from .calibration import CalibrationRecord
 

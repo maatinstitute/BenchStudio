@@ -112,7 +112,15 @@ class AdapterRegistry:
                 f"simulator {simulator_id} does not satisfy required capabilities: "
                 + ", ".join(issues)
             )
-        return descriptor.factory(**kwargs)
+        simulator = descriptor.factory(**kwargs)
+        try:
+            setattr(simulator, "__benchstudio_dependencies__", tuple(readiness["dependencies"]))
+            setattr(simulator, "__benchstudio_adapter_id__", descriptor.simulator_id)
+        except (AttributeError, TypeError):
+            # Immutable third-party simulator objects can still execute; the
+            # descriptor remains available from the registry audit.
+            pass
+        return simulator
 
     def capability_issues(self, simulator_id: str, required: Mapping[str, bool]) -> tuple[str, ...]:
         """Return unmet boolean capability requirements in stable order."""
