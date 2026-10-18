@@ -51,28 +51,50 @@ class RunConfig:
     resource_budget: ResourceBudget | None = None
 
     def __post_init__(self) -> None:
-        if self.episodes < 1:
-            raise ValueError("episodes must be positive")
-        if self.action_prefix < 1:
-            raise ValueError("action_prefix must be positive")
-        if self.observation_refresh_ticks < 1:
-            raise ValueError("observation_refresh_ticks must be positive")
-        if self.max_episode_steps < 1:
-            raise ValueError("max_episode_steps must be positive")
-        if self.policy_timeout_ns is not None and self.policy_timeout_ns < 0:
-            raise ValueError("policy_timeout_ns must be non-negative")
-        if self.execution_strategy not in {"sync", "async", "streaming", "cached"}:
+        for field_name in (
+            "episodes",
+            "action_prefix",
+            "observation_refresh_ticks",
+            "max_episode_steps",
+        ):
+            value = getattr(self, field_name)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                raise ValueError(f"{field_name} must be a positive integer")
+        if isinstance(self.seed, bool) or not isinstance(self.seed, int):
+            raise ValueError("seed must be an integer")
+        if self.denoising_steps is not None and (
+            isinstance(self.denoising_steps, bool)
+            or not isinstance(self.denoising_steps, int)
+            or self.denoising_steps < 0
+        ):
+            raise ValueError("denoising_steps must be a non-negative integer or null")
+        if self.policy_timeout_ns is not None and (
+            isinstance(self.policy_timeout_ns, bool)
+            or not isinstance(self.policy_timeout_ns, int)
+            or self.policy_timeout_ns < 0
+        ):
+            raise ValueError("policy_timeout_ns must be a non-negative integer or null")
+        if not isinstance(self.execution_strategy, str) or self.execution_strategy not in {
+            "sync",
+            "async",
+            "streaming",
+            "cached",
+        }:
             raise ValueError(f"unsupported execution strategy: {self.execution_strategy}")
-        if self.max_cache_entries < 1:
-            raise ValueError("max_cache_entries must be positive")
+        if (
+            isinstance(self.max_cache_entries, bool)
+            or not isinstance(self.max_cache_entries, int)
+            or self.max_cache_entries < 1
+        ):
+            raise ValueError("max_cache_entries must be a positive integer")
         if self.calibration is not None and not isinstance(self.calibration, dict):
             raise ValueError("calibration must be a mapping")
         if self.benchmark_validity is not None and not isinstance(self.benchmark_validity, dict):
             raise ValueError("benchmark_validity must be a mapping")
         if self.model_reference is not None and not isinstance(self.model_reference, dict):
             raise ValueError("model_reference must be a mapping")
-        if not self.environment_id:
-            raise ValueError("environment_id must not be empty")
+        if not isinstance(self.environment_id, str) or not self.environment_id:
+            raise ValueError("environment_id must be a non-empty string")
 
 
 @dataclass(frozen=True)

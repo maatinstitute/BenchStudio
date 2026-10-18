@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from benchstudio.analysis import ResourceBudget
 from benchstudio.conformance import ActionSpec
 from benchstudio.contracts import ActionChunk
@@ -128,10 +130,25 @@ def test_actions_in_one_chunk_keep_the_same_source_observation(tmp_path):
 
 
 def test_invalid_schedule_is_rejected():
-    import pytest
-
     with pytest.raises(ValueError, match="action_prefix"):
         RunConfig(action_prefix=0)
+
+
+@pytest.mark.parametrize(
+    "kwargs, message",
+    [
+        ({"episodes": True}, "episodes"),
+        ({"action_prefix": 1.5}, "action_prefix"),
+        ({"seed": True}, "seed"),
+        ({"denoising_steps": -1}, "denoising_steps"),
+        ({"policy_timeout_ns": 1.5}, "policy_timeout_ns"),
+        ({"max_cache_entries": 0}, "max_cache_entries"),
+        ({"execution_strategy": []}, "execution strategy"),
+    ],
+)
+def test_run_config_rejects_malformed_types(kwargs, message):
+    with pytest.raises(ValueError, match=message):
+        RunConfig(**kwargs)
 
 
 def test_runner_uses_action_contract_and_reports_invalid_policy_output(tmp_path):
