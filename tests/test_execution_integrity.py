@@ -82,6 +82,8 @@ def test_robochallenge_adapter_preserves_opaque_payload_digests():
     assert validate_robochallenge_message(RoboChallengeAction("bad", 1, b"x", "0" * 64)) == [
         "payload digest mismatch"
     ]
+    with pytest.raises(ValueError, match="execution timestamp"):
+        adapter.action_acknowledged(action, execution_timestamp_ns=-1)
 
 
 def test_worldepisode_binding_is_explicit_about_fallback_profile():

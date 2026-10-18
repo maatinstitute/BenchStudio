@@ -68,6 +68,8 @@ class RoboChallengeObserveOnlyAdapter:
         self, message: RoboChallengeAction, *, execution_timestamp_ns: int | None
     ) -> None:
         issues = validate_robochallenge_message(message)
+        if execution_timestamp_ns is not None and execution_timestamp_ns < 0:
+            issues.append("execution timestamp must be non-negative")
         if issues:
             raise ValueError("invalid RoboChallenge action: " + "; ".join(issues))
         self.sink(
