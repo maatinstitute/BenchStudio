@@ -98,6 +98,16 @@ the following projects. Product runtimes are not vendored into this repository.
   The fixed horizon, source-held conditioning, action clipping, and defensive
   copy semantics are preserved; waypoint derivation and execution authority
   remain external.
+- RoboPAD competence evidence: `benchstudio.integrations.robopad_competence`
+  ports the dependency-light persistence, termination, exact replay comparison,
+  stale-goal rotation guard, and compact-record helpers from
+  `experiments/icra_reference_competence.py` at upstream commit
+  `4ecd468cc67cc40681ca2af9097b7ade5825fadd`. Source digest is
+  `4d2223b22f8384629e7e51cd8f68f7e242775e831d5f686630c573ee63dea83c`, and
+  the upstream test digest is
+  `bce4cd71464e83feed06807825cd015ff3cc7c29e235cc34420cb2f12c60fc73`.
+  The port preserves bounded evidence writes and exact replay semantics;
+  physical rollout execution and source geometry remain external.
 - RoboPAD campaign resource limits: the existing `ResourceBudget` and frozen
   campaign compiler now carry the source campaign manifest's GPU-hour, output
   byte, policy-query, retry, and per-cell timeout ceilings. The shared runner

@@ -46,6 +46,15 @@ from .robochallenge import (
     RoboChallengeProtocolAudit,
     validate_robochallenge_message,
 )
+from .robopad_competence import (
+    MAX_BYTES,
+    checked_rotation_delta,
+    compact_record,
+    persist,
+    replay_equal,
+    termination,
+    world_rotation_delta,
+)
 from .robopad_reference import FixedReference
 from .teleop_replay_timing import (
     LogicalReplayClock,
@@ -92,6 +101,13 @@ __all__ = [
     "load_alpabridge_telemetry",
     "route_arc_length_m",
     "FixedReference",
+    "MAX_BYTES",
+    "checked_rotation_delta",
+    "compact_record",
+    "persist",
+    "replay_equal",
+    "termination",
+    "world_rotation_delta",
     "LifecycleEvent",
     "SyntheticLifecycleService",
     "run_synthetic_lifecycle_cycle",
