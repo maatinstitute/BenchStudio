@@ -32,6 +32,37 @@ def test_cli_compiles_campaign_spec(monkeypatch, tmp_path, capsys):
     assert "compiled_plan=" in capsys.readouterr().out
 
 
+def test_cli_executes_independently_loaded_frozen_plan(monkeypatch, tmp_path, capsys):
+    from benchstudio.campaigns import CampaignPlanner
+
+    plan_path = tmp_path / "frozen-plan.json"
+    CampaignPlanner(
+        run_id="loaded-plan",
+        scenario_id="task",
+        conditions=[{"denoising_steps": 2, "action_prefix": 1}],
+        seeds=[1],
+    ).freeze().write(plan_path)
+    output = tmp_path / "campaign"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--frozen-plan",
+            str(plan_path),
+            "--execute-mock",
+            "--output",
+            str(output),
+            "--audit",
+        ],
+    )
+    assert main() == 0
+    text = capsys.readouterr().out
+    assert "loaded_plan=" in text
+    assert "campaign_status=completed" in text
+    assert "audit_status=qualified" in text
+    assert (output / "campaign-plan.json").is_file()
+
+
 def test_cli_validates_serialized_search_plan(monkeypatch, tmp_path, capsys):
     from benchstudio.campaigns import PerturbationDimension, compile_search_plan
 

@@ -24,6 +24,7 @@ from .campaigns import (
     LocalArtifactStore,
     compile_campaign_spec,
     load_campaign_document,
+    load_frozen_campaign_plan,
     retrieve_campaign_archive,
     verify_campaign_archive,
 )
@@ -62,6 +63,11 @@ def main() -> int:
         help=(
             "Compile a JSON/YAML benchstudio.campaign.v1 specification instead of running the mock."
         ),
+    )
+    parser.add_argument(
+        "--frozen-plan",
+        type=Path,
+        help="Load an existing frozen campaign plan for recovery or direct execution.",
     )
     parser.add_argument(
         "--plan-output",
@@ -533,12 +539,21 @@ def main() -> int:
             )
         )
         return 0
-    if args.campaign_spec is not None:
-        spec = load_campaign_document(args.campaign_spec)
-        plan = compile_campaign_spec(spec)
-        plan.write(args.plan_output)
+    if args.campaign_spec is not None or args.frozen_plan is not None:
+        if args.campaign_spec is not None and args.frozen_plan is not None:
+            parser.error("--campaign-spec and --frozen-plan are mutually exclusive")
+        if args.frozen_plan is not None:
+            plan = load_frozen_campaign_plan(args.frozen_plan)
+            plan_source = args.frozen_plan
+            source_label = "loaded_plan"
+        else:
+            spec = load_campaign_document(args.campaign_spec)
+            plan = compile_campaign_spec(spec)
+            plan.write(args.plan_output)
+            plan_source = args.plan_output
+            source_label = "compiled_plan"
         print(
-            f"compiled_plan={args.plan_output} attempts={len(plan.attempts)} "
+            f"{source_label}={plan_source} attempts={len(plan.attempts)} "
             f"digest={plan.plan_digest_sha256}"
         )
         if args.execute_mock or args.execute_registry:

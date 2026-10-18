@@ -255,6 +255,14 @@ resumption when already recorded. Existing partial attempt directories are
 refused rather than silently retried. Declarative `benchstudio.campaign.v1`
 maps compile into the same immutable plan format.
 
+An existing frozen plan can also be loaded directly for recovery or execution,
+without recompiling the source specification:
+
+```bash
+python -m benchstudio.cli --frozen-plan campaign-plan.json \
+  --execute-mock --output runs/recovered --audit
+```
+
 ## Scope
 
 The current release includes mock adapters for deterministic development. The
