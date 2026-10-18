@@ -35,6 +35,7 @@ class CampaignExecutionSummary:
     run_id: str
     plan_digest_sha256: str
     committed_attempt_ids: tuple[str, ...]
+    failed_attempt_ids: tuple[str, ...]
     skipped_attempt_ids: tuple[str, ...]
     missing_attempt_ids: tuple[str, ...]
     leased_out_attempt_ids: tuple[str, ...]
@@ -118,6 +119,7 @@ class CampaignExecutor:
         if unknown:
             raise ValueError(f"attempt_ids are outside the frozen plan: {sorted(unknown)}")
         committed: list[str] = []
+        failed: list[str] = []
         skipped: list[str] = []
         leased_out: list[str] = []
         cancelled: list[str] = []
@@ -126,14 +128,18 @@ class CampaignExecutor:
             if attempt_id not in selected_ids:
                 continue
             if self.ledger.contains(attempt_id):
-                attempt_dir = self.output / "attempts" / attempt_id
-                self._verify_runtime_receipt(attempt, attempt_dir)
-                verification = verify_artifact_manifest(attempt_dir)
-                if not verification["valid"]:
-                    raise RuntimeError(
-                        f"attempt {attempt_id} evidence verification failed: "
-                        f"{verification['mismatches']}"
-                    )
+                record = self.ledger.record_for(attempt_id)
+                if record is None:
+                    raise RuntimeError(f"ledger lost committed attempt {attempt_id}")
+                if record.get("status") != "infrastructure_failure":
+                    attempt_dir = self.output / "attempts" / attempt_id
+                    self._verify_runtime_receipt(attempt, attempt_dir)
+                    verification = verify_artifact_manifest(attempt_dir)
+                    if not verification["valid"]:
+                        raise RuntimeError(
+                            f"attempt {attempt_id} evidence verification failed: "
+                            f"{verification['mismatches']}"
+                        )
                 skipped.append(attempt_id)
                 continue
             if attempt_id in self.cancelled_attempts:
@@ -219,6 +225,17 @@ class CampaignExecutor:
                     },
                 )
                 committed.append(attempt_id)
+            except Exception as exc:
+                self.ledger.append(
+                    attempt.key,
+                    {
+                        "status": "infrastructure_failure",
+                        "reason": "attempt_execution_exception",
+                        "error": f"{type(exc).__name__}: {exc}",
+                        "evidence_verified": False,
+                    },
+                )
+                failed.append(attempt_id)
             finally:
                 if lease is not None:
                     self.lease_manager.release(lease)
@@ -226,6 +243,7 @@ class CampaignExecutor:
             self.plan.run_id,
             self.plan.plan_digest_sha256,
             tuple(committed),
+            tuple(failed),
             tuple(skipped),
             tuple(self.ledger.missing_attempt_ids),
             tuple(leased_out),
@@ -302,6 +320,10 @@ class CampaignExecutor:
             {attempt_id for result in results for attempt_id in result.committed_attempt_ids},
             key=order.__getitem__,
         )
+        failed = sorted(
+            {attempt_id for result in results for attempt_id in result.failed_attempt_ids},
+            key=order.__getitem__,
+        )
         skipped = sorted(
             {attempt_id for result in results for attempt_id in result.skipped_attempt_ids},
             key=order.__getitem__,
@@ -318,6 +340,7 @@ class CampaignExecutor:
             self.plan.run_id,
             self.plan.plan_digest_sha256,
             tuple(committed),
+            tuple(failed),
             tuple(skipped),
             tuple(self.ledger.missing_attempt_ids),
             tuple(leased_out),

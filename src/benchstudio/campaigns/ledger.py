@@ -98,6 +98,20 @@ class AttemptLedger:
             self._seen = self._load_seen()
             return attempt_id in self._seen
 
+    def record_for(self, attempt_id: str) -> dict[str, Any] | None:
+        """Return one committed record, or ``None`` when it is still missing."""
+        with self._locked():
+            self._seen = self._load_seen()
+            if not self.path.is_file():
+                return None
+            for line in self.path.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                record = json.loads(line)
+                if record.get("attempt_id") == attempt_id:
+                    return record
+            return None
+
     @property
     def missing_attempt_ids(self) -> list[str]:
         with self._locked():

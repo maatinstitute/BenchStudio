@@ -99,6 +99,31 @@ def test_campaign_executor_rejects_attempts_outside_frozen_batch(tmp_path):
         executor.run(attempt_ids=["not-planned"])
 
 
+def test_campaign_executor_commits_infrastructure_failure_and_does_not_retry(tmp_path):
+    plan = CampaignPlanner(
+        run_id="failure-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+
+    def failing_simulator(_attempt):
+        raise RuntimeError("simulator worker unavailable")
+
+    executor = CampaignExecutor(
+        plan, tmp_path / "campaign", lambda _: MockPolicy(), failing_simulator
+    )
+    first = executor.run()
+    assert first.committed_attempt_ids == ()
+    assert first.failed_attempt_ids == ("attempt-000000",)
+    assert first.missing_attempt_ids == ()
+
+    second = CampaignExecutor(
+        plan, tmp_path / "campaign", lambda _: MockPolicy(), failing_simulator
+    ).run()
+    assert second.failed_attempt_ids == ()
+    assert second.skipped_attempt_ids == ("attempt-000000",)
+    record = json.loads((tmp_path / "campaign" / "attempt-results.jsonl").read_text().strip())
+    assert record["status"] == "infrastructure_failure"
+
+
 def test_campaign_executor_rejects_a_different_plan_at_existing_output(tmp_path):
     first = CampaignPlanner(
         run_id="run-1", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
