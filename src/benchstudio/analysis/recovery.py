@@ -4,6 +4,8 @@ import math
 from dataclasses import dataclass
 from typing import Any
 
+from ..campaigns.counterfactual import FrozenCounterfactualPlan
+
 
 @dataclass(frozen=True)
 class RecoverySummary:
@@ -15,6 +17,86 @@ class RecoverySummary:
     recovery_rate: float | None
     mean_recovery_time_ms: float | None
     issues: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class CounterfactualOutcomeAudit:
+    scheduled_branches: int
+    recorded_branches: int
+    missing_branch_attempt_ids: tuple[str, ...]
+    unknown_branch_attempt_ids: tuple[str, ...]
+    duplicate_branch_attempt_ids: tuple[str, ...]
+    lineage_issues: tuple[str, ...]
+
+    @property
+    def complete(self) -> bool:
+        return (
+            not (
+                self.missing_branch_attempt_ids
+                or self.unknown_branch_attempt_ids
+                or self.duplicate_branch_attempt_ids
+                or self.lineage_issues
+            )
+            and self.recorded_branches == self.scheduled_branches
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "scheduled_branches": self.scheduled_branches,
+            "recorded_branches": self.recorded_branches,
+            "missing_branch_attempt_ids": list(self.missing_branch_attempt_ids),
+            "unknown_branch_attempt_ids": list(self.unknown_branch_attempt_ids),
+            "duplicate_branch_attempt_ids": list(self.duplicate_branch_attempt_ids),
+            "lineage_issues": list(self.lineage_issues),
+            "complete": self.complete,
+        }
+
+
+def audit_counterfactual_outcomes(
+    plan: FrozenCounterfactualPlan, records: list[dict[str, Any]]
+) -> CounterfactualOutcomeAudit:
+    """Verify observed branches against a frozen counterfactual plan."""
+    expected: dict[str, tuple[str, str, int, str]] = {}
+    for pair in plan.pairs:
+        for cell in (pair.nominal, pair.intervention):
+            expected[cell.branch_attempt_id] = (
+                cell.pair_id,
+                cell.branch,
+                cell.intervention.transition_index,
+                cell.intervention.intervention_id,
+            )
+    occurrences: dict[str, int] = {}
+    unknown: set[str] = set()
+    lineage: list[str] = []
+    for index, record in enumerate(records):
+        branch_attempt_id = record.get("branch_attempt_id")
+        if not isinstance(branch_attempt_id, str) or not branch_attempt_id:
+            lineage.append(f"record {index}: missing branch_attempt_id")
+            continue
+        occurrences[branch_attempt_id] = occurrences.get(branch_attempt_id, 0) + 1
+        expected_row = expected.get(branch_attempt_id)
+        if expected_row is None:
+            unknown.add(branch_attempt_id)
+            continue
+        pair_id, branch, transition_index, intervention_id = expected_row
+        if record.get("pair_id") != pair_id:
+            lineage.append(f"{branch_attempt_id}: pair_id does not match frozen plan")
+        if record.get("branch") != branch:
+            lineage.append(f"{branch_attempt_id}: branch does not match frozen plan")
+        if record.get("transition_index") != transition_index:
+            lineage.append(f"{branch_attempt_id}: transition_index does not match frozen plan")
+        if record.get("intervention_id") != intervention_id:
+            lineage.append(f"{branch_attempt_id}: intervention_id does not match frozen plan")
+    duplicates = tuple(sorted(item for item, count in occurrences.items() if count > 1))
+    missing = tuple(sorted(set(expected) - occurrences.keys()))
+    return CounterfactualOutcomeAudit(
+        len(expected),
+        len(records),
+        missing,
+        tuple(sorted(unknown)),
+        duplicates,
+        tuple(lineage),
+    )
 
 
 def summarize_recovery_outcomes(records: list[dict[str, Any]]) -> RecoverySummary:

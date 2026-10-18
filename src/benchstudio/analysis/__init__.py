@@ -25,7 +25,12 @@ from .parity import (
     compare_observation_streams,
     compare_policy_outputs,
 )
-from .recovery import RecoverySummary, summarize_recovery_outcomes
+from .recovery import (
+    CounterfactualOutcomeAudit,
+    RecoverySummary,
+    audit_counterfactual_outcomes,
+    summarize_recovery_outcomes,
+)
 from .resources import (
     ResourceAudit,
     ResourceBudget,
@@ -69,6 +74,8 @@ __all__ = [
     "ResourcePoint",
     "pareto_frontier",
     "RecoverySummary",
+    "CounterfactualOutcomeAudit",
+    "audit_counterfactual_outcomes",
     "summarize_recovery_outcomes",
     "TransferGap",
     "TransferFidelityReport",
