@@ -9,11 +9,13 @@ from .archive import (
     write_campaign_archive,
 )
 from .artifacts import (
+    ArtifactReader,
     ArtifactReference,
     ArtifactStore,
     HttpArtifactStore,
     LocalArtifactStore,
     publish_campaign_archive,
+    retrieve_campaign_archive,
 )
 from .confirmation import (
     ConfirmationCase,
@@ -89,10 +91,12 @@ __all__ = [
     "verify_campaign_archive",
     "write_campaign_archive",
     "ArtifactReference",
+    "ArtifactReader",
     "ArtifactStore",
     "LocalArtifactStore",
     "HttpArtifactStore",
     "publish_campaign_archive",
+    "retrieve_campaign_archive",
     "load_campaign_document",
     "compile_campaign_spec",
     "CounterfactualCell",

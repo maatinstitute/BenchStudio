@@ -126,6 +126,10 @@ immutable object path and treating an existing object as idempotent.
 The CLI selects that publisher with `--artifact-url URL`; `--artifact-store`
 and `--artifact-url` are mutually exclusive.
 
+Published bundles can be fetched through the Python API with
+`retrieve_campaign_archive()`. Retrieval verifies the content digest and
+archive structure before extraction.
+
 When comparing frozen simulation and physical campaign directories, add
 `--transfer-backends SIMULATION=PHYSICAL` to include paired transfer-fidelity
 statistics in the comparison report. Missing physical outcomes remain missing.

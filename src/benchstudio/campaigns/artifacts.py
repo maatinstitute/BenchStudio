@@ -9,7 +9,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
-from .archive import build_campaign_archive
+from .archive import (
+    CampaignArchiveError,
+    build_campaign_archive,
+    extract_verified_campaign_archive,
+    verify_campaign_archive,
+)
 
 
 @dataclass(frozen=True)
@@ -30,6 +35,10 @@ class ArtifactReference:
 
 class ArtifactStore(Protocol):
     def publish_archive(self, archive: bytes, *, digest_sha256: str) -> ArtifactReference: ...
+
+
+class ArtifactReader(Protocol):
+    def fetch_archive(self, *, digest_sha256: str) -> bytes: ...
 
 
 class LocalArtifactStore:
@@ -63,6 +72,15 @@ class LocalArtifactStore:
             str(destination),
             len(archive),
         )
+
+    def fetch_archive(self, *, digest_sha256: str) -> bytes:
+        path = self.root / digest_sha256[:2] / f"{digest_sha256}.zip"
+        try:
+            archive = path.read_bytes()
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(f"artifact not found: {digest_sha256}") from exc
+        _verify_fetched_archive(archive, digest_sha256)
+        return archive
 
 
 class HttpArtifactStore:
@@ -115,9 +133,41 @@ class HttpArtifactStore:
             len(archive),
         )
 
+    def fetch_archive(self, *, digest_sha256: str) -> bytes:
+        uri = f"{self.base_url}/{digest_sha256[:2]}/{digest_sha256}.zip"
+        request = urllib.request.Request(uri, method="GET", headers=self.headers)
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout_s) as response:
+                if not 200 <= response.status < 300:
+                    raise OSError(f"artifact download failed with HTTP {response.status}")
+                archive = response.read()
+        except urllib.error.HTTPError as exc:
+            raise OSError(f"artifact download failed with HTTP {exc.code}") from exc
+        except urllib.error.URLError as exc:
+            raise OSError(f"artifact download failed: {exc.reason}") from exc
+        _verify_fetched_archive(archive, digest_sha256)
+        return archive
+
 
 def publish_campaign_archive(root: Path, store: ArtifactStore) -> ArtifactReference:
     """Build and publish a deterministic campaign archive through a store."""
     archive = build_campaign_archive(root)
     digest = hashlib.sha256(archive).hexdigest()
     return store.publish_archive(archive, digest_sha256=digest)
+
+
+def retrieve_campaign_archive(store: ArtifactReader, digest_sha256: str, destination: Path) -> str:
+    """Fetch, verify, and safely extract a content-addressed campaign archive."""
+    archive = store.fetch_archive(digest_sha256=digest_sha256)
+    verification = verify_campaign_archive(archive, expected_sha256=digest_sha256)
+    if not verification["valid"]:
+        raise CampaignArchiveError(f"invalid fetched campaign archive: {verification['issues']}")
+    return extract_verified_campaign_archive(archive, destination, expected_sha256=digest_sha256)
+
+
+def _verify_fetched_archive(archive: bytes, digest_sha256: str) -> None:
+    actual = hashlib.sha256(archive).hexdigest()
+    if actual != digest_sha256:
+        raise ValueError(
+            f"downloaded artifact digest mismatch: expected {digest_sha256}, got {actual}"
+        )

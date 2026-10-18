@@ -61,6 +61,7 @@ from .calibration import (
     compare_calibrations,
 )
 from .campaigns import (
+    ArtifactReader,
     ArtifactReference,
     ArtifactStore,
     AttemptKey,
@@ -107,6 +108,7 @@ from .campaigns import (
     load_search_results,
     minimize_counterexample,
     publish_campaign_archive,
+    retrieve_campaign_archive,
     validate_confirmation_plan,
     validate_counterfactual_pair,
     validate_counterfactual_plan,
@@ -237,9 +239,11 @@ __all__ = [
     "CampaignExecutionSummary",
     "CampaignExecutor",
     "ArtifactReference",
+    "ArtifactReader",
     "ArtifactStore",
     "LocalArtifactStore",
     "publish_campaign_archive",
+    "retrieve_campaign_archive",
     "ConfirmationCase",
     "ConfirmationResultAudit",
     "compile_campaign_spec",
