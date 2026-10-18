@@ -74,3 +74,26 @@ def test_replay_timing_rejects_mismatched_domains_and_deadline_miss():
     issues = validate_action_timing(action)
     assert "command and effective timestamps use different clock domains" in issues
     assert "command_time_ns is after controller deadline" in issues
+
+
+def test_replay_timing_respects_queue_sequence_for_equal_effective_times():
+    first = ScheduledAction("z", 0, 10, [1], queue_sequence=1)
+    second = ScheduledAction("a", 0, 10, [2], queue_sequence=2)
+    assert apply_zero_order_hold([second, first], [10])[0].action == [2]
+
+
+def test_replay_timing_rejects_mixed_queue_clock_domains():
+    actions = [
+        ScheduledAction("sim", 0, 1, [1]),
+        ScheduledAction(
+            "host",
+            0,
+            1,
+            [2],
+            command_clock_domain="host_monotonic",
+            effective_clock_domain="host_monotonic",
+        ),
+    ]
+    audit = audit_action_queue(actions)
+    assert audit.complete is False
+    assert "action queue mixes clock domains" in audit.issues

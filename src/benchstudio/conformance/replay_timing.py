@@ -38,7 +38,11 @@ def apply_zero_order_hold(
     """Resolve the latest effective command without reusing a future action."""
     ordered = sorted(
         (item for item in actions if not item.dropped),
-        key=lambda item: (item.effective_time_ns, item.action_id),
+        key=lambda item: (
+            item.effective_time_ns,
+            item.queue_sequence if item.queue_sequence is not None else float("inf"),
+            item.action_id,
+        ),
     )
     result: list[ScheduledAction | None] = []
     for query in query_times_ns:
@@ -70,6 +74,13 @@ def audit_action_queue(actions: list[ScheduledAction]) -> ActionQueueAudit:
     sequences = [item.queue_sequence for item in actions if item.queue_sequence is not None]
     if len(sequences) != len(set(sequences)):
         issues.append("queue_sequence values must be unique")
+    domains = {
+        domain
+        for item in actions
+        for domain in (item.command_clock_domain, item.effective_clock_domain)
+    }
+    if len(domains) > 1:
+        issues.append("action queue mixes clock domains")
     for item in actions:
         issues.extend(f"{item.action_id}: {issue}" for issue in validate_action_timing(item))
     dropped = sum(item.dropped for item in actions)
