@@ -92,3 +92,11 @@ def test_external_simulator_reset_clears_terminal_state_when_flags_are_omitted()
         assert simulator.is_success() is False
     finally:
         simulator.close()
+
+
+def test_external_simulator_timeout_detaches_process():
+    script = "import time; time.sleep(1)"
+    simulator = ExternalCommandSimulator((sys.executable, "-u", "-c", script), timeout_s=0.05)
+    with pytest.raises(TimeoutError):
+        simulator.reset(seed=1)
+    assert simulator._process is None

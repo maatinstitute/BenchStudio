@@ -77,3 +77,10 @@ def test_external_policies_reject_non_integer_seeds(seed):
         ExternalCommandPolicy(_command("print('{}')")).reset(seed=seed)
     with pytest.raises(ValueError, match="seed must be an integer"):
         PersistentExternalCommandPolicy(_command("print('{}')")).reset(seed=seed)
+
+
+def test_persistent_external_policy_timeout_detaches_process():
+    policy = PersistentExternalCommandPolicy(_command("import time; time.sleep(1)"), timeout_s=0.05)
+    with pytest.raises(TimeoutError):
+        policy.reset(seed=1)
+    assert policy._process is None

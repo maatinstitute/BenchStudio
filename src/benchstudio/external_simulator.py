@@ -101,14 +101,7 @@ class ExternalCommandSimulator:
         except (BrokenPipeError, TimeoutError, RuntimeError, ValueError):
             pass
         finally:
-            if process.poll() is None:
-                process.terminate()
-                try:
-                    process.wait(timeout=self.timeout_s)
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    process.wait()
-            self._process = None
+            self._terminate_process()
 
     def _ensure_started(self) -> None:
         if self._process is not None and self._process.poll() is None:
@@ -137,6 +130,7 @@ class ExternalCommandSimulator:
         try:
             selector.register(process.stdout, selectors.EVENT_READ)
             if not selector.select(self.timeout_s):
+                self._terminate_process()
                 raise TimeoutError(f"external simulator exceeded {self.timeout_s}s timeout")
             line = process.stdout.readline()
         finally:
@@ -151,6 +145,18 @@ class ExternalCommandSimulator:
         if not isinstance(response, dict):
             raise ValueError("external simulator response must be a mapping")
         return response
+
+    def _terminate_process(self) -> None:
+        process = self._process
+        self._process = None
+        if process is None or process.poll() is not None:
+            return
+        process.terminate()
+        try:
+            process.wait(timeout=self.timeout_s)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait()
 
     def _update_state(self, response: dict[str, Any]) -> None:
         if "done" in response and not isinstance(response["done"], bool):
