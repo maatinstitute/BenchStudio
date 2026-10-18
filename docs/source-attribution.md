@@ -370,6 +370,15 @@ the following projects. Product runtimes are not vendored into this repository.
   The port preserves outcome-free state proposals, untouched-coordinate
   guarantees, support inset/penetration thresholds, and contact rejection;
   policy search, simulator restoration, and dynamic stability remain external.
+- RoboPAD visual balance: `benchstudio.analysis.robopad_visual_balance` ports
+  `experiments/icra_visual_balance.py` at upstream commit
+  `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
+  `9230cd1f898dbfe7651e4c5e1d0f9e8b901da8ff826a83d55483f73838e92534` and
+  source-test digest `4c160ff0a8ba80bfeaa6881bf6613532ccdda1a4f26aa70308977654c7e8fc46`.
+  It preserves signed RGB/floating image distance, per-camera thresholds,
+  stable deterministic pair selection, explicit physical-validity handling,
+  and outcome-free matching. Image provenance and simulator execution remain
+  caller-owned.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment

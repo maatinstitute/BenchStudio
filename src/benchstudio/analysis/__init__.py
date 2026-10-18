@@ -120,6 +120,7 @@ from .responsiveness import validate as validate_selective_responsiveness
 from .result_metrics import completed_outcomes
 from .result_metrics import summarize as summarize_refinement_results
 from .robopad_exposure import LIMITATIONS, audit_splits, build_inventory, demo_family, family_id
+from .robopad_visual_balance import image_distance, match_candidates
 from .score_coverage import ScoreCoverage, audit_score_coverage
 from .transfer import (
     TransferFidelityReport,
@@ -206,6 +207,8 @@ __all__ = [
     "build_inventory",
     "demo_family",
     "family_id",
+    "image_distance",
+    "match_candidates",
     "ResourceAudit",
     "ResourceBudget",
     "ResourcePoint",
