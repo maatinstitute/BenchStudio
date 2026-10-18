@@ -521,6 +521,7 @@ def _validate_execution_safety(plan: FrozenCampaignPlan) -> None:
     environments = section.get("environments", []) if isinstance(section, dict) else []
     if not isinstance(environments, list):
         raise ValueError("frozen plan environment declarations must be a list")
+    referenced_environment_ids = {attempt.key.environment_id for attempt in plan.attempts}
     for index, environment in enumerate(environments):
         if not isinstance(environment, dict):
             raise ValueError(f"frozen plan environment {index} must be a mapping")
@@ -531,9 +532,16 @@ def _validate_execution_safety(plan: FrozenCampaignPlan) -> None:
             raise ValueError(
                 f"physical environment {environment.get('id', index)} enabled must be boolean"
             )
+        environment_id = environment.get("id", index)
+        if environment_id in referenced_environment_ids and "enabled" not in environment:
+            raise ValueError(f"physical environment {environment_id} must be explicitly enabled")
+        if environment_id in referenced_environment_ids and enabled is not True:
+            raise ValueError(
+                f"physical environment {environment_id} is referenced by the frozen plan "
+                "but is not enabled"
+            )
         if not enabled:
             continue
-        environment_id = environment.get("id", index)
         if environment.get("requires_authorization") is not True:
             raise ValueError(
                 f"physical environment {environment_id} requires explicit authorization"

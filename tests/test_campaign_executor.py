@@ -115,6 +115,7 @@ def test_campaign_executor_rejects_attempts_outside_frozen_batch(tmp_path):
             {"enabled": True, "requires_authorization": True, "retry_policy": "automatic"},
             "automatic retries",
         ),
+        ({"requires_authorization": True}, "explicitly enabled"),
     ],
 )
 def test_campaign_executor_rechecks_physical_safety_for_frozen_plans(
