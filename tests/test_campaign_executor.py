@@ -52,6 +52,24 @@ def test_campaign_executor_uses_frozen_attempts_and_resumes_idempotently(tmp_pat
     }
 
 
+def test_campaign_executor_can_run_pending_attempts_with_multiple_workers(tmp_path):
+    plan = CampaignPlanner(
+        run_id="parallel-run",
+        scenario_id="mock-task",
+        conditions=[{"denoising_steps": 2, "action_prefix": 1}],
+        seeds=[1, 2, 3, 4],
+    ).freeze()
+    result = CampaignExecutor(
+        plan, tmp_path / "campaign", lambda _: MockPolicy(), lambda _: MockSimulator()
+    ).run_parallel(2)
+    assert result.committed_attempt_ids == tuple(
+        attempt.key.attempt_id for attempt in plan.attempts
+    )
+    assert result.missing_attempt_ids == ()
+    records = (tmp_path / "campaign" / "attempt-results.jsonl").read_text().splitlines()
+    assert len(records) == len(plan.attempts)
+
+
 def test_campaign_executor_rejects_a_different_plan_at_existing_output(tmp_path):
     first = CampaignPlanner(
         run_id="run-1", scenario_id="task", conditions=[{"x": 1}], seeds=[1]

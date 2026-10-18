@@ -62,6 +62,23 @@ def test_attempt_ledger_rejects_reopening_with_a_different_plan(tmp_path):
         AttemptLedger(path, other)
 
 
+def test_attempt_ledger_refreshes_between_workers_and_rejects_duplicate_commit(tmp_path):
+    plan = CampaignPlanner(
+        run_id="run-1", scenario_id="pick", conditions=[{"budget": 2}], seeds=[1, 2]
+    ).freeze()
+    path = tmp_path / "attempts.jsonl"
+    first_worker = AttemptLedger(path, plan)
+    second_worker = AttemptLedger(path, plan)
+
+    first_worker.append(plan.attempts[0].key, {"status": "success"})
+    # The second ledger was constructed before the first commit. It must
+    # refresh under the file lock instead of trusting its stale in-memory set.
+    second_worker.append(plan.attempts[1].key, {"status": "success"})
+    with pytest.raises(ValueError, match="already recorded"):
+        second_worker.append(plan.attempts[0].key, {"status": "duplicate"})
+    assert first_worker.missing_attempt_ids == []
+
+
 def test_counterfactual_plan_binds_nominal_and_intervention_branches():
     nominal = CampaignPlanner(
         run_id="robustness", scenario_id="pick", conditions=[{"budget": 2}], seeds=[7, 8]

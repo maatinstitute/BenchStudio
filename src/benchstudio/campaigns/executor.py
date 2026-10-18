@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Iterable
@@ -197,6 +198,73 @@ class CampaignExecutor:
             finally:
                 if lease is not None:
                     self.lease_manager.release(lease)
+        return CampaignExecutionSummary(
+            self.plan.run_id,
+            self.plan.plan_digest_sha256,
+            tuple(committed),
+            tuple(skipped),
+            tuple(self.ledger.missing_attempt_ids),
+            tuple(leased_out),
+            tuple(cancelled),
+        )
+
+    def run_parallel(self, workers: int) -> CampaignExecutionSummary:
+        """Run pending attempts with multiple lease-owning workers.
+
+        Each worker gets its own executor and refreshes the shared append-only
+        ledger before committing. The frozen plan remains the only work list;
+        leases decide ownership and make this safe to resume after a worker
+        exits.
+        """
+        if workers < 1:
+            raise ValueError("workers must be positive")
+        if workers == 1:
+            return self.run()
+        lease_root = (
+            self.lease_manager.root if self.lease_manager is not None else self.output / "leases"
+        )
+        lease_seconds = (
+            self.lease_manager.lease_seconds if self.lease_manager is not None else 300.0
+        )
+        worker_prefix = self.worker_id or self.plan.run_id
+
+        def execute(worker_index: int) -> CampaignExecutionSummary:
+            worker = CampaignExecutor(
+                self.plan,
+                self.output,
+                policy_factory=self.policy_factory,
+                simulator_factory=self.simulator_factory,
+                worker_id=f"{worker_prefix}-{worker_index}",
+                lease_manager=WorkerLeaseManager(lease_root, lease_seconds=lease_seconds),
+                cancelled_attempts=self.cancelled_attempts,
+                resource_sampler_factory=self.resource_sampler_factory,
+                adapter_registry=self.adapter_registry,
+                simulator_kwargs_factory=self.simulator_kwargs_factory,
+                model_registry=self.model_registry,
+                policy_kwargs_factory=self.policy_kwargs_factory,
+            )
+            return worker.run()
+
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            results = tuple(pool.map(execute, range(workers)))
+
+        order = {attempt.key.attempt_id: index for index, attempt in enumerate(self.plan.attempts)}
+        committed = sorted(
+            {attempt_id for result in results for attempt_id in result.committed_attempt_ids},
+            key=order.__getitem__,
+        )
+        skipped = sorted(
+            {attempt_id for result in results for attempt_id in result.skipped_attempt_ids},
+            key=order.__getitem__,
+        )
+        leased_out = sorted(
+            {attempt_id for result in results for attempt_id in result.leased_out_attempt_ids},
+            key=order.__getitem__,
+        )
+        cancelled = sorted(
+            {attempt_id for result in results for attempt_id in result.cancelled_attempt_ids},
+            key=order.__getitem__,
+        )
         return CampaignExecutionSummary(
             self.plan.run_id,
             self.plan.plan_digest_sha256,

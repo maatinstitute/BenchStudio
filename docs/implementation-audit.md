@@ -7,7 +7,7 @@ has been evaluated.
 
 | Capability | Current status | Evidence / boundary |
 | --- | --- | --- |
-| Frozen campaign execution | Verified | `CampaignExecutor`, append-only `AttemptLedger`, leases, cancellation, resumable evidence, and 101 tests. |
+| Frozen campaign execution | Verified | `CampaignExecutor`, append-only `AttemptLedger`, atomic cross-worker ledger commits, leases, cancellation, resumable evidence, and 174 tests. |
 | Stable paired identities | Verified | `pair_id` is shared across enabled environments; `environment_id` is frozen in `AttemptKey` and manifests. |
 | Declarative protocol | Verified | `benchstudio.campaign.v1` compiles into a plan carrying the frozen `(P,M,S,X,D,O,R)` envelope and source digest. |
 | Scenario identity | Verified | `ScenarioPack` and deterministic content-addressed archives bind task revisions, assets, initial conditions, and success criteria. |
@@ -35,7 +35,8 @@ has been evaluated.
 | End-to-end campaign audit | Implemented | `CampaignExecutor.audit()` reads the append-only ledger and validates frozen-plan completeness, artifact verification, calibration compatibility, and claim prerequisites in one path. |
 | Outcome provenance persistence | Implemented | Plan-bound `OutcomeLedger` persists official, declared, or supplementary scorer records with schema, digest, duplicate, and frozen-attempt validation; executor audits reopen it automatically. |
 | Audited evaluation reports | Implemented | Reports can serialize campaign audit decisions, outcome provenance, and paired uncertainty together, preserving qualified/unsupported claim context offline. |
-| Distributed lease recovery | Implemented for filesystem workers | Expired leases are reclaimable by the next worker, active leases can be renewed by their owner, and ownership checks remain enforced. Physical jobs still require explicit no-retry policy. |
+| Distributed lease recovery | Implemented for filesystem workers | Expired leases are reclaimable by the next worker, active leases can be renewed by their owner, ownership checks remain enforced, and ledger commits are serialized with a cross-process file lock so stale worker state cannot duplicate an attempt. Physical jobs still require explicit no-retry policy. |
+| Multi-worker campaign execution | Implemented | `CampaignExecutor.run_parallel()` assigns frozen attempts through filesystem leases and returns a plan-ordered aggregate after all workers refresh the shared ledger. |
 | Checkpoint provenance | Implemented | Frozen checkpoint digests, model adapters, architectures, and robot profiles are copied into attempt manifests without copying private adapter configuration paths. |
 | Campaign evidence bundles | Implemented | Deterministic, content-addressed ZIP bundles include frozen plans, ledgers, manifests, and attempt evidence; extraction rejects symlinks and traversal paths. |
 | Artifact publication | Implemented locally | `ArtifactStore` and `LocalArtifactStore` publish deterministic campaign bundles by digest with atomic writes and idempotent retry behavior; cloud/object-storage credentials remain external. |
