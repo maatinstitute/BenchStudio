@@ -9,6 +9,12 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 
+def _require_exact_int(value: Any, label: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{label} must be an integer")
+    return value
+
+
 @dataclass(frozen=True)
 class PerturbationDimension:
     name: str
@@ -68,7 +74,7 @@ def load_search_plan(path: Path) -> FrozenSearchPlan:
                     str(value["case_id"]),
                     str(value["scenario_id"]),
                     str(value["base_condition_id"]),
-                    int(value["seed"]),
+                    _require_exact_int(value["seed"], "search case seed"),
                     dict(value["parameters"]),
                 )
             )
@@ -254,7 +260,7 @@ def compile_search_plan(
         raise ValueError("dimensions must have non-empty names and values")
     if len({dimension.name for dimension in dimensions}) != len(dimensions):
         raise ValueError("dimension names must be unique")
-    seeds = tuple(int(seed) for seed in seeds)
+    seeds = tuple(_require_exact_int(seed, "seed") for seed in seeds)
     if not seeds or len(set(seeds)) != len(seeds):
         raise ValueError("seeds must be non-empty and unique")
     combinations: list[dict[str, Any]] = [{}]

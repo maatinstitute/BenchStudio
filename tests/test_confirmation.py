@@ -76,6 +76,33 @@ def test_confirmation_plan_rejects_search_seed_reuse_and_unknown_holdout():
         )
 
 
+@pytest.mark.parametrize("seed", [True, 10.0, "10"])
+def test_confirmation_plan_rejects_non_integer_seeds(seed):
+    with pytest.raises(ValueError, match="confirmation seed must be an integer"):
+        compile_confirmation_plan(
+            run_id="run",
+            source_search_digest_sha256="b" * 64,
+            candidates=[_candidate("c1")],
+            confirmation_seeds=[seed],
+        )
+
+
+def test_confirmation_plan_loader_rejects_coerced_seed(tmp_path):
+    plan = compile_confirmation_plan(
+        run_id="confirm-run",
+        source_search_digest_sha256="b" * 64,
+        candidates=[_candidate("c1")],
+        confirmation_seeds=[10],
+    )
+    path = tmp_path / "confirmation-plan.json"
+    plan.write(path)
+    payload = json.loads(path.read_text())
+    payload["cases"][0]["confirmation_seed"] = "10"
+    path.write_text(json.dumps(payload))
+    with pytest.raises(ValueError, match="invalid confirmation case"):
+        load_confirmation_plan(path)
+
+
 def test_confirmation_execution_is_separate_and_persists_reproduction_evidence(tmp_path):
     plan = compile_confirmation_plan(
         run_id="confirm-run",

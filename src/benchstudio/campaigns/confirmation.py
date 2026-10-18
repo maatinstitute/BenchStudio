@@ -7,6 +7,12 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
+def _require_exact_int(value: Any, label: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{label} must be an integer")
+    return value
+
+
 @dataclass(frozen=True)
 class SearchCandidate:
     candidate_id: str
@@ -70,7 +76,7 @@ def load_confirmation_plan(path: Path) -> FrozenConfirmationPlan:
                     str(value["candidate_id"]),
                     str(value["scenario_id"]),
                     str(value["initial_condition_id"]),
-                    int(value["confirmation_seed"]),
+                    _require_exact_int(value["confirmation_seed"], "confirmation seed"),
                     str(value["source_search_run_id"]),
                 )
             )
@@ -247,7 +253,7 @@ def compile_confirmation_plan(
         raise ValueError("at least one search candidate is required")
     if len({candidate.candidate_id for candidate in candidate_rows}) != len(candidate_rows):
         raise ValueError("candidate IDs must be unique")
-    seeds = tuple(int(seed) for seed in confirmation_seeds)
+    seeds = tuple(_require_exact_int(seed, "confirmation seed") for seed in confirmation_seeds)
     if not seeds or len(set(seeds)) != len(seeds):
         raise ValueError("confirmation seeds must be non-empty and unique")
     selected_ids = (

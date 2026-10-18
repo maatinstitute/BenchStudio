@@ -66,6 +66,35 @@ def test_search_plan_rejects_duplicate_dimension_names():
         )
 
 
+@pytest.mark.parametrize("seed", [True, 1.0, "1"])
+def test_search_plan_rejects_non_integer_seeds(seed):
+    with pytest.raises(ValueError, match="seed must be an integer"):
+        compile_search_plan(
+            run_id="run",
+            scenario_id="task",
+            base_condition_id="base",
+            dimensions=(PerturbationDimension("x", (1,)),),
+            seeds=[seed],
+        )
+
+
+def test_search_plan_loader_rejects_coerced_seed(tmp_path):
+    plan = compile_search_plan(
+        run_id="search",
+        scenario_id="task",
+        base_condition_id="base",
+        dimensions=(PerturbationDimension("x", (0, 1)),),
+        seeds=[1],
+    )
+    path = tmp_path / "search-plan.json"
+    plan.write(path)
+    payload = __import__("json").loads(path.read_text())
+    payload["cases"][0]["seed"] = "1"
+    path.write_text(__import__("json").dumps(payload))
+    with pytest.raises(ValueError, match="invalid counterexample search case"):
+        load_search_plan(path)
+
+
 def test_search_plan_can_be_written_and_validated_before_confirmation(tmp_path):
     plan = compile_search_plan(
         run_id="search",
