@@ -365,6 +365,94 @@ def test_cli_executes_digest_bound_trace_campaign(monkeypatch, tmp_path, capsys)
     assert "audit_status=qualified attempts_complete=True evidence_verified=True" in output
 
 
+def test_cli_executes_external_policy_and_simulator_campaign(monkeypatch, tmp_path, capsys):
+    import sys
+
+    policy_program = """
+import json, sys
+for line in sys.stdin:
+    request = json.loads(line)
+    operation = request.get("operation")
+    status = "closed" if operation == "close" else ("reset" if operation == "reset" else "ok")
+    print(
+        json.dumps({"status": status, "actions": [1], "metadata": {"source": "policy"}}),
+        flush=True,
+    )
+"""
+    simulator_program = """
+import json, sys
+step = 0
+for line in sys.stdin:
+    request = json.loads(line)
+    operation = request.get("operation")
+    if operation == "reset":
+        step = 0
+    elif operation == "step":
+        step += 1
+    elif operation == "close":
+        break
+    print(json.dumps({
+        "observation": {"sequence": step, "sim_time_s": step * 0.05, "payload": {"step": step}},
+        "done": step >= 1,
+        "success": step >= 1,
+    }), flush=True)
+"""
+    spec_path = tmp_path / "external-campaign.json"
+    spec_path.write_text(
+        json.dumps(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "external-cli-e2e"},
+                "model": {
+                    "adapter": "smolvla",
+                    "adapter_config": {
+                        "command": [sys.executable, "-c", policy_program],
+                        "timeout_s": 5,
+                    },
+                },
+                "task": {"task_id": "external-task"},
+                "environments": [
+                    {
+                        "id": "external-simulator",
+                        "kind": "simulator",
+                        "adapter": "external_command",
+                        "adapter_config": {
+                            "command": [sys.executable, "-c", simulator_program],
+                            "timeout_s": 5,
+                        },
+                    }
+                ],
+                "evaluation": {
+                    "seeds": [1],
+                    "paired": True,
+                    "conditions": [
+                        {"denoising_steps": 1, "action_prefix": 1, "max_episode_steps": 2}
+                    ],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--campaign-spec",
+            str(spec_path),
+            "--plan-output",
+            str(tmp_path / "plan.json"),
+            "--output",
+            str(tmp_path / "campaign"),
+            "--execute-registry",
+            "--audit",
+        ],
+    )
+    assert main() == 0
+    output = capsys.readouterr().out
+    assert "campaign_status=completed committed=1 failed=0 missing=0" in output
+    assert "audit_status=qualified attempts_complete=True evidence_verified=True" in output
+
+
 def test_cli_compares_frozen_campaign_directories(monkeypatch, tmp_path, capsys):
     from benchstudio.campaigns import CampaignExecutor, CampaignPlanner
     from benchstudio.mock import MockPolicy, MockSimulator
