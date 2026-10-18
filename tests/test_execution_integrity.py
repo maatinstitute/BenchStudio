@@ -189,6 +189,66 @@ def test_robochallenge_adapter_preserves_opaque_payload_digests():
         adapter.action_acknowledged(action, execution_timestamp_ns=-1)
 
 
+def test_robochallenge_wire_records_round_trip_opaque_payloads():
+    emitted: list[dict[str, object]] = []
+    source = RoboChallengeObserveOnlyAdapter(emitted.append)
+    observation_payload = b"wire-observation\x00"
+    source.observe(
+        RoboChallengeObservation(
+            "obs-1", 10, observation_payload, hashlib.sha256(observation_payload).hexdigest()
+        )
+    )
+    action_payload = b"wire-action\xff"
+    source.action_acknowledged(
+        RoboChallengeAction(
+            "act-1", 11, action_payload, hashlib.sha256(action_payload).hexdigest()
+        ),
+        execution_timestamp_ns=12,
+    )
+
+    replayed: list[dict[str, object]] = []
+    target = RoboChallengeObserveOnlyAdapter(replayed.append)
+    for record in emitted:
+        target.ingest_record(record)
+    assert replayed == emitted
+    assert target.audit().valid
+
+
+@pytest.mark.parametrize(
+    "record, message",
+    [
+        ({"event_type": "unknown"}, "unsupported event_type"),
+        (
+            {
+                "event_type": "robochallenge_observation",
+                "observation_id": "obs-1",
+                "timestamp_ns": 1,
+                "payload_base64": "not-base64!",
+                "payload_digest_sha256": "0" * 64,
+            },
+            "payload_base64",
+        ),
+        (
+            {
+                "event_type": "robochallenge_action_acknowledged",
+                "action_id": "act-1",
+                "command_timestamp_ns": True,
+                "payload_base64": "YQ==",
+                "payload_digest_sha256": hashlib.sha256(b"a").hexdigest(),
+                "execution_timestamp_ns": None,
+            },
+            "command_timestamp_ns",
+        ),
+    ],
+)
+def test_robochallenge_wire_ingestion_rejects_malformed_records(record, message):
+    adapter = RoboChallengeObserveOnlyAdapter(lambda _: None)
+    with pytest.raises(ValueError, match=message):
+        adapter.ingest_record(record)
+    assert adapter.audit().valid is False
+    assert adapter.audit().event_count == 0
+
+
 def test_robochallenge_adapter_rejects_duplicate_and_reordered_messages():
     records: list[dict[str, object]] = []
     adapter = RoboChallengeObserveOnlyAdapter(records.append)

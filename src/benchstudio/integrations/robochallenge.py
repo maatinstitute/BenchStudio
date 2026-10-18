@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 from dataclasses import dataclass
-from typing import Callable
+from typing import Any, Callable, Mapping
 
 
 @dataclass(frozen=True)
@@ -71,15 +71,56 @@ def validate_robochallenge_message(
 
 
 class RoboChallengeObserveOnlyAdapter:
-    """Record protocol messages while leaving execution and official scoring external."""
+    """Record protocol messages while leaving execution and official scoring external.
+
+    ``ingest_record`` accepts the canonical JSON-safe records emitted by this
+    adapter, which makes a mock/client transport testable without interpreting
+    the opaque RoboChallenge payload bytes.
+    """
 
     def __init__(self, sink: Callable[[dict[str, object]], None]) -> None:
+        if not callable(sink):
+            raise TypeError("sink must be callable")
         self.sink = sink
         self._observation_ids: set[str] = set()
         self._action_ids: set[str] = set()
         self._last_observation_timestamp_ns: int | None = None
         self._issues: list[str] = []
         self._event_count = 0
+
+    def ingest_record(self, record: Mapping[str, Any]) -> None:
+        """Decode and validate one canonical JSON-safe protocol record."""
+        if not isinstance(record, Mapping):
+            self._reject_wire("record must be a mapping")
+        event_type = record.get("event_type")
+        if event_type == "robochallenge_observation":
+            try:
+                message = RoboChallengeObservation(
+                    _wire_string(record, "observation_id"),
+                    _wire_non_negative_int(record, "timestamp_ns"),
+                    _wire_payload(record),
+                    _wire_string(record, "payload_digest_sha256"),
+                )
+            except (KeyError, TypeError, ValueError) as exc:
+                self._reject_wire(f"invalid observation record: {exc}")
+            self.observe(message)
+            return
+        if event_type == "robochallenge_action_acknowledged":
+            execution_timestamp = record.get("execution_timestamp_ns")
+            if execution_timestamp is not None:
+                execution_timestamp = _wire_non_negative_int(record, "execution_timestamp_ns")
+            try:
+                message = RoboChallengeAction(
+                    _wire_string(record, "action_id"),
+                    _wire_non_negative_int(record, "command_timestamp_ns"),
+                    _wire_payload(record),
+                    _wire_string(record, "payload_digest_sha256"),
+                )
+            except (KeyError, TypeError, ValueError) as exc:
+                self._reject_wire(f"invalid action record: {exc}")
+            self.action_acknowledged(message, execution_timestamp_ns=execution_timestamp)
+            return
+        self._reject_wire("unsupported event_type")
 
     def observe(self, message: RoboChallengeObservation) -> None:
         issues = validate_robochallenge_message(message)
@@ -153,3 +194,31 @@ class RoboChallengeObserveOnlyAdapter:
             self._event_count,
             tuple(self._issues),
         )
+
+    def _reject_wire(self, issue: str) -> None:
+        self._issues.append(f"wire {issue}")
+        raise ValueError(issue)
+
+
+def _wire_string(record: Mapping[str, Any], field: str) -> str:
+    value = record[field]
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{field} must be a non-empty string")
+    return value
+
+
+def _wire_non_negative_int(record: Mapping[str, Any], field: str) -> int:
+    value = record[field]
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValueError(f"{field} must be a non-negative integer")
+    return value
+
+
+def _wire_payload(record: Mapping[str, Any]) -> bytes:
+    value = record["payload_base64"]
+    if not isinstance(value, str):
+        raise ValueError("payload_base64 must be a string")
+    try:
+        return base64.b64decode(value, validate=True)
+    except (ValueError, TypeError) as exc:
+        raise ValueError("payload_base64 is not valid base64") from exc
