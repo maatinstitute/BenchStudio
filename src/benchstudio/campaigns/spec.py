@@ -41,11 +41,12 @@ def compile_campaign_spec(spec: dict[str, Any]) -> FrozenCampaignPlan:
         raise ValueError("evaluation.missing_outcomes must be 'preserve'")
     if evaluation.get("confirmation_plan") not in (None, "frozen"):
         raise ValueError("evaluation.confirmation_plan must be 'frozen'")
+    repetitions = evaluation.get("repetitions", 1)
+    if isinstance(repetitions, bool) or not isinstance(repetitions, int) or repetitions < 1:
+        raise ValueError("evaluation.repetitions must be a positive integer")
     _validate_resource_budget(evaluation)
     environment_ids = _enabled_environment_ids(spec["environments"])
-    expected_attempts = (
-        len(environment_ids) * len(conditions) * len(seeds) * int(evaluation.get("repetitions", 1))
-    )
+    expected_attempts = len(environment_ids) * len(conditions) * len(seeds) * repetitions
     budget = evaluation.get("resource_budget", {})
     if budget.get("max_attempts") is not None and expected_attempts > budget["max_attempts"]:
         raise ValueError("evaluation resource budget max_attempts is smaller than the frozen plan")
@@ -54,7 +55,7 @@ def compile_campaign_spec(spec: dict[str, Any]) -> FrozenCampaignPlan:
         scenario_id=scenario_id,
         conditions=conditions,
         seeds=seeds,
-        repetitions=int(evaluation.get("repetitions", 1)),
+        repetitions=repetitions,
         scenario_pack_digest=(
             task.get("scenario_pack_digest")
             if isinstance(task.get("scenario_pack_digest"), str)

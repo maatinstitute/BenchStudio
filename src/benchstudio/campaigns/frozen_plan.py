@@ -154,8 +154,8 @@ class CampaignPlanner:
     ) -> None:
         if not run_id or not scenario_id:
             raise ValueError("run_id and scenario_id are required")
-        if repetitions < 1:
-            raise ValueError("repetitions must be positive")
+        if isinstance(repetitions, bool) or not isinstance(repetitions, int) or repetitions < 1:
+            raise ValueError("repetitions must be a positive integer")
         self.run_id = run_id
         self.scenario_id = scenario_id
         self.conditions = tuple(dict(condition) for condition in conditions)

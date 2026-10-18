@@ -91,6 +91,25 @@ def test_campaign_spec_rejects_unknown_execution_strategy():
         )
 
 
+@pytest.mark.parametrize("repetitions", [0, -1, 1.5, True])
+def test_campaign_spec_rejects_invalid_repetition_counts(repetitions):
+    with pytest.raises(ValueError, match="evaluation.repetitions"):
+        compile_campaign_spec(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "invalid-repetitions"},
+                "task": {"task_id": "task"},
+                "environments": [{"id": "sim", "kind": "simulator"}],
+                "evaluation": {
+                    "seeds": [1],
+                    "paired": True,
+                    "repetitions": repetitions,
+                    "conditions": [{"x": 1}],
+                },
+            }
+        )
+
+
 def test_campaign_spec_rejects_non_frozen_confirmation_or_imputed_missingness():
     base = {
         "schema": "benchstudio.campaign.v1",
