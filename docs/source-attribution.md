@@ -15,8 +15,10 @@ maintained projects. Their runtimes are not vendored into this repository.
   lifecycle, campaign accounting, counterfactual lineage, and embodiment
   mapping. The `PolicySession` boundary is informed by AlpaBridge's session,
   modality, readiness, and latency behavior; it is a dependency-free contract,
-  not a port of the AlpaBridge service. Product-specific runtimes remain
-  external.
+  not a port of the AlpaBridge service. The AlpaBridge telemetry adapter reads
+  the published v3 JSONL shape and preserves its latency-target, route-source,
+  and model-load event semantics; it does not import or reimplement AlpaSim.
+  Product-specific runtimes remain external.
 
 Any future source migration must preserve the original repository's notices,
 third-party licenses, and historical evidence. The current BenchStudio
