@@ -5,6 +5,7 @@ from .archive import (
     build_scenario_archive,
     extract_verified_scenario_archive,
     scenario_archive_digest,
+    verify_scenario_archive,
 )
 from .packs import ScenarioPack, load_scenario_pack, validate_scenario_pack
 
@@ -16,4 +17,5 @@ __all__ = [
     "build_scenario_archive",
     "extract_verified_scenario_archive",
     "scenario_archive_digest",
+    "verify_scenario_archive",
 ]

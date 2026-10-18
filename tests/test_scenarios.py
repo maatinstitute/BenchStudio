@@ -14,6 +14,7 @@ from benchstudio.scenarios import (
     load_scenario_pack,
     scenario_archive_digest,
     validate_scenario_pack,
+    verify_scenario_archive,
 )
 
 
@@ -97,6 +98,19 @@ def test_scenario_archive_is_deterministic_and_excludes_scratch(tmp_path):
     assert first == second
     assert scenario_archive_digest(first) == scenario_archive_digest(second)
     assert b"scratch.txt" not in first
+
+
+def test_scenario_archive_can_be_verified_without_extraction(tmp_path):
+    root = tmp_path / "scenario"
+    root.mkdir()
+    (root / "task.json").write_text("{}")
+    archive = build_scenario_archive(root)
+    result = verify_scenario_archive(archive, expected_sha256=scenario_archive_digest(archive))
+    assert result["valid"] is True
+    tampered = verify_scenario_archive(
+        archive + b"x", expected_sha256=scenario_archive_digest(archive)
+    )
+    assert tampered["valid"] is False
 
 
 def test_scenario_archive_verifies_and_rejects_traversal(tmp_path):

@@ -62,6 +62,44 @@ def scenario_archive_digest(archive: bytes) -> str:
     return hashlib.sha256(archive).hexdigest()
 
 
+def verify_scenario_archive(
+    archive: bytes, *, expected_sha256: str | None = None
+) -> dict[str, object]:
+    """Verify scenario archive structure and an optional independent digest."""
+    digest = scenario_archive_digest(archive)
+    issues: list[dict[str, str]] = []
+    if expected_sha256 is not None and digest != expected_sha256:
+        issues.append({"reason": "trusted_digest_mismatch"})
+    if len(archive) > _MAX_ARCHIVE_BYTES:
+        issues.append({"reason": "archive_too_large"})
+    names: list[str] = []
+    try:
+        with zipfile.ZipFile(io.BytesIO(archive)) as package:
+            for member in package.infolist():
+                name = member.filename
+                names.append(name)
+                path = Path(name)
+                if path.is_absolute() or ".." in path.parts:
+                    issues.append({"reason": "unsafe_path", "name": name})
+                mode = (member.external_attr >> 16) & 0o170000
+                if mode == 0o120000:
+                    issues.append({"reason": "symlink_entry", "name": name})
+            if package.testzip() is not None:
+                issues.append({"reason": "corrupt_member"})
+    except zipfile.BadZipFile:
+        issues.append({"reason": "invalid_zip"})
+    if len(names) != len(set(names)):
+        issues.append({"reason": "duplicate_entry_names"})
+    return {
+        "schema": "benchstudio_scenario_archive_verification_v1",
+        "digest_sha256": digest,
+        "trusted_digest_supplied": expected_sha256 is not None,
+        "entry_count": len(names),
+        "issues": issues,
+        "valid": not issues,
+    }
+
+
 def extract_verified_scenario_archive(
     archive: bytes, destination: Path, *, expected_sha256: str | None = None
 ) -> str:
@@ -71,35 +109,47 @@ def extract_verified_scenario_archive(
     member. Existing destinations are rejected to avoid merging two scenario
     identities accidentally.
     """
-    digest = scenario_archive_digest(archive)
-    if expected_sha256 is not None and digest != expected_sha256:
-        raise ScenarioArchiveError(
-            f"scenario archive digest mismatch: expected {expected_sha256}, got {digest}"
-        )
     if destination.exists():
         raise ScenarioArchiveError(f"destination already exists: {destination}")
+    verification = verify_scenario_archive(archive, expected_sha256=expected_sha256)
+    if not verification["valid"]:
+        raise ScenarioArchiveError(_verification_error_message(verification["issues"]))
+    digest = str(verification["digest_sha256"])
     destination_root = destination.resolve()
     try:
         with zipfile.ZipFile(io.BytesIO(archive)) as package:
             members = package.infolist()
-            names = [member.filename for member in members]
-            if len(names) != len(set(names)):
-                raise ScenarioArchiveError("archive contains duplicate entries")
             for member in members:
                 target = (destination / member.filename).resolve()
                 if not target.is_relative_to(destination_root):
                     raise ScenarioArchiveError(f"archive contains unsafe path: {member.filename}")
-                mode = (member.external_attr >> 16) & 0o170000
-                if mode == 0o120000:
-                    raise ScenarioArchiveError(f"archive contains symlink: {member.filename}")
-            if package.testzip() is not None:
-                raise ScenarioArchiveError("archive contains a corrupt member")
             destination.mkdir(parents=True)
             for member in members:
                 package.extract(member, destination)
     except zipfile.BadZipFile as exc:
         raise ScenarioArchiveError("scenario archive is not a valid ZIP") from exc
     return digest
+
+
+def _verification_error_message(issues: object) -> str:
+    reasons = {
+        str(issue.get("reason"))
+        for issue in issues
+        if isinstance(issue, dict) and issue.get("reason")
+    }
+    if "trusted_digest_mismatch" in reasons:
+        return "scenario archive digest mismatch"
+    if "invalid_zip" in reasons:
+        return "scenario archive is not a valid ZIP"
+    if "unsafe_path" in reasons:
+        return "scenario archive contains an unsafe path"
+    if "symlink_entry" in reasons:
+        return "scenario archive contains a symlink"
+    if "duplicate_entry_names" in reasons:
+        return "scenario archive contains duplicate entries"
+    if "corrupt_member" in reasons:
+        return "scenario archive contains a corrupt member"
+    return "scenario archive verification failed: " + ", ".join(sorted(reasons))
 
 
 def _is_scratch(path: Path, root: Path) -> bool:
