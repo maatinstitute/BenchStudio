@@ -28,6 +28,7 @@ has been evaluated.
 | Sim-to-real statistical uncertainty | Implemented for matched records | Transfer reports preserve missing outcomes and now include an exact paired discordance confidence interval alongside the point gap and standard error. |
 | RoboChallenge observe-only evidence | Implemented at protocol boundary | Validated opaque observation/action bytes are retained as canonical base64 plus SHA-256 digests; execution and official scoring remain external. |
 | End-to-end campaign audit | Implemented | `CampaignExecutor.audit()` reads the append-only ledger and validates frozen-plan completeness, artifact verification, and claim prerequisites in one path. |
+| Outcome provenance persistence | Implemented | Plan-bound `OutcomeLedger` persists official, declared, or supplementary scorer records with schema, digest, duplicate, and frozen-attempt validation; executor audits reopen it automatically. |
 | Distributed lease recovery | Implemented for filesystem workers | Expired leases are reclaimable by the next worker, active leases can be renewed by their owner, and ownership checks remain enforced. Physical jobs still require explicit no-retry policy. |
 | Campaign evidence bundles | Implemented | Deterministic, content-addressed ZIP bundles include frozen plans, ledgers, manifests, and attempt evidence; extraction rejects symlinks and traversal paths. |
 | CLI campaign workflow | Implemented | Declarative mock execution can now audit its ledger and write the immutable campaign bundle from one command. |

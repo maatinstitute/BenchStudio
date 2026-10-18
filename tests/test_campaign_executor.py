@@ -7,7 +7,7 @@ import zipfile
 import pytest
 
 from benchstudio.adapters import default_registry
-from benchstudio.analysis import ClaimType
+from benchstudio.analysis import ClaimType, OutcomeRecord
 from benchstudio.campaigns import (
     CampaignArchiveError,
     CampaignExecutor,
@@ -178,6 +178,29 @@ def test_campaign_executor_exposes_frozen_plan_audit(tmp_path):
     )
     assert audit.attempts_complete is True
     assert audit.evidence_verified is True
+    assert audit.claim.status == "supported"
+
+
+def test_campaign_executor_audit_reads_persisted_authoritative_outcomes(tmp_path):
+    plan = CampaignPlanner(
+        run_id="outcome-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    executor = CampaignExecutor(
+        plan, tmp_path / "campaign", lambda _: MockPolicy(), lambda _: MockSimulator()
+    )
+    executor.run()
+    executor.outcome_ledger().append(
+        OutcomeRecord(
+            plan.attempts[0].key.attempt_id,
+            True,
+            "official",
+            "scorer",
+            "rev-1",
+            authoritative=True,
+        )
+    )
+    audit = executor.audit()
+    assert audit.outcome_provenance is not None
     assert audit.claim.status == "supported"
 
 

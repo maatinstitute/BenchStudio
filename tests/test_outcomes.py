@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from benchstudio.analysis import (
+    OutcomeLedger,
     OutcomeRecord,
     audit_outcome_provenance,
     validate_outcome_record,
@@ -32,3 +33,24 @@ def test_missing_outcome_and_bad_artifact_digest_are_preserved_as_issues():
     assert audit.valid is False
     assert "some outcomes are missing" in audit.issues
     assert any("source_artifact_sha256" in issue for issue in audit.issues)
+
+
+def test_outcome_ledger_round_trips_and_binds_to_frozen_attempts(tmp_path):
+    path = tmp_path / "outcomes.jsonl"
+    ledger = OutcomeLedger(path, attempt_ids={"attempt-1"}, plan_digest_sha256="a" * 64)
+    record = OutcomeRecord("attempt-1", True, "official", "scorer", "rev-1", authoritative=True)
+    ledger.append(record)
+    reopened = OutcomeLedger(path, attempt_ids={"attempt-1"}, plan_digest_sha256="a" * 64)
+    assert reopened.records == (record,)
+    with __import__("pytest").raises(ValueError, match="duplicate"):
+        reopened.append(record)
+    with __import__("pytest").raises(ValueError, match="outside frozen plan"):
+        reopened.append(OutcomeRecord("attempt-2", True, "supplementary"))
+
+
+def test_outcome_ledger_rejects_plan_digest_mismatch(tmp_path):
+    path = tmp_path / "outcomes.jsonl"
+    ledger = OutcomeLedger(path, attempt_ids={"attempt-1"}, plan_digest_sha256="a" * 64)
+    ledger.append(OutcomeRecord("attempt-1", True, "official", "scorer", "rev", authoritative=True))
+    with __import__("pytest").raises(ValueError, match="frozen plan digest"):
+        OutcomeLedger(path, attempt_ids={"attempt-1"}, plan_digest_sha256="b" * 64)

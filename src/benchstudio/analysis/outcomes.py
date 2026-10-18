@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import json
+import os
 import re
-from dataclasses import dataclass
-from typing import Literal
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from typing import Any, Literal
 
 OutcomeSource = Literal["official", "declared", "supplementary"]
 
@@ -18,6 +21,90 @@ class OutcomeRecord:
     evaluator_revision: str | None = None
     source_artifact_sha256: str | None = None
     authoritative: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, value: dict[str, Any]) -> "OutcomeRecord":
+        if not isinstance(value, dict):
+            raise ValueError("outcome record must be a mapping")
+        fields = {
+            "attempt_id",
+            "success",
+            "source",
+            "evaluator_id",
+            "evaluator_revision",
+            "source_artifact_sha256",
+            "authoritative",
+        }
+        unknown = set(value) - fields
+        if unknown:
+            raise ValueError(f"unknown outcome fields: {sorted(unknown)}")
+        return cls(**{field: value.get(field) for field in fields if field in value})
+
+
+class OutcomeLedger:
+    """Append-only, plan-bound persistence for scorer outcome records."""
+
+    def __init__(
+        self,
+        path: Path,
+        *,
+        attempt_ids: set[str] | frozenset[str] | None = None,
+        plan_digest_sha256: str | None = None,
+    ) -> None:
+        self.path = path
+        self.attempt_ids = set(attempt_ids) if attempt_ids is not None else None
+        self.plan_digest_sha256 = plan_digest_sha256
+        self._records: list[OutcomeRecord] = []
+        self._seen: set[str] = set()
+        if path.is_file():
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                envelope = json.loads(line)
+                if envelope.get("schema") != "benchstudio.outcome.v1":
+                    raise ValueError("unsupported outcome ledger schema")
+                if (
+                    plan_digest_sha256 is not None
+                    and envelope.get("plan_digest_sha256") != plan_digest_sha256
+                ):
+                    raise ValueError("outcome record does not match frozen plan digest")
+                self._load(OutcomeRecord.from_dict(envelope.get("record", {})))
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+    @property
+    def records(self) -> tuple[OutcomeRecord, ...]:
+        return tuple(self._records)
+
+    def append(self, record: OutcomeRecord) -> None:
+        self._load(record)
+        envelope = {
+            "schema": "benchstudio.outcome.v1",
+            "plan_digest_sha256": self.plan_digest_sha256,
+            "record": record.to_dict(),
+        }
+        try:
+            with self.path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(envelope, sort_keys=True) + "\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+        except Exception:
+            self._records.pop()
+            self._seen.remove(record.attempt_id)
+            raise
+
+    def _load(self, record: OutcomeRecord) -> None:
+        issues = validate_outcome_record(record)
+        if issues:
+            raise ValueError("invalid outcome record: " + "; ".join(issues))
+        if self.attempt_ids is not None and record.attempt_id not in self.attempt_ids:
+            raise ValueError(f"outcome attempt is outside frozen plan: {record.attempt_id}")
+        if record.attempt_id in self._seen:
+            raise ValueError(f"duplicate outcome attempt_id: {record.attempt_id}")
+        self._seen.add(record.attempt_id)
+        self._records.append(record)
 
 
 @dataclass(frozen=True)

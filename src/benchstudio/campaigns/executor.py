@@ -191,12 +191,24 @@ class CampaignExecutor:
 
         if claim_type is None:
             claim_type = ClaimType.SINGLE_RUN_OUTCOME
+        if outcome_records is None and (self.output / "outcomes.jsonl").is_file():
+            outcome_records = self.outcome_ledger().records
         return audit_campaign(
             self.plan,
             self.ledger.records,
             claim_type=claim_type,
             evidence=evidence,
             outcome_records=outcome_records,
+        )
+
+    def outcome_ledger(self) -> Any:
+        """Open the plan-bound scorer outcome ledger for this campaign."""
+        from ..analysis.outcomes import OutcomeLedger
+
+        return OutcomeLedger(
+            self.output / "outcomes.jsonl",
+            attempt_ids=frozenset(attempt.key.attempt_id for attempt in self.plan.attempts),
+            plan_digest_sha256=self.plan.plan_digest_sha256,
         )
 
     def archive(self, destination: Path) -> dict[str, str | int]:
