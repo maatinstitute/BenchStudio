@@ -5,6 +5,7 @@ import json
 from benchstudio.analysis import ResourceBudget
 from benchstudio.conformance import ActionSpec
 from benchstudio.contracts import ActionChunk
+from benchstudio.evidence import verify_artifact_manifest
 from benchstudio.mock import MockPolicy, MockSimulator
 from benchstudio.runner import RunConfig, run_episodes
 
@@ -189,6 +190,22 @@ def test_partial_trace_is_persisted_when_policy_crashes(tmp_path):
     assert summary["completed_episode_count"] == 0
     assert summary["failed_episode_count"] == 1
     assert summary["missing_episode_count"] == 0
+
+
+def test_cleanup_failure_finalizes_failed_summary_and_manifest(tmp_path):
+    class CloseFailureSimulator(MockSimulator):
+        def close(self):
+            super().close()
+            raise RuntimeError("cleanup offline")
+
+    run_dir = tmp_path / "cleanup-failure"
+    summary = run_episodes(MockPolicy(), CloseFailureSimulator(), RunConfig(), run_dir)
+    assert summary["campaign_status"] == "failed_cleanup"
+    assert summary["episodes"][-1]["status"] == "cleanup_error"
+    persisted = json.loads((run_dir / "summary.json").read_text())
+    assert persisted["campaign_status"] == "failed_cleanup"
+    assert "cleanup offline" in persisted["episodes"][-1]["error"]
+    assert verify_artifact_manifest(run_dir)["valid"] is True
 
 
 def test_invalid_simulator_observation_is_recorded_as_conformance_failure(tmp_path):
