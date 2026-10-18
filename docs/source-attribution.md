@@ -104,6 +104,17 @@ the following projects. Product runtimes are not vendored into this repository.
   `abf10ecf2733aad3167e9a2b0d6d642a469c5f3d52f03f45b719d48e0517a280`.
   The port preserves arm prompt roles, pre-policy/contact exclusions, first
   attainment semantics, and independent replay checks for evaluation branches.
+- RoboPAD outcome metadata and prompt conditioning:
+  `benchstudio.analysis.metadata_conditioning` and
+  `benchstudio.analysis.outcome_prompt` are direct ports of
+  `experiments/metadata_conditioning.py` and `experiments/outcome_prompt.py`
+  at upstream commit `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source
+  digests are `be0e7d9c3587893e548ae0ba57309e47ebbf3f3c0fd2e80eeb85181afc8bdef2`
+  and `d24bd9658f942484f0bc6c7ec96a87c8bb14a643a9fe2ca2b3043b96b3e27066`,
+  with source-test digests `a0386fd0c2d7fe815c02408d94430ccda4dcc15317ec0e9be8a4f27885d0b296`
+  and `d48e92e163d3ae26a7cf768f475e76c3d40bc0c6aa3240e383bb0b840ed83deb`.
+  The ports preserve bounded metadata vocabularies, explicit unknown labels,
+  training-versus-inference prompt separation, and desired-success semantics.
 - RoboPAD development-only receipt safeguards:
   `benchstudio.analysis.development_receipts` is a direct port of
   `experiments/outcome_development.py` at upstream commit

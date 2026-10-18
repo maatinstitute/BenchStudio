@@ -23,6 +23,15 @@ from .inference_schedule import InferenceEvent, InferenceScheduleAudit, audit_in
 from .ledger_validation import compare as compare_refinement_ledgers
 from .ledger_validation import validate as validate_refinement_ledger
 from .ledger_validation import validate_completed as validate_completed_refinement_ledger
+from .metadata_conditioning import (
+    SCHEMA_VERSION as OUTCOME_METADATA_SCHEMA_VERSION,
+)
+from .metadata_conditioning import (
+    condition_prompt,
+    format_metadata,
+    prompt_mode_metadata,
+    validate_metadata,
+)
 from .missingness import MissingOutcomeBounds, missing_outcome_bounds
 from .observation_age_audit import analyze as analyze_observation_age
 from .observation_age_audit import validate_inputs as validate_observation_age_inputs
@@ -210,5 +219,10 @@ __all__ = [
     "summarize_refinement_results",
     "validate_refinement_ledger",
     "validate_completed_refinement_ledger",
+    "OUTCOME_METADATA_SCHEMA_VERSION",
+    "condition_prompt",
+    "format_metadata",
+    "prompt_mode_metadata",
+    "validate_metadata",
     "compare_refinement_ledgers",
 ]
