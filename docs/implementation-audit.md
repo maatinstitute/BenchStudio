@@ -22,6 +22,7 @@ has been evaluated.
 | RoboChallenge integration | Observe-only verified | Opaque observation/action digests and acknowledgments are validated; safety, execution, and official scoring remain external. |
 | AlpaBridge integration | Telemetry verified | Driver telemetry schema and deadline/load-failure audits are dependency-free; AlpaSim serving remains external. |
 | External simulator backends | Adapter boundary and readiness only | Mock and trace-replay facades are included. Backend capability declarations and entry-point discovery now gate authority-sensitive construction, while MuJoCo, Genesis, Isaac Lab–Arena, and physical execution still require their pinned runtimes and approved assets. |
+| Sim-to-real statistical uncertainty | Implemented for matched records | Transfer reports preserve missing outcomes and now include an exact paired discordance confidence interval alongside the point gap and standard error. |
 | SmolVLA/DM0.5 parity | Harness ready, external run pending | The parity and schedule contracts are implemented; no checkpoint is bundled or silently downloaded. |
 | CI workflow | Prepared locally, not uploaded | `.github/workflows/ci.yml` exists locally. GitHub rejected its upload because the current OAuth token lacks workflow scope; source and smoke tests are published. |
 

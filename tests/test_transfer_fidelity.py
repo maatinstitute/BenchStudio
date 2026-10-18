@@ -34,6 +34,10 @@ def test_transfer_fidelity_preserves_missingness_and_estimates_paired_gap():
     assert report.complete_pairs == 2
     assert report.success_gap_physical_minus_simulation == -0.5
     assert report.success_gap_standard_error == 0.5
+    assert report.success_gap_confidence_interval is not None
+    assert (
+        report.success_gap_confidence_interval[0] < -0.5 < report.success_gap_confidence_interval[1]
+    )
     assert report.failure_category_agreement_rate == 0.5
     assert report.mean_observation_age_ms == 15
     assert "some matched outcomes are missing" in report.issues

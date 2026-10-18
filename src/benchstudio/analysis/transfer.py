@@ -4,6 +4,8 @@ import math
 from dataclasses import dataclass
 from typing import Any
 
+from .paired import summarize_paired_outcomes
+
 
 @dataclass(frozen=True)
 class TransferGap:
@@ -23,6 +25,7 @@ class TransferFidelityReport:
     physical_success_rate: float | None
     success_gap_physical_minus_simulation: float | None
     success_gap_standard_error: float | None
+    success_gap_confidence_interval: tuple[float, float] | None
     success_agreement_rate: float | None
     failure_category_agreement_rate: float | None
     system_success_rates: dict[str, dict[str, float | int]]
@@ -74,6 +77,7 @@ def summarize_transfer_fidelity(records: list[dict[str, Any]]) -> TransferFideli
             None,
             None,
             None,
+            None,
             {},
             None,
             None,
@@ -82,6 +86,10 @@ def summarize_transfer_fidelity(records: list[dict[str, Any]]) -> TransferFideli
     differences = [
         int(row["physical_success"]) - int(row["simulation_success"]) for row in complete
     ]
+    paired = summarize_paired_outcomes(
+        [row["simulation_success"] for row in complete],
+        [row["physical_success"] for row in complete],
+    )
     gap = sum(differences) / len(differences)
     standard_error = None
     if len(differences) > 1:
@@ -121,6 +129,7 @@ def summarize_transfer_fidelity(records: list[dict[str, Any]]) -> TransferFideli
         sum(row["physical_success"] for row in complete) / len(complete),
         gap,
         standard_error,
+        paired.success_gap_confidence_interval,
         agreements,
         category_agreement,
         system_rates,
