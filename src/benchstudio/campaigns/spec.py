@@ -216,6 +216,10 @@ def _validate_model_capabilities(model: dict[str, Any], evaluation: dict[str, An
     missing = sorted(required - declared.keys())
     if missing:
         raise ValueError("model.capabilities missing: " + ", ".join(missing))
+    for field in ("input_modalities", "supported_metrics", "runtime_controls", "timing_signals"):
+        value = declared.get(field, ())
+        if not isinstance(value, (list, tuple)):
+            raise ValueError(f"model.capabilities.{field} must be a list or tuple")
     try:
         profile = ModelCapabilityProfile(
             **{

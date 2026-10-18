@@ -123,6 +123,35 @@ def test_campaign_spec_rejects_unpinned_model_checkpoint():
         )
 
 
+@pytest.mark.parametrize("field", ["input_modalities", "supported_metrics"])
+def test_campaign_spec_rejects_scalar_model_capability_sequences(field):
+    capabilities = {
+        "model_id": "typed",
+        "family": "custom",
+        "input_modalities": ["state"],
+        "output_representation": "action_chunk",
+        "supports_closed_loop": True,
+        "supports_action_chunks": True,
+        "supported_metrics": ["success"],
+    }
+    capabilities[field] = "state" if field == "input_modalities" else "success"
+    with pytest.raises(ValueError, match=f"model.capabilities.{field}"):
+        compile_campaign_spec(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "typed-capabilities"},
+                "model": {"adapter": "mock", "capabilities": capabilities},
+                "task": {"task_id": "task"},
+                "environments": [{"id": "sim", "kind": "simulator"}],
+                "evaluation": {
+                    "seeds": [1],
+                    "paired": True,
+                    "conditions": [{"x": 1}],
+                },
+            }
+        )
+
+
 def test_campaign_spec_freezes_enabled_environment_identity_and_protocol():
     plan = compile_campaign_spec(
         {
