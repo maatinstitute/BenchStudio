@@ -61,7 +61,12 @@ class AdapterRegistry:
         descriptor = self.get(simulator_id)
         dependencies = []
         for dependency in descriptor.dependencies:
-            available = module_available(dependency.import_name)
+            import_error = None
+            try:
+                available = module_available(dependency.import_name)
+            except (ImportError, OSError) as exc:
+                available = False
+                import_error = f"{type(exc).__name__}: {exc}"
             try:
                 version = metadata.version(dependency.name)
             except metadata.PackageNotFoundError:
@@ -72,6 +77,7 @@ class AdapterRegistry:
                     "import_name": dependency.import_name,
                     "available": available,
                     "version": version,
+                    "error": import_error,
                     "required": dependency.required,
                     "scope": dependency.scope,
                 }

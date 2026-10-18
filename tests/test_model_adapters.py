@@ -103,6 +103,34 @@ def test_model_registry_readiness_reports_dependency_version(monkeypatch):
     assert readiness["dependencies"][0]["version"] == "1.2.3"
 
 
+def test_model_registry_readiness_reports_broken_optional_import(monkeypatch):
+    registry = ModelAdapterRegistry()
+    registry.register(
+        ModelAdapterDescriptor(
+            "broken",
+            "Broken model",
+            MockPolicy,
+            ModelCapabilityProfile(
+                model_id="broken",
+                family="custom",
+                input_modalities=("state",),
+                output_representation="action_chunk",
+                supports_closed_loop=True,
+                supports_action_chunks=True,
+                supported_metrics=("success",),
+            ),
+            dependencies=(ModelDependency("broken", "broken"),),
+        )
+    )
+    monkeypatch.setattr(
+        "benchstudio.model_adapters._module_available",
+        lambda _name: (_ for _ in ()).throw(ImportError("transitive dependency missing")),
+    )
+    readiness = registry.readiness("broken")
+    assert readiness["ready"] is False
+    assert readiness["dependencies"][0]["error"] == ("ImportError: transitive dependency missing")
+
+
 def test_model_registry_rejects_invalid_capability_profile():
     with pytest.raises(ValueError, match="invalid capabilities"):
         ModelAdapterRegistry().register(

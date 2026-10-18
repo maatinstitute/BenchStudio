@@ -57,7 +57,12 @@ class ModelAdapterRegistry:
         descriptor = self.get(adapter_id)
         dependencies = []
         for dependency in descriptor.dependencies:
-            available = _module_available(dependency.import_name)
+            import_error = None
+            try:
+                available = _module_available(dependency.import_name)
+            except (ImportError, OSError) as exc:
+                available = False
+                import_error = f"{type(exc).__name__}: {exc}"
             try:
                 version = metadata.version(dependency.name)
             except metadata.PackageNotFoundError:
@@ -68,6 +73,7 @@ class ModelAdapterRegistry:
                     "import_name": dependency.import_name,
                     "available": available,
                     "version": version,
+                    "error": import_error,
                     "required": dependency.required,
                     "scope": dependency.scope,
                 }

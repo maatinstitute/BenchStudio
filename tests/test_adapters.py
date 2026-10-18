@@ -72,6 +72,25 @@ def test_registry_readiness_reports_dependency_version(monkeypatch):
     assert readiness["dependencies"][0]["version"] == "9.8.7"
 
 
+def test_registry_readiness_reports_broken_optional_import(monkeypatch):
+    registry = AdapterRegistry()
+    registry.register(
+        AdapterDescriptor(
+            simulator_id="broken",
+            label="Broken backend",
+            factory=MockSimulator,
+            dependencies=(Dependency("broken", "broken"),),
+        )
+    )
+    monkeypatch.setattr(
+        "benchstudio.adapters.module_available",
+        lambda _name: (_ for _ in ()).throw(ImportError("transitive dependency missing")),
+    )
+    readiness = registry.readiness("broken")
+    assert readiness["ready"] is False
+    assert readiness["dependencies"][0]["error"] == ("ImportError: transitive dependency missing")
+
+
 def test_duplicate_adapter_registration_is_rejected():
     registry = default_registry(discover_external=False)
     with pytest.raises(ValueError, match="already registered"):
