@@ -760,6 +760,23 @@ def test_campaign_archive_can_be_verified_without_extraction(tmp_path):
     assert tampered["valid"] is False
 
 
+def test_campaign_archive_verifier_rejects_missing_frozen_attempts(tmp_path):
+    plan = CampaignPlanner(
+        run_id="incomplete-archive", scenario_id="task", conditions=[{"x": 1}], seeds=[1, 2]
+    ).freeze()
+    output = tmp_path / "campaign"
+    CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()).run(
+        attempt_ids=[plan.attempts[0].key.attempt_id]
+    )
+    result = verify_campaign_archive(build_campaign_archive(output))
+    assert result["valid"] is False
+    assert any(
+        issue["reason"] == "ledger_attempt_missing"
+        and issue["detail"] == plan.attempts[1].key.attempt_id
+        for issue in result["issues"]
+    )
+
+
 def test_campaign_archive_verifier_rejects_invalid_embedded_plan(tmp_path):
     root = tmp_path / "invalid-campaign"
     root.mkdir()

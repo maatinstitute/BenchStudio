@@ -151,6 +151,8 @@ def _validate_campaign_contents(contents: dict[str, bytes]) -> list[dict[str, st
                 issues.append(
                     {"reason": "ledger_identity_mismatch", "detail": f"{attempt_id}:{field}"}
                 )
+    for attempt_id in sorted(set(planned) - seen):
+        issues.append({"reason": "ledger_attempt_missing", "detail": attempt_id})
     return issues
 
 
