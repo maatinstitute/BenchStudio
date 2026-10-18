@@ -180,7 +180,8 @@ def _run_episode(
     retain_events: bool = True,
     resource_sampler: ResourceSampler | None = None,
 ) -> tuple[EpisodeResult, list[dict[str, Any]]]:
-    episode_id = f"episode-{index:04d}"
+    episode_scope = config.attempt_id or config.run_id or "standalone"
+    episode_id = f"{episode_scope}-episode-{index:04d}"
     seed = config.seed + index
     pair_id = _pair_id(config, seed)
     condition_id = _condition_id(config)
@@ -566,7 +567,7 @@ def _campaign_failure(index: int, error: Exception) -> EpisodeResult:
 
 def _campaign_failure_with_status(index: int, error: Exception, *, status: str) -> EpisodeResult:
     return EpisodeResult(
-        episode_id=f"episode-{index:04d}",
+        episode_id=f"campaign-episode-{index:04d}",
         pair_id=f"campaign-{index:04d}",
         condition_id="campaign",
         success=False,

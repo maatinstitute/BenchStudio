@@ -214,6 +214,16 @@ def test_campaign_executor_binds_runtime_receipt_to_frozen_attempt(tmp_path):
     assert receipt["worker_id"] == "worker-a"
 
 
+def test_campaign_executor_scopes_episode_ids_to_frozen_attempt(tmp_path):
+    plan = CampaignPlanner(
+        run_id="identity-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    output = tmp_path / "campaign"
+    CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
+    summary = json.loads((output / "attempts" / "attempt-000000" / "summary.json").read_text())
+    assert summary["episodes"][0]["episode_id"] == "attempt-000000-episode-0000"
+
+
 def test_campaign_executor_persists_environment_calibration(tmp_path):
     calibration = {
         "revision": "cal-v1",
