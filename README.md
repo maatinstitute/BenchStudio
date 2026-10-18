@@ -76,6 +76,14 @@ Use `audit_evaluation_acceptance()` to produce the proposal’s explicit
 scientific-contract gate report. It fails closed when parity, recovery,
 reproducibility, statistical, or timing evidence has not been supplied.
 
+The same gate can be run against an existing campaign directory:
+
+```bash
+python -m benchstudio.cli --audit-output runs/campaign \
+  --acceptance-output runs/campaign/acceptance.json \
+  --acceptance-evidence acceptance-evidence.json
+```
+
 Compiled mock campaigns can also be audited and packaged as immutable evidence
 bundles:
 

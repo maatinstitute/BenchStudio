@@ -5,7 +5,12 @@ import json
 from pathlib import Path
 
 from .adapters import default_registry
-from .analysis import ClaimType, audit_campaign_directory, compare_policy_trace_files
+from .analysis import (
+    ClaimType,
+    audit_campaign_directory,
+    audit_evaluation_acceptance,
+    compare_policy_trace_files,
+)
 from .campaigns import (
     CampaignExecutor,
     HttpArtifactStore,
@@ -105,6 +110,19 @@ def main() -> int:
         "--audit-output",
         type=Path,
         help="Audit an existing campaign directory without executing adapters.",
+    )
+    parser.add_argument(
+        "--acceptance-output",
+        type=Path,
+        help="Write the executable scientific acceptance-contract report.",
+    )
+    parser.add_argument(
+        "--acceptance-evidence",
+        type=Path,
+        help=(
+            "JSON mapping of explicit external acceptance evidence, such as "
+            "policy_transparent or recovery_verified."
+        ),
     )
     parser.add_argument(
         "--claim-type",
@@ -216,6 +234,23 @@ def main() -> int:
         return 0 if result["valid"] else 2
     if args.audit_output is not None:
         audit = audit_campaign_directory(args.audit_output, claim_type=ClaimType(args.claim_type))
+        if args.acceptance_output is not None or args.acceptance_evidence is not None:
+            evidence = _load_acceptance_evidence(args.acceptance_evidence)
+            acceptance = audit_evaluation_acceptance(
+                audit,
+                policy_transparent=evidence.get("policy_transparent"),
+                reproducible=evidence.get("reproducible"),
+                recovery_verified=evidence.get("recovery_verified"),
+                statistical_validity=evidence.get("statistical_validity"),
+            )
+            if args.acceptance_output is not None:
+                args.acceptance_output.parent.mkdir(parents=True, exist_ok=True)
+                args.acceptance_output.write_text(
+                    json.dumps(acceptance.to_dict(), indent=2, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                )
+            print(json.dumps(acceptance.to_dict(), sort_keys=True))
+            return 0 if acceptance.passed else 2
         print(json.dumps(audit.to_dict(), sort_keys=True))
         return 0 if audit.attempts_complete and audit.evidence_verified else 2
     if args.readiness:
@@ -322,6 +357,26 @@ def main() -> int:
         f"episodes={summary['episode_count']} status={summary['campaign_status']}"
     )
     return 0
+
+
+def _load_acceptance_evidence(path: Path | None) -> dict[str, bool]:
+    if path is None:
+        return {}
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError("acceptance evidence must be a JSON mapping")
+    allowed = {
+        "policy_transparent",
+        "reproducible",
+        "recovery_verified",
+        "statistical_validity",
+    }
+    unknown = set(value) - allowed
+    if unknown:
+        raise ValueError("unsupported acceptance evidence: " + ", ".join(sorted(unknown)))
+    if any(not isinstance(item, bool) for item in value.values()):
+        raise ValueError("acceptance evidence values must be booleans")
+    return value
 
 
 if __name__ == "__main__":

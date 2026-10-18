@@ -155,6 +155,47 @@ def test_cli_audits_existing_campaign_without_execution(monkeypatch, tmp_path, c
     assert audit["evidence_verified"] is True
 
 
+def test_cli_writes_fail_closed_acceptance_report(monkeypatch, tmp_path, capsys):
+    from benchstudio.campaigns import CampaignExecutor, CampaignPlanner
+    from benchstudio.mock import MockPolicy, MockSimulator
+
+    plan = CampaignPlanner(
+        run_id="acceptance-cli", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    campaign = tmp_path / "campaign"
+    CampaignExecutor(plan, campaign, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
+    evidence = tmp_path / "acceptance-evidence.json"
+    evidence.write_text(
+        json.dumps(
+            {
+                "policy_transparent": True,
+                "reproducible": True,
+                "recovery_verified": True,
+                "statistical_validity": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+    output = tmp_path / "acceptance.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--audit-output",
+            str(campaign),
+            "--acceptance-output",
+            str(output),
+            "--acceptance-evidence",
+            str(evidence),
+        ],
+    )
+    assert main() == 2
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["schema"] == "benchstudio_evaluation_acceptance_v1"
+    assert report["passed"] is False
+    assert any(not check["passed"] for check in report["checks"])
+
+
 def test_cli_campaign_audit_reopens_persisted_outcomes(monkeypatch, tmp_path, capsys):
     from benchstudio.analysis import OutcomeRecord
     from benchstudio.campaigns import CampaignExecutor, CampaignPlanner
