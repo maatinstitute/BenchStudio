@@ -99,6 +99,7 @@ from .robopad_evidence_store import EvidenceStore
 from .robopad_reference import FixedReference
 from .robopad_reference_adapter import CandidateGoals, SourceGeometry, build_goals, extract_geometry
 from .robopad_reference_cache import SourceCache, cache_executed_source, select_prefix
+from .robopad_state_evidence import json_numpy
 from .robopad_supervisor import (
     KILL_AFTER,
     LOG_CAP,
@@ -186,6 +187,7 @@ __all__ = [
     "SourceCache",
     "cache_executed_source",
     "select_prefix",
+    "json_numpy",
     "MAX_BYTES",
     "checked_rotation_delta",
     "compact_record",

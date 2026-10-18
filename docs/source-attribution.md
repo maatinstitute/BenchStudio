@@ -349,6 +349,15 @@ the following projects. Product runtimes are not vendored into this repository.
   encoding, persisted-byte rechecks, quota reserves, hard-link commit
   visibility, orphan accounting, and fail-closed no-retry state. NumPy remains
   optional until these integration boundaries are used.
+- RoboPAD state-evidence serialization: `benchstudio.integrations.
+  robopad_state_evidence.json_numpy` ports the dependency-light report
+  serializer from `experiments/icra_state_evidence_probe.py` at upstream commit
+  `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
+  `3b2d9f5d6372f01c093bb1dbf1a944e465f951aa2e82ddbc2a0c41af32263d8e` and
+  source-test digest `d7de132f2f48a210b959f4243a4c1bc676fb4184cf11407d95d0d6a9874e4ffb`.
+  It preserves explicit NumPy scalar/array JSON conversion and rejects unknown
+  metadata instead of stringifying it. The simulator restoration, physics
+  inspection, and no-action probe remain external.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment
