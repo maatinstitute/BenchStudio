@@ -22,6 +22,10 @@ def test_run_emits_reproducible_artifact_set(tmp_path):
     ]
     assert records
     assert {"observation_age_ms", "policy_latency_ms", "action_prefix"} <= records[0].keys()
+    assert records[0]["source_timestamp_domain"] == "sim_time"
+    assert records[0]["source_timestamp_value_ns"] == 0
+    assert records[0]["next_timestamp_value_ns"] == 100_000_000
+    assert records[0]["observation_age_status"] == "sim_time_delta"
 
 
 def test_resource_sampler_is_recorded_as_attempt_evidence(tmp_path):

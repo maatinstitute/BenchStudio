@@ -348,6 +348,31 @@ def _run_episode(
                         if source_observation.source_timestamp is not None
                         else "sim_time"
                     ),
+                    "source_timestamp_value_ns": (
+                        source_observation.source_timestamp.value_ns
+                        if source_observation.source_timestamp is not None
+                        else None
+                    ),
+                    "source_timestamp_uncertainty_ns": (
+                        source_observation.source_timestamp.uncertainty_ns
+                        if source_observation.source_timestamp is not None
+                        else None
+                    ),
+                    "next_timestamp_domain": (
+                        next_observation.source_timestamp.domain
+                        if next_observation.source_timestamp is not None
+                        else "sim_time"
+                    ),
+                    "next_timestamp_value_ns": (
+                        next_observation.source_timestamp.value_ns
+                        if next_observation.source_timestamp is not None
+                        else None
+                    ),
+                    "next_timestamp_uncertainty_ns": (
+                        next_observation.source_timestamp.uncertainty_ns
+                        if next_observation.source_timestamp is not None
+                        else None
+                    ),
                     "action_digest_sha256": _digest_action(action),
                     "observation_age_ms": round(age_ms, 6),
                     "observation_age_status": "sim_time_delta",
