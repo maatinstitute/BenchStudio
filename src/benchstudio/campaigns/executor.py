@@ -145,6 +145,10 @@ class CampaignExecutor:
                 else:
                     condition = attempt.metadata.get("condition", {})
                     config = RunConfig(
+                        run_id=attempt.key.run_id,
+                        attempt_id=attempt.key.attempt_id,
+                        plan_digest_sha256=self.plan.plan_digest_sha256,
+                        worker_id=self.worker_id,
                         task_id=attempt.key.scenario_id,
                         environment_id=attempt.key.environment_id,
                         seed=attempt.task_seed,

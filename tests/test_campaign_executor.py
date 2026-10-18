@@ -163,6 +163,28 @@ def test_campaign_executor_preserves_environment_identity_in_evidence(tmp_path):
     assert environments == ["sim-a", "sim-b"]
 
 
+def test_campaign_executor_binds_runtime_receipt_to_frozen_attempt(tmp_path):
+    plan = CampaignPlanner(
+        run_id="receipt-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
+    ).freeze()
+    output = tmp_path / "campaign"
+    CampaignExecutor(
+        plan,
+        output,
+        lambda _: MockPolicy(),
+        lambda _: MockSimulator(),
+        worker_id="worker-a",
+        lease_manager=WorkerLeaseManager(tmp_path / "leases"),
+    ).run()
+    receipt = json.loads(
+        (output / "attempts" / "attempt-000000" / "runtime-receipt.json").read_text()
+    )
+    assert receipt["run_id"] == plan.run_id
+    assert receipt["attempt_id"] == "attempt-000000"
+    assert receipt["plan_digest_sha256"] == plan.plan_digest_sha256
+    assert receipt["worker_id"] == "worker-a"
+
+
 def test_campaign_executor_persists_environment_calibration(tmp_path):
     calibration = {
         "revision": "cal-v1",

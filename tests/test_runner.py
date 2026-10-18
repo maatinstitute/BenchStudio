@@ -15,6 +15,7 @@ def test_run_emits_reproducible_artifact_set(tmp_path):
     assert (tmp_path / "run" / "manifest.json").exists()
     assert (tmp_path / "run" / "episodes.jsonl").exists()
     assert (tmp_path / "run" / "summary.json").exists()
+    assert (tmp_path / "run" / "runtime-receipt.json").exists()
     records = [
         json.loads(line) for line in (tmp_path / "run" / "episodes.jsonl").read_text().splitlines()
     ]

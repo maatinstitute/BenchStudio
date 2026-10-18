@@ -151,6 +151,12 @@ from .reporting import (
     write_html_report,
 )
 from .runner import EpisodeResult, RunConfig, run_episodes
+from .runtime_receipts import (
+    build_runtime_receipt,
+    load_runtime_receipt,
+    verify_runtime_receipt,
+    write_runtime_receipt,
+)
 from .scenarios import (
     ScenarioArchiveError,
     ScenarioPack,
@@ -278,6 +284,10 @@ __all__ = [
     "ModelDependency",
     "default_model_registry",
     "sample_resources",
+    "build_runtime_receipt",
+    "load_runtime_receipt",
+    "verify_runtime_receipt",
+    "write_runtime_receipt",
     "delta_resources",
     "load_scenario_pack",
     "validate_scenario_pack",

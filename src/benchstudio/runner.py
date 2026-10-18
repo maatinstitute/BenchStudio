@@ -21,10 +21,15 @@ from .evidence import (
     write_manifest_trust_anchor,
 )
 from .measurement import ResourceSampler, delta_resources, sample_resources
+from .runtime_receipts import build_runtime_receipt, write_runtime_receipt
 
 
 @dataclass(frozen=True)
 class RunConfig:
+    run_id: str | None = None
+    attempt_id: str | None = None
+    plan_digest_sha256: str | None = None
+    worker_id: str | None = None
     task_id: str = "mock_task"
     robot_id: str = "mock_robot"
     environment_id: str = "default"
@@ -99,6 +104,7 @@ def run_episodes(
     resource_sampler: ResourceSampler | None = None,
 ) -> dict[str, Any]:
     output.mkdir(parents=True, exist_ok=True)
+    started_monotonic_ns = time.monotonic_ns()
     manifest = _manifest(policy, simulator, config)
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     episode_results: list[EpisodeResult] = []
@@ -139,6 +145,20 @@ def run_episodes(
     summary = _summary(config, episode_results, campaign_status=campaign_status)
     (output / "summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    write_runtime_receipt(
+        output / "runtime-receipt.json",
+        build_runtime_receipt(
+            run_id=config.run_id,
+            attempt_id=config.attempt_id,
+            plan_digest_sha256=config.plan_digest_sha256,
+            worker_id=config.worker_id,
+            status=campaign_status,
+            started_monotonic_ns=started_monotonic_ns,
+            completed_monotonic_ns=time.monotonic_ns(),
+            backend_id=simulator.simulator_id,
+            environment=manifest["environment"],
+        ),
     )
     artifact_manifest = build_artifact_manifest(output, status=campaign_status)
     artifact_manifest_path = output / "artifact-manifest.json"
