@@ -49,6 +49,15 @@ the following projects. Product runtimes are not vendored into this repository.
   source basis is `experiments/outcome_campaign.py` at upstream commit
   `4ecd468cc67cc40681ca2af9097b7ade5825fadd`, source digest
   `d19822c6928fb374359a0abdf5d72749aa4fec9cb8c29d068be7689933953c12`.
+- RoboPAD conservative outcome analysis: `benchstudio.analysis.outcome_report`
+  is a direct port of `experiments/outcome_report.py` at upstream commit
+  `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
+  `687f8ed573248651c25fcf45616804d6fad5cfbecb0000b4dbd0cb4a62e760bf` and
+  source-test digest
+  `6f043ddfe0c4f43a4df3f07aa031dbcf419a4d877e045b8d4bab6883b335b943`.
+  The port preserves frozen task/seed/parent panels, conservative missing-cell
+  bounds, exact discordance intervals, and explicit attempted/complete/missing
+  accounting; training and official outcome authority remain external.
 - AlpaBridge: `benchstudio.integrations.alpasim_metrics` is a direct
   dependency-free port of `src/alpabridge/neutral/alpasim_metrics.py` from
   upstream commit `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`. Its source digest

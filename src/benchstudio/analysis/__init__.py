@@ -13,6 +13,14 @@ from .ledger_validation import compare as compare_refinement_ledgers
 from .ledger_validation import validate as validate_refinement_ledger
 from .ledger_validation import validate_completed as validate_completed_refinement_ledger
 from .missingness import MissingOutcomeBounds, missing_outcome_bounds
+from .outcome_report import (
+    analyze_primary,
+    clopper_pearson,
+    summarize_cells,
+)
+from .outcome_report import (
+    discordance_interval as outcome_discordance_interval,
+)
 from .outcomes import (
     OutcomeLedger,
     OutcomeProvenanceAudit,
@@ -84,6 +92,10 @@ __all__ = [
     "audit_execution_overhead",
     "load_execution_overhead",
     "write_execution_overhead",
+    "analyze_primary",
+    "clopper_pearson",
+    "outcome_discordance_interval",
+    "summarize_cells",
     "EventBookmark",
     "InferenceEvent",
     "InferenceScheduleAudit",
