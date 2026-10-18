@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -78,6 +79,92 @@ def development_schedule() -> list[dict[str, Any]]:
         }
         for index, (h, d) in enumerate(((1, 10), (5, 5), (1, 5), (5, 10)))
     ]
+
+
+def select_schedule(plan: dict[str, Any], max_blocks: int | None = None) -> list[dict[str, Any]]:
+    """Select complete, balanced state/seed pairs before outcomes exist.
+
+    This is the source runner's ``select_schedule`` contract. It validates
+    the frozen schedule digest and condition blocks, then optionally selects
+    whole blocks equally per task while retaining every declared policy seed.
+    """
+    rows = plan["schedule"]
+    if not rows or sha(rows) != plan["scheduling"]["schedule_sha256"]:
+        raise ValueError("plan schedule digest missing or incorrect")
+    declared = plan.get("design", {}).get("conditions")
+    if not isinstance(declared, list) or not declared:
+        raise ValueError("plan must declare nonempty conditions")
+    conditions = {(row.get("h"), row.get("denoising_steps")) for row in declared}
+    if not all(
+        type(h) is int and h > 0 and type(denoising_steps) is int and denoising_steps > 0
+        for h, denoising_steps in conditions
+    ):
+        raise ValueError("h and denoising_steps must be positive integers")
+    if len(conditions) != len(declared):
+        raise ValueError("duplicate declared conditions")
+    per_block = len(conditions)
+    if plan["design"].get("conditions_per_block") != per_block:
+        raise ValueError("conditions_per_block disagrees with declared conditions")
+    blocks: dict[str, list[dict[str, Any]]] = {}
+    order: list[str] = []
+    for row in rows:
+        block_id = row["block_id"]
+        if block_id not in blocks:
+            blocks[block_id] = []
+            order.append(block_id)
+        blocks[block_id].append(row)
+    for block_id, block in blocks.items():
+        if (
+            len(block) != per_block
+            or {(row["h"], row["denoising_steps"]) for row in block} != conditions
+        ):
+            raise ValueError(
+                f"incomplete or mismatched condition block {block_id} "
+                "(historical four-condition or declared grid)"
+            )
+        if not all(row["episode_identity"] == block[0]["episode_identity"] for row in block):
+            raise ValueError(f"mixed identities in block {block_id}")
+    if [row["block_id"] for row in rows] != [
+        block_id for block_id in order for _ in range(per_block)
+    ]:
+        raise ValueError("condition blocks must be contiguous")
+    if len({row["planned_run_id"] for row in rows}) != len(rows):
+        raise ValueError("duplicate planned_run_id")
+    if max_blocks is None:
+        return copy.deepcopy(rows)
+    if type(max_blocks) is not int or not 0 < max_blocks <= len(blocks):
+        raise ValueError("invalid max-blocks")
+    if max_blocks == len(blocks):
+        return copy.deepcopy(rows)
+    task_states: dict[tuple[Any, Any], dict[Any, list[str]]] = {}
+    for block_id in order:
+        identity = blocks[block_id][0]["episode_identity"]
+        task = (identity["suite"], identity["task_id"])
+        task_states.setdefault(task, {}).setdefault(identity["initial_state_id"], []).append(
+            block_id
+        )
+    seeds = set(plan["design"]["policy_seeds"])
+    divisor = len(task_states) * len(seeds)
+    if max_blocks % divisor != 0:
+        raise ValueError(
+            f"--max-blocks must be a multiple of {divisor} to preserve task/state/seed balance"
+        )
+    states_per_task = max_blocks // divisor
+    selected: set[str] = set()
+    for task, states in task_states.items():
+        if len(states) < states_per_task:
+            raise ValueError(f"not enough states for {task}")
+        for _state, block_ids in list(states.items())[:states_per_task]:
+            actual = {
+                blocks[block_id][0]["episode_identity"]["policy_seed"] for block_id in block_ids
+            }
+            if actual != seeds or len(block_ids) != len(seeds):
+                raise ValueError("incomplete policy-seed pair")
+            selected.update(block_ids)
+    selected_rows = [row for row in rows if row["block_id"] in selected]
+    if len(selected_rows) != max_blocks * per_block:
+        raise ValueError("balanced selection size mismatch")
+    return copy.deepcopy(selected_rows)
 
 
 def array_record(value: Any) -> dict[str, Any]:

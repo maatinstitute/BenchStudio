@@ -97,6 +97,7 @@ from .refinement_protocol import (
     observation_field_shas,
     observation_sha,
     parity_report,
+    select_schedule,
     sha,
 )
 from .resources import (
@@ -155,6 +156,7 @@ __all__ = [
     "observation_field_shas",
     "observation_sha",
     "parity_report",
+    "select_schedule",
     "sha",
     "EventBookmark",
     "InferenceEvent",

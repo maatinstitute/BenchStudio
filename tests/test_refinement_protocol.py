@@ -13,8 +13,10 @@ from benchstudio.analysis.refinement_protocol import (
     observation_field_shas,
     observation_sha,
     parity_report,
+    select_schedule,
     sha,
 )
+from benchstudio.campaigns.refinement_plan import make_plan
 
 
 def test_schedule_and_noise_identity_are_source_compatible():
@@ -25,6 +27,41 @@ def test_schedule_and_noise_identity_are_source_compatible():
     assert keyed_seed(identity, 10) == keyed_seed(dict(reversed(list(identity.items()))), 10)
     assert keyed_seed(identity, 10) != keyed_seed(identity, 11)
     assert keyed_seed(identity, 10) != keyed_seed(identity, 10, "warmup")
+
+
+def test_source_schedule_selection_preserves_balanced_pairs_and_rejects_bad_caps():
+    plan = make_plan()
+    assert len(select_schedule(plan)) == 320
+    for cap in (16, 32, 48, 64, 80):
+        rows = select_schedule(plan, cap)
+        assert len(rows) == cap * 4
+        by_task = {}
+        for row in rows:
+            identity = row["episode_identity"]
+            task = (identity["suite"], identity["task_id"])
+            by_task.setdefault(task, set()).add(
+                (identity["initial_state_id"], identity["policy_seed"])
+            )
+        assert len(by_task) == 8
+        assert all(len(identities) == cap // 8 for identities in by_task.values())
+        for identities in by_task.values():
+            for state in {state for state, _seed in identities}:
+                assert {seed for other, seed in identities if other == state} == {2000, 2001}
+    for cap in (-1, 0, 1, 8, 17, 81, True):
+        with pytest.raises(ValueError):
+            select_schedule(plan, cap)
+
+
+def test_source_schedule_selection_rejects_digest_and_block_corruption():
+    plan = make_plan()
+    plan["schedule"][0]["h"] = 99
+    with pytest.raises(ValueError, match="digest"):
+        select_schedule(plan)
+    plan = make_plan()
+    plan["schedule"][3], plan["schedule"][4] = plan["schedule"][4], plan["schedule"][3]
+    plan["scheduling"]["schedule_sha256"] = sha(plan["schedule"])
+    with pytest.raises(ValueError, match="contiguous"):
+        select_schedule(plan)
 
 
 def test_array_and_nested_observation_hashes_bind_shape_dtype_and_fields():
