@@ -79,3 +79,66 @@ def test_policy_session_rejects_bad_action_shape() -> None:
         now_ns=1_000,
     )
     assert result.status == "invalid_action"
+
+
+def test_policy_session_cached_strategy_reuses_identical_prediction() -> None:
+    class CountingPolicy(StubPolicy):
+        calls = 0
+
+        def predict(self, observation, *, denoising_steps):
+            self.calls += 1
+            return super().predict(observation, denoising_steps=denoising_steps)
+
+    policy = CountingPolicy()
+    session = PolicySession("cached", policy, execution_strategy="cached")
+    session.initialize(seed=1)
+    session.start()
+    first = session.predict(Observation(0, 0.0), denoising_steps=2)
+    second = session.predict(Observation(0, 0.0), denoising_steps=2)
+    assert first.accepted and second.accepted
+    assert second.cache_hit is True
+    assert policy.calls == 1
+
+
+def test_policy_session_streaming_strategy_requires_and_consumes_stream() -> None:
+    class StreamingPolicy(StubPolicy):
+        def predict_stream(self, observation, *, denoising_steps):
+            yield ActionChunk((0.1, 0.2))
+
+    session = PolicySession("streaming", StreamingPolicy(), execution_strategy="streaming")
+    session.initialize(seed=1)
+    session.start()
+    result = session.predict(Observation(0, 0.0))
+    assert result.accepted
+    assert result.execution_strategy == "streaming"
+
+
+def test_policy_session_async_strategy_uses_async_method() -> None:
+    class AsyncPolicy(StubPolicy):
+        def predict_async(self, observation, *, denoising_steps):
+            return ActionChunk((0.1, 0.2))
+
+    session = PolicySession("async", AsyncPolicy(), execution_strategy="async")
+    session.initialize(seed=1)
+    session.start()
+    result = session.predict(Observation(0, 0.0))
+    assert result.accepted
+    assert result.execution_strategy == "async"
+
+
+def test_policy_session_async_deadline_does_not_wait_for_worker() -> None:
+    import time
+
+    class SlowPolicy(StubPolicy):
+        def predict_async(self, observation, *, denoising_steps):
+            time.sleep(0.05)
+            return ActionChunk((0.1, 0.2))
+
+    session = PolicySession("async-timeout", SlowPolicy(), execution_strategy="async")
+    session.initialize(seed=1)
+    session.start()
+    started = time.monotonic()
+    result = session.predict(Observation(0, 0.0), timeout_ns=1_000_000)
+    elapsed = time.monotonic() - started
+    assert result.status == "prediction_timeout"
+    assert elapsed < 0.04

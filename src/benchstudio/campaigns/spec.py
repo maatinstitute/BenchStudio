@@ -74,7 +74,18 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
     model = _mapping(spec.get("model", {}), "model")
     if model and not isinstance(model.get("adapter"), str):
         raise ValueError("model.adapter is required when model is declared")
-    _validate_model_capabilities(model, _mapping(spec.get("evaluation", {}), "evaluation"))
+    evaluation = _mapping(spec.get("evaluation", {}), "evaluation")
+    _validate_model_capabilities(model, evaluation)
+    strategy = evaluation.get("execution_strategy", "sync")
+    if strategy not in {"sync", "async", "streaming", "cached"}:
+        raise ValueError(f"unsupported evaluation.execution_strategy: {strategy}")
+    max_cache_entries = evaluation.get("max_cache_entries", 256)
+    if (
+        isinstance(max_cache_entries, bool)
+        or not isinstance(max_cache_entries, int)
+        or max_cache_entries < 1
+    ):
+        raise ValueError("evaluation.max_cache_entries must be a positive integer")
     checkpoint = model.get("checkpoint")
     if checkpoint is not None and (
         not isinstance(checkpoint, str) or re.fullmatch(r"sha256:[0-9a-f]{64}", checkpoint) is None

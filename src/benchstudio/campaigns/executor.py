@@ -152,6 +152,12 @@ class CampaignExecutor:
                         action_prefix=condition.get("action_prefix", 2),
                         observation_refresh_ticks=condition.get("observation_refresh_ticks", 1),
                         max_episode_steps=condition.get("max_episode_steps", 100),
+                        execution_strategy=condition.get(
+                            "execution_strategy", _execution_strategy(self.plan)
+                        ),
+                        max_cache_entries=condition.get(
+                            "max_cache_entries", _max_cache_entries(self.plan)
+                        ),
                         initial_condition_id=attempt.key.pair_id,
                         resource_budget=_resource_budget(self.plan),
                     )
@@ -313,3 +319,13 @@ def _resource_budget(plan: FrozenCampaignPlan) -> ResourceBudget | None:
         max_wall_time_ms=values.get("max_wall_time_ms"),
         max_compute_time_ms=values.get("max_compute_time_ms"),
     )
+
+
+def _execution_strategy(plan: FrozenCampaignPlan) -> str:
+    evaluation = (plan.protocol or {}).get("P", {}).get("evaluation", {})
+    return evaluation.get("execution_strategy", "sync")
+
+
+def _max_cache_entries(plan: FrozenCampaignPlan) -> int:
+    evaluation = (plan.protocol or {}).get("P", {}).get("evaluation", {})
+    return evaluation.get("max_cache_entries", 256)

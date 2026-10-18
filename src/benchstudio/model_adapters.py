@@ -101,6 +101,15 @@ class ModelAdapterRegistry:
             return (
                 f"model adapter {adapter_id} missing " + ", ".join(readiness["missing_required"]),
             )
+        evaluation = protocol.get("P", {}).get("evaluation", {})
+        strategy = evaluation.get("execution_strategy", "sync")
+        capability_name = {
+            "async": "supports_async",
+            "streaming": "supports_streaming",
+            "cached": "supports_cached_predictions",
+        }.get(strategy)
+        if capability_name and not getattr(self.get(adapter_id).capabilities, capability_name):
+            return (f"model adapter {adapter_id} does not support {strategy} execution",)
         return ()
 
     def discover(self, group: str = "benchstudio.models") -> tuple[dict[str, str], ...]:
@@ -168,6 +177,7 @@ def default_model_registry(*, discover_external: bool = True) -> ModelAdapterReg
                 supports_closed_loop=True,
                 supports_action_chunks=True,
                 supported_metrics=("success",),
+                supports_cached_predictions=True,
             ),
         )
     )

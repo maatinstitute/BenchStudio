@@ -75,6 +75,22 @@ def test_action_prefix_changes_policy_call_count(tmp_path):
     assert one["episodes"][0]["policy_calls"] > two["episodes"][0]["policy_calls"]
 
 
+def test_runner_records_cached_execution_strategy(tmp_path):
+    run_episodes(
+        MockPolicy(),
+        MockSimulator(),
+        RunConfig(episodes=1, action_prefix=1, execution_strategy="cached"),
+        tmp_path / "cached",
+    )
+    records = [
+        json.loads(line)
+        for line in (tmp_path / "cached" / "episodes.jsonl").read_text().splitlines()
+    ]
+    action_records = [record for record in records if record["event_type"] == "action_executed"]
+    assert action_records
+    assert action_records[0]["execution_strategy"] == "cached"
+
+
 def test_observation_refresh_interval_creates_stale_observations(tmp_path):
     summary = run_episodes(
         MockPolicy(),

@@ -9,7 +9,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from statistics import mean
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
 from .analysis.resources import ResourceBudget, audit_resources
 from .conformance import ActionSpec, PolicySession, validate_observation
@@ -37,6 +37,8 @@ class RunConfig:
     initial_condition_id: str = "default"
     action_spec: ActionSpec | None = None
     policy_timeout_ns: int | None = None
+    execution_strategy: Literal["sync", "async", "streaming", "cached"] = "sync"
+    max_cache_entries: int = 256
     resource_budget: ResourceBudget | None = None
 
     def __post_init__(self) -> None:
@@ -50,6 +52,10 @@ class RunConfig:
             raise ValueError("max_episode_steps must be positive")
         if self.policy_timeout_ns is not None and self.policy_timeout_ns < 0:
             raise ValueError("policy_timeout_ns must be non-negative")
+        if self.execution_strategy not in {"sync", "async", "streaming", "cached"}:
+            raise ValueError(f"unsupported execution strategy: {self.execution_strategy}")
+        if self.max_cache_entries < 1:
+            raise ValueError("max_cache_entries must be positive")
         if not self.environment_id:
             raise ValueError("environment_id must not be empty")
 
@@ -154,6 +160,8 @@ def _run_episode(
         f"{episode_id}-policy-session",
         policy,
         action_spec=config.action_spec,
+        execution_strategy=config.execution_strategy,
+        max_cache_entries=config.max_cache_entries,
     )
 
     def record(event: dict[str, Any]) -> None:
@@ -324,6 +332,8 @@ def _run_episode(
                     "action_prefix": config.action_prefix,
                     "action_index": action_index,
                     "denoising_steps": config.denoising_steps,
+                    "execution_strategy": prediction.execution_strategy,
+                    "cache_hit": prediction.cache_hit,
                 }
             )
             # Refreshing is deliberately controlled outside the policy. When a
@@ -526,6 +536,8 @@ def _condition_id(config: RunConfig) -> str:
         "action_prefix": config.action_prefix,
         "observation_refresh_ticks": config.observation_refresh_ticks,
         "max_episode_steps": config.max_episode_steps,
+        "execution_strategy": config.execution_strategy,
+        "max_cache_entries": config.max_cache_entries,
     }
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:16]
 

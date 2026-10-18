@@ -15,7 +15,7 @@ has been evaluated.
 | Policy lifecycle and timing | Verified as contracts | Lifecycle, action semantics, clock domains, queue/drop/deadline, and replay conformance validators are tested. |
 | Model capability declarations | Verified as data contracts | VLA, planner, world-model, monitor, timing, memory, streaming, and caching fields are represented and validated. |
 | Model adapter registry | Implemented | Policy adapters declare capabilities and dependencies, support optional entry-point discovery, and can be instantiated directly from frozen model declarations. |
-| Inference efficiency | Verified as instrumentation | Latency, observation age, action chunks, resource points, overhead, and Pareto helpers are implemented; no production checkpoint result is claimed. |
+| Inference efficiency | Verified as instrumentation | Latency, observation age, action chunks, resource points, overhead, Pareto helpers, and concrete synchronous/asynchronous/streaming/cached policy execution strategies are implemented; no production checkpoint result is claimed. |
 | Paired statistics | Verified | Exact binomial and discordance intervals, matched deltas, missingness, and standard errors are exposed in analysis results. |
 | Sim-to-real fidelity | Analysis-ready | Transfer gaps, failure-category agreement, observation-age summaries, and ranking concordance are implemented; physical data is not present. |
 | Robustness and recovery | Analysis-ready | Counterfactual pairing, confirmation plans, missing-outcome bounds, and recovery summaries are implemented; no disturbance campaign has been run. |

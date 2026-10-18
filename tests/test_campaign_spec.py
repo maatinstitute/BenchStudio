@@ -73,6 +73,24 @@ def test_campaign_spec_rejects_physical_automatic_retry():
         )
 
 
+def test_campaign_spec_rejects_unknown_execution_strategy():
+    with pytest.raises(ValueError, match="execution_strategy"):
+        compile_campaign_spec(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "bad-strategy"},
+                "task": {"task_id": "task"},
+                "environments": [{"id": "sim", "kind": "simulator"}],
+                "evaluation": {
+                    "seeds": [1],
+                    "paired": True,
+                    "execution_strategy": "unknown",
+                    "conditions": [{"x": 1}],
+                },
+            }
+        )
+
+
 def test_campaign_spec_rejects_non_frozen_confirmation_or_imputed_missingness():
     base = {
         "schema": "benchstudio.campaign.v1",

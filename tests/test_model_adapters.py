@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from benchstudio.campaigns import compile_campaign_spec
 from benchstudio.contracts import ModelCapabilityProfile
 from benchstudio.mock import MockPolicy
 from benchstudio.model_adapters import (
@@ -60,3 +61,24 @@ def test_model_registry_rejects_invalid_capability_profile():
                 ),
             )
         )
+
+
+def test_model_registry_gates_declared_execution_strategy():
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "async-model"},
+            "model": {"adapter": "mock"},
+            "task": {"task_id": "task"},
+            "environments": [{"id": "sim", "kind": "simulator"}],
+            "evaluation": {
+                "seeds": [1],
+                "paired": True,
+                "execution_strategy": "async",
+                "conditions": [{"x": 1}],
+            },
+        }
+    )
+    assert default_model_registry(discover_external=False).validate_plan(plan) == (
+        "model adapter mock does not support async execution",
+    )

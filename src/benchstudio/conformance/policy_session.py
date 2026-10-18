@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Callable
+from typing import Any, Callable, Literal
 
 from ..contracts import ActionChunk, Observation, Policy
 from .action_semantics import ActionSpec, validate_action
@@ -50,6 +51,8 @@ class PredictionResult:
     action_chunk: ActionChunk | None
     latency_ns: int | None
     errors: tuple[str, ...] = ()
+    execution_strategy: str = "sync"
+    cache_hit: bool = False
 
     @property
     def accepted(self) -> bool:
@@ -70,13 +73,23 @@ class PolicySession:
     required_modalities: tuple[str, ...] = ()
     modality_max_age_ns: int | None = None
     action_spec: ActionSpec | None = None
+    execution_strategy: Literal["sync", "async", "streaming", "cached"] = "sync"
+    max_cache_entries: int = 256
     status: SessionStatus = SessionStatus.CREATED
     events: list[PolicySessionEvent] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        if self.execution_strategy not in {"sync", "async", "streaming", "cached"}:
+            raise ValueError(f"unsupported execution strategy: {self.execution_strategy}")
+        if self.max_cache_entries < 1:
+            raise ValueError("max_cache_entries must be positive")
+        self._prediction_cache: dict[str, ActionChunk] = {}
 
     def initialize(self, *, seed: int) -> PolicySessionEvent:
         self._transition(SessionStatus.INITIALIZED, event="initialize", code="initialized")
         try:
             self.policy.reset(seed=seed)
+            self._prediction_cache.clear()
         except Exception as exc:  # noqa: BLE001 - preserve failure as evidence
             self._fail("policy_reset_failed", repr(exc))
             raise
@@ -137,8 +150,18 @@ class PolicySession:
         if modality_errors:
             return self._rejected("invalid_modalities", "; ".join(modality_errors), modality_errors)
         started = clock_ns()
+        cache_hit = False
         try:
-            result = self.policy.predict(observation, denoising_steps=denoising_steps)
+            cache_key = self._cache_key(observation, denoising_steps)
+            if self.execution_strategy == "cached" and cache_key in self._prediction_cache:
+                result = self._prediction_cache[cache_key]
+                cache_hit = True
+            else:
+                result = self._invoke(observation, denoising_steps, timeout_ns)
+                if self.execution_strategy == "cached":
+                    if len(self._prediction_cache) >= self.max_cache_entries:
+                        self._prediction_cache.pop(next(iter(self._prediction_cache)))
+                    self._prediction_cache[cache_key] = result
         except TimeoutError as exc:
             return self._rejected("prediction_timeout", str(exc), latency_ns=clock_ns() - started)
         except Exception as exc:  # noqa: BLE001 - adapter must expose policy failure
@@ -161,7 +184,60 @@ class PolicySession:
             errors = tuple(validate_action(result.actions, self.action_spec))
             if errors:
                 return self._rejected("invalid_action", "; ".join(errors), errors, latency)
-        return PredictionResult("accepted", result, latency)
+        return PredictionResult(
+            "accepted",
+            result,
+            latency,
+            execution_strategy=self.execution_strategy,
+            cache_hit=cache_hit,
+        )
+
+    def _invoke(
+        self, observation: Observation, denoising_steps: int | None, timeout_ns: int | None
+    ) -> Any:
+        if self.execution_strategy == "sync" or self.execution_strategy == "cached":
+            return self.policy.predict(observation, denoising_steps=denoising_steps)
+        if self.execution_strategy == "streaming":
+            stream = getattr(self.policy, "predict_stream", None)
+            if stream is None:
+                raise RuntimeError("streaming execution requires policy.predict_stream")
+            values = stream(observation, denoising_steps=denoising_steps)
+            if isinstance(values, ActionChunk):
+                return values
+            for value in values:
+                if isinstance(value, ActionChunk):
+                    return value
+            raise RuntimeError("policy.predict_stream produced no ActionChunk")
+        method = getattr(self.policy, "predict_async", self.policy.predict)
+        pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="benchstudio-policy")
+        future = pool.submit(method, observation, denoising_steps=denoising_steps)
+        timeout_s = None if timeout_ns is None else timeout_ns / 1_000_000_000
+        timed_out = False
+        try:
+            return future.result(timeout=timeout_s)
+        except TimeoutError:
+            timed_out = True
+            raise
+        finally:
+            pool.shutdown(wait=not timed_out, cancel_futures=timed_out)
+
+    @staticmethod
+    def _cache_key(observation: Observation, denoising_steps: int | None) -> str:
+        import hashlib
+        import json
+
+        payload = json.dumps(
+            {
+                "sequence": observation.sequence,
+                "sim_time_s": observation.sim_time_s,
+                "payload": observation.payload,
+                "denoising_steps": denoising_steps,
+            },
+            sort_keys=True,
+            default=str,
+            separators=(",", ":"),
+        )
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
     def _transition(self, target: SessionStatus, *, event: str, code: str) -> PolicySessionEvent:
         allowed = {
@@ -198,4 +274,10 @@ class PolicySession:
         errors: list[str] | tuple[str, ...] = (),
         latency_ns: int | None = None,
     ) -> PredictionResult:
-        return PredictionResult(status, None, latency_ns, tuple(errors) or (detail,))
+        return PredictionResult(
+            status,
+            None,
+            latency_ns,
+            tuple(errors) or (detail,),
+            execution_strategy=self.execution_strategy,
+        )
