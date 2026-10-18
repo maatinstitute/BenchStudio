@@ -40,6 +40,19 @@ def test_execution_overhead_preserves_clock_boundaries_and_uncertainty():
     assert report.to_dict()["timing_provenance"]["clock_domain"] == "host_monotonic"
 
 
+def test_execution_overhead_rejects_malformed_numeric_provenance_without_raising():
+    report = audit_execution_overhead(
+        ["slow"],  # type: ignore[list-item]
+        [1.0],
+        deadline_ms="15",  # type: ignore[arg-type]
+        timing_provenance=TimingProvenance("host", "start", "end", uncertainty_ms="wide"),  # type: ignore[arg-type]
+    )
+    assert report.valid is False
+    assert any("baseline[0]" in issue for issue in report.issues)
+    assert "deadline_ms must be finite and non-negative" in report.issues
+    assert "uncertainty_ms must be finite and non-negative" in report.issues
+
+
 def test_execution_overhead_round_trips_as_a_campaign_evidence_artifact(tmp_path):
     report = audit_execution_overhead(
         [10.0, 12.0],

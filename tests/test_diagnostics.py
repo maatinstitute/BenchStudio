@@ -12,6 +12,14 @@ def test_deadline_audit_distinguishes_misses_and_incomplete_runs():
     assert any("incomplete" in issue for issue in audit.issues)
 
 
+def test_deadline_audit_rejects_malformed_numeric_inputs_without_raising():
+    audit = audit_deadlines(["slow", float("nan")], scheduled_calls=True, deadline_ms="25")
+    assert audit.valid is False
+    assert any("scheduled_calls must be" in issue for issue in audit.issues)
+    assert any("deadline_ms must be" in issue for issue in audit.issues)
+    assert any("latencies must be" in issue for issue in audit.issues)
+
+
 def test_critical_event_bookmarks_preserve_evidence():
     events = [
         {

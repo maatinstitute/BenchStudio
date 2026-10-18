@@ -15,14 +15,17 @@ class TimingProvenance:
 
     def validate(self) -> tuple[str, ...]:
         issues: list[str] = []
-        if not self.clock_domain:
+        if not isinstance(self.clock_domain, str) or not self.clock_domain:
             issues.append("clock_domain is required")
-        if not self.start_boundary:
+        if not isinstance(self.start_boundary, str) or not self.start_boundary:
             issues.append("start_boundary is required")
-        if not self.end_boundary:
+        if not isinstance(self.end_boundary, str) or not self.end_boundary:
             issues.append("end_boundary is required")
         if self.uncertainty_ms is not None and (
-            not math.isfinite(float(self.uncertainty_ms)) or self.uncertainty_ms < 0
+            isinstance(self.uncertainty_ms, bool)
+            or not isinstance(self.uncertainty_ms, (int, float))
+            or not math.isfinite(float(self.uncertainty_ms))
+            or self.uncertainty_ms < 0
         ):
             issues.append("uncertainty_ms must be finite and non-negative")
         return tuple(issues)
@@ -145,11 +148,21 @@ def audit_execution_overhead(
             ("baseline and instrumented samples must have equal length",),
             timing_provenance,
         )
-    if deadline_ms is not None and (not math.isfinite(float(deadline_ms)) or deadline_ms < 0):
+    if deadline_ms is not None and (
+        isinstance(deadline_ms, bool)
+        or not isinstance(deadline_ms, (int, float))
+        or not math.isfinite(float(deadline_ms))
+        or deadline_ms < 0
+    ):
         issues.append("deadline_ms must be finite and non-negative")
     for label, values in (("baseline", baseline_ms), ("instrumented", instrumented_ms)):
         for index, value in enumerate(values):
-            if not math.isfinite(float(value)) or value < 0:
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(float(value))
+                or value < 0
+            ):
                 issues.append(f"{label}[{index}] must be finite and non-negative")
     if issues:
         return ExecutionOverhead(
