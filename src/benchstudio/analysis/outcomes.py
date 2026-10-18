@@ -73,6 +73,8 @@ class OutcomeLedger:
     ) -> None:
         self.path = path
         self.attempt_ids = set(attempt_ids) if attempt_ids is not None else None
+        if plan_digest_sha256 is not None and not _is_hex_digest(plan_digest_sha256):
+            raise ValueError("plan_digest_sha256 must be a lowercase SHA-256 hex digest")
         self.plan_digest_sha256 = plan_digest_sha256
         self._records: list[OutcomeRecord] = []
         self._seen: set[str] = set()
@@ -81,14 +83,19 @@ class OutcomeLedger:
                 if not line.strip():
                     continue
                 envelope = json.loads(line)
+                if not isinstance(envelope, dict):
+                    raise ValueError("outcome ledger envelope must be a mapping")
                 if envelope.get("schema") != "benchstudio.outcome.v1":
                     raise ValueError("unsupported outcome ledger schema")
-                if (
-                    plan_digest_sha256 is not None
-                    and envelope.get("plan_digest_sha256") != plan_digest_sha256
-                ):
+                envelope_digest = envelope.get("plan_digest_sha256")
+                if envelope_digest is not None and not _is_hex_digest(envelope_digest):
+                    raise ValueError("outcome ledger plan digest is invalid")
+                if plan_digest_sha256 is not None and envelope_digest != plan_digest_sha256:
                     raise ValueError("outcome record does not match frozen plan digest")
-                self._load(OutcomeRecord.from_dict(envelope.get("record", {})))
+                record_payload = envelope.get("record")
+                if not isinstance(record_payload, dict):
+                    raise ValueError("outcome ledger record must be a mapping")
+                self._load(OutcomeRecord.from_dict(record_payload))
         path.parent.mkdir(parents=True, exist_ok=True)
 
     @property
@@ -209,4 +216,12 @@ def audit_outcome_provenance(records: list[OutcomeRecord]) -> OutcomeProvenanceA
         and bool(records)
         and not issues,
         issues=tuple(issues),
+    )
+
+
+def _is_hex_digest(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
     )

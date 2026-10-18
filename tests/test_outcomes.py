@@ -71,3 +71,19 @@ def test_outcome_ledger_rejects_plan_digest_mismatch(tmp_path):
     ledger.append(OutcomeRecord("attempt-1", True, "official", "scorer", "rev", authoritative=True))
     with __import__("pytest").raises(ValueError, match="frozen plan digest"):
         OutcomeLedger(path, attempt_ids={"attempt-1"}, plan_digest_sha256="b" * 64)
+
+
+def test_outcome_ledger_rejects_malformed_envelopes(tmp_path):
+    import pytest
+
+    path = tmp_path / "outcomes.jsonl"
+    path.write_text("[]\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="envelope must be a mapping"):
+        OutcomeLedger(path, plan_digest_sha256="a" * 64)
+
+
+def test_outcome_ledger_rejects_invalid_plan_digest():
+    import pytest
+
+    with pytest.raises(ValueError, match="plan_digest_sha256 must be"):
+        OutcomeLedger(__import__("pathlib").Path("outcomes.jsonl"), plan_digest_sha256="bad")
