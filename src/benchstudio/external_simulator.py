@@ -12,6 +12,8 @@ from typing import Any
 
 from .contracts import Observation, Timestamp
 
+_CLOCK_DOMAINS = {"sim_time", "host_monotonic", "robot_clock"}
+
 
 class ExternalCommandSimulator:
     """Drive a simulator process through a strict line-oriented protocol.
@@ -166,7 +168,11 @@ def _observation(response: dict[str, Any]) -> Observation:
     source = value.get("source_timestamp")
     timestamp = None
     if source is not None:
-        if not isinstance(source, dict) or not isinstance(source.get("domain"), str):
+        if (
+            not isinstance(source, dict)
+            or not isinstance(source.get("domain"), str)
+            or source.get("domain") not in _CLOCK_DOMAINS
+        ):
             raise ValueError("observation source_timestamp is invalid")
         source_value = source.get("value_ns")
         uncertainty = source.get("uncertainty_ns")

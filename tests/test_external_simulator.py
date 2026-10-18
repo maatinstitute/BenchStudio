@@ -54,6 +54,14 @@ def test_external_command_simulator_is_registered_and_ready():
                 "source_timestamp": {"value_ns": "0", "domain": "sim_time"},
             }
         },
+        {
+            "observation": {
+                "sequence": 0,
+                "sim_time_s": 0.0,
+                "payload": {},
+                "source_timestamp": {"value_ns": 0, "domain": "unknown_clock"},
+            }
+        },
     ],
 )
 def test_external_simulator_rejects_coerced_observation_fields(response):
