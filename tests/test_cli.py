@@ -112,6 +112,42 @@ def test_cli_writes_transfer_fidelity_report(monkeypatch, tmp_path):
     assert report["success_gap_physical_minus_simulation"] == -1.0
 
 
+def test_cli_writes_recovery_report(monkeypatch, tmp_path):
+    records = tmp_path / "recovery.jsonl"
+    records.write_text(
+        "\n".join(
+            [
+                json.dumps({"pair_id": "p1", "branch": "nominal", "success": False}),
+                json.dumps(
+                    {
+                        "pair_id": "p1",
+                        "branch": "intervention",
+                        "success": True,
+                        "recovery_time_ms": 10,
+                    }
+                ),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "recovery-report.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--recovery-records",
+            str(records),
+            "--recovery-output",
+            str(output),
+        ],
+    )
+    assert main() == 0
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["schema"] == "benchstudio_recovery_report_v1"
+    assert report["recovery_rate"] == 1.0
+
+
 def test_cli_compares_frozen_policy_traces(monkeypatch, tmp_path, capsys):
     from benchstudio.integrations import POLICY_TRACE_SCHEMA
 

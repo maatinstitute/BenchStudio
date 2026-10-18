@@ -163,6 +163,13 @@ python -m benchstudio.cli --transfer-records transfer.jsonl \
 
 Missing outcomes remain explicit and cause a non-zero validation status.
 
+Counterfactual branch records can be summarized similarly:
+
+```bash
+python -m benchstudio.cli --recovery-records counterfactual-results.jsonl \
+  --recovery-output recovery-report.json
+```
+
 Recorded policy traces can be used as a fail-closed parity reference. The
 `benchstudio.integrations.TracePolicy` adapter binds each action to its expected
 observation digest, so altered preprocessing or state cannot silently reuse the

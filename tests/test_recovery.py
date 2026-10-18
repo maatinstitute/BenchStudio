@@ -1,4 +1,10 @@
-from benchstudio.analysis import summarize_recovery_outcomes
+import json
+
+from benchstudio.analysis import (
+    load_recovery_records,
+    summarize_recovery_outcomes,
+    write_recovery_report,
+)
 
 
 def test_recovery_summary_preserves_missing_branches_and_latency():
@@ -33,3 +39,23 @@ def test_recovery_summary_does_not_treat_missing_outcome_as_failure():
     assert report.matched_pairs == 0
     assert report.recovery_rate is None
     assert "some matched branches have missing outcomes" in report.issues
+
+
+def test_recovery_report_round_trips_records_and_summary(tmp_path):
+    records = [
+        {"pair_id": "p1", "branch": "nominal", "success": False},
+        {
+            "pair_id": "p1",
+            "branch": "intervention",
+            "success": True,
+            "recovery_time_ms": 12,
+        },
+    ]
+    records_path = tmp_path / "recovery.json"
+    records_path.write_text(json.dumps({"records": records}), encoding="utf-8")
+    report = summarize_recovery_outcomes(load_recovery_records(records_path))
+    output = tmp_path / "recovery-report.json"
+    write_recovery_report(report, output)
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert payload["schema"] == "benchstudio_recovery_report_v1"
+    assert payload["matched_pairs"] == 1

@@ -10,8 +10,11 @@ from .analysis import (
     audit_campaign_directory,
     audit_evaluation_acceptance,
     compare_policy_trace_files,
+    load_recovery_records,
     load_transfer_records,
+    summarize_recovery_outcomes,
     summarize_transfer_fidelity,
+    write_recovery_report,
     write_transfer_fidelity_report,
 )
 from .campaigns import (
@@ -141,6 +144,8 @@ def main() -> int:
         type=Path,
         help="Write the serialized transfer-fidelity report.",
     )
+    parser.add_argument("--recovery-records", type=Path)
+    parser.add_argument("--recovery-output", type=Path)
     parser.add_argument(
         "--claim-type",
         choices=[claim.value for claim in ClaimType],
@@ -217,6 +222,12 @@ def main() -> int:
             write_transfer_fidelity_report(report, args.transfer_output)
         print(json.dumps(report.to_dict(), sort_keys=True))
         return 0 if report.complete_pairs > 0 and not report.issues else 2
+    if args.recovery_records is not None:
+        report = summarize_recovery_outcomes(load_recovery_records(args.recovery_records))
+        if args.recovery_output is not None:
+            write_recovery_report(report, args.recovery_output)
+        print(json.dumps(report.to_dict(), sort_keys=True))
+        return 0 if report.matched_pairs > 0 and not report.issues else 2
     if args.compare_campaign is not None:
         if not args.comparison_scenario_id:
             parser.error("--compare-campaign requires --comparison-scenario-id")

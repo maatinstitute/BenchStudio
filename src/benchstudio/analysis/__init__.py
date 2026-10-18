@@ -42,7 +42,9 @@ from .recovery import (
     CounterfactualOutcomeAudit,
     RecoverySummary,
     audit_counterfactual_outcomes,
+    load_recovery_records,
     summarize_recovery_outcomes,
+    write_recovery_report,
 )
 from .resources import (
     ResourceAudit,
@@ -99,6 +101,8 @@ __all__ = [
     "CounterfactualOutcomeAudit",
     "audit_counterfactual_outcomes",
     "summarize_recovery_outcomes",
+    "load_recovery_records",
+    "write_recovery_report",
     "TransferGap",
     "TransferFidelityReport",
     "summarize_transfer_fidelity",

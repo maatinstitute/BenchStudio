@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from ..campaigns.counterfactual import FrozenCounterfactualPlan
@@ -19,6 +21,44 @@ class RecoverySummary:
     mean_recovery_time_ms: float | None
     issues: tuple[str, ...]
     recovery_confidence_interval: tuple[float, float] | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema": "benchstudio_recovery_report_v1",
+            "scheduled_pairs": self.scheduled_pairs,
+            "matched_pairs": self.matched_pairs,
+            "missing_pairs": self.missing_pairs,
+            "nominal_success_rate": self.nominal_success_rate,
+            "intervention_success_rate": self.intervention_success_rate,
+            "recovery_rate": self.recovery_rate,
+            "mean_recovery_time_ms": self.mean_recovery_time_ms,
+            "recovery_confidence_interval": (
+                list(self.recovery_confidence_interval)
+                if self.recovery_confidence_interval is not None
+                else None
+            ),
+            "issues": list(self.issues),
+        }
+
+
+def load_recovery_records(path: Path) -> list[dict[str, Any]]:
+    """Load counterfactual branch records from JSON, JSONL, or NDJSON."""
+    text = path.read_text(encoding="utf-8")
+    if path.suffix.lower() in {".jsonl", ".ndjson"}:
+        values = [json.loads(line) for line in text.splitlines() if line.strip()]
+    else:
+        values = json.loads(text)
+        if isinstance(values, dict):
+            values = values.get("records")
+    if not isinstance(values, list) or not all(isinstance(value, dict) for value in values):
+        raise ValueError("recovery records must be a JSON array or {records: [...]} mapping")
+    return values
+
+
+def write_recovery_report(report: RecoverySummary, path: Path) -> None:
+    """Write deterministic recovery evidence without imputing missing branches."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(report.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 @dataclass(frozen=True)
