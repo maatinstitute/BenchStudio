@@ -82,7 +82,18 @@ class MujocoSimulator:
         )
 
     def step(self, action: Any) -> Observation:
-        values = tuple(action) if not isinstance(action, (str, bytes)) else ()
+        if self.model.nu == 1 and not isinstance(action, (str, bytes)):
+            try:
+                values = tuple(action)
+            except TypeError:
+                values = (action,)
+        elif not isinstance(action, (str, bytes)):
+            try:
+                values = tuple(action)
+            except TypeError as exc:
+                raise ValueError(f"action must be an iterable of length {self.model.nu}") from exc
+        else:
+            values = ()
         if len(values) != self.model.nu:
             raise ValueError(f"action length must equal MuJoCo model.nu ({self.model.nu})")
         try:

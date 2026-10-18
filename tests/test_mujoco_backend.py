@@ -51,3 +51,26 @@ def test_mujoco_adapter_runs_a_closed_loop_episode(tmp_path):
     assert summary["scheduled_episode_count"] == 1
     assert summary["completed_episode_count"] == 1
     assert summary["success_count"] == 1
+
+
+def test_mujoco_single_actuator_accepts_scalar_action(tmp_path):
+    xml = tmp_path / "scalar.xml"
+    xml.write_text(
+        """
+        <mujoco>
+          <worldbody>
+            <body>
+              <joint name="slide" type="slide" axis="1 0 0"/>
+              <geom type="box" size="0.1 0.1 0.1" mass="1"/>
+            </body>
+          </worldbody>
+          <actuator><motor joint="slide" gear="1"/></actuator>
+        </mujoco>
+        """,
+        encoding="utf-8",
+    )
+    simulator = MujocoSimulator(xml, max_steps=1)
+    simulator.reset(seed=1)
+    observation = simulator.step(0.0)
+    assert observation.sequence == 1
+    simulator.close()

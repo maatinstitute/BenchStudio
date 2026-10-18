@@ -219,6 +219,78 @@ def test_cli_executes_registry_gymnasium_campaign(monkeypatch, tmp_path, capsys)
     assert "audit_status=qualified attempts_complete=True evidence_verified=True" in output
 
 
+def test_cli_executes_registry_mujoco_campaign(monkeypatch, tmp_path, capsys):
+    import pytest
+
+    pytest.importorskip("mujoco")
+    xml_path = tmp_path / "minimal.xml"
+    xml_path.write_text(
+        """
+        <mujoco>
+          <option timestep="0.01"/>
+          <worldbody>
+            <body name="slider">
+              <joint name="slide" type="slide" axis="1 0 0"/>
+              <geom type="box" size="0.1 0.1 0.1" mass="1"/>
+            </body>
+          </worldbody>
+          <actuator><motor joint="slide" gear="1"/></actuator>
+        </mujoco>
+        """,
+        encoding="utf-8",
+    )
+    spec_path = tmp_path / "mujoco-campaign.json"
+    spec_path.write_text(
+        json.dumps(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "registry-mujoco-e2e"},
+                "model": {"adapter": "mock"},
+                "task": {"task_id": "mujoco-smoke"},
+                "environments": [
+                    {
+                        "id": "mujoco-slider",
+                        "kind": "simulator",
+                        "adapter": "mujoco",
+                        "adapter_config": {"xml_path": str(xml_path), "max_steps": 2},
+                    }
+                ],
+                "evaluation": {
+                    "seeds": [7],
+                    "paired": True,
+                    "conditions": [
+                        {
+                            "id": "baseline",
+                            "denoising_steps": 2,
+                            "action_prefix": 1,
+                            "max_episode_steps": 2,
+                        }
+                    ],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--campaign-spec",
+            str(spec_path),
+            "--plan-output",
+            str(tmp_path / "plan.json"),
+            "--output",
+            str(tmp_path / "campaign"),
+            "--execute-registry",
+            "--audit",
+        ],
+    )
+    assert main() == 0
+    output = capsys.readouterr().out
+    assert "campaign_status=completed committed=1 failed=0 missing=0" in output
+    assert "audit_status=qualified attempts_complete=True evidence_verified=True" in output
+
+
 def test_cli_compares_frozen_campaign_directories(monkeypatch, tmp_path, capsys):
     from benchstudio.campaigns import CampaignExecutor, CampaignPlanner
     from benchstudio.mock import MockPolicy, MockSimulator
