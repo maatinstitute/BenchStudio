@@ -245,8 +245,15 @@ def main() -> int:
                 model_registry=model_registry,
             )
             summary = executor.run_parallel(args.workers) if args.workers > 1 else executor.run()
+            campaign_status = (
+                "failed"
+                if summary.failed_attempt_ids or summary.missing_attempt_ids
+                else "completed"
+            )
             print(
-                f"campaign_status=completed committed={len(summary.committed_attempt_ids)} "
+                f"campaign_status={campaign_status} "
+                f"committed={len(summary.committed_attempt_ids)} "
+                f"failed={len(summary.failed_attempt_ids)} "
                 f"missing={len(summary.missing_attempt_ids)}"
             )
             if args.audit:
@@ -273,6 +280,7 @@ def main() -> int:
                     f"artifact_uri={reference['uri']} artifact_sha256={reference['digest_sha256']} "
                     f"artifact_bytes={reference['bytes']}"
                 )
+            return 0 if campaign_status == "completed" else 2
         return 0
     config = RunConfig(
         episodes=args.episodes,
