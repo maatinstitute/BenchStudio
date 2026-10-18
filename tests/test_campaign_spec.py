@@ -126,3 +126,39 @@ def test_campaign_spec_expands_enabled_multiple_environments():
     )
     assert [attempt.key.environment_id for attempt in plan.attempts] == ["sim", "shadow"]
     assert plan.attempts[0].key.pair_id == plan.attempts[1].key.pair_id
+
+
+def test_campaign_spec_rejects_resource_budget_before_execution():
+    with pytest.raises(ValueError, match="max_attempts"):
+        compile_campaign_spec(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "budgeted"},
+                "task": {"task_id": "task"},
+                "environments": [{"id": "sim", "kind": "simulator"}],
+                "evaluation": {
+                    "seeds": [1, 2],
+                    "paired": True,
+                    "conditions": [{"id": "a"}, {"id": "b"}],
+                    "resource_budget": {"max_attempts": 2},
+                },
+            }
+        )
+
+
+def test_campaign_spec_rejects_unknown_resource_budget_field():
+    with pytest.raises(ValueError, match="unsupported resource budget"):
+        compile_campaign_spec(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "budgeted"},
+                "task": {"task_id": "task"},
+                "environments": [{"id": "sim", "kind": "simulator"}],
+                "evaluation": {
+                    "seeds": [1],
+                    "paired": True,
+                    "conditions": [{"id": "a"}],
+                    "resource_budget": {"gpu_hours": 1},
+                },
+            }
+        )

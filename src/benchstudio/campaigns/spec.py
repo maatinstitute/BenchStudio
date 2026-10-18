@@ -38,6 +38,14 @@ def compile_campaign_spec(spec: dict[str, Any]) -> FrozenCampaignPlan:
         raise ValueError("evaluation.missing_outcomes must be 'preserve'")
     if evaluation.get("confirmation_plan") not in (None, "frozen"):
         raise ValueError("evaluation.confirmation_plan must be 'frozen'")
+    _validate_resource_budget(evaluation)
+    environment_ids = _enabled_environment_ids(spec["environments"])
+    expected_attempts = (
+        len(environment_ids) * len(conditions) * len(seeds) * int(evaluation.get("repetitions", 1))
+    )
+    budget = evaluation.get("resource_budget", {})
+    if budget.get("max_attempts") is not None and expected_attempts > budget["max_attempts"]:
+        raise ValueError("evaluation resource budget max_attempts is smaller than the frozen plan")
     return CampaignPlanner(
         run_id=run_id,
         scenario_id=scenario_id,
@@ -50,7 +58,7 @@ def compile_campaign_spec(spec: dict[str, Any]) -> FrozenCampaignPlan:
             else None
         ),
         source_spec_sha256=_digest(spec),
-        environment_ids=_enabled_environment_ids(spec["environments"]),
+        environment_ids=environment_ids,
         protocol=_protocol_record(spec),
     ).freeze()
 
@@ -99,6 +107,19 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
             raise ValueError(f"{section} must be a mapping of boolean controls")
 
 
+def _validate_resource_budget(evaluation: dict[str, Any]) -> None:
+    budget = evaluation.get("resource_budget", {})
+    if not isinstance(budget, dict):
+        raise ValueError("evaluation.resource_budget must be a mapping")
+    for name, value in budget.items():
+        if name not in {"max_attempts", "max_policy_calls", "max_wall_time_ms"}:
+            raise ValueError(f"unsupported resource budget field: {name}")
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+            raise ValueError(f"resource budget {name} must be non-negative")
+        if name == "max_attempts" and int(value) != value:
+            raise ValueError("resource budget max_attempts must be an integer")
+
+
 def _digest(value: Any) -> str:
     return hashlib.sha256(
         json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -128,7 +149,10 @@ def _protocol_record(spec: dict[str, Any]) -> dict[str, Any]:
     return {
         "schema": spec["schema"],
         "protocol": spec.get("experiment", {}).get("protocol_revision"),
-        "P": spec.get("experiment", {}),
+        "P": {
+            "experiment": spec.get("experiment", {}),
+            "evaluation": spec.get("evaluation", {}),
+        },
         "M": spec.get("model", {}),
         "S": {
             "task": spec.get("task", {}),
