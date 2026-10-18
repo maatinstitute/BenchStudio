@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import hashlib
-import json
 from typing import Any, Iterable
 
 from .frozen_plan import AttemptKey, FrozenCampaignPlan, PlannedAttempt, _plan_digest
+from .refinement_plan import canonical_json, digest
 
 
 def compile_balanced_paired_plan(
@@ -106,8 +105,8 @@ def compile_balanced_paired_plan(
 
 
 def _canonical(value: Any) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    return canonical_json(value).decode("utf-8")
 
 
 def _digest(value: Any) -> str:
-    return hashlib.sha256(_canonical(value).encode()).hexdigest()
+    return digest(value)

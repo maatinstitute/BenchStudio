@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+from numbers import Real
 from pathlib import Path
 from typing import Any
 
@@ -208,7 +209,7 @@ def _summarize(reports: list[dict[str, Any] | None]) -> dict[str, Any]:
     wall_times = [
         float(report["wall_time_s"])
         for report in completed
-        if isinstance(report.get("wall_time_s"), (int, float))
+        if _finite_nonnegative(report.get("wall_time_s"))
     ]
     return {
         "episodes": len(reports),
@@ -325,11 +326,10 @@ def _joint_rmse(report_a: dict[str, Any], report_b: dict[str, Any]) -> float | N
     shared = sorted(set(joints_a) & set(joints_b))
     pairs: list[tuple[float, float]] = []
     for name in shared:
-        try:
-            value_a = float(joints_a[name])
-            value_b = float(joints_b[name])
-        except (TypeError, ValueError):
+        if not _finite_real(joints_a[name]) or not _finite_real(joints_b[name]):
             continue
+        value_a = float(joints_a[name])
+        value_b = float(joints_b[name])
         if math.isfinite(value_a) and math.isfinite(value_b):
             pairs.append((value_a, value_b))
     if not pairs:
@@ -338,12 +338,13 @@ def _joint_rmse(report_a: dict[str, Any], report_b: dict[str, Any]) -> float | N
 
 
 def _mean(values: Any) -> float | None:
-    numeric = [
-        float(value)
-        for value in values
-        if isinstance(value, (int, float))
-        and not isinstance(value, bool)
-        and math.isfinite(float(value))
-        and value >= 0
-    ]
+    numeric = [float(value) for value in values if _finite_nonnegative(value)]
     return sum(numeric) / len(numeric) if numeric else None
+
+
+def _finite_real(value: Any) -> bool:
+    return isinstance(value, Real) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def _finite_nonnegative(value: Any) -> bool:
+    return _finite_real(value) and value >= 0

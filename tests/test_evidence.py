@@ -90,6 +90,33 @@ def test_comparison_ignores_nonfinite_joint_values():
     assert report["divergence"]["a_vs_b"]["episodes"][0]["final_joint_rmse_rad"] is None
 
 
+def test_comparison_ignores_coerced_and_invalid_timing_values():
+    report = build_comparison_report(
+        scenario_id="task",
+        per_backend_reports={
+            "a": [
+                {
+                    "pair_id": "p",
+                    "success": True,
+                    "wall_time_s": "1.0",
+                    "sim_time_s": True,
+                }
+            ],
+            "b": [
+                {
+                    "pair_id": "p",
+                    "success": True,
+                    "wall_time_s": True,
+                    "sim_time_s": "2.0",
+                }
+            ],
+        },
+    )
+    assert report["summary"]["a"]["mean_wall_time_s"] is None
+    assert report["summary"]["b"]["mean_wall_time_s"] is None
+    assert report["summary"]["a"]["mean_time_to_success_s"] is None
+
+
 def test_run_artifact_manifest_detects_trace_tampering(tmp_path):
     run_dir = tmp_path / "run"
     run_episodes(MockPolicy(), MockSimulator(), RunConfig(episodes=1), run_dir)

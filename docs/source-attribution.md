@@ -1,15 +1,23 @@
 # Source attribution
 
-BenchStudio uses adapter boundaries informed by the following independently
-maintained projects. Their runtimes are not vendored into this repository.
+BenchStudio uses source-backed adapters and explicit independent boundaries for
+the following projects. Product runtimes are not vendored into this repository.
 
 - WorldEpisode / `leWorldDataset`: the optional validator binding follows the
   published validator/preflight boundary. The replay fixture identifies
   `tools/replay_adapter_conformance.py` as its source basis and deliberately
   does not claim physics replay coverage.
-- Refinement vs Refresh: the balanced paired-design compiler follows the
-  upstream SHA-256 keyed schedule principle and complete condition-block
-  invariant, while the heavy CUDA/LeRobot runtime remains external.
+- Refinement vs Refresh: `benchstudio.campaigns.refinement_plan` is a direct
+  source-backed port of `experiments/make_evaluation_plan.py` at upstream commit
+  `8c92e66c7ab19403822cb87908253260666fb3a6`. The source file digest is
+  `a393a13580345b1a9fd31ba8cc4c02bb195807191570d330368f5fe53f165a5c` and its
+  upstream test digest is
+  `806efcaf489c92a34279aea60c0ff850dd803e45a68636be29a198c939475cc8`; its
+  planner invariants are carried into `tests/test_refinement_plan.py`. The adapter
+  preserves the upstream schema, canonical JSON, SHA-256 keyed ordering,
+  schedule digest, external gates, and exclusive-write semantics; it then
+  converts that exact schedule into `FrozenCampaignPlan`. The heavy
+  CUDA/LeRobot runtime remains external.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment

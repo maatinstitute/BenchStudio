@@ -1,0 +1,102 @@
+from __future__ import annotations
+
+import copy
+import itertools
+import json
+
+import pytest
+
+from benchstudio.campaigns import (
+    CHECKPOINT_REVISION,
+    CONDITIONS,
+    DEFAULT_SCHEDULING_SEED,
+    POLICY_SEEDS,
+    STATE_IDS,
+    SUITES,
+    TASK_IDS,
+    compile_refinement_campaign_plan,
+    digest,
+    make_plan,
+    write_plan,
+)
+
+
+def test_expected_count_and_full_factorial():
+    plan = make_plan()
+    assert plan["design"]["block_count"] == 80
+    assert plan["design"]["planned_attempt_count"] == 320
+    expected = set(itertools.product(SUITES, TASK_IDS, STATE_IDS, POLICY_SEEDS, CONDITIONS))
+    actual = {
+        (
+            row["episode_identity"]["suite"],
+            row["episode_identity"]["task_id"],
+            row["episode_identity"]["initial_state_id"],
+            row["episode_identity"]["policy_seed"],
+            (row["h"], row["denoising_steps"]),
+        )
+        for row in plan["schedule"]
+    }
+    assert actual == expected
+
+
+def test_contiguous_complete_blocks_and_native_reference():
+    rows = make_plan()["schedule"]
+    for start in range(0, len(rows), 4):
+        block = rows[start : start + 4]
+        assert {row["block_index"] for row in block} == {start // 4}
+        assert len({row["block_id"] for row in block}) == 1
+        assert {row["condition_index"] for row in block} == set(range(4))
+        assert {(row["h"], row["denoising_steps"]) for row in block} == set(CONDITIONS)
+        assert all(row["episode_identity"] == block[0]["episode_identity"] for row in block)
+        assert sum(row["native_reference"] for row in block) == 1
+
+
+def test_determinism_and_seed_changes_order_only():
+    first = make_plan()
+    assert first == make_plan()
+    second = make_plan(DEFAULT_SCHEDULING_SEED + 1)
+    assert first["schedule"] != second["schedule"]
+    assert {row["planned_run_id"] for row in first["schedule"]} == {
+        row["planned_run_id"] for row in second["schedule"]
+    }
+
+
+def test_digest_authenticates_canonical_schedule():
+    plan = make_plan()
+    assert plan["scheduling"]["schedule_sha256"] == digest(plan["schedule"])
+    altered = copy.deepcopy(plan["schedule"])
+    altered[0]["h"] = 999
+    assert digest(altered) != plan["scheduling"]["schedule_sha256"]
+    assert digest({"b": 2, "a": 1}) == digest({"a": 1, "b": 2})
+
+
+def test_unverified_status_and_seed_validation():
+    plan = make_plan()
+    assert plan["status"] == "requires_runtime_and_holdout_verification"
+    assert plan["checkpoint"]["revision"] == CHECKPOINT_REVISION
+    assert plan["checkpoint"]["runtime_file_hashes"] is None
+    assert all(value == "unverified" for value in plan["external_gates"].values())
+    assert plan["native_config"]["condition_id"] == "h1_d10"
+    for seed in (True, 1.2, "123", None):
+        with pytest.raises(ValueError):
+            make_plan(seed)
+
+
+def test_no_overwrite_without_force(tmp_path):
+    target = tmp_path / "plan.json"
+    first, second = make_plan(), make_plan(7)
+    write_plan(target, first)
+    original = target.read_bytes()
+    with pytest.raises(FileExistsError):
+        write_plan(target, second)
+    assert target.read_bytes() == original
+    write_plan(target, second, force=True)
+    assert json.loads(target.read_text()) == second
+
+
+def test_source_schedule_adapts_to_frozen_campaign_plan():
+    plan = compile_refinement_campaign_plan(run_id="refinement-1")
+    assert len(plan.attempts) == 320
+    assert len(plan.paired_schedule) == 320
+    assert plan.source_spec_sha256 == plan.attempts[0].metadata["source_schedule_sha256"]
+    assert plan.attempts[0].key.attempt_id.endswith(plan.attempts[0].key.condition_id)
