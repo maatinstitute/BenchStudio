@@ -67,6 +67,13 @@ The policy parity harness compares canonical action-chunk digests across a
 reference and instrumented adapter. The RoboChallenge integration is
 observe-only: it validates opaque message digests and records acknowledgments,
 while execution, safety, and official scoring remain external.
+
+The WorldEpisode integration is an adapter boundary: if the reference
+validator is installed, BenchStudio delegates to it; otherwise it returns a
+clearly labeled minimal-profile result rather than claiming full WorldEpisode
+conformance. Replay timing includes a sourced zero-order-hold fixture based on
+the upstream adapter-conformance cases, with no claim of contact-rich physics
+coverage.
 `CampaignExecutor` acquires and releases those leases around each attempt;
 workers report leased-out and explicitly cancelled attempts separately from
 completed and missing ones.

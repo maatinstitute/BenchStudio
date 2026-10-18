@@ -11,6 +11,8 @@ from benchstudio.integrations import (
     RoboChallengeAction,
     RoboChallengeObservation,
     RoboChallengeObserveOnlyAdapter,
+    preflight_worldepisode,
+    run_replay_conformance,
     validate_robochallenge_message,
 )
 from benchstudio.mock import MockPolicy
@@ -57,3 +59,18 @@ def test_robochallenge_adapter_preserves_opaque_payload_digests():
     assert validate_robochallenge_message(RoboChallengeAction("bad", 1, b"x", "0" * 64)) == [
         "payload digest mismatch"
     ]
+
+
+def test_worldepisode_binding_is_explicit_about_fallback_profile():
+    result = preflight_worldepisode({"episode_id": "episode-1", "schema": "worldepisode"})
+    assert result.valid
+    assert result.profile in {
+        "benchstudio_minimal_worldepisode_profile",
+        "worldepisode_reference_validator",
+    }
+
+
+def test_replay_conformance_reports_no_physics_coverage():
+    result = run_replay_conformance()
+    assert result["passed"] is True
+    assert result["physics_coverage"] == "none"
