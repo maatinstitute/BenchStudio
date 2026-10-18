@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Iterable
 
+from ..calibration import calibration_from_environment, compare_calibrations
 from ..campaigns.frozen_plan import FrozenCampaignPlan
 from .claims import ClaimDecision, ClaimType, validate_claim
 from .outcomes import OutcomeProvenanceAudit, OutcomeRecord, audit_outcome_provenance
@@ -22,6 +23,7 @@ class CampaignAudit:
     evidence_verified: bool
     claim: ClaimDecision
     outcome_provenance: OutcomeProvenanceAudit | None = None
+    calibration_issues: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -37,6 +39,8 @@ class CampaignAudit:
             "outcome_provenance": (
                 self.outcome_provenance.to_dict() if self.outcome_provenance is not None else None
             ),
+            "calibration_issues": list(self.calibration_issues),
+            "calibration_compatible": not self.calibration_issues,
         }
 
 
@@ -77,6 +81,10 @@ def audit_campaign(
     outcome_list = list(outcome_records) if outcome_records is not None else None
     outcome_audit = audit_outcome_provenance(outcome_list) if outcome_list is not None else None
     claim_evidence = dict(evidence or {})
+    calibration_issues = _plan_calibration_issues(plan)
+    if claim_type in {ClaimType.PAIRED_COMPARISON, ClaimType.REAL_WORLD_TRANSFER}:
+        if calibration_issues:
+            claim_evidence["semantic_match"] = False
     provenance_matches_plan = True
     if outcome_audit is not None:
         outcome_ids = {record.attempt_id for record in outcome_list or ()}
@@ -109,4 +117,35 @@ def audit_campaign(
         trusted,
         decision,
         outcome_audit,
+        tuple(calibration_issues),
     )
+
+
+def _plan_calibration_issues(plan: FrozenCampaignPlan) -> tuple[str, ...]:
+    environments = (plan.protocol or {}).get("S", {}).get("environments", [])
+    if not isinstance(environments, list) or len(environments) < 2:
+        return ()
+    records = []
+    issues: list[str] = []
+    for environment in environments:
+        if not isinstance(environment, dict):
+            issues.append("environment declaration is not a mapping")
+            continue
+        default_enabled = environment.get("kind") != "physical"
+        if not environment.get("enabled", default_enabled):
+            continue
+        environment_id = environment.get("id", "<unknown>")
+        try:
+            calibration = calibration_from_environment(environment)
+        except ValueError as exc:
+            issues.append(f"{environment_id}: invalid calibration: {exc}")
+            continue
+        if calibration is None:
+            issues.append(f"{environment_id}: calibration is missing")
+        else:
+            records.append((environment_id, calibration))
+    for index, (first_id, first) in enumerate(records):
+        for second_id, second in records[index + 1 :]:
+            comparison = compare_calibrations(first, second)
+            issues.extend(f"{first_id} vs {second_id}: {issue}" for issue in comparison.issues)
+    return tuple(issues)

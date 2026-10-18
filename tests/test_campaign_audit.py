@@ -1,5 +1,5 @@
 from benchstudio.analysis import ClaimType, OutcomeRecord, audit_campaign
-from benchstudio.campaigns import CampaignPlanner
+from benchstudio.campaigns import CampaignPlanner, compile_campaign_spec
 
 
 def test_campaign_audit_derives_supported_claim_from_verified_complete_ledger():
@@ -65,3 +65,58 @@ def test_campaign_audit_requires_authoritative_outcome_provenance():
     )
     assert audit.outcome_provenance is not None
     assert audit.claim.status == "qualified"
+
+
+def test_campaign_audit_rejects_paired_claim_with_incompatible_calibration():
+    def digest(char):
+        return "sha256:" + char * 64
+
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "paired-calibration"},
+            "task": {"task_id": "task"},
+            "environments": [
+                {
+                    "id": "sim",
+                    "kind": "simulator",
+                    "calibration": {
+                        "revision": "v1",
+                        "camera": digest("1"),
+                        "action_transform": digest("2"),
+                    },
+                },
+                {
+                    "id": "real",
+                    "kind": "physical",
+                    "enabled": True,
+                    "requires_authorization": True,
+                    "retry_policy": "none",
+                    "calibration": {
+                        "revision": "v1",
+                        "camera": digest("9"),
+                        "action_transform": digest("2"),
+                    },
+                },
+            ],
+            "evaluation": {"seeds": [1], "paired": True, "conditions": [{"x": 1}]},
+        }
+    )
+    records = [
+        {"attempt_id": attempt.key.attempt_id, "status": "completed", "evidence_verified": True}
+        for attempt in plan.attempts
+    ]
+    audit = audit_campaign(
+        plan,
+        records,
+        claim_type=ClaimType.PAIRED_COMPARISON,
+        evidence={
+            "outcome_present": True,
+            "paired_conditions": True,
+            "semantic_match": True,
+            "uncertainty_reported": True,
+        },
+    )
+    assert audit.claim.status == "unsupported"
+    assert "sim vs real: camera calibration differs" in audit.calibration_issues
+    assert audit.claim.prerequisites["semantic_match"] is False
