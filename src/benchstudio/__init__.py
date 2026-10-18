@@ -1,6 +1,12 @@
 """BenchStudio temporal-fidelity evaluation core."""
 
 from .adapters import AdapterDescriptor, AdapterRegistry, Dependency, default_registry
+from .analysis import (
+    MissingOutcomeBounds,
+    ScoreCoverage,
+    audit_score_coverage,
+    missing_outcome_bounds,
+)
 from .campaigns import AttemptKey, AttemptLedger, CampaignPlanner, FrozenCampaignPlan
 from .compare import build_comparison_report
 from .conformance import (
@@ -31,6 +37,7 @@ __all__ = [
     "AdapterDescriptor",
     "AdapterCapabilities",
     "AdapterRegistry",
+    "MissingOutcomeBounds",
     "AttemptKey",
     "AttemptLedger",
     "CampaignPlanner",
@@ -47,6 +54,7 @@ __all__ = [
     "ReplaySimulator",
     "FrozenCampaignPlan",
     "ScenarioContract",
+    "ScoreCoverage",
     "ValidationIssue",
     "build_comparison_report",
     "default_registry",
@@ -58,6 +66,8 @@ __all__ = [
     "compare_trajectories",
     "load_trajectory",
     "run_episodes",
+    "audit_score_coverage",
+    "missing_outcome_bounds",
     "validate_action",
     "validate_adapter_capabilities",
     "validate_observation",

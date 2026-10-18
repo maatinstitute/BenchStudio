@@ -35,6 +35,11 @@ is carried into an append-only attempt ledger. Interrupted campaigns therefore
 retain prior results and expose missing attempts without silently reassigning a
 result to another condition.
 
+The shared SDK also exposes lifecycle and replay-timing checks, embodiment
+signal mappings, score-coverage audits, and conservative missing-outcome
+bounds. These are analysis and conformance primitives: they do not replace a
+simulator, official scorer, robot driver, or WorldEpisode implementation.
+
 Simulator implementations register an `AdapterDescriptor`. Optional simulator
 dependencies are probed only when readiness is requested; the mock adapter
 therefore remains usable in a clean Python environment.
