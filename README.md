@@ -22,6 +22,16 @@ Inspect optional backend and model-adapter readiness before scheduling work:
 python -m benchstudio.cli --readiness
 ```
 
+Install an optional Genesis backend only in the environment that owns its
+runtime:
+
+```bash
+python -m pip install 'benchstudio[genesis]'
+```
+
+The Genesis adapter requires explicit scene, action, and observation callbacks;
+BenchStudio does not infer task controllers or claim Genesis scoring authority.
+
 Verify an existing run artifact offline, optionally against a digest held by
 an independent reviewer or CI system:
 

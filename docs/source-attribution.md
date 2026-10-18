@@ -28,6 +28,11 @@ The optional `benchstudio.integrations.gymnasium` adapter follows Gymnasium's
 public five-value `step` protocol and remains a generic environment boundary;
 it does not claim LIBERO or another benchmark's task/scoring semantics.
 
+The optional `benchstudio.integrations.genesis` adapter targets the public
+Genesis World scene lifecycle and is dependency-lazy. Install the `genesis`
+extra in the environment that owns Genesis; BenchStudio retains only the
+temporal/evidence boundary and does not vendor Genesis or its assets.
+
 Any future source migration must preserve the original repository's notices,
 third-party licenses, and historical evidence. The current BenchStudio
 repository remains private and proprietary; this file is an engineering

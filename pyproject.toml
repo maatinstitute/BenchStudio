@@ -17,6 +17,7 @@ dev = ["pytest>=7.4", "ruff>=0.6"]
 yaml = ["PyYAML>=6.0"]
 mujoco = ["mujoco>=3.0"]
 gymnasium = ["gymnasium>=0.29"]
+genesis = ["genesis-world>=1.4,<2"]
 signing = ["cryptography>=41"]
 
 [project.scripts]
