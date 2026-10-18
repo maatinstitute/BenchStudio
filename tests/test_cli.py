@@ -159,6 +159,8 @@ def test_cli_reports_adapter_readiness(monkeypatch, capsys):
     report = json.loads(capsys.readouterr().out)
     assert {item["simulator_id"] for item in report["simulators"]} >= {"mock", "mujoco"}
     assert {item["adapter_id"] for item in report["models"]} >= {"mock"}
+    assert isinstance(report["simulator_discovery"], list)
+    assert isinstance(report["model_discovery"], list)
 
 
 def test_cli_compares_frozen_campaign_directories(monkeypatch, tmp_path, capsys):

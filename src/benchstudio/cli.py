@@ -508,8 +508,8 @@ def main() -> int:
         print(json.dumps(audit.to_dict(), sort_keys=True))
         return 0 if audit.attempts_complete and audit.evidence_verified else 2
     if args.readiness:
-        simulator_registry = default_registry(discover_external=False)
-        model_registry = default_model_registry(discover_external=False)
+        simulator_registry = default_registry()
+        model_registry = default_model_registry()
         simulators = [
             simulator_registry.readiness(descriptor.simulator_id)
             for descriptor in simulator_registry.list()
@@ -521,7 +521,17 @@ def main() -> int:
             }
             for descriptor in model_registry.list()
         ]
-        print(json.dumps({"simulators": simulators, "models": models}, sort_keys=True))
+        print(
+            json.dumps(
+                {
+                    "simulators": simulators,
+                    "models": models,
+                    "simulator_discovery": list(simulator_registry.discovery_diagnostics),
+                    "model_discovery": list(model_registry.discovery_diagnostics),
+                },
+                sort_keys=True,
+            )
+        )
         return 0
     if args.campaign_spec is not None:
         spec = load_campaign_document(args.campaign_spec)
