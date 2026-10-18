@@ -1,6 +1,6 @@
 import json
 
-from benchstudio.integrations import load_alpabridge_telemetry
+from benchstudio.integrations import AlpaBridgeTelemetryWriter, load_alpabridge_telemetry
 
 
 def _row(event: str, **fields):
@@ -58,3 +58,31 @@ def test_alpabridge_telemetry_rejects_malformed_drive_contract(tmp_path):
     assert any("invalid drive latency_ms" in issue for issue in audit.issues)
     assert any("latency_target_met" in issue for issue in audit.issues)
     assert any("route_source" in issue for issue in audit.issues)
+
+
+def test_alpabridge_telemetry_writer_matches_source_summary_contract(tmp_path):
+    path = tmp_path / "written-telemetry.jsonl"
+    writer = AlpaBridgeTelemetryWriter(path)
+    writer.record({"event": "model_loaded"})
+    writer.record(
+        {
+            "event": "drive",
+            "latency_ms": 10.0,
+            "latency_target_met": True,
+            "route_source": "alpasim_waypoints",
+        }
+    )
+    writer.record(
+        {
+            "event": "drive",
+            "latency_ms": 30.0,
+            "latency_target_met": False,
+            "route_source": "command_proxy",
+        }
+    )
+    summary = writer.summary()
+    assert summary["schema"] == "alpabridge_driver_telemetry_summary_v1"
+    assert summary["drive_count"] == 2
+    assert summary["latency_target_missed"] == 1
+    assert summary["latency_ms"]["p95"] == 29.0
+    assert load_alpabridge_telemetry(path).valid

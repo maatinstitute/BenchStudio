@@ -78,6 +78,12 @@ the following projects. Product runtimes are not vendored into this repository.
   `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`; source digest
   `b4c4fb44bf95e296363866aec2f19ea096b817f837dd423ed7a39651108780da`.
   AlpaSim-specific factories remain injected by the owning runtime.
+- AlpaBridge telemetry production: `AlpaBridgeTelemetryWriter` in
+  `benchstudio.integrations.alpabridge` ports the dependency-free writer and
+  summary behavior from `src/alpabridge/driver/driver_service.py` at upstream
+  commit `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`; source digest
+  `d8db8d0dc6a296edcd7e52793b3b03da60414457b416a2cc3829926db1d81b6f`.
+  The AlpaSim gRPC driver and model execution remain external.
 - URDF Studio / `urdf-ops`: `benchstudio.conformance.dataset_alignment` ports
   the dataset-alignment registry boundary from `backend/services/
   dataset_alignment.py` at upstream commit

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import math
+import threading
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
@@ -24,6 +26,66 @@ class AlpaBridgeTelemetryAudit:
     @property
     def valid(self) -> bool:
         return not self.issues
+
+
+class AlpaBridgeTelemetryWriter:
+    """Source-compatible v3 telemetry writer without the AlpaSim runtime.
+
+    The owning driver can use this for deterministic evidence production;
+    BenchStudio remains responsible for offline validation through
+    :func:`audit_alpabridge_telemetry`.
+    """
+
+    def __init__(self, path: str | Path | None = None) -> None:
+        self._path = Path(path).expanduser() if path else None
+        self._rows: list[dict[str, Any]] = []
+        self._lock = threading.Lock()
+
+    def record(self, row: dict[str, Any]) -> None:
+        payload = {
+            "schema": ALPABRIDGE_DRIVER_TELEMETRY_SCHEMA,
+            "created_ns": time.time_ns(),
+            **row,
+        }
+        with self._lock:
+            self._rows.append(payload)
+            if self._path is None:
+                return
+            self._path.parent.mkdir(parents=True, exist_ok=True)
+            with self._path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(payload, sort_keys=True) + "\n")
+
+    def summary(self) -> dict[str, Any]:
+        with self._lock:
+            rows = list(self._rows)
+        drive_rows = [row for row in rows if row.get("event") == "drive"]
+        latencies = [
+            float(row["latency_ms"])
+            for row in drive_rows
+            if isinstance(row.get("latency_ms"), (int, float))
+            and math.isfinite(float(row["latency_ms"]))
+        ]
+        missed = [row for row in drive_rows if row.get("latency_target_met") is False]
+        route_sources = sorted(
+            {
+                str(row.get("route_source"))
+                for row in drive_rows
+                if row.get("route_source") not in (None, "")
+            }
+        )
+        return {
+            "schema": "alpabridge_driver_telemetry_summary_v1",
+            "event_count": len(rows),
+            "drive_count": len(drive_rows),
+            "latency_ms": {
+                "p50": _percentile(latencies, 0.50),
+                "p95": _percentile(latencies, 0.95),
+                "max": max(latencies) if latencies else None,
+            },
+            "latency_target_missed": len(missed),
+            "route_sources": route_sources,
+            "telemetry_path": str(self._path) if self._path is not None else None,
+        }
 
 
 def load_alpabridge_telemetry(path: Path) -> AlpaBridgeTelemetryAudit:

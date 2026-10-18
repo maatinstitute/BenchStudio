@@ -3,6 +3,7 @@
 from .alpabridge import (
     ALPABRIDGE_DRIVER_TELEMETRY_SCHEMA,
     AlpaBridgeTelemetryAudit,
+    AlpaBridgeTelemetryWriter,
     audit_alpabridge_telemetry,
     load_alpabridge_telemetry,
 )
@@ -75,6 +76,7 @@ from .worldepisode import WorldEpisodePreflight, preflight_worldepisode
 __all__ = [
     "ALPABRIDGE_DRIVER_TELEMETRY_SCHEMA",
     "AlpaBridgeTelemetryAudit",
+    "AlpaBridgeTelemetryWriter",
     "RoboChallengeAction",
     "RoboChallengeObservation",
     "RoboChallengeObserveOnlyAdapter",
