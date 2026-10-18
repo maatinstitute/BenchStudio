@@ -680,6 +680,7 @@ def test_registry_backed_manifest_records_model_capabilities(tmp_path):
     )
     assert manifest["model_adapter_id"] == "mock"
     assert manifest["model_capabilities"]["supports_cached_predictions"] is True
+    assert manifest["model_dependencies"] == []
 
 
 def test_expired_worker_lease_is_reclaimed_by_next_worker(tmp_path):

@@ -96,6 +96,7 @@ class ModelAdapterRegistry:
         try:
             setattr(policy, "__benchstudio_capabilities__", descriptor.capabilities)
             setattr(policy, "__benchstudio_adapter_id__", descriptor.adapter_id)
+            setattr(policy, "__benchstudio_dependencies__", tuple(readiness["dependencies"]))
         except (AttributeError, TypeError):
             # Immutable third-party policy objects can still execute; their
             # adapter descriptor remains available from the registry audit.
