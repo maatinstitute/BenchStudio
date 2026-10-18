@@ -9,6 +9,9 @@ from .campaign_audit import CampaignAudit, audit_campaign, audit_campaign_direct
 from .claims import ClaimDecision, ClaimType, validate_claim
 from .failure_events import EventBookmark, bookmark_critical_events
 from .inference_schedule import InferenceEvent, InferenceScheduleAudit, audit_inference_schedule
+from .ledger_validation import compare as compare_refinement_ledgers
+from .ledger_validation import validate as validate_refinement_ledger
+from .ledger_validation import validate_completed as validate_completed_refinement_ledger
 from .missingness import MissingOutcomeBounds, missing_outcome_bounds
 from .outcomes import (
     OutcomeLedger,
@@ -131,4 +134,7 @@ __all__ = [
     "responsiveness_split_for",
     "completed_outcomes",
     "summarize_refinement_results",
+    "validate_refinement_ledger",
+    "validate_completed_refinement_ledger",
+    "compare_refinement_ledgers",
 ]

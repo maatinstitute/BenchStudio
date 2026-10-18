@@ -26,6 +26,12 @@ the following projects. Product runtimes are not vendored into this repository.
   `f5fa8606d93263f5af0bd8799c640b62c83c2b139ea68da2598d227d96e06698`.
   The port preserves completed-outcome reconciliation, task/group identity
   checks, ledger-version timing provenance, and control-to-neural accounting.
+- Refinement/Refresh ledger verification: `benchstudio.analysis.ledger_validation`
+  is a source-backed port of `experiments/real_smolvla/validate_ledger.py` at
+  the same upstream commit. It preserves strict array hashes, complete v3
+  contract checks, producer/environment action agreement, same-condition
+  replay checks, and initial-state-only paired comparisons. NumPy is lazy and
+  optional until hashed array records are validated.
 - RoboPAD: `benchstudio.analysis.responsiveness` is a source-backed port of
   `experiments/metrics.py`, and `benchstudio.campaigns.outcome_plan` is a
   source-backed port of `experiments/outcome_plan.py`, from upstream commit
