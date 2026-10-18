@@ -1,6 +1,12 @@
 import json
 
-from benchstudio.integrations import AlpaBridgeTelemetryWriter, load_alpabridge_telemetry
+import pytest
+
+from benchstudio.integrations import (
+    AlpaBridgeTelemetryWriter,
+    load_alpabridge_telemetry,
+    route_arc_length_m,
+)
 
 
 def _row(event: str, **fields):
@@ -86,3 +92,14 @@ def test_alpabridge_telemetry_writer_matches_source_summary_contract(tmp_path):
     assert summary["latency_target_missed"] == 1
     assert summary["latency_ms"]["p95"] == 29.0
     assert load_alpabridge_telemetry(path).valid
+
+
+def test_route_arc_length_follows_the_ground_plane_path():
+    assert route_arc_length_m(
+        [
+            {"x": 0.0, "y": 0.0, "z": 0.0},
+            {"x": 3.0, "y": 0.0, "z": 0.0},
+            {"x": 3.0, "y": 4.0, "z": 5.0},
+        ]
+    ) == pytest.approx(7.0)
+    assert route_arc_length_m([]) == 0.0

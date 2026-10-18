@@ -168,6 +168,12 @@ the following projects. Product runtimes are not vendored into this repository.
   commit `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`; source digest
   `d8db8d0dc6a296edcd7e52793b3b03da60414457b416a2cc3829926db1d81b6f`.
   The AlpaSim gRPC driver and model execution remain external.
+- AlpaBridge route geometry: `route_arc_length_m` in
+  `benchstudio.integrations.alpabridge` is the dependency-free route-extent
+  extraction from `src/alpabridge/driver/driver_service.py` at the same
+  upstream commit; source-test digest
+  `58367c9cd0eebf40ad77c826b56c4a3306ace532e5ee6f2dc254c0f9f84c016e`.
+  The full driver-service digest above remains authoritative.
 - URDF Studio / `urdf-ops`: `benchstudio.conformance.dataset_alignment` ports
   the dataset-alignment registry boundary from `backend/services/
   dataset_alignment.py` at upstream commit

@@ -88,6 +88,18 @@ class AlpaBridgeTelemetryWriter:
         }
 
 
+def route_arc_length_m(waypoints: list[dict[str, float]]) -> float:
+    """Measure a route polyline in the ground plane.
+
+    This is an in-band route extent signal; waypoint count alone is not
+    informative when the driver emits a fixed number of points.
+    """
+    total = 0.0
+    for start, end in zip(waypoints, waypoints[1:]):
+        total += math.hypot(end["x"] - start["x"], end["y"] - start["y"])
+    return total
+
+
 def load_alpabridge_telemetry(path: Path) -> AlpaBridgeTelemetryAudit:
     """Load AlpaBridge v3 JSONL telemetry without importing its runtime."""
     records: list[dict[str, Any]] = []

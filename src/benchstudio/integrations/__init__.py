@@ -6,6 +6,7 @@ from .alpabridge import (
     AlpaBridgeTelemetryWriter,
     audit_alpabridge_telemetry,
     load_alpabridge_telemetry,
+    route_arc_length_m,
 )
 from .alpabridge_camera_calibration import (
     CameraCalibration,
@@ -88,6 +89,7 @@ __all__ = [
     "zero_order_hold_case",
     "audit_alpabridge_telemetry",
     "load_alpabridge_telemetry",
+    "route_arc_length_m",
     "LifecycleEvent",
     "SyntheticLifecycleService",
     "run_synthetic_lifecycle_cycle",
