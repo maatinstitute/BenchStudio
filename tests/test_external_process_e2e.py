@@ -59,6 +59,7 @@ for line in sys.stdin:
     actions = [event for event in events if event.get("event_type") == "action_executed"]
     assert len(actions) == 2
     assert all(event["policy_latency_ms"] >= 0 for event in actions)
+    assert all(event["policy_metadata"] == {"source": "policy"} for event in actions)
 
 
 def test_registry_backed_campaign_runs_external_policy_and_simulator(tmp_path):
@@ -134,4 +135,12 @@ for line in sys.stdin:
     )
     assert summary["campaign_status"] == "completed"
     assert summary["success_count"] == 1
+    action_events = [
+        json.loads(line)
+        for line in (tmp_path / "campaign" / "attempts" / "attempt-000000" / "episodes.jsonl")
+        .read_text()
+        .splitlines()
+        if json.loads(line).get("event_type") == "action_executed"
+    ]
+    assert action_events[0]["policy_metadata"] == {"source": "policy"}
     assert executor.audit().attempts_complete is True

@@ -398,6 +398,7 @@ def _run_episode(
                     "action_prefix": config.action_prefix,
                     "action_index": action_index,
                     "denoising_steps": config.denoising_steps,
+                    "policy_metadata": _metadata_for_evidence(action_chunk.metadata),
                     "execution_strategy": prediction.execution_strategy,
                     "cache_hit": prediction.cache_hit,
                 }
@@ -495,6 +496,14 @@ def _observation_id(episode_id: str, sequence: int) -> str:
 def _digest_action(action: Any) -> str:
     payload = json.dumps(action, sort_keys=True, default=str, separators=(",", ":"))
     return hashlib.sha256(payload.encode()).hexdigest()
+
+
+def _metadata_for_evidence(metadata: dict[str, Any]) -> dict[str, Any]:
+    """Keep adapter metadata JSON-safe and deterministic in action evidence."""
+    try:
+        return json.loads(json.dumps(metadata, sort_keys=True, default=str))
+    except (TypeError, ValueError, RecursionError) as exc:
+        return {"serialization_error": f"{type(exc).__name__}: {exc}"}
 
 
 def _host_age_ms(observation: Any, end_ns: int) -> float | None:
