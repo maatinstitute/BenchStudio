@@ -288,6 +288,16 @@ the following projects. Product runtimes are not vendored into this repository.
   It preserves event/transition mappings, strict wire parsing, timestamp
   conversion, finite joint-state validation, and command acknowledgment
   semantics; the Pydantic service and robot authority remain external.
+- RoboPAD bounded child supervision: `benchstudio.integrations.robopad_supervisor`
+  is a direct source-backed port of `experiments/icra_assay_supervisor.py` at
+  upstream commit `4ecd468cc67cc40681ca2af9097b7ade5825fadd`. The source digest
+  is `658e2e73f04651178056a18a775fcac333da3ed114715d858338508b6263ddd2`, and
+  the upstream behavioral-test digest is
+  `6ed179fde551088517d3e46e530dd1cdfbd78b5ae8b71a34a78d9818b9b5a382`.
+  The port preserves owned process-group cleanup, bounded merged logs,
+  timeout escalation, exclusive attempted-run logs, reviewed parent envelopes,
+  and atomic bounded receipts. It deliberately does not import RoboPAD's
+  campaign manifest, child runtime, or claims authority.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment

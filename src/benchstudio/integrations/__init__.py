@@ -86,6 +86,18 @@ from .robopad_competence import (
 )
 from .robopad_reference import FixedReference
 from .robopad_reference_adapter import CandidateGoals, SourceGeometry, build_goals, extract_geometry
+from .robopad_supervisor import (
+    KILL_AFTER,
+    LOG_CAP,
+    RECEIPT_CAP,
+    TIMEOUT,
+    SupervisorInterrupted,
+    select_timeout,
+    sha,
+    stop_group,
+    supervise,
+    write_receipt,
+)
 from .teleop_replay_timing import (
     LogicalReplayClock,
     ReplayScheduleEntry,
@@ -211,4 +223,14 @@ __all__ = [
     "validate_joint_command_payload",
     "world_bridge_event_type_from_worldd",
     "worldd_event_type_from_world_bridge",
+    "KILL_AFTER",
+    "LOG_CAP",
+    "RECEIPT_CAP",
+    "TIMEOUT",
+    "SupervisorInterrupted",
+    "select_timeout",
+    "sha",
+    "stop_group",
+    "supervise",
+    "write_receipt",
 ]
