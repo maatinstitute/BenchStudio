@@ -536,6 +536,36 @@ def test_imported_source_plan_binds_checkpoint_to_attempt_manifest():
     assert reference["native_config"]["condition_id"] == "h1_d10"
 
 
+def test_imported_source_plan_can_use_registry_execution_envelope(tmp_path):
+    from benchstudio.campaigns.refinement_plan import compile_refinement_source_plan
+
+    source_path = tmp_path / "source-plan.json"
+    from benchstudio.campaigns.refinement_plan import make_plan, write_plan
+
+    write_plan(source_path, make_plan())
+    plan = compile_refinement_source_plan(
+        source_path,
+        run_id="registry-source-plan",
+        execution_protocol={
+            "M": {"adapter": "mock"},
+            "S": {
+                "environments": [
+                    {"id": "default", "kind": "simulator", "adapter": "mock"}
+                ]
+            },
+        },
+    )
+    executor = CampaignExecutor(
+        plan,
+        tmp_path / "campaign",
+        adapter_registry=default_registry(discover_external=False),
+        model_registry=default_model_registry(discover_external=False),
+    )
+    result = executor.run(attempt_ids=[plan.attempts[0].key.attempt_id])
+    assert result.committed_attempt_ids == ("attempt-000000",)
+    assert result.failed_attempt_ids == ()
+
+
 def test_campaign_executor_wires_resource_sampler_per_attempt(tmp_path):
     plan = CampaignPlanner(
         run_id="resource-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
