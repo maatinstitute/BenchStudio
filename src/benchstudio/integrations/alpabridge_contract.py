@@ -25,7 +25,11 @@ def make_model_prediction(trajectory_xy: np.ndarray, headings: np.ndarray, reaso
     rotations[0, :, 1, 0] = np.sin(yaw)
     rotations[0, :, 1, 1] = np.cos(yaw)
     rotations[0, :, 2, 2] = 1.0
-    return ModelPredictionStub(positions, rotations, reasoning_text=reasoning_text)
+    try:
+        from alpasim_driver.models.base import ModelPrediction
+    except ImportError:
+        ModelPrediction = ModelPredictionStub
+    return ModelPrediction(candidate_positions=positions, candidate_rotations=rotations, selected_index=0, reasoning_text=reasoning_text)
 
 
 class ModelPredictionStub:

@@ -19,6 +19,7 @@ def test_prediction_shape_round_trip():
     prediction = make_model_prediction(np.array([[1.0, 0.0], [2.0, 1.0]]), np.array([0.0, math.pi / 2]))
     np.testing.assert_allclose(prediction_trajectory_xy(prediction), [[1, 0], [2, 1]])
     np.testing.assert_allclose(prediction_headings(prediction), [0, math.pi / 2])
+    assert prediction.selected_index == 0
 
 
 def test_resampling_uses_explicit_timestamp_grid():
