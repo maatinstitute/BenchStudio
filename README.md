@@ -283,6 +283,16 @@ python -m benchstudio.cli --transfer-records transfer.jsonl \
   --transfer-output transfer-report.json
 ```
 
+Run the checked-in matched-backend transfer fixture with:
+
+```bash
+PYTHONPATH=src python examples/run_mock_transfer.py --output runs/mock-transfer
+```
+
+It exercises frozen-plan compatibility, paired campaign loading, and transfer
+gap analysis. Both backends are fixtures; execution, physics, and scoring are
+external.
+
 Missing outcomes remain explicit and cause a non-zero validation status.
 
 Counterfactual branch records can be summarized similarly:
