@@ -408,6 +408,11 @@ the canonical schedule digest, contiguous identities, and duplicate planned
 runs. The resulting plan records the source file digest and retains every
 source schedule row for independent audit.
 
+Callers with a separately frozen runtime envelope can pass it as
+`execution_protocol={"M": ..., "S": ..., "P": ...}` to
+`compile_refinement_source_plan()`. The envelope becomes part of the plan
+digest and can then be executed through the ordinary model/simulator registries.
+
 The imported plan can also pass through the standard resumable executor with
 deterministic adapters for a protocol checkpoint:
 

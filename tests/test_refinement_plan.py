@@ -130,3 +130,29 @@ def test_source_plan_import_rejects_schedule_mutation(tmp_path):
     path.write_text(json.dumps(source), encoding="utf-8")
     with pytest.raises(ValueError, match="schedule digest mismatch"):
         compile_refinement_source_plan(path)
+
+
+def test_source_plan_import_accepts_frozen_execution_protocol(tmp_path):
+    source_path = tmp_path / "upstream-plan.json"
+    write_plan(source_path, make_plan())
+    protocol = {
+        "M": {"adapter": "mock", "capabilities": {"supports_closed_loop": True}},
+        "S": {
+            "environments": [
+                {
+                    "id": "default",
+                    "kind": "simulator",
+                    "adapter": "external_command",
+                    "adapter_config": {"command": ["fixture"]},
+                }
+            ]
+        },
+    }
+    imported = compile_refinement_source_plan(
+        source_path, run_id="protocol-bound", execution_protocol=protocol
+    )
+    assert imported.protocol["M"] == protocol["M"]
+    assert imported.protocol["S"] == protocol["S"]
+    assert imported.plan_digest_sha256 != compile_refinement_source_plan(
+        source_path, run_id="protocol-bound"
+    ).plan_digest_sha256

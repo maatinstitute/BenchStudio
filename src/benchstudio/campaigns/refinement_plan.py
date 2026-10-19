@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import itertools
 import json
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -238,7 +239,10 @@ def load_refinement_source_plan(path: Path) -> tuple[dict[str, Any], str]:
 
 
 def compile_refinement_source_plan(
-    path: Path, *, run_id: str | None = None
+    path: Path,
+    *,
+    run_id: str | None = None,
+    execution_protocol: Mapping[str, Any] | None = None,
 ) -> FrozenCampaignPlan:
     """Compile the exact schedule from an upstream plan into BenchStudio.
 
@@ -287,6 +291,13 @@ def compile_refinement_source_plan(
         "source_plan_file_sha256": file_sha256,
         "source_schedule_sha256": source_schedule_sha256,
     }
+    if execution_protocol is not None:
+        if not isinstance(execution_protocol, Mapping):
+            raise ValueError("execution_protocol must be a mapping")
+        for key, value in execution_protocol.items():
+            if not isinstance(key, str) or not key:
+                raise ValueError("execution_protocol keys must be non-empty strings")
+            protocol[key] = dict(value) if isinstance(value, Mapping) else value
     plan_digest = _plan_digest(
         resolved_run_id,
         attempts,
