@@ -66,6 +66,10 @@ the canonical semantic validator.
   schedule digest, external gates, and exclusive-write semantics; it then
   converts that exact schedule into `FrozenCampaignPlan`. The heavy
   CUDA/LeRobot runtime remains external.
+  `load_refinement_source_plan()` and `compile_refinement_source_plan()` also
+  import an existing upstream JSON plan without regenerating or reordering its
+  rows; the imported BenchStudio plan records both the source-file and source-
+  schedule digests.
 - Refinement/Refresh annotation agreement: `benchstudio.analysis.agreement`
   is a direct port of `review/agreement.py` at upstream commit
   `8c92e66c7ab19403822cb87908253260666fb3a6`; source digest
