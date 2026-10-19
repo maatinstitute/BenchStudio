@@ -58,6 +58,7 @@ def build_campaign_comparison_report(
     reports: dict[str, list[dict[str, Any] | None]] = {}
     errors: dict[str, list[str]] = {}
     plans: dict[str, FrozenCampaignPlan] = {}
+    plan_load_issues: list[str] = []
     for backend, root in backend_campaigns.items():
         backend_reports, backend_errors = _load_campaign_reports(root)
         reports[backend] = backend_reports
@@ -66,8 +67,10 @@ def build_campaign_comparison_report(
         try:
             plans[backend] = load_frozen_campaign_plan(root / "campaign-plan.json")
         except ValueError as exc:
-            errors.setdefault(backend, []).append(f"frozen campaign plan is invalid: {exc}")
-    compatibility_issues = _plan_compatibility_issues(plans)
+            message = f"frozen campaign plan is invalid: {exc}"
+            errors.setdefault(backend, []).append(message)
+            plan_load_issues.append(f"{backend}: {message}")
+    compatibility_issues = plan_load_issues + _plan_compatibility_issues(plans)
     if compatibility_issues:
         errors["plan_compatibility"] = compatibility_issues
     report = build_comparison_report(
