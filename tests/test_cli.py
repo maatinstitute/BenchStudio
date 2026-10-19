@@ -79,6 +79,8 @@ def test_cli_executes_imported_refinement_plan_through_standard_executor(
             "4",
             "--output",
             str(tmp_path / "campaign"),
+            "--archive-output",
+            str(tmp_path / "campaign.zip"),
             "--audit",
         ],
     )
@@ -86,6 +88,7 @@ def test_cli_executes_imported_refinement_plan_through_standard_executor(
     output = capsys.readouterr().out
     assert "campaign_status=completed committed=320 failed=0 missing=0" in output
     assert "attempts_complete=True evidence_verified=True" in output
+    assert (tmp_path / "campaign.zip").is_file()
 
 
 def test_cli_verifies_source_snapshot(monkeypatch, tmp_path, capsys):

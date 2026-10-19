@@ -568,6 +568,23 @@ def main() -> int:
                     f"attempts_complete={audit.attempts_complete} "
                     f"evidence_verified={audit.evidence_verified}"
                 )
+            if args.archive_output is not None:
+                archive = executor.archive(args.archive_output)
+                print(
+                    f"archive_output={archive['path']} archive_sha256={archive['sha256']} "
+                    f"archive_bytes={archive['bytes']}"
+                )
+            artifact_store = None
+            if args.artifact_store is not None:
+                artifact_store = LocalArtifactStore(args.artifact_store)
+            elif args.artifact_url is not None:
+                artifact_store = HttpArtifactStore(args.artifact_url)
+            if artifact_store is not None:
+                reference = executor.publish_artifact(artifact_store)
+                print(
+                    f"artifact_uri={reference['uri']} artifact_sha256={reference['digest_sha256']} "
+                    f"artifact_bytes={reference['bytes']}"
+                )
             return 0 if campaign_status == "completed" else 2
         return 0
     if args.outcome_plan is not None:
