@@ -19,3 +19,10 @@ __all__ = [
     "scenario_archive_digest",
     "verify_scenario_archive",
 ]
+from .world_scene_package import (
+    WorldScenePackageManifest,
+    WorldScenePackageRegistry,
+    WorldScenePackageVersionRecord,
+    validate_world_scene_package,
+    world_scene_package_digest,
+)

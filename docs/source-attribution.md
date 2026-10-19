@@ -14,6 +14,16 @@
   `src/alpabridge/simulator/alpasim_signal.py`. The AlpaSim Scenario model,
   serving runtime, and physics authority remain external. Source digest:
   `3a18ae0293f8c9aa738a787f17fb9b0ba363833c790e61ec9fa1503ec6f04838`.
+- `benchstudio.scenarios.world_scene_package` ports the URDF Studio
+  `WorldScenePackage` manifest, digest, validation, and file-backed version
+  registry boundary from `backend/models/world_scene_package.py` and
+  `backend/services/world_registry.py`. It preserves runtime targets,
+  interface/snapshot limits, finite joint-state checks, version uniqueness,
+  canonical manifest digests, and atomic registry replacement while leaving
+  Pydantic service models and simulator execution external. Source digests:
+  `f502d0a6ff8f321719cf6a05852ff331cbcae3612b69ed641c1e78675b2e2e63`,
+  `d17dc8511e758bdc58e4ec3d8c978459f1c040a2936b6c483e5111414ce51a65`, and
+  `1d9cf5c2604409dc90ba231eb7d65f87a5edd76c914b938bf4c1587acf9683a5`.
 
 BenchStudio uses source-backed adapters and explicit independent boundaries for
 the following projects. Product runtimes are not vendored into this repository.
