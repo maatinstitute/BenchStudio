@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 from dataclasses import dataclass
+from collections.abc import Iterable
 from typing import Any, Callable, Mapping
 
 
@@ -198,6 +199,36 @@ class RoboChallengeObserveOnlyAdapter:
     def _reject_wire(self, issue: str) -> None:
         self._issues.append(f"wire {issue}")
         raise ValueError(issue)
+
+
+def audit_robochallenge_wire_records(
+    records: Iterable[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Audit canonical JSON-safe RoboChallenge records without scoring them.
+
+    The adapter remains the sole protocol implementation. This helper only
+    provides a deterministic, serializable report for mock/client traces and
+    deliberately treats malformed records as sticky audit failures while
+    continuing to inspect later records.
+    """
+    emitted: list[dict[str, object]] = []
+    adapter = RoboChallengeObserveOnlyAdapter(emitted.append)
+    for index, record in enumerate(records):
+        try:
+            adapter.ingest_record(record)
+        except (TypeError, ValueError) as exc:
+            adapter._issues.append(f"record {index}: {type(exc).__name__}: {exc}")
+    audit = adapter.audit()
+    return {
+        "schema": "benchstudio.robochallenge_protocol_audit.v1",
+        "valid": audit.valid,
+        "observation_count": audit.observation_count,
+        "action_acknowledgment_count": audit.action_acknowledgment_count,
+        "event_count": audit.event_count,
+        "issues": list(audit.issues),
+        "canonical_records": emitted,
+        "execution_and_scoring": "external",
+    }
 
 
 def _wire_string(record: Mapping[str, Any], field: str) -> str:

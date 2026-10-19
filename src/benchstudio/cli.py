@@ -34,6 +34,7 @@ from .campaigns import (
 )
 from .compare import build_campaign_comparison_report
 from .evidence import verify_artifact_manifest
+from .integrations import audit_robochallenge_wire_records
 from .mock import MockPolicy, MockSimulator
 from .model_adapters import default_model_registry
 from .runner import RunConfig, run_episodes
@@ -97,6 +98,16 @@ def main() -> int:
         "--source-root",
         type=Path,
         help="Local checkout used by --verify-source-snapshot.",
+    )
+    parser.add_argument(
+        "--robochallenge-records",
+        type=Path,
+        help="Audit canonical RoboChallenge observation/action JSONL records.",
+    )
+    parser.add_argument(
+        "--robochallenge-output",
+        type=Path,
+        help="Write the RoboChallenge protocol audit report.",
     )
     parser.add_argument(
         "--plan-output",
@@ -531,6 +542,37 @@ def main() -> int:
             return 2
         print(json.dumps(report, sort_keys=True))
         return 0 if report["valid"] else 2
+    if args.robochallenge_records is not None:
+        if args.robochallenge_output is not None:
+            output_path = args.robochallenge_output
+        else:
+            output_path = None
+        records = []
+        try:
+            for line_number, line in enumerate(
+                args.robochallenge_records.read_text(encoding="utf-8").splitlines(), 1
+            ):
+                if not line.strip():
+                    continue
+                record = json.loads(line)
+                if not isinstance(record, dict):
+                    raise ValueError(f"line {line_number}: record must be a JSON object")
+                records.append(record)
+            report = audit_robochallenge_wire_records(records)
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            report = {
+                "schema": "benchstudio.robochallenge_protocol_audit.v1",
+                "valid": False,
+                "issues": [f"{type(exc).__name__}: {exc}"],
+                "execution_and_scoring": "external",
+            }
+        if output_path is not None:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        print(json.dumps(report, sort_keys=True))
+        return 0 if report["valid"] else 2
+    if args.robochallenge_output is not None:
+        parser.error("--robochallenge-output requires --robochallenge-records")
     if args.transfer_records is not None:
         report = summarize_transfer_fidelity(load_transfer_records(args.transfer_records))
         if args.transfer_output is not None:

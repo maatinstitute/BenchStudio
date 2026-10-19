@@ -87,6 +87,60 @@ def test_cli_verifies_source_snapshot(monkeypatch, tmp_path, capsys):
     assert report["checked_files"] == 1
 
 
+def test_cli_audits_robochallenge_wire_records(monkeypatch, tmp_path, capsys):
+    import base64
+    import hashlib
+
+    observation = b"observation"
+    action = b"action"
+    records_path = tmp_path / "robochallenge.jsonl"
+    records_path.write_text(
+        "\n".join(
+            [
+                json.dumps(
+                    {
+                        "event_type": "robochallenge_observation",
+                        "observation_id": "obs-1",
+                        "timestamp_ns": 10,
+                        "payload_base64": base64.b64encode(observation).decode(),
+                        "payload_digest_sha256": hashlib.sha256(observation).hexdigest(),
+                    }
+                ),
+                json.dumps(
+                    {
+                        "event_type": "robochallenge_action_acknowledged",
+                        "action_id": "act-1",
+                        "command_timestamp_ns": 11,
+                        "execution_timestamp_ns": None,
+                        "payload_base64": base64.b64encode(action).decode(),
+                        "payload_digest_sha256": hashlib.sha256(action).hexdigest(),
+                    }
+                ),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    report_path = tmp_path / "audit.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--robochallenge-records",
+            str(records_path),
+            "--robochallenge-output",
+            str(report_path),
+        ],
+    )
+    assert main() == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["schema"] == "benchstudio.robochallenge_protocol_audit.v1"
+    assert report["valid"] is True
+    assert report["event_count"] == 2
+    assert report["execution_and_scoring"] == "external"
+    assert json.loads(report_path.read_text(encoding="utf-8"))["valid"] is True
+
+
 def test_cli_executes_independently_loaded_frozen_plan(monkeypatch, tmp_path, capsys):
     from benchstudio.campaigns import CampaignPlanner
 

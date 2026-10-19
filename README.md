@@ -55,6 +55,18 @@ The command checks every listed file digest and rejects missing, changed, or
 path-escaping entries. It does not require the historical upstream commit to
 remain reachable.
 
+Audit canonical RoboChallenge observe-only records without interpreting their
+opaque payloads or claiming task success:
+
+```bash
+python -m benchstudio.cli --robochallenge-records robochallenge.jsonl \
+  --robochallenge-output robochallenge-audit.json
+```
+
+The report preserves canonical base64 payloads and SHA-256 identities,
+retains malformed-record failures, and explicitly marks execution and official
+scoring as external.
+
 Audit a completed frozen campaign directory without constructing or rerunning
 its model and simulator adapters:
 
