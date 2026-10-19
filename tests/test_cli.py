@@ -141,6 +141,40 @@ def test_cli_audits_robochallenge_wire_records(monkeypatch, tmp_path, capsys):
     assert json.loads(report_path.read_text(encoding="utf-8"))["valid"] is True
 
 
+def test_cli_verifies_smolvla_evidence_against_trusted_digests(monkeypatch, tmp_path, capsys):
+    import hashlib
+
+    from test_smolvla_deployment import _manifest, _row
+
+    manifest = tmp_path / "manifest.json"
+    summary = tmp_path / "summary.json"
+    manifest.write_text(json.dumps(_manifest()), encoding="utf-8")
+    summary.write_text(json.dumps([_row()]), encoding="utf-8")
+    manifest_digest = hashlib.sha256(manifest.read_bytes()).hexdigest()
+    summary_digest = hashlib.sha256(summary.read_bytes()).hexdigest()
+    output = tmp_path / "evidence.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--smolvla-manifest",
+            str(manifest),
+            "--smolvla-summary",
+            str(summary),
+            "--smolvla-manifest-sha256",
+            manifest_digest,
+            "--smolvla-summary-sha256",
+            summary_digest,
+            "--smolvla-output",
+            str(output),
+        ],
+    )
+    assert main() == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["valid"] is True
+    assert json.loads(output.read_text(encoding="utf-8"))["valid"] is True
+
+
 def test_cli_executes_independently_loaded_frozen_plan(monkeypatch, tmp_path, capsys):
     from benchstudio.campaigns import CampaignPlanner
 
