@@ -143,3 +143,80 @@ def camera_fingerprint(prediction_input: Any) -> int | None:
         value = zlib.crc32(memoryview(array).cast("B"), value)
         fingerprint = value if fingerprint is None else zlib.crc32(value.to_bytes(4, "little"), fingerprint)
     return fingerprint
+
+
+def _camera_timestamp(prediction_input: Any) -> int | None:
+    latest = None
+    for frames in (getattr(prediction_input, "camera_images", {}) or {}).values():
+        if not frames:
+            continue
+        frame = frames[-1]
+        timestamp = getattr(frame, "timestamp_us", frame[0] if isinstance(frame, (tuple, list)) and frame else None)
+        if timestamp is not None and (latest is None or int(timestamp) > latest):
+            latest = int(timestamp)
+    return latest
+
+
+class SensorFreshnessGuard:
+    """Reject camera streams that stop advancing while ego pose changes."""
+
+    _MAX_POSE_CAMERA_LAG_US = 50_000
+
+    def __init__(self, model_name: str) -> None:
+        self._model_name = model_name
+        self._last_session_uuid: str | None = None
+        self._last_camera_timestamp_us: int | None = None
+        self._last_camera_fingerprint: int | None = None
+        self._last_pose_signature: tuple[float, float, float] | None = None
+        self._last_diagnostics: dict[str, Any] | None = None
+
+    def validate(self, prediction_input: Any) -> dict[str, Any]:
+        session_uuid = getattr(prediction_input, "session_uuid", None)
+        if session_uuid is not None and self._last_session_uuid is not None and str(session_uuid) != self._last_session_uuid:
+            self._reset_session_state()
+        if session_uuid is not None:
+            self._last_session_uuid = str(session_uuid)
+        camera_timestamp = _camera_timestamp(prediction_input)
+        fingerprint = camera_fingerprint(prediction_input)
+        history = getattr(prediction_input, "ego_pose_history", []) or []
+        pose = next((_pose_signature(item) for item in reversed(list(history)) if _pose_signature(item) is not None), None)
+        if pose is None:
+            pose = _pose_signature(getattr(prediction_input, "ego_pose", None))
+        pose_timestamp = getattr(history[-1], "timestamp_us", None) if history else getattr(getattr(prediction_input, "ego_pose", None), "timestamp_us", None)
+        pose_timestamp = int(pose_timestamp) if pose_timestamp is not None else None
+        previous_pose, previous_camera, previous_fingerprint = self._last_pose_signature, self._last_camera_timestamp_us, self._last_camera_fingerprint
+        diagnostics = {"status": "ok", "camera_timestamp_us": camera_timestamp, "camera_fingerprint": fingerprint, "pose_timestamp_us": pose_timestamp, "pose_signature": pose, "previous_pose_signature": previous_pose, "previous_camera_timestamp_us": previous_camera, "previous_camera_fingerprint": previous_fingerprint, "pose_camera_lag_us": None if pose_timestamp is None or camera_timestamp is None else pose_timestamp - camera_timestamp}
+        self._last_diagnostics = diagnostics
+        if camera_timestamp is None or pose is None:
+            diagnostics["status"] = "insufficient_signal"
+            return diagnostics
+        if pose_timestamp is not None and pose_timestamp - camera_timestamp > self._MAX_POSE_CAMERA_LAG_US:
+            diagnostics["status"] = "stale_pose_leads_camera"
+            raise RuntimeError(f"{self._model_name} detected a stale camera stream")
+        if previous_pose is None or previous_camera is None:
+            diagnostics["status"] = "ok_initial"
+            self._commit(pose, camera_timestamp, fingerprint)
+            return diagnostics
+        if abs(pose[0] - previous_pose[0]) <= 0.05 and abs(pose[1] - previous_pose[1]) <= 0.05 and abs(pose[2] - previous_pose[2]) <= 0.01:
+            diagnostics["status"] = "ok_pose_static"
+            self._commit(pose, camera_timestamp, fingerprint)
+            return diagnostics
+        if camera_timestamp > previous_camera and fingerprint is not None and previous_fingerprint is not None and fingerprint == previous_fingerprint:
+            diagnostics["status"] = "frozen_camera_content"
+            raise RuntimeError(f"{self._model_name} detected a frozen camera stream")
+        if camera_timestamp > previous_camera:
+            diagnostics["status"] = "ok_camera_advanced"
+            self._commit(pose, camera_timestamp, fingerprint)
+            return diagnostics
+        diagnostics["status"] = "stale_camera_timestamp"
+        raise RuntimeError(f"{self._model_name} detected a stale camera stream")
+
+    def last_diagnostics(self) -> dict[str, Any] | None:
+        return None if self._last_diagnostics is None else dict(self._last_diagnostics)
+
+    def _commit(self, pose: tuple[float, float, float], timestamp: int, fingerprint: int | None) -> None:
+        self._last_pose_signature, self._last_camera_timestamp_us, self._last_camera_fingerprint = pose, timestamp, fingerprint
+
+    def _reset_session_state(self) -> None:
+        self._last_camera_timestamp_us = self._last_camera_fingerprint = None
+        self._last_pose_signature = self._last_diagnostics = None

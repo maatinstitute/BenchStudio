@@ -313,6 +313,10 @@ the following projects. Product runtimes are not vendored into this repository.
   access, explicit timestamp interpolation, finite-difference speed fallback,
   and deterministic image fingerprints; AlpaSim runtime and physics remain
   external.
+- The same contract module ports the stateful `SensorFreshnessGuard` boundary
+  from `alpasim_contract.py`, preserving session reset, pose/camera lag checks,
+  timestamp advancement, frozen-image detection, and structured diagnostics.
+  Its source/test provenance is the same pair recorded above.
 - URDF Studio / `urdf-ops`: `benchstudio.conformance.dataset_alignment` ports
   the dataset-alignment registry boundary from `backend/services/
   dataset_alignment.py` at upstream commit

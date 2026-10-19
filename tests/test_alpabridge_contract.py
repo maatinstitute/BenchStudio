@@ -2,6 +2,7 @@ import math
 from types import SimpleNamespace
 
 import numpy as np
+import pytest
 
 from benchstudio.integrations.alpabridge_contract import (
     corrected_speed_mps,
@@ -10,6 +11,7 @@ from benchstudio.integrations.alpabridge_contract import (
     prediction_headings,
     prediction_trajectory_xy,
     resample_trajectory,
+    SensorFreshnessGuard,
 )
 
 
@@ -29,3 +31,14 @@ def test_corrected_speed_uses_pose_finite_difference_when_reported_speed_is_zero
     value = corrected_speed_mps(SimpleNamespace(speed=0.0, ego_pose_history=[pose(0, 0), pose(1_000_000, 1)]))
     assert value == 1.0
     assert pose_history_speed_mps([]) is None
+
+
+def test_sensor_freshness_guard_rejects_frozen_camera_after_pose_change():
+    guard = SensorFreshnessGuard("test-model")
+    image = np.zeros((2, 2, 3), dtype=np.uint8)
+    def value(timestamp, x):
+        frame = SimpleNamespace(timestamp_us=timestamp, image=image)
+        return SimpleNamespace(session_uuid="s", camera_images={"front": [frame]}, ego_pose_history=[SimpleNamespace(timestamp_us=timestamp, x=x, y=0.0, yaw=0.0)])
+    assert guard.validate(value(100, 0.0))["status"] == "ok_initial"
+    with pytest.raises(RuntimeError, match="frozen camera"):
+        guard.validate(value(200, 1.0))
