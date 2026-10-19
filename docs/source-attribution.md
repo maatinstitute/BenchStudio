@@ -1,5 +1,14 @@
 # Source attribution
 
+- `benchstudio.analysis.alpabridge_review` is a direct dependency-free port of
+  `alpabridge.audit.review` from the AlpaBridge research repository. It
+  preserves the upstream severity profiles, intervention classification,
+  frame bookmarks, paired bookmarks, and critical-event context bundles;
+  optional Rerun visualization and audit-log export remain external. The
+  source digest is `ede906c260529bede52e395ecffac4d01009b45de8b0cee0766f0ef494e3049b`
+  and the upstream review-test digest is
+  `86a50a99fcff62d47f6084ea6927934d71c11906e75882f6106002ff42baa6b6`.
+
 BenchStudio uses source-backed adapters and explicit independent boundaries for
 the following projects. Product runtimes are not vendored into this repository.
 
