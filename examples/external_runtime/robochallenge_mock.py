@@ -70,8 +70,14 @@ for line in sys.stdin:
         elif operation == "acknowledge":
             execution_timestamp = request.get("execution_timestamp_ns")
             if execution_timestamp is not None:
-                if isinstance(execution_timestamp, bool) or not isinstance(execution_timestamp, int) or execution_timestamp < 0:
-                    raise ValueError("execution_timestamp_ns must be a non-negative integer or null")
+                if (
+                    isinstance(execution_timestamp, bool)
+                    or not isinstance(execution_timestamp, int)
+                    or execution_timestamp < 0
+                ):
+                    raise ValueError(
+                        "execution_timestamp_ns must be a non-negative integer or null"
+                    )
             _emit(
                 {
                     "event_type": "robochallenge_action_acknowledged",
