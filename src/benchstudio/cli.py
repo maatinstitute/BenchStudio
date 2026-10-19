@@ -126,6 +126,14 @@ def main() -> int:
         help="Write the archived SmolVLA evidence report.",
     )
     parser.add_argument(
+        "--smolvla-manifest-sha256",
+        help="Require the archived SmolVLA manifest to match this independent digest.",
+    )
+    parser.add_argument(
+        "--smolvla-summary-sha256",
+        help="Require the archived SmolVLA summary to match this independent digest.",
+    )
+    parser.add_argument(
         "--plan-output",
         type=Path,
         default=Path("campaign-plan.json"),
@@ -592,7 +600,12 @@ def main() -> int:
     if args.smolvla_manifest is not None or args.smolvla_summary is not None:
         if args.smolvla_manifest is None or args.smolvla_summary is None:
             parser.error("--smolvla-manifest and --smolvla-summary must be supplied together")
-        report = load_smolvla_deployment_evidence(args.smolvla_manifest, args.smolvla_summary)
+        report = load_smolvla_deployment_evidence(
+            args.smolvla_manifest,
+            args.smolvla_summary,
+            expected_manifest_sha256=args.smolvla_manifest_sha256,
+            expected_summary_sha256=args.smolvla_summary_sha256,
+        )
         if args.smolvla_output is not None:
             args.smolvla_output.parent.mkdir(parents=True, exist_ok=True)
             args.smolvla_output.write_text(
@@ -602,6 +615,8 @@ def main() -> int:
         return 0 if report["valid"] else 2
     if args.smolvla_output is not None:
         parser.error("--smolvla-output requires --smolvla-manifest and --smolvla-summary")
+    if args.smolvla_manifest_sha256 is not None or args.smolvla_summary_sha256 is not None:
+        parser.error("SmolVLA digest options require --smolvla-manifest and --smolvla-summary")
     if args.transfer_records is not None:
         report = summarize_transfer_fidelity(load_transfer_records(args.transfer_records))
         if args.transfer_output is not None:

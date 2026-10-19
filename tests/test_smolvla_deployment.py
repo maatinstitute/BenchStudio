@@ -73,3 +73,23 @@ def test_archived_deployment_evidence_rejects_invalid_revision(tmp_path):
     report = load_smolvla_deployment_evidence(manifest, summary)
     assert report["valid"] is False
     assert any("checkpoint_revision" in issue for issue in report["issues"])
+
+
+def test_archived_deployment_evidence_requires_independent_digests(tmp_path):
+    manifest = tmp_path / "manifest.json"
+    summary = tmp_path / "summary.json"
+    manifest.write_text(json.dumps(_manifest()), encoding="utf-8")
+    summary.write_text(json.dumps([_row()]), encoding="utf-8")
+    trusted = load_smolvla_deployment_evidence(manifest, summary)
+    verified = load_smolvla_deployment_evidence(
+        manifest,
+        summary,
+        expected_manifest_sha256=trusted["manifest_sha256"],
+        expected_summary_sha256=trusted["summary_sha256"],
+    )
+    assert verified["valid"] is True
+    rejected = load_smolvla_deployment_evidence(
+        manifest, summary, expected_manifest_sha256="0" * 64
+    )
+    assert rejected["valid"] is False
+    assert any("independently supplied digest" in issue for issue in rejected["issues"])

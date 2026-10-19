@@ -16,11 +16,15 @@ from typing import Any
 
 
 _REVISION_RE = re.compile(r"^[0-9a-f]{40}$")
+_DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 def load_smolvla_deployment_evidence(
     manifest_path: str | Path,
     summary_path: str | Path,
+    *,
+    expected_manifest_sha256: str | None = None,
+    expected_summary_sha256: str | None = None,
 ) -> dict[str, Any]:
     """Load and validate an archived SmolVLA deployment manifest and summary."""
     manifest_path = Path(manifest_path)
@@ -41,14 +45,24 @@ def load_smolvla_deployment_evidence(
                 issues.extend(f"summary[{index}]: {issue}" for issue in row_issues)
             elif isinstance(row, dict):
                 rows.append(dict(row))
+    manifest_sha256 = _sha256(manifest_path)
+    summary_sha256 = _sha256(summary_path)
+    issues.extend(
+        _check_expected_digest(
+            "manifest_sha256", expected_manifest_sha256, manifest_sha256
+        )
+    )
+    issues.extend(
+        _check_expected_digest("summary_sha256", expected_summary_sha256, summary_sha256)
+    )
     return {
         "schema": "benchstudio.smolvla_deployment_evidence.v1",
         "valid": not issues,
         "issues": issues,
         "manifest": manifest if isinstance(manifest, dict) else None,
         "summary": rows,
-        "manifest_sha256": _sha256(manifest_path),
-        "summary_sha256": _sha256(summary_path),
+        "manifest_sha256": manifest_sha256,
+        "summary_sha256": summary_sha256,
         "execution_status": "archived_external_evidence",
         "weights_and_runtime": "external",
     }
@@ -162,6 +176,18 @@ def _sha256(path: Path) -> str | None:
         return digest.hexdigest()
     except OSError:
         return None
+
+
+def _check_expected_digest(
+    field: str, expected: str | None, actual: str | None
+) -> list[str]:
+    if expected is None:
+        return []
+    if not isinstance(expected, str) or not _DIGEST_RE.fullmatch(expected):
+        return [f"{field} expectation must be a lowercase 64-character SHA-256 digest"]
+    if actual != expected:
+        return [f"{field} does not match the independently supplied digest"]
+    return []
 
 
 def _invalid(issue: str) -> dict[str, Any]:

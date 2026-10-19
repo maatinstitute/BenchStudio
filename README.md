@@ -242,6 +242,8 @@ python -m benchstudio.cli \
 
 This verifies pinned checkpoint/runtime revisions and summary arithmetic while
 preserving the archive's pairing and timing limitations.
+Pass `--smolvla-manifest-sha256` and `--smolvla-summary-sha256` to require
+independent trusted digests for both input files.
 
 The approved physical-boundary example is
 `examples/campaigns/approved-physical-boundary.json`. It includes a disabled
