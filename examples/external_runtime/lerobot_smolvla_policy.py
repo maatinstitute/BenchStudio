@@ -11,12 +11,15 @@ has been frozen and documented.
 
 Required environment variable:
   BENCHSTUDIO_LEROBOT_CHECKPOINT: local SmolVLA checkpoint directory.
+  BENCHSTUDIO_LEROBOT_CHECKPOINT_SHA256: lowercase SHA-256 of the checkpoint
+    manifest or other reviewed immutable checkpoint identity.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from typing import Any
 
@@ -39,6 +42,9 @@ except ModuleNotFoundError as exc:  # pragma: no cover - exercised in the owning
 checkpoint = os.environ.get("BENCHSTUDIO_LEROBOT_CHECKPOINT")
 if not checkpoint:
     _error("BENCHSTUDIO_LEROBOT_CHECKPOINT must name a local checkpoint directory")
+checkpoint_sha256 = os.environ.get("BENCHSTUDIO_LEROBOT_CHECKPOINT_SHA256")
+if not isinstance(checkpoint_sha256, str) or re.fullmatch(r"[0-9a-f]{64}", checkpoint_sha256) is None:
+    _error("BENCHSTUDIO_LEROBOT_CHECKPOINT_SHA256 must be lowercase SHA-256 hex")
 
 try:
     policy = SmolVLAPolicy.from_pretrained(checkpoint)
@@ -84,7 +90,7 @@ def _predict(request: dict[str, Any]) -> dict[str, Any]:
             "runtime": "lerobot",
             "policy": "smolvla",
             "observation_sequence": observation.get("sequence"),
-            "checkpoint": checkpoint,
+            "checkpoint_sha256": checkpoint_sha256,
         },
     }
 
