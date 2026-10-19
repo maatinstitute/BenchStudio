@@ -114,3 +114,99 @@ def build_plan(
     }
     payload["plan_sha256"] = _hash_payload(payload)
     return payload
+
+
+def load_outcome_plan(path: "Path") -> tuple[dict[str, object], str]:
+    """Load a RoboPAD outcome plan and verify its self-contained contract.
+
+    The plan is a preflight artifact, not an execution request.  BenchStudio
+    records the source-file digest while preserving the source plan's own
+    canonical payload digest and cell identities.
+    """
+    raw = path.read_bytes()
+    file_sha256 = hashlib.sha256(raw).hexdigest()
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("RoboPAD outcome plan must be UTF-8 JSON") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("RoboPAD outcome plan must be a mapping")
+    verify_outcome_plan(payload)
+    return payload, file_sha256
+
+
+def verify_outcome_plan(payload: dict[str, object]) -> None:
+    """Fail closed on a malformed or internally inconsistent outcome plan."""
+    if payload.get("schema_version") != "smolvla_outcome_plan_v1":
+        raise ValueError("unsupported RoboPAD outcome plan schema")
+    if payload.get("status") != "preflight_only":
+        raise ValueError("RoboPAD outcome plan must remain preflight_only")
+    if payload.get("resource_authority_required") is not True:
+        raise ValueError("RoboPAD outcome plan must require resource authority")
+    declared_digest = payload.get("plan_sha256")
+    if not isinstance(declared_digest, str) or not re.fullmatch(r"[0-9a-f]{64}", declared_digest):
+        raise ValueError("RoboPAD outcome plan digest is invalid")
+    unsigned = {key: value for key, value in payload.items() if key != "plan_sha256"}
+    if _hash_payload(unsigned) != declared_digest:
+        raise ValueError("RoboPAD outcome plan digest mismatch")
+    training = payload.get("training_cells")
+    recovery = payload.get("recovery_cells")
+    reset = payload.get("reset_cells")
+    counts = payload.get("counts")
+    constraints = payload.get("constraints")
+    if not all(isinstance(value, list) for value in (training, recovery, reset)):
+        raise ValueError("RoboPAD outcome plan cell collections must be lists")
+    if not isinstance(counts, dict) or not isinstance(constraints, dict):
+        raise ValueError("RoboPAD outcome plan counts and constraints are required")
+    _validate_cells("training", training, expected_kind="training")
+    _validate_cells("recovery", recovery, expected_kind="recovery")
+    _validate_cells("reset", reset, expected_kind="reset")
+    expected_counts = {
+        "training_checkpoints": len(training),
+        "recovery_continuations": len(recovery),
+        "reset_continuations": len(reset),
+        "reserved_continuations": len(recovery) + len(reset),
+        "recovery_suffix_policy_queries": sum(
+            int(row["policy_queries_horizon"]) for row in recovery
+        ),
+        "reset_policy_queries": sum(int(row["policy_queries_horizon"]) for row in reset),
+    }
+    shared_prefix_steps = constraints.get("recovery_prefix_steps")
+    if type(shared_prefix_steps) is not int or shared_prefix_steps < 0:
+        raise ValueError("RoboPAD recovery_prefix_steps is invalid")
+    expected_counts["recovery_shared_prefix_policy_queries"] = (
+        len({row["parent_id"] for row in recovery}) * shared_prefix_steps
+    )
+    expected_counts["max_policy_queries"] = (
+        expected_counts["recovery_suffix_policy_queries"]
+        + expected_counts["recovery_shared_prefix_policy_queries"]
+        + expected_counts["reset_policy_queries"]
+    )
+    for key, expected in expected_counts.items():
+        if counts.get(key) != expected:
+            raise ValueError(f"RoboPAD outcome plan count mismatch: {key}")
+
+
+def _validate_cells(name: str, cells: list[object], *, expected_kind: str) -> None:
+    required = (
+        {"cell_id", "kind", "arm", "seed", "scientific_final_update"}
+        if expected_kind == "training"
+        else {"cell_id", "kind", "parent_id", "branch", "policy_id", "policy_queries_horizon"}
+    )
+    seen: set[str] = set()
+    for index, cell in enumerate(cells):
+        if not isinstance(cell, dict) or not required.issubset(cell):
+            raise ValueError(f"RoboPAD {name} cell {index} is incomplete")
+        if cell["kind"] != expected_kind:
+            raise ValueError(f"RoboPAD {name} cell {index} has the wrong kind")
+        cell_id = cell["cell_id"]
+        if not isinstance(cell_id, str) or not cell_id or cell_id in seen:
+            raise ValueError(f"RoboPAD {name} cell IDs must be unique and non-empty")
+        seen.add(cell_id)
+        if expected_kind == "training":
+            if not isinstance(cell["arm"], str) or type(cell["seed"]) is not int:
+                raise ValueError(f"RoboPAD {name} cell {index} has invalid training identity")
+            continue
+        horizon = cell["policy_queries_horizon"]
+        if type(horizon) is not int or horizon < 1:
+            raise ValueError(f"RoboPAD {name} cell {index} has an invalid horizon")

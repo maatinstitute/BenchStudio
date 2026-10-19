@@ -226,6 +226,13 @@ the canonical semantic validator.
   `d6a6b5eeff857741f9cd45893545403c48cd8796b25dde500b6ac382b4e9cd47`.
   The port preserves deterministic hierarchical sampling, S/M/U/C exposure
   identity, mask validation, atomic JSON round-trips, and schedule hashing.
+- RoboPAD outcome-plan verification: `benchstudio.campaigns.load_outcome_plan`
+  and `verify_outcome_plan` consume the source-backed
+  `smolvla_outcome_plan_v1` preflight artifact, preserving its payload digest,
+  training/evaluation cell identities, reserved continuation counts, and
+  policy-query denominators. This is an evidence/preflight boundary only;
+  training, checkpoint, simulator, and official outcome authority remain
+  external.
 - RoboPAD evaluation-branch integrity: `benchstudio.analysis.outcome_eval` is a
   direct port of `experiments/outcome_eval.py` at upstream commit
   `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest

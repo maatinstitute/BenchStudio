@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import pytest
 
-from benchstudio.campaigns import build_outcome_plan
+import json
+
+from benchstudio.campaigns import build_outcome_plan, load_outcome_plan
 
 
 def populations():
@@ -43,3 +45,26 @@ def test_duplicate_wrong_population_and_overlap_fail_closed():
         build_outcome_plan(recovery_parents=recovery[:-1] + ["../foreign"], reset_parents=reset)
     with pytest.raises(ValueError, match="disjoint"):
         build_outcome_plan(recovery_parents=recovery, reset_parents=[*reset[:-1], recovery[0]])
+
+
+def test_outcome_plan_loader_binds_file_and_rechecks_counts(tmp_path):
+    recovery, reset = populations()
+    path = tmp_path / "outcome-plan.json"
+    path.write_text(
+        json.dumps(build_outcome_plan(recovery_parents=recovery, reset_parents=reset)),
+        encoding="utf-8",
+    )
+    plan, file_sha256 = load_outcome_plan(path)
+    assert plan["status"] == "preflight_only"
+    assert plan["counts"]["max_policy_queries"] == 567120
+    assert len(file_sha256) == 64
+
+
+def test_outcome_plan_loader_rejects_tampered_payload(tmp_path):
+    recovery, reset = populations()
+    payload = build_outcome_plan(recovery_parents=recovery, reset_parents=reset)
+    payload["counts"]["max_policy_queries"] += 1
+    path = tmp_path / "tampered-outcome-plan.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="digest mismatch"):
+        load_outcome_plan(path)

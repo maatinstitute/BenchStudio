@@ -28,6 +28,7 @@ from .campaigns import (
     compile_refinement_source_plan,
     load_campaign_document,
     load_frozen_campaign_plan,
+    load_outcome_plan,
     retrieve_campaign_archive,
     verify_campaign_archive,
 )
@@ -80,6 +81,11 @@ def main() -> int:
     parser.add_argument(
         "--refinement-run-id",
         help="Run identity for an imported Refinement/Refresh plan.",
+    )
+    parser.add_argument(
+        "--outcome-plan",
+        type=Path,
+        help="Verify a RoboPAD smolvla_outcome_plan_v1 preflight artifact.",
     )
     parser.add_argument(
         "--plan-output",
@@ -483,6 +489,22 @@ def main() -> int:
                     "plan_digest_sha256": plan.plan_digest_sha256,
                     "source_spec_sha256": plan.source_spec_sha256,
                     "output": str(args.plan_output),
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if args.outcome_plan is not None:
+        payload, file_sha256 = load_outcome_plan(args.outcome_plan)
+        print(
+            json.dumps(
+                {
+                    "schema": "benchstudio.robopad_outcome_plan_import.v1",
+                    "source_file_sha256": file_sha256,
+                    "plan_sha256": payload["plan_sha256"],
+                    "status": payload["status"],
+                    "counts": payload["counts"],
+                    "source": str(args.outcome_plan),
                 },
                 sort_keys=True,
             )

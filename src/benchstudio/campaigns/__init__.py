@@ -66,6 +66,8 @@ from .outcome_plan import (
 )
 from .outcome_plan import (
     build_plan as build_outcome_plan,
+    load_outcome_plan,
+    verify_outcome_plan,
 )
 from .outcome_schedule import (
     ARMS,
@@ -152,6 +154,8 @@ __all__ = [
     "WorkerLeaseManager",
     "compile_balanced_paired_plan",
     "build_outcome_plan",
+    "load_outcome_plan",
+    "verify_outcome_plan",
     "ARMS",
     "WINDOW",
     "ScheduleReceipt",

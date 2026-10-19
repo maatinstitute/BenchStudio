@@ -300,6 +300,17 @@ the canonical schedule digest, contiguous identities, and duplicate planned
 runs. The resulting plan records the source file digest and retains every
 source schedule row for independent audit.
 
+RoboPAD outcome preflight artifacts can also be verified without launching
+training or evaluation:
+
+```bash
+python -m benchstudio.cli --outcome-plan /path/to/smolvla-outcome-plan.json
+```
+
+This checks the `smolvla_outcome_plan_v1` payload digest, cell identities,
+reserved continuation counts, and policy-query denominators. It does not turn a
+preflight plan into evidence of completed model or simulator execution.
+
 Compare two or more completed or partially completed frozen campaigns directly
 from their evidence directories. Missing attempts stay missing, and malformed
 attempt summaries are reported as execution failures:
