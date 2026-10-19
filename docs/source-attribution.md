@@ -301,6 +301,18 @@ the following projects. Product runtimes are not vendored into this repository.
   The port preserves cadence throttling, per-session isolation, world-frame
   trajectory re-anchoring, quaternion yaw extraction, and explicit cache
   eviction; policy inference and vehicle authority remain external.
+- AlpaBridge/AlpaSim prediction contract: `benchstudio.integrations.
+  alpabridge_contract` extracts the dependency-light prediction-shape,
+  trajectory-resampling, pose-history, camera-fingerprint, and corrected-speed
+  boundaries from `src/alpabridge/simulator/alpasim_contract.py` at upstream
+  commit `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`; source digest
+  `a9c2e2cdd31d680f5d67f7512e45f14b3b95e81285c00adbe0570069126f461f` and
+  source-test digest
+  `b6f73a542393192bff1ca83eae879801a18adc5cb317e90d38e7be5102b64af3`.
+  The port preserves current candidate tensor shapes and selected-candidate
+  access, explicit timestamp interpolation, finite-difference speed fallback,
+  and deterministic image fingerprints; AlpaSim runtime and physics remain
+  external.
 - URDF Studio / `urdf-ops`: `benchstudio.conformance.dataset_alignment` ports
   the dataset-alignment registry boundary from `backend/services/
   dataset_alignment.py` at upstream commit

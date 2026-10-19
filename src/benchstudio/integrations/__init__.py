@@ -22,6 +22,7 @@ from .alpabridge_image import (
     resize_and_center_crop,
 )
 from .alpabridge_inference_cache import CachedInference, PoseReanchoredInferenceCache, cache_context, reanchor_trajectory, rotate2d
+from .alpabridge_contract import corrected_speed_mps, make_model_prediction, pose_history_speed_mps, pose_xy_yaw, prediction_headings, prediction_trajectory_xy, resample_trajectory, camera_fingerprint
 from .alpabridge_lifecycle import (
     LifecycleEvent,
     SyntheticLifecycleService,
@@ -193,6 +194,14 @@ __all__ = [
     "cache_context",
     "reanchor_trajectory",
     "rotate2d",
+    "corrected_speed_mps",
+    "make_model_prediction",
+    "pose_history_speed_mps",
+    "pose_xy_yaw",
+    "prediction_headings",
+    "prediction_trajectory_xy",
+    "resample_trajectory",
+    "camera_fingerprint",
     "DEFAULT_TRAJECTORY_SELECTOR_CONFIG",
     "TrajectoryCandidate",
     "TrajectoryReference",
