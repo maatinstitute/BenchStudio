@@ -21,6 +21,7 @@ from .alpabridge_image import (
     rectify_image,
     resize_and_center_crop,
 )
+from .alpabridge_inference_cache import CachedInference, PoseReanchoredInferenceCache, cache_context, reanchor_trajectory, rotate2d
 from .alpabridge_lifecycle import (
     LifecycleEvent,
     SyntheticLifecycleService,
@@ -187,6 +188,11 @@ __all__ = [
     "default_target_config",
     "build_rectifier",
     "rectify_image",
+    "CachedInference",
+    "PoseReanchoredInferenceCache",
+    "cache_context",
+    "reanchor_trajectory",
+    "rotate2d",
     "DEFAULT_TRAJECTORY_SELECTOR_CONFIG",
     "TrajectoryCandidate",
     "TrajectoryReference",

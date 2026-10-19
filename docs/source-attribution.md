@@ -291,6 +291,16 @@ the following projects. Product runtimes are not vendored into this repository.
   source-test digests are `5a9dabca2690acaab75f36be5717d6d0638e100ec747541490a963ae12fe8cf7`
   and `a7faa208c70bdfd414c496a16322c277627f54bf8fae5ff07a7610b13628a891`.
   The external f-theta transform remains optional and is never vendored here.
+- AlpaBridge pose-reanchored inference cache: `benchstudio.integrations.
+  alpabridge_inference_cache` ports
+  `src/alpabridge/simulator/inference_rate_cache.py` at upstream commit
+  `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`; source digest
+  `ce5a75b469d7c12c35ea6d434ea78f1ea6d4b885b552cb11abd24fa91455d94b` and
+  source-test digest
+  `80f4e0023362009dd61486282127de7cf2c49a117e9ead664eb863ebb093ff5c`.
+  The port preserves cadence throttling, per-session isolation, world-frame
+  trajectory re-anchoring, quaternion yaw extraction, and explicit cache
+  eviction; policy inference and vehicle authority remain external.
 - URDF Studio / `urdf-ops`: `benchstudio.conformance.dataset_alignment` ports
   the dataset-alignment registry boundary from `backend/services/
   dataset_alignment.py` at upstream commit
