@@ -267,6 +267,24 @@ The registry also exposes this boundary as the `trace` model adapter, allowing a
 frozen campaign to execute a digest-bound reference trace through the normal
 campaign ledger and simulator path.
 
+The repository includes a complete local reference campaign. Replace the
+placeholder digest in `examples/campaigns/trace-policy.json` with the SHA-256
+of `examples/traces/mock-reference-policy.jsonl`, then run it from the
+repository root:
+
+```bash
+sha256sum examples/traces/mock-reference-policy.jsonl
+python -m benchstudio.cli \
+  --campaign-spec examples/campaigns/trace-policy.json \
+  --plan-output /tmp/benchstudio-trace-plan.json \
+  --output /tmp/benchstudio-trace-campaign \
+  --execute-registry --audit
+```
+
+This is a deterministic adapter and simulator checkpoint for exercising the
+campaign/evidence path; it is not a claim about a downloaded model checkpoint
+or benchmark performance.
+
 Compare two or more completed or partially completed frozen campaigns directly
 from their evidence directories. Missing attempts stay missing, and malformed
 attempt summaries are reported as execution failures:

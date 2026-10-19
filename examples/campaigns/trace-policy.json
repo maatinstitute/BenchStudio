@@ -1,0 +1,40 @@
+{
+  "schema": "benchstudio.campaign.v1",
+  "experiment": {
+    "name": "checked-in-trace-policy-campaign",
+    "protocol_revision": "v1",
+    "mode": "parity_reference"
+  },
+  "model": {
+    "adapter": "trace",
+    "adapter_config": {
+      "path": "examples/traces/mock-reference-policy.jsonl",
+      "trace_sha256": "0d3c01fcfd0e19bff30bbbddc79fef17116d4f511766ac0267d94d0df4f62abd"
+    }
+  },
+  "task": {
+    "benchmark": "benchstudio-smoke",
+    "task_id": "trace-policy-task",
+    "task_revision": "v1"
+  },
+  "environments": [
+    {
+      "id": "mock-simulation",
+      "kind": "simulator",
+      "adapter": "mock"
+    }
+  ],
+  "evaluation": {
+    "initial_conditions": "frozen",
+    "seeds": [1],
+    "conditions": [
+      {
+        "id": "reference",
+        "action_prefix": 1,
+        "max_episode_steps": 4
+      }
+    ],
+    "paired": true,
+    "missing_outcomes": "preserve"
+  }
+}
