@@ -67,6 +67,10 @@ The report preserves canonical base64 payloads and SHA-256 identities,
 retains malformed-record failures, and explicitly marks execution and official
 scoring as external.
 
+For a transport-only local mock, send JSONL requests to
+`examples/external_runtime/robochallenge_mock.py`; it emits the same canonical
+records without simulating physics or scoring.
+
 Audit a completed frozen campaign directory without constructing or rerunning
 its model and simulator adapters:
 

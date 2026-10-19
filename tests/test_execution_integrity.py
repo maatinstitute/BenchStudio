@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
+import sys
 
 import pytest
 
@@ -337,6 +339,44 @@ def test_robochallenge_wire_audit_retains_malformed_records_and_continues():
     assert report["observation_count"] == 1
     assert report["canonical_records"][0]["observation_id"] == "obs-1"
     assert any("unsupported event_type" in issue for issue in report["issues"])
+
+
+def test_robochallenge_mock_client_round_trips_through_audit():
+    root = __import__("pathlib").Path(__file__).parents[1]
+    request_lines = "\n".join(
+        [
+            json.dumps(
+                {
+                    "operation": "observe",
+                    "observation_id": "obs-1",
+                    "timestamp_ns": 10,
+                    "payload": "b2JzZXJ2YXRpb24=",
+                }
+            ),
+            json.dumps(
+                {
+                    "operation": "acknowledge",
+                    "action_id": "act-1",
+                    "command_timestamp_ns": 11,
+                    "execution_timestamp_ns": None,
+                    "payload": "YWN0aW9u",
+                }
+            ),
+            json.dumps({"operation": "close"}),
+        ]
+    )
+    completed = subprocess.run(
+        [sys.executable, str(root / "examples/external_runtime/robochallenge_mock.py")],
+        input=request_lines + "\n",
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    records = [json.loads(line) for line in completed.stdout.splitlines()]
+    report = audit_robochallenge_wire_records(records[:2])
+    assert report["valid"] is True
+    assert report["observation_count"] == 1
+    assert report["action_acknowledgment_count"] == 1
 
 
 def test_robochallenge_validation_rejects_malformed_runtime_types():
