@@ -412,6 +412,9 @@ Callers with a separately frozen runtime envelope can pass it as
 `execution_protocol={"M": ..., "S": ..., "P": ...}` to
 `compile_refinement_source_plan()`. The envelope becomes part of the plan
 digest and can then be executed through the ordinary model/simulator registries.
+The CLI equivalent is `--refinement-execution-protocol protocol.json`; combine
+it with `--execute-registry` only when the external adapters and their runtime
+dependencies are available.
 
 The imported plan can also pass through the standard resumable executor with
 deterministic adapters for a protocol checkpoint:

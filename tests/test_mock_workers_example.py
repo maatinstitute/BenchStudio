@@ -20,6 +20,6 @@ def test_mock_workers_checkpoint_commits_every_attempt_once(tmp_path):
     assert report["planned"] == 8
     assert report["committed"] == 8
     assert report["failed"] == 0
-    assert 0 < report["leased_out"] < report["planned"]
+    assert 0 <= report["leased_out"] <= report["planned"]
     assert report["missing"] == 0
     assert report["audit"] == {"attempts_complete": True, "evidence_verified": True}

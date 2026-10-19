@@ -91,6 +91,33 @@ def test_cli_executes_imported_refinement_plan_through_standard_executor(
     assert (tmp_path / "campaign.zip").is_file()
 
 
+def test_cli_binds_imported_refinement_execution_protocol(monkeypatch, tmp_path, capsys):
+    source_path = tmp_path / "pilot_evaluation.json"
+    protocol_path = tmp_path / "protocol.json"
+    plan_path = tmp_path / "benchstudio-plan.json"
+    write_plan(source_path, make_plan())
+    protocol_path.write_text(
+        json.dumps({"M": {"adapter": "mock"}, "S": {"environments": []}}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--refinement-plan",
+            str(source_path),
+            "--refinement-execution-protocol",
+            str(protocol_path),
+            "--plan-output",
+            str(plan_path),
+        ],
+    )
+    assert main() == 0
+    json.loads(capsys.readouterr().out)
+    imported = json.loads(plan_path.read_text(encoding="utf-8"))
+    assert imported["protocol"]["M"] == {"adapter": "mock"}
+
+
 def test_cli_verifies_source_snapshot(monkeypatch, tmp_path, capsys):
     source_root = tmp_path / "source"
     source_file = source_root / "module.py"

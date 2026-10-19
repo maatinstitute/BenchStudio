@@ -86,6 +86,11 @@ def main() -> int:
         help="Run identity for an imported Refinement/Refresh plan.",
     )
     parser.add_argument(
+        "--refinement-execution-protocol",
+        type=Path,
+        help="JSON frozen M/S/P execution envelope to bind to an imported source plan.",
+    )
+    parser.add_argument(
         "--outcome-plan",
         type=Path,
         help="Verify a RoboPAD smolvla_outcome_plan_v1 preflight artifact.",
@@ -524,9 +529,24 @@ def main() -> int:
     if args.refinement_plan is not None:
         if args.campaign_spec is not None or args.frozen_plan is not None:
             parser.error("--refinement-plan cannot be combined with campaign or frozen-plan execution")
-        if args.execute_registry:
-            parser.error("--refinement-plan currently supports --execute-mock only")
-        plan = compile_refinement_source_plan(args.refinement_plan, run_id=args.refinement_run_id)
+        if args.refinement_execution_protocol is not None:
+            try:
+                execution_protocol = json.loads(
+                    args.refinement_execution_protocol.read_text(encoding="utf-8")
+                )
+            except (OSError, json.JSONDecodeError) as exc:
+                parser.error(f"invalid --refinement-execution-protocol: {exc}")
+            if not isinstance(execution_protocol, dict):
+                parser.error("--refinement-execution-protocol must contain a JSON object")
+        else:
+            execution_protocol = None
+        if args.execute_registry and execution_protocol is None:
+            parser.error("--execute-registry with --refinement-plan requires --refinement-execution-protocol")
+        plan = compile_refinement_source_plan(
+            args.refinement_plan,
+            run_id=args.refinement_run_id,
+            execution_protocol=execution_protocol,
+        )
         plan.write(args.plan_output)
         print(
             json.dumps(
@@ -586,7 +606,10 @@ def main() -> int:
                     f"artifact_bytes={reference['bytes']}"
                 )
             return 0 if campaign_status == "completed" else 2
-        return 0
+        if args.execute_registry:
+            args.frozen_plan = args.plan_output
+        else:
+            return 0
     if args.outcome_plan is not None:
         payload, file_sha256 = load_outcome_plan(args.outcome_plan)
         print(
