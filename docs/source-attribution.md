@@ -8,6 +8,12 @@
   source digest is `ede906c260529bede52e395ecffac4d01009b45de8b0cee0766f0ef494e3049b`
   and the upstream review-test digest is
   `86a50a99fcff62d47f6084ea6927934d71c11906e75882f6106002ff42baa6b6`.
+- `benchstudio.integrations.alpabridge_signal` ports the dependency-light
+  route-waypoint, structured-hazard, visibility-risk, dynamics-risk, and
+  usable-route normalization boundary from
+  `src/alpabridge/simulator/alpasim_signal.py`. The AlpaSim Scenario model,
+  serving runtime, and physics authority remain external. Source digest:
+  `3a18ae0293f8c9aa738a787f17fb9b0ba363833c790e61ec9fa1503ec6f04838`.
 
 BenchStudio uses source-backed adapters and explicit independent boundaries for
 the following projects. Product runtimes are not vendored into this repository.
