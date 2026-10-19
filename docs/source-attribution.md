@@ -116,6 +116,12 @@ the canonical semantic validator.
   `f5fa8606d93263f5af0bd8799c640b62c83c2b139ea68da2598d227d96e06698`.
   The port preserves completed-outcome reconciliation, task/group identity
   checks, ledger-version timing provenance, and control-to-neural accounting.
+- Refinement/Refresh archived deployment evidence: `benchstudio.analysis.
+  smolvla_deployment` validates the retained `real_smolvla/manifest.json` and
+  `results/summary.json` evidence boundary using the same pinned checkpoint,
+  LeRobot revision, control/neural accounting, and timing limitations declared
+  by the upstream archive. It records the input-file digests, but does not copy
+  model weights, load LeRobot, infer pairing, or claim a new live execution.
 - Refinement/Refresh ledger verification: `benchstudio.analysis.ledger_validation`
   is a source-backed port of `experiments/real_smolvla/validate_ledger.py` at
   the same upstream commit. It preserves strict array hashes, complete v3
@@ -566,7 +572,13 @@ the canonical semantic validator.
   not a port of the AlpaBridge service. The AlpaBridge telemetry adapter reads
   the published v3 JSONL shape and preserves its latency-target, route-source,
   and model-load event semantics; it does not import or reimplement AlpaSim.
-Product-specific runtimes remain external.
+  Product-specific runtimes remain external.
+
+The RoboChallenge observe-only adapter and
+`examples/external_runtime/robochallenge_mock.py` are BenchStudio-owned
+transport fixtures, not a port of the RoboChallenge client. They preserve
+opaque payload bytes and protocol digests for boundary testing while leaving
+execution, safety, and official scoring with the external platform.
 
 The optional `benchstudio.integrations.mujoco` adapter uses MuJoCo's public
 Python API when the user installs the `mujoco` extra. It does not vendor the
