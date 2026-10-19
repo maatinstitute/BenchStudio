@@ -43,6 +43,18 @@ python -m benchstudio.cli --verify-artifact runs/smoke \
 Signed manifests can be verified with `--manifest-signature` and
 `--trusted-public-key` instead of, or in addition to, the digest reference.
 
+Verify a retained source snapshot against a local source checkout:
+
+```bash
+python scripts/verify_source_snapshot.py \
+  docs/source-snapshots/alpabridge-27c96e6.json \
+  /path/to/AlpaBridge
+```
+
+The command checks every listed file digest and rejects missing, changed, or
+path-escaping entries. It does not require the historical upstream commit to
+remain reachable.
+
 Audit a completed frozen campaign directory without constructing or rerunning
 its model and simulator adapters:
 
