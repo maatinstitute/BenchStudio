@@ -117,6 +117,10 @@ def test_source_plan_import_preserves_upstream_rows_and_binds_file(tmp_path):
     assert imported.attempts[0].metadata["source_planned_run_id"] == (
         source["schedule"][0]["planned_run_id"]
     )
+    assert imported.protocol["checkpoint"] == source["checkpoint"]
+    assert imported.protocol["native_config"] == source["native_config"]
+    assert imported.protocol["execution_contract"] == source["execution_contract"]
+    assert imported.protocol["external_gates"] == source["external_gates"]
 
 
 def test_source_plan_import_rejects_schedule_mutation(tmp_path):

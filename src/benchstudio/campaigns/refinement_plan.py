@@ -277,6 +277,13 @@ def compile_refinement_source_plan(
     protocol = {
         "source": "refinement-refresh-robot-policies",
         "schema": source_plan["schema"],
+        "schema_version": source_plan.get("schema_version"),
+        "design_revision": source_plan.get("design_revision"),
+        "source_status": source_plan.get("status"),
+        "checkpoint": source_plan.get("checkpoint"),
+        "native_config": source_plan.get("native_config"),
+        "execution_contract": source_plan.get("execution_contract"),
+        "external_gates": source_plan.get("external_gates"),
         "source_plan_file_sha256": file_sha256,
         "source_schedule_sha256": source_schedule_sha256,
     }
