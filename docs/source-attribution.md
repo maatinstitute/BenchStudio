@@ -79,6 +79,13 @@ the following projects. Product runtimes are not vendored into this repository.
   It preserves the fixed query/projection protocol, all-attempt wall-time
   denominator, explicit zero-success undefined status, and unknown-field
   behavior. Full rollout reconciliation and model execution remain external.
+- Refinement/Refresh rollout manifest audit: `benchstudio.analysis.
+  refinement_rollout_audit` ports the dependency-free `episode_key` and
+  `reconcile_rollout_manifest` boundary from the same
+  `experiments/tooling/analyze_execution.py` source and test digests above.
+  The port preserves declared-population binding, schedule/runtime digests,
+  paired-cell completeness, completion totals, and aggregate-success checks;
+  action-journal reconciliation and rollout execution remain external.
 - RoboPAD: `benchstudio.analysis.responsiveness` is a source-backed port of
   `experiments/metrics.py`, and `benchstudio.campaigns.outcome_plan` is a
   source-backed port of `experiments/outcome_plan.py`, from upstream commit
