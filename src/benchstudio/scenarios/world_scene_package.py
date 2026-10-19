@@ -139,6 +139,22 @@ class WorldScenePackageVersionRecord:
         return _jsonable(asdict(self))
 
 
+@dataclass(frozen=True)
+class WorldScenePackageListEntry:
+    package_id: str
+    latest_version: str
+    latest_digest_sha256: str
+    updated_at: str
+    title: str
+    description: str | None
+    owner: str | None
+    tags: tuple[str, ...]
+    preview_image_url: str | None
+    source_registry: str | None
+    trust_level: TrustLevel
+    runtime_targets: tuple[str, ...]
+
+
 def world_scene_package_digest(manifest: WorldScenePackageManifest) -> str:
     canonical = json.dumps(manifest.to_dict(), sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
@@ -208,6 +224,47 @@ class WorldScenePackageRegistry:
             payload["published_at"], WorldScenePackageManifest.from_dict(payload["manifest"]),
         )
 
+    def list_packages(
+        self, *, query: str | None = None, owner: str | None = None,
+        tags: tuple[str, ...] | list[str] | None = None,
+        limit: int = 200, offset: int = 0,
+    ) -> list[WorldScenePackageListEntry]:
+        with self._lock:
+            packages = self._load()
+        entries: list[WorldScenePackageListEntry] = []
+        for package_id, versions in packages.items():
+            records = [self._record_from_payload(item) for item in versions.values()]
+            if not records:
+                continue
+            latest = max(records, key=lambda record: record.published_at)
+            manifest = latest.manifest
+            provenance = manifest.provenance
+            entry = WorldScenePackageListEntry(
+                package_id=package_id,
+                latest_version=latest.version,
+                latest_digest_sha256=latest.digest_sha256,
+                updated_at=latest.published_at,
+                title=manifest.title,
+                description=manifest.description,
+                owner=_optional_text(provenance.get("owner")),
+                tags=tuple(sorted({_optional_text(value).lower() for value in provenance.get("tags", []) if _optional_text(value)})),
+                preview_image_url=_optional_text(provenance.get("preview_image_url")),
+                source_registry=_optional_text(provenance.get("source_registry")),
+                trust_level=_resolve_trust_level(manifest),
+                runtime_targets=tuple(f"{target.name}:{target.mode}" for target in manifest.runtime_targets),
+            )
+            if _matches_package_entry(entry, query=query, owner=owner, tags=tags):
+                entries.append(entry)
+        entries.sort(key=lambda item: item.updated_at, reverse=True)
+        start = max(offset, 0)
+        return entries[start:start + max(limit, 0)]
+
+    def _record_from_payload(self, payload: dict[str, Any]) -> WorldScenePackageVersionRecord:
+        return WorldScenePackageVersionRecord(
+            payload["package_id"], payload["version"], payload["digest_sha256"],
+            payload["published_at"], WorldScenePackageManifest.from_dict(payload["manifest"]),
+        )
+
     def _load(self) -> dict[str, dict[str, dict[str, Any]]]:
         if not self.path.exists():
             return {}
@@ -232,10 +289,43 @@ def _required_text(payload: dict[str, Any], key: str) -> str:
     return value
 
 
+def _optional_text(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip()
+    return normalized or None
+
+
+def _resolve_trust_level(manifest: WorldScenePackageManifest) -> TrustLevel:
+    security = manifest.security
+    if security.signature_ref and security.attestation_refs and security.sbom_ref:
+        return "metadata_complete"
+    if security.signature_ref:
+        return "signed_metadata"
+    return "metadata_only"
+
+
+def _matches_package_entry(
+    entry: WorldScenePackageListEntry, *, query: str | None, owner: str | None,
+    tags: tuple[str, ...] | list[str] | None,
+) -> bool:
+    normalized_query = (query or "").strip().lower()
+    if normalized_query:
+        haystacks = (entry.package_id, entry.latest_version, entry.title,
+                     entry.description or "", entry.owner or "",
+                     " ".join(entry.tags), " ".join(entry.runtime_targets))
+        if not any(normalized_query in value.lower() for value in haystacks):
+            return False
+    normalized_owner = (owner or "").strip().lower()
+    if normalized_owner and (entry.owner or "").lower() != normalized_owner:
+        return False
+    requested = {str(value).strip().lower() for value in (tags or ()) if str(value).strip()}
+    return requested.issubset(set(entry.tags))
+
+
 def _jsonable(value: Any) -> Any:
     if isinstance(value, tuple):
         return [_jsonable(item) for item in value]
     if isinstance(value, dict):
         return {str(key): _jsonable(item) for key, item in value.items()}
     return value
-

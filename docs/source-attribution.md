@@ -24,6 +24,8 @@
   `f502d0a6ff8f321719cf6a05852ff331cbcae3612b69ed641c1e78675b2e2e63`,
   `d17dc8511e758bdc58e4ec3d8c978459f1c040a2936b6c483e5111414ce51a65`, and
   `1d9cf5c2604409dc90ba231eb7d65f87a5edd76c914b938bf4c1587acf9683a5`.
+  Registry listing also preserves latest-version selection, owner/tag/query
+  filtering, runtime-target summaries, and metadata trust-level derivation.
 
 BenchStudio uses source-backed adapters and explicit independent boundaries for
 the following projects. Product runtimes are not vendored into this repository.

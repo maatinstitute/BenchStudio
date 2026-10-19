@@ -21,8 +21,18 @@ __all__ = [
 ]
 from .world_scene_package import (
     WorldScenePackageManifest,
+    WorldScenePackageListEntry,
     WorldScenePackageRegistry,
     WorldScenePackageVersionRecord,
     validate_world_scene_package,
     world_scene_package_digest,
 )
+
+__all__ += [
+    "WorldScenePackageManifest",
+    "WorldScenePackageListEntry",
+    "WorldScenePackageRegistry",
+    "WorldScenePackageVersionRecord",
+    "validate_world_scene_package",
+    "world_scene_package_digest",
+]

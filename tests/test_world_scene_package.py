@@ -16,6 +16,7 @@ def _manifest():
         created_at=datetime.now(timezone.utc).isoformat(),
         interface=WorldInterfaceSpec(("rgb",), "joint_position", 20, "base_link"),
         world_snapshot=WorldSnapshot("<robot/>", {"joint": 0.0}, scenario_duration_ms=1000),
+        provenance={"owner": "BenchStudio", "tags": ["demo", "scene"]},
     )
 
 
@@ -33,3 +34,12 @@ def test_registry_publishes_and_reloads_version(tmp_path):
     loaded = registry.get_version("scene-a", "1")
     assert loaded.digest_sha256 == record.digest_sha256
     assert loaded.manifest.package_id == "scene-a"
+
+
+def test_registry_lists_latest_versions_with_trust_and_filters(tmp_path):
+    registry = WorldScenePackageRegistry(tmp_path / "world-registry.json")
+    registry.publish(_manifest())
+    entries = registry.list_packages(query="scene", owner="benchstudio", tags=["demo"])
+    assert len(entries) == 1
+    assert entries[0].trust_level == "metadata_only"
+    assert entries[0].runtime_targets == ()
