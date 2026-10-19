@@ -1,0 +1,40 @@
+{
+  "schema": "benchstudio.campaign.v1",
+  "experiment": {
+    "name": "mock-robustness-checkpoint",
+    "protocol_revision": "mock-v1",
+    "mode": "controlled_comparison"
+  },
+  "model": {
+    "adapter": "mock",
+    "architecture": "deterministic-mock",
+    "checkpoint": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "task": {
+    "benchmark": "benchstudio-mock",
+    "task_id": "pick-place-mock",
+    "task_revision": "mock-v1",
+    "outcome_source": "declared-mock"
+  },
+  "environments": [
+    {
+      "id": "mock-simulation",
+      "kind": "simulator",
+      "enabled": true
+    }
+  ],
+  "evaluation": {
+    "initial_conditions": "frozen-mock",
+    "seeds": [100, 101],
+    "conditions": [
+      {
+        "id": "baseline",
+        "denoising_steps": 2,
+        "action_prefix": 1,
+        "max_episode_steps": 2
+      }
+    ],
+    "paired": true,
+    "missing_outcomes": "preserve"
+  }
+}

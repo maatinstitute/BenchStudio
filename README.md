@@ -302,6 +302,16 @@ Result artifacts can be audited independently against those frozen plans. The
 commands fail closed when rows are missing, duplicated, mis-bound, or carry
 invalid outcome/failure evidence:
 
+The checked-in mock checkpoint can be run end to end with paired nominal and
+intervention branches:
+
+```bash
+python examples/run_mock_robustness.py --output runs/mock-robustness
+```
+
+It is evidence/protocol coverage only; the evaluator explicitly has no physics
+or official scoring authority.
+
 ```bash
 python -m benchstudio.cli \
   --search-results search-results.jsonl \

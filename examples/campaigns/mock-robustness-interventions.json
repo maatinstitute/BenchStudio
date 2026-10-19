@@ -1,0 +1,11 @@
+[
+  {
+    "intervention_id": "forced_grasp_failure",
+    "transition_index": 1,
+    "kind": "mock_failure",
+    "parameters": {
+      "failure_category": "grasp",
+      "recovery_time_ms": 250
+    }
+  }
+]
