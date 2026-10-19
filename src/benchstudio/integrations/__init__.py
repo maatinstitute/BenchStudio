@@ -22,7 +22,7 @@ from .alpabridge_image import (
     resize_and_center_crop,
 )
 from .alpabridge_inference_cache import CachedInference, PoseReanchoredInferenceCache, cache_context, reanchor_trajectory, rotate2d
-from .alpabridge_contract import SensorFreshnessGuard, corrected_speed_mps, make_model_prediction, pose_history_speed_mps, pose_xy_yaw, prediction_headings, prediction_trajectory_xy, resample_trajectory, camera_fingerprint
+from .alpabridge_contract import SensorFreshnessGuard, corrected_speed_mps, make_model_prediction, pose_history_speed_mps, pose_history_xy_yaw, pose_xy_yaw, prediction_headings, prediction_runtime_metadata, prediction_scene_id, prediction_trajectory_xy, resample_trajectory, camera_fingerprint
 from .smolvla_driving_contract import SMOLVLA_DRIVING_SCHEMA_VERSION, TARGET_REPRESENTATION, trajectory_to_model_prediction, validate_manifest_row
 from .alpabridge_lifecycle import (
     LifecycleEvent,
@@ -198,7 +198,10 @@ __all__ = [
     "corrected_speed_mps",
     "make_model_prediction",
     "pose_history_speed_mps",
+    "pose_history_xy_yaw",
     "pose_xy_yaw",
+    "prediction_runtime_metadata",
+    "prediction_scene_id",
     "prediction_headings",
     "prediction_trajectory_xy",
     "resample_trajectory",

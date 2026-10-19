@@ -57,6 +57,43 @@ def prediction_headings(prediction: Any) -> np.ndarray:
     return np.asarray(prediction.headings, dtype=np.float64).reshape(-1)
 
 
+def prediction_scene_id(prediction_input: Any) -> str | None:
+    value = getattr(prediction_input, "scene_id", None)
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def prediction_runtime_metadata(prediction_input: Any) -> dict[str, Any]:
+    """Extract stable runtime identity and seed provenance without coercing it into policy data."""
+    metadata: dict[str, Any] = {}
+    for output_key, names in (
+        ("session_uuid", ("session_uuid", "session_id")),
+        ("runtime_random_seed", ("inference_seed", "runtime_random_seed", "random_seed", "seed")),
+        ("debug_scene_id", ("debug_scene_id",)),
+    ):
+        for name in names:
+            value = getattr(prediction_input, name, None)
+            if value is not None:
+                try:
+                    metadata[output_key] = int(value) if not isinstance(value, (str, int, float, bool)) else value
+                except (TypeError, ValueError):
+                    metadata[output_key] = str(value)
+                break
+    session_metadata = getattr(prediction_input, "session_metadata", None)
+    if session_metadata is not None:
+        for output_key, names in (("session_uuid", ("session_uuid", "session_id")), ("runtime_random_seed", ("runtime_random_seed", "random_seed", "seed")), ("debug_scene_id", ("debug_scene_id", "scene_id"))):
+            if output_key in metadata:
+                continue
+            for name in names:
+                value = getattr(session_metadata, name, None)
+                if value is not None:
+                    metadata[output_key] = value if isinstance(value, (str, int, float, bool)) else str(value)
+                    break
+    return metadata
+
+
 def resample_trajectory(trajectory_xy: np.ndarray, output_frequency_hz: int, horizon_seconds: float, source_timestamps: np.ndarray | None = None) -> np.ndarray:
     output_frequency = float(output_frequency_hz)
     horizon = float(horizon_seconds)
@@ -111,6 +148,20 @@ def _pose_signature(pose: Any) -> tuple[float, float, float] | None:
 
 def pose_xy_yaw(pose: Any) -> tuple[float, float, float] | None:
     return _pose_signature(pose)
+
+
+def pose_history_xy_yaw(ego_pose_history: Any) -> list[tuple[int, float, float, float]]:
+    parsed = []
+    for pose in list(ego_pose_history or []):
+        signature = _pose_signature(pose)
+        timestamp = getattr(pose, "timestamp_us", None)
+        if signature is not None and timestamp is not None:
+            try:
+                parsed.append((int(timestamp), signature[0], signature[1], signature[2]))
+            except (TypeError, ValueError):
+                pass
+    parsed.sort(key=lambda row: row[0])
+    return parsed
 
 
 def pose_history_speed_mps(ego_pose_history: Any) -> float | None:

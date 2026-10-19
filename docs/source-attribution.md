@@ -327,6 +327,8 @@ the following projects. Product runtimes are not vendored into this repository.
   It preserves the four-camera provenance manifest, ego-frame trajectory-only
   output boundary, monotonic timestamps, and rejection of result-derived
   inference signals; SmolVLA weights and serving remain external.
+- The same AlpaSim contract also preserves scene/session/seed runtime metadata
+  and timestamp-sorted pose history for downstream evidence binding.
 - URDF Studio / `urdf-ops`: `benchstudio.conformance.dataset_alignment` ports
   the dataset-alignment registry boundary from `backend/services/
   dataset_alignment.py` at upstream commit

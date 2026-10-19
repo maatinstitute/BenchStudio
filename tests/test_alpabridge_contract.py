@@ -10,6 +10,9 @@ from benchstudio.integrations.alpabridge_contract import (
     pose_history_speed_mps,
     prediction_headings,
     prediction_trajectory_xy,
+    prediction_runtime_metadata,
+    prediction_scene_id,
+    pose_history_xy_yaw,
     resample_trajectory,
     SensorFreshnessGuard,
 )
@@ -43,3 +46,11 @@ def test_sensor_freshness_guard_rejects_frozen_camera_after_pose_change():
     assert guard.validate(value(100, 0.0))["status"] == "ok_initial"
     with pytest.raises(RuntimeError, match="frozen camera"):
         guard.validate(value(200, 1.0))
+
+
+def test_runtime_metadata_and_pose_history_are_explicit_and_sorted():
+    pose = lambda timestamp, x: SimpleNamespace(timestamp_us=timestamp, x=x, y=0.0, yaw=0.0)
+    value = SimpleNamespace(scene_id=" scene-1 ", session_uuid="s", inference_seed=7, ego_pose_history=[pose(20, 2), pose(10, 1)])
+    assert prediction_scene_id(value) == "scene-1"
+    assert prediction_runtime_metadata(value) == {"session_uuid": "s", "runtime_random_seed": 7}
+    assert pose_history_xy_yaw(value.ego_pose_history)[0][:3] == (10, 1.0, 0.0)
