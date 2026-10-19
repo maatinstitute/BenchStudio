@@ -144,7 +144,7 @@ from .search import (
     validate_search_plan,
 )
 from .spec import compile_campaign_spec
-from .worker import WorkerLease, WorkerLeaseManager
+from .worker import LeaseHeartbeat, WorkerLease, WorkerLeaseManager
 
 __all__ = [
     "AttemptKey",
@@ -152,6 +152,7 @@ __all__ = [
     "AttemptLedger",
     "WorkerLease",
     "WorkerLeaseManager",
+    "LeaseHeartbeat",
     "compile_balanced_paired_plan",
     "build_outcome_plan",
     "load_outcome_plan",

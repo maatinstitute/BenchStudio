@@ -14,7 +14,7 @@ from ..runner import RunConfig, run_episodes
 from ..runtime_receipts import load_runtime_receipt, verify_runtime_receipt
 from .frozen_plan import FrozenCampaignPlan, PlannedAttempt, load_frozen_campaign_plan
 from .ledger import AttemptLedger
-from .worker import WorkerLeaseManager
+from .worker import LeaseHeartbeat, WorkerLeaseManager
 
 if TYPE_CHECKING:
     from ..adapters import AdapterRegistry
@@ -188,6 +188,13 @@ class CampaignExecutor:
                     leased_out.append(attempt_id)
                     continue
             attempt_dir = self.output / "attempts" / attempt_id
+            heartbeat = (
+                LeaseHeartbeat(self.lease_manager, lease)
+                if lease is not None and self.lease_manager is not None
+                else None
+            )
+            if heartbeat is not None:
+                heartbeat.start()
             try:
                 if attempt_dir.exists():
                     summary_path = attempt_dir / "summary.json"
@@ -243,6 +250,8 @@ class CampaignExecutor:
                         f"{verification['mismatches']}"
                     )
                 self._verify_runtime_receipt(attempt, attempt_dir)
+                if heartbeat is not None:
+                    heartbeat.check()
                 committed_now = self.ledger.append_idempotent(
                     attempt.key,
                     {
@@ -276,6 +285,8 @@ class CampaignExecutor:
                 else:
                     skipped.append(attempt_id)
             finally:
+                if heartbeat is not None:
+                    heartbeat.stop()
                 if lease is not None:
                     self.lease_manager.release(lease)
         return CampaignExecutionSummary(

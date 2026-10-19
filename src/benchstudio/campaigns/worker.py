@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -120,6 +121,61 @@ class WorkerLeaseManager:
         if expires_at_ns < 0:
             return None
         return WorkerLease(attempt_id, worker_id, expires_at_ns)
+
+
+class LeaseHeartbeat:
+    """Renew one worker lease while a potentially long attempt is running."""
+
+    def __init__(
+        self,
+        manager: WorkerLeaseManager,
+        lease: WorkerLease,
+        *,
+        interval_seconds: float | None = None,
+    ) -> None:
+        interval = interval_seconds or manager.lease_seconds / 3
+        if (
+            isinstance(interval, bool)
+            or not isinstance(interval, (int, float))
+            or not math.isfinite(interval)
+            or interval <= 0
+        ):
+            raise ValueError("heartbeat interval must be a finite positive number")
+        self.manager = manager
+        self.lease = lease
+        self.interval_seconds = float(interval)
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+        self._error: Exception | None = None
+        self._lock = threading.Lock()
+
+    def start(self) -> None:
+        if self._thread is not None:
+            raise RuntimeError("lease heartbeat already started")
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=max(1.0, self.interval_seconds * 2))
+
+    def check(self) -> None:
+        with self._lock:
+            error = self._error
+        if error is not None:
+            raise RuntimeError(f"worker lease heartbeat failed: {error}") from error
+
+    def _run(self) -> None:
+        while not self._stop.wait(self.interval_seconds):
+            try:
+                with self._lock:
+                    self.lease = self.manager.renew(self.lease)
+            except Exception as exc:  # pragma: no cover - timing-dependent filesystem failure
+                with self._lock:
+                    self._error = exc
+                self._stop.set()
+                return
 
 
 def _validate_identity(value: str, field: str) -> None:

@@ -889,6 +889,34 @@ def test_worker_lease_renewal_remains_owner_bound(tmp_path):
         leases.renew(type(lease)(lease.attempt_id, "worker-b", lease.expires_at_ns))
 
 
+def test_worker_lease_heartbeat_renews_during_slow_attempt(tmp_path):
+    import time
+
+    plan = CampaignPlanner(
+        run_id="heartbeat",
+        scenario_id="task",
+        conditions=[{"x": 1}],
+        seeds=[1],
+    ).freeze()
+
+    class SlowPolicy(MockPolicy):
+        def predict(self, observation, *, denoising_steps):
+            time.sleep(0.08)
+            return super().predict(observation, denoising_steps=denoising_steps)
+
+    leases = WorkerLeaseManager(tmp_path / "leases", lease_seconds=0.03)
+    result = CampaignExecutor(
+        plan,
+        tmp_path / "campaign",
+        lambda _: SlowPolicy(),
+        lambda _: MockSimulator(),
+        worker_id="slow-worker",
+        lease_manager=leases,
+    ).run()
+    assert result.committed_attempt_ids == ("attempt-000000",)
+    assert result.failed_attempt_ids == ()
+
+
 def test_campaign_archive_is_deterministic_and_extracts_verified_evidence(tmp_path):
     plan = CampaignPlanner(
         run_id="archive-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
