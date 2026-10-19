@@ -14,7 +14,6 @@ import re
 from pathlib import Path
 from typing import Any
 
-
 _REVISION_RE = re.compile(r"^[0-9a-f]{40}$")
 _DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 
@@ -93,7 +92,14 @@ def _validate_manifest(value: Any) -> list[str]:
         revision = value.get(key)
         if not isinstance(revision, str) or not _REVISION_RE.fullmatch(revision):
             issues.append(f"{key} must be a lowercase 40-character commit identity")
-    for key in ("checkpoint", "environment", "device", "timing_limitations", "pairing_status", "scope"):
+    for key in (
+        "checkpoint",
+        "environment",
+        "device",
+        "timing_limitations",
+        "pairing_status",
+        "scope",
+    ):
         if not isinstance(value.get(key), str) or not value[key]:
             issues.append(f"{key} must be a non-empty string")
     for key in ("seed", "primary_episodes", "denoising_steps_primary", "ledger_version"):
@@ -147,7 +153,13 @@ def _validate_row(value: Any) -> list[str]:
         or any(type(item) is not bool for item in successes)
     ):
         issues.append("successes must be a non-empty list of booleans")
-    for key in ("control_to_neural", "success_rate_percent", "eval_seconds", "neural_p50_seconds", "neural_p95_seconds"):
+    for key in (
+        "control_to_neural",
+        "success_rate_percent",
+        "eval_seconds",
+        "neural_p50_seconds",
+        "neural_p95_seconds",
+    ):
         item = value.get(key)
         if isinstance(item, bool) or not isinstance(item, (int, float)) or not math.isfinite(item):
             issues.append(f"{key} must be finite numeric")
@@ -158,9 +170,15 @@ def _validate_row(value: Any) -> list[str]:
         if not math.isclose(value["control_to_neural"], expected_ratio, rel_tol=1e-9, abs_tol=1e-9):
             issues.append("control_to_neural does not match control_steps/neural_chunk_calls")
         expected_rate = 100.0 * sum(value["successes"]) / len(value["successes"])
-        if not math.isclose(value["success_rate_percent"], expected_rate, rel_tol=1e-9, abs_tol=1e-9):
+        if not math.isclose(
+            value["success_rate_percent"], expected_rate, rel_tol=1e-9, abs_tol=1e-9
+        ):
             issues.append("success_rate_percent does not match successes")
-        if value["eval_seconds"] <= 0 or value["neural_p50_seconds"] < 0 or value["neural_p95_seconds"] < 0:
+        if (
+            value["eval_seconds"] <= 0
+            or value["neural_p50_seconds"] < 0
+            or value["neural_p95_seconds"] < 0
+        ):
             issues.append("timing values must be non-negative and eval_seconds positive")
         if value["neural_p95_seconds"] < value["neural_p50_seconds"]:
             issues.append("neural_p95_seconds must be at least neural_p50_seconds")
