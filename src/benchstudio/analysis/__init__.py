@@ -126,7 +126,7 @@ from .refinement_query_recovery import (
     query_answer_check,
     recover_direct_query,
 )
-from .refinement_rollout_audit import episode_key, reconcile_rollout_manifest
+from .refinement_rollout_audit import check_initial_state, episode_key, reconcile_rollout_journal, reconcile_rollout_manifest
 from .robopad_exposure import LIMITATIONS, audit_splits, build_inventory, demo_family, family_id
 from .robopad_visual_balance import image_distance, match_candidates
 from .score_coverage import ScoreCoverage, audit_score_coverage
@@ -238,6 +238,8 @@ __all__ = [
     "query_answer_check",
     "recover_direct_query",
     "episode_key",
+    "check_initial_state",
+    "reconcile_rollout_journal",
     "reconcile_rollout_manifest",
     "PolicyParityReport",
     "ObservationParityReport",

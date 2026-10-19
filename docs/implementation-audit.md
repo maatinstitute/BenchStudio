@@ -64,9 +64,10 @@ has been evaluated.
 | RoboPAD remaining reference evidence | Implemented at evidence boundary | Source-backed fixed world scope, bounded persistence, scalar conversion, and dense/terminal RGB frame retention are verified locally; MuJoCo/reference rollout execution remains external. |
 | Refinement/Refresh query recovery | Implemented at analysis boundary | Source-backed fixed direct-record queries and projections preserve all-attempt timing denominators, zero-success undefined ratios, and unknown-field semantics; full rollout reconciliation remains external. |
 | Refinement/Refresh rollout manifest audit | Implemented at analysis boundary | Source-backed schedule/runtime digest binding, paired-cell completeness, completion totals, and aggregate-success reconciliation prevent surviving rows from redefining the planned population; action journals and rollout execution remain external. |
+| Refinement/Refresh rollout journal audit | Implemented at analysis boundary | Source-backed state hashes, keyed generation/noise cadence, action binding, terminal semantics, and completion records are independently reconciled; simulator execution remains external. |
 | CI workflow | Prepared locally, not uploaded | `.github/workflows/ci.yml` exists locally. GitHub rejected its upload because the current OAuth token lacks workflow scope; source and smoke tests are published. |
 | Python compatibility | Locally verified | Python 3.10.12 compiles and imports the package; the full pytest suite runs under the configured Python 3.13 environment. |
-| Current verification snapshot | Verified locally | Full suite: 689 passed, 1 expected ZIP duplicate-entry warning, 27 subtests passed. |
+| Current verification snapshot | Verified locally | Full suite: 690 passed, 1 expected ZIP duplicate-entry warning, 27 subtests passed. |
 
 The repository remains private and proprietary. External benchmark scoring,
 physical safety, emergency stops, and hardware authorization are intentionally

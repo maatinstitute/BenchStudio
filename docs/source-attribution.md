@@ -86,6 +86,12 @@ the following projects. Product runtimes are not vendored into this repository.
   The port preserves declared-population binding, schedule/runtime digests,
   paired-cell completeness, completion totals, and aggregate-success checks;
   action-journal reconciliation and rollout execution remain external.
+- Refinement/Refresh rollout journal audit: `benchstudio.analysis.
+  refinement_rollout_audit` also ports `check_initial_state` and
+  `reconcile_rollout_journal` from the same source boundary. It preserves
+  content-addressed numeric states, keyed noise/generation cadence,
+  producer-to-environment action binding, terminal flags, termination reasons,
+  and completion records; simulator execution remains external.
 - RoboPAD: `benchstudio.analysis.responsiveness` is a source-backed port of
   `experiments/metrics.py`, and `benchstudio.campaigns.outcome_plan` is a
   source-backed port of `experiments/outcome_plan.py`, from upstream commit
