@@ -159,3 +159,37 @@ def test_campaign_audit_exposes_missing_benchmark_validity():
     )
     assert audit.benchmark_validity is None
     assert audit.claim.prerequisites["semantic_match"] is False
+
+
+def test_campaign_audit_exposes_unverified_imported_source_gates():
+    plan = CampaignPlanner(
+        run_id="source-gates",
+        scenario_id="task",
+        conditions=[{"x": 1}],
+        seeds=[1],
+        protocol={
+            "source_status": "requires_runtime_and_holdout_verification",
+            "external_gates": {
+                "runtime": "unverified",
+                "holdout": "unverified",
+            },
+        },
+    ).freeze()
+    audit = audit_campaign(
+        plan,
+        [
+            {
+                "attempt_id": plan.attempts[0].key.attempt_id,
+                "status": "completed",
+                "evidence_verified": True,
+            }
+        ],
+        claim_type=ClaimType.SINGLE_RUN_OUTCOME,
+    )
+    assert audit.source_status == "requires_runtime_and_holdout_verification"
+    assert audit.source_gates_verified is False
+    assert audit.source_gate_issues == (
+        "external gate holdout is not verified: 'unverified'",
+        "external gate runtime is not verified: 'unverified'",
+    )
+    assert audit.to_dict()["source_gates_verified"] is False

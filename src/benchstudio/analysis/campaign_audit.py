@@ -36,6 +36,9 @@ class CampaignAudit:
     benchmark_validity: BenchmarkValidityAudit | None = None
     evidence_issues: tuple[str, ...] = ()
     execution_overhead: ExecutionOverhead | None = None
+    source_status: str | None = None
+    source_gates_verified: bool | None = None
+    source_gate_issues: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -65,6 +68,9 @@ class CampaignAudit:
                 and self.execution_overhead.valid
                 and self.execution_overhead.provenance_complete
             ),
+            "source_status": self.source_status,
+            "source_gates_verified": self.source_gates_verified,
+            "source_gate_issues": list(self.source_gate_issues),
         }
 
 
@@ -115,6 +121,7 @@ def audit_campaign(
     claim_evidence = dict(evidence or {})
     calibration_issues = _plan_calibration_issues(plan)
     benchmark_validity = _plan_benchmark_validity(plan, planned_ids)
+    source_status, source_gates_verified, source_gate_issues = _source_gate_audit(plan)
     if claim_type in {ClaimType.PAIRED_COMPARISON, ClaimType.REAL_WORLD_TRANSFER}:
         if calibration_issues or benchmark_validity is None or not benchmark_validity.valid:
             claim_evidence["semantic_match"] = False
@@ -156,7 +163,32 @@ def audit_campaign(
         benchmark_validity,
         evidence_issue_rows,
         execution_overhead,
+        source_status,
+        source_gates_verified,
+        source_gate_issues,
     )
+
+
+def _source_gate_audit(
+    plan: FrozenCampaignPlan,
+) -> tuple[str | None, bool | None, tuple[str, ...]]:
+    """Expose source-plan runtime gates without treating protocol runs as science."""
+    protocol = plan.protocol or {}
+    status = protocol.get("source_status")
+    source_status = status if isinstance(status, str) and status else None
+    raw_gates = protocol.get("external_gates")
+    if raw_gates is None:
+        return source_status, None, ()
+    if not isinstance(raw_gates, dict):
+        return source_status, False, ("external_gates must be a mapping",)
+    issues: list[str] = []
+    for name, value in sorted(raw_gates.items(), key=lambda item: str(item[0])):
+        if not isinstance(name, str) or not name:
+            issues.append("external gate names must be non-empty strings")
+            continue
+        if value not in {True, "verified", "passed", "complete"}:
+            issues.append(f"external gate {name} is not verified: {value!r}")
+    return source_status, not issues, tuple(issues)
 
 
 def audit_campaign_directory(
