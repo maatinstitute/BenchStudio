@@ -226,6 +226,9 @@ the canonical semantic validator.
   The port preserves frozen task/seed/parent panels, conservative missing-cell
   bounds, exact discordance intervals, and explicit attempted/complete/missing
   accounting; training and official outcome authority remain external.
+  `tests/test_outcome_report.py::test_robopad_source_golden_vector_is_byte_identical`
+  verifies a source-generated complete matrix, exact point estimate, interval,
+  and canonical report digest.
 - RoboPAD deterministic outcome exposure scheduling:
   `benchstudio.campaigns.outcome_schedule` is a direct port of
   `experiments/outcome_schedule.py` at upstream commit

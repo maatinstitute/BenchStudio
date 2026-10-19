@@ -1,3 +1,5 @@
+import hashlib
+import json
 import unittest
 
 from benchstudio.analysis.outcome_report import (
@@ -38,6 +40,37 @@ def planned_cells():
 
 
 class OutcomeReportTests(unittest.TestCase):
+    def test_robopad_source_golden_vector_is_byte_identical(self):
+        rows = []
+        for task_id in range(1, 7):
+            for seed in (123, 456, 789, 1011, 1213):
+                for parent in range(4):
+                    rows.append(
+                        {
+                            "task_id": task_id,
+                            "seed": seed,
+                            "parent_id": f"task{task_id}-parent{parent}",
+                            "arm": "C",
+                            "comparator": "U",
+                            "c_success": parent % 3 != 0,
+                            "u_success": parent % 2 == 0,
+                            "status": "complete",
+                        }
+                    )
+        result = analyze_primary(rows, planned=planned_cells())
+        # Generated from RoboPAD experiments/outcome_report.py at the source
+        # revision recorded in docs/source-attribution.md.
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(result["point_estimate"], 0.0)
+        self.assertEqual(result["groups"][0]["wins"], 1)
+        self.assertEqual(result["groups"][0]["losses"], 1)
+        self.assertEqual(
+            hashlib.sha256(
+                json.dumps(result, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest(),
+            "4ee815cdec3c8b8161c0e1a323a23692aca69c47cb3f6fbdf2c61a2cdaa27dbc",
+        )
+
     def test_all_ties_leave_a_wide_nonzero_interval(self):
         interval = discordance_interval(0, 0, 4, alpha=0.05 / 60)
         self.assertLess(interval[0], 0)
