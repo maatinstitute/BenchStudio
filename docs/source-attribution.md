@@ -232,6 +232,9 @@ the canonical semantic validator.
   `d6a6b5eeff857741f9cd45893545403c48cd8796b25dde500b6ac382b4e9cd47`.
   The port preserves deterministic hierarchical sampling, S/M/U/C exposure
   identity, mask validation, atomic JSON round-trips, and schedule hashing.
+  `tests/test_outcome_schedule.py::test_robopad_source_golden_vector_is_byte_identical`
+  locks a source-generated seed-123 schedule digest and first exposure vector
+  so the port's serialized behavior remains parity-tested against RoboPAD.
 - RoboPAD outcome-plan verification: `benchstudio.campaigns.load_outcome_plan`
   and `verify_outcome_plan` consume the source-backed
   `smolvla_outcome_plan_v1` preflight artifact, preserving its payload digest,

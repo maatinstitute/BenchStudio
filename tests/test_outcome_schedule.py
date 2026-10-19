@@ -36,6 +36,30 @@ def rows():
 
 
 class OutcomeScheduleTests(unittest.TestCase):
+    def test_robopad_source_golden_vector_is_byte_identical(self):
+        """Keep the BenchStudio port aligned with RoboPAD's frozen algorithm."""
+        receipt = build_schedule(rows(), seed=123, updates=4)
+        # Generated from RoboPAD experiments/outcome_schedule.py at the source
+        # revision recorded in docs/source-attribution.md.  This is a parity
+        # fixture, not a newly chosen expected result.
+        self.assertEqual(
+            receipt.schedule_sha256,
+            "903284e9e3e1abbbc6cd40b169963214ea226f61749aac8977c04881a4c7e981",
+        )
+        self.assertEqual(
+            [row["sample_id"] for row in receipt.rows_by_update[0]["M"]],
+            [
+                "t2-success-0",
+                "t2-success-11",
+                "t2-success-5",
+                "t2-success-2",
+                "t2-failure-0",
+                "t2-failure-11",
+                "t2-failure-5",
+                "t2-failure-2",
+            ],
+        )
+
     def test_repeated_build_is_byte_identical(self):
         first = build_schedule(rows(), seed=123, updates=4)
         second = build_schedule(rows(), seed=123, updates=4)
