@@ -539,6 +539,36 @@ class CampaignExecutor:
 
         return publish_campaign_archive(self.output, store).to_dict()
 
+    def compile_counterfactual_plan(
+        self,
+        interventions: Iterable[Any],
+        destination: Path | None = None,
+    ) -> Any:
+        """Freeze robustness branches against this executor's nominal plan.
+
+        The evaluator still owns simulator state and disturbance application;
+        this boundary owns source-plan lineage and optional serialization.
+        """
+        from .counterfactual import compile_counterfactual_plan
+
+        counterfactual = compile_counterfactual_plan(self.plan, interventions)
+        if destination is not None:
+            counterfactual.write(destination)
+        return counterfactual
+
+    def run_counterfactual(
+        self,
+        interventions: Iterable[Any],
+        evaluator: Any,
+        *,
+        output: Path | None = None,
+    ) -> tuple[Any, ...]:
+        """Run paired nominal/intervention branches with frozen lineage."""
+        from .counterfactual import execute_counterfactual_plan
+
+        counterfactual = self.compile_counterfactual_plan(interventions)
+        return execute_counterfactual_plan(counterfactual, evaluator, output=output)
+
 
 def _validate_execution_safety(plan: FrozenCampaignPlan) -> None:
     """Recheck hardware safety invariants at the execution boundary.

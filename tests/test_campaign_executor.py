@@ -19,6 +19,8 @@ from benchstudio.campaigns import (
     CampaignArchiveError,
     CampaignExecutor,
     CampaignPlanner,
+    CounterfactualEvaluation,
+    Intervention,
     LocalArtifactStore,
     WorkerLeaseManager,
     build_campaign_archive,
@@ -107,6 +109,31 @@ def test_campaign_executor_rejects_invalid_frozen_worldepisode_binding(tmp_path)
         CampaignExecutor(
             plan, tmp_path / "campaign", lambda _: MockPolicy(), lambda _: MockSimulator()
         )
+
+
+def test_campaign_executor_freezes_and_runs_counterfactual_branches(tmp_path):
+    plan = CampaignPlanner(
+        run_id="robustness-run",
+        scenario_id="mock-task",
+        conditions=[{"x": 1}],
+        seeds=[7],
+    ).freeze()
+    executor = CampaignExecutor(
+        plan, tmp_path / "campaign", lambda _: MockPolicy(), lambda _: MockSimulator()
+    )
+    intervention = Intervention("delayed_observation", 2, "sensor_delay", {"ms": 50})
+    counterfactual_path = tmp_path / "counterfactual-plan.json"
+    frozen = executor.compile_counterfactual_plan([intervention], counterfactual_path)
+    assert frozen.source_plan_digest_sha256 == plan.plan_digest_sha256
+    results = executor.run_counterfactual(
+        [intervention],
+        lambda cell: CounterfactualEvaluation(
+            success=cell.branch == "nominal",
+            recovery_time_ms=None if cell.branch == "nominal" else 125,
+        ),
+        output=tmp_path / "counterfactual",
+    )
+    assert [result.branch for result in results] == ["nominal", "intervention"]
 
 
 def test_campaign_executor_can_load_the_frozen_plan_from_disk(tmp_path):
