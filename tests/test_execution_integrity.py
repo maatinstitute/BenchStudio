@@ -427,6 +427,20 @@ def test_worldepisode_preflight_binds_frozen_identity_and_fails_closed_on_bad_pa
     assert invalid.profile == "benchstudio_invalid_worldepisode_profile"
 
 
+def test_worldepisode_preflight_accepts_canonical_nested_identity():
+    result = preflight_worldepisode(
+        {
+            "schema": "worldepisode",
+            "episode": {"episode_id": "episode-1"},
+            "world_revision": {"world_revision_id": "rev-1"},
+        },
+        expected_episode_id="episode-1",
+        expected_revision_id="rev-1",
+    )
+    assert result.valid is True
+    assert result.diagnostics == ()
+
+
 def test_replay_conformance_reports_no_physics_coverage():
     result = run_replay_conformance()
     assert result["passed"] is True

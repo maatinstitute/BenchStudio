@@ -6,9 +6,6 @@ import hashlib
 import json
 from pathlib import Path
 
-import numpy as np
-
-
 def digest(value):
     return hashlib.sha256(
         json.dumps(
@@ -74,6 +71,8 @@ def validate_inputs(steps, refresh):
 
 
 def validate_run(root, instrumented):
+    import numpy as np
+
     rows = journal(root / "episodes.jsonl")
     events = journal(root / "steps.jsonl")
     manifest, summary = read(root / "runtime_manifest.json"), read(root / "summary.json")
@@ -205,6 +204,8 @@ def validate_run(root, instrumented):
 
 
 def analyze(root, fresh=None):
+    import numpy as np
+
     old, oldm, olds = validate_run(root / "stale", False)
     new, newm, news = validate_run(root / "stale_instrumented_004", True)
     original = {identity(r): r for r in old}

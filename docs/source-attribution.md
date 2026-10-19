@@ -39,6 +39,13 @@
 BenchStudio uses source-backed adapters and explicit independent boundaries for
 the following projects. Product runtimes are not vendored into this repository.
 
+The AlpaBridge source revision used by the ports is retained in
+`docs/source-snapshots/alpabridge-27c96e6.json`. The local source repository
+verifies commit `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2` and tree
+`0d72a01dfe45b12182e16338603923dd87891d3e`; the current public remote branch
+does not expose that historical commit, so the snapshot manifest is the
+authoritative provenance record rather than an unresolved GitHub URL.
+
 - WorldEpisode / `leWorldDataset`: the optional validator binding follows the
   published validator/preflight boundary. The replay fixture identifies
   `tools/replay_adapter_conformance.py` as its source basis and deliberately

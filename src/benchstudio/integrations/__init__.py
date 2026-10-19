@@ -1,323 +1,41 @@
-"""Optional integration boundaries that do not own simulator or robot authority."""
+"""Optional integration boundaries loaded only when explicitly requested."""
 
-from .alpabridge import (
-    ALPABRIDGE_DRIVER_TELEMETRY_SCHEMA,
-    AlpaBridgeTelemetryAudit,
-    AlpaBridgeTelemetryWriter,
-    audit_alpabridge_telemetry,
-    load_alpabridge_telemetry,
-    route_arc_length_m,
-)
-from .alpabridge_camera_calibration import (
-    CameraCalibration,
-    calibration_from_available_camera,
-    calibrations_from_session_request,
-    camera_protos_from_session_request,
-)
-from .alpabridge_image import (
-    build_rectifier,
-    default_target_config,
-    rectification_disabled,
-    rectify_image,
-    resize_and_center_crop,
-)
-from .alpabridge_inference_cache import CachedInference, PoseReanchoredInferenceCache, cache_context, reanchor_trajectory, rotate2d
-from .alpabridge_contract import SensorFreshnessGuard, corrected_speed_mps, make_model_prediction, pose_history_speed_mps, pose_history_xy_yaw, pose_xy_yaw, prediction_headings, prediction_runtime_metadata, prediction_scene_id, prediction_trajectory_xy, resample_trajectory, camera_fingerprint
-from .smolvla_driving_contract import SMOLVLA_DRIVING_SCHEMA_VERSION, TARGET_REPRESENTATION, trajectory_to_model_prediction, validate_manifest_row
-from .alpabridge_lifecycle import (
-    LifecycleEvent,
-    SyntheticLifecycleService,
-    run_synthetic_lifecycle_cycle,
-)
-from .alpabridge_policy_registry import (
-    DriverPolicy,
-    PolicyRegistry,
-    load_external_policy_modules,
-    read_finite_float_tuple,
-    read_positive_finite_float,
-)
-from .alpabridge_route import (
-    distance_to_polyline,
-    effective_ramp_target_mps,
-    point_at_distance,
-    ramp_scale,
-    ramp_settings,
-    ramp_up_only,
-    ramped_distances,
-    sample_route,
-    segment_point_distance,
-    straight_trajectory,
-)
-from .alpabridge_trajectory_selector import (
-    DEFAULT_TRAJECTORY_SELECTOR_CONFIG,
-    TrajectoryCandidate,
-    TrajectoryReference,
-    TrajectorySelectorConfig,
-    TrajectorySelectorScore,
-    score_candidate,
-    speed_scale,
-    trajectory_region_score,
-)
-from .alpasim_metrics import (
-    AlpaSimEvidence,
-    AlpaSimEvidenceConfig,
-    AlpaSimEvidenceThresholds,
-    build_alpasim_evidence,
-    load_alpasim_metrics,
-)
-from .genesis import GenesisSimulator
-from .gymnasium import GymnasiumSimulator
-from .isaaclab import IsaacLabSimulator
-from .mujoco import MujocoSimulator
-from .policy_trace import POLICY_TRACE_SCHEMA, TracePolicy, observation_digest_sha256
-from .replay_conformance import run_replay_conformance, zero_order_hold_case
-from .robochallenge import (
-    RoboChallengeAction,
-    RoboChallengeObservation,
-    RoboChallengeObserveOnlyAdapter,
-    RoboChallengeProtocolAudit,
-    validate_robochallenge_message,
-)
-from .robopad_cell_store import CellStore
-from .robopad_competence import (
-    MAX_BYTES,
-    checked_rotation_delta,
-    compact_record,
-    persist,
-    replay_equal,
-    termination,
-    world_rotation_delta,
-)
-from .robopad_evidence_codec import (
-    MAX_BYTES as EVIDENCE_CODEC_MAX_BYTES,
-)
-from .robopad_evidence_codec import (
-    decode,
-    digest,
-    encode,
-    identity,
-    layout,
-    relationship,
-)
-from .robopad_evidence_store import EvidenceStore
-from .robopad_initialization import (
-    VERSION,
-    InitializationFailure,
-    initialize_restored_pose,
-    snapshot,
-)
-from .robopad_reference import FixedReference
-from .robopad_reference_adapter import CandidateGoals, SourceGeometry, build_goals, extract_geometry
-from .robopad_reference_cache import SourceCache, cache_executed_source, select_prefix
-from .robopad_rollout import RolloutFailure, rollout
-from .robopad_remaining import (
-    MAX_BYTES as REMAINING_MAX_BYTES,
-    persist as persist_remaining,
-    remaining_worlds,
-    retain_frame,
-    scalar,
-    sha as sha_remaining,
-)
-from .robopad_state_evidence import json_numpy
-from .robopad_supervisor import (
-    KILL_AFTER,
-    LOG_CAP,
-    RECEIPT_CAP,
-    TIMEOUT,
-    SupervisorInterrupted,
-    select_timeout,
-    sha,
-    stop_group,
-    supervise,
-    write_receipt,
-)
-from .teleop_replay_timing import (
-    LogicalReplayClock,
-    ReplayScheduleEntry,
-    ReplayTimingRecording,
-    ReplayTimingSample,
-    WallClockReplayClock,
-    build_replay_schedule,
-    replay_schedule_duration_ms,
-    resolve_command_time_ms,
-)
-from .urdf_world_bridge import (
-    WorldBridgeCommandAck,
-    WorldBridgeEvent,
-    WorldBridgeEventType,
-    WorldBridgeRolloutMode,
-    WorldBridgeSessionSnapshot,
-    WorldBridgeStatus,
-    WorldBridgeTransitionRecord,
-    WorldBridgeTransitionType,
-    parse_worldd_ack_payload,
-    parse_worldd_session_payload,
-    parse_worldd_status_payload,
-    validate_joint_command_payload,
-    world_bridge_event_type_from_worldd,
-    worldd_event_type_from_world_bridge,
-)
-from .worldepisode import WorldEpisodePreflight, preflight_worldepisode
+from __future__ import annotations
 
-__all__ = [
-    "ALPABRIDGE_DRIVER_TELEMETRY_SCHEMA",
-    "AlpaBridgeTelemetryAudit",
-    "AlpaBridgeTelemetryWriter",
-    "RoboChallengeAction",
-    "RoboChallengeObservation",
-    "RoboChallengeObserveOnlyAdapter",
-    "RoboChallengeProtocolAudit",
-    "validate_robochallenge_message",
-    "WorldEpisodePreflight",
-    "preflight_worldepisode",
-    "run_replay_conformance",
-    "zero_order_hold_case",
-    "audit_alpabridge_telemetry",
-    "load_alpabridge_telemetry",
-    "route_arc_length_m",
-    "ramped_distances",
-    "ramp_settings",
-    "ramp_scale",
-    "effective_ramp_target_mps",
-    "ramp_up_only",
-    "sample_route",
-    "point_at_distance",
-    "straight_trajectory",
-    "segment_point_distance",
-    "distance_to_polyline",
-    "resize_and_center_crop",
-    "rectification_disabled",
-    "default_target_config",
-    "build_rectifier",
-    "rectify_image",
-    "CachedInference",
-    "PoseReanchoredInferenceCache",
-    "cache_context",
-    "reanchor_trajectory",
-    "rotate2d",
-    "corrected_speed_mps",
-    "make_model_prediction",
-    "pose_history_speed_mps",
-    "pose_history_xy_yaw",
-    "pose_xy_yaw",
-    "prediction_runtime_metadata",
-    "prediction_scene_id",
-    "prediction_headings",
-    "prediction_trajectory_xy",
-    "resample_trajectory",
-    "camera_fingerprint",
-    "SensorFreshnessGuard",
-    "SMOLVLA_DRIVING_SCHEMA_VERSION",
-    "TARGET_REPRESENTATION",
-    "trajectory_to_model_prediction",
-    "validate_manifest_row",
-    "DEFAULT_TRAJECTORY_SELECTOR_CONFIG",
-    "TrajectoryCandidate",
-    "TrajectoryReference",
-    "TrajectorySelectorConfig",
-    "TrajectorySelectorScore",
-    "score_candidate",
-    "speed_scale",
-    "trajectory_region_score",
-    "FixedReference",
-    "CandidateGoals",
-    "SourceGeometry",
-    "build_goals",
-    "extract_geometry",
-    "SourceCache",
-    "cache_executed_source",
-    "select_prefix",
-    "json_numpy",
-    "RolloutFailure",
-    "rollout",
-    "REMAINING_MAX_BYTES",
-    "persist_remaining",
-    "remaining_worlds",
-    "retain_frame",
-    "scalar",
-    "sha_remaining",
-    "MAX_BYTES",
-    "checked_rotation_delta",
-    "compact_record",
-    "persist",
-    "replay_equal",
-    "termination",
-    "world_rotation_delta",
-    "LifecycleEvent",
-    "SyntheticLifecycleService",
-    "run_synthetic_lifecycle_cycle",
-    "CameraCalibration",
-    "calibration_from_available_camera",
-    "calibrations_from_session_request",
-    "camera_protos_from_session_request",
-    "DriverPolicy",
-    "PolicyRegistry",
-    "load_external_policy_modules",
-    "read_positive_finite_float",
-    "read_finite_float_tuple",
-    "AlpaSimEvidence",
-    "AlpaSimEvidenceConfig",
-    "AlpaSimEvidenceThresholds",
-    "build_alpasim_evidence",
-    "load_alpasim_metrics",
-    "MujocoSimulator",
-    "GymnasiumSimulator",
-    "IsaacLabSimulator",
-    "GenesisSimulator",
-    "POLICY_TRACE_SCHEMA",
-    "TracePolicy",
-    "observation_digest_sha256",
-    "ReplayTimingSample",
-    "ReplayTimingRecording",
-    "ReplayScheduleEntry",
-    "LogicalReplayClock",
-    "WallClockReplayClock",
-    "build_replay_schedule",
-    "replay_schedule_duration_ms",
-    "resolve_command_time_ms",
-    "WorldBridgeCommandAck",
-    "WorldBridgeEvent",
-    "WorldBridgeEventType",
-    "WorldBridgeRolloutMode",
-    "WorldBridgeSessionSnapshot",
-    "WorldBridgeStatus",
-    "WorldBridgeTransitionRecord",
-    "WorldBridgeTransitionType",
-    "parse_worldd_ack_payload",
-    "parse_worldd_session_payload",
-    "parse_worldd_status_payload",
-    "validate_joint_command_payload",
-    "world_bridge_event_type_from_worldd",
-    "worldd_event_type_from_world_bridge",
-    "EVIDENCE_CODEC_MAX_BYTES",
-    "decode",
-    "digest",
-    "encode",
-    "identity",
-    "layout",
-    "relationship",
-    "EvidenceStore",
-    "CellStore",
-    "InitializationFailure",
-    "VERSION",
-    "initialize_restored_pose",
-    "snapshot",
-    "KILL_AFTER",
-    "LOG_CAP",
-    "RECEIPT_CAP",
-    "TIMEOUT",
-    "SupervisorInterrupted",
-    "select_timeout",
-    "sha",
-    "stop_group",
-    "supervise",
-    "write_receipt",
-]
-from .alpabridge_signal import (
-    dynamics_risk,
-    filtered_route_points,
-    route_waypoints_from_input,
-    route_waypoints_from_signal,
-    structured_hazards_from_input,
-    visibility_risk_from_cameras,
+from importlib import import_module
+
+_MODULES = (
+    "alpabridge", "alpabridge_camera_calibration", "alpabridge_contract",
+    "alpabridge_image", "alpabridge_inference_cache", "alpabridge_lifecycle",
+    "alpabridge_policy_registry", "alpabridge_route", "alpabridge_signal",
+    "alpabridge_trajectory_selector", "alpasim_metrics", "genesis", "gymnasium",
+    "isaaclab", "mujoco", "policy_trace", "replay_conformance", "robochallenge",
+    "robopad_cell_store", "robopad_competence", "robopad_evidence_codec",
+    "robopad_evidence_store", "robopad_initialization", "robopad_reference",
+    "robopad_reference_adapter", "robopad_reference_cache", "robopad_remaining",
+    "robopad_rollout", "robopad_state_evidence", "robopad_supervisor",
+    "smolvla_driving_contract", "teleop_replay_timing", "urdf_world_bridge",
+    "worldepisode",
 )
+
+
+def __getattr__(name: str):
+    for module_name in _MODULES:
+        module = import_module(f".{module_name}", __name__)
+        if hasattr(module, name):
+            value = getattr(module, name)
+            globals()[name] = value
+            return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    names = set(globals())
+    for module_name in _MODULES:
+        try:
+            module = import_module(f".{module_name}", __name__)
+        except ImportError:
+            continue
+        names.update(name for name in vars(module) if not name.startswith("_"))
+    return sorted(names)
+

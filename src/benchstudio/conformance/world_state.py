@@ -47,14 +47,37 @@ def validate_observation(observation: Observation) -> list[ValidationIssue]:
 def validate_worldepisode_record(record: dict[str, Any]) -> list[ValidationIssue]:
     """Validate a WorldEpisode-like record without importing the reference package."""
     issues: list[ValidationIssue] = []
-    for field in ("episode_id", "schema"):
-        if not isinstance(record.get(field), str) or not record[field]:
-            issues.append(ValidationIssue("missing_field", f"{field} is required", field))
+    if not isinstance(_episode_id(record), str) or not _episode_id(record):
+        issues.append(ValidationIssue("missing_field", "episode_id is required", "episode.episode_id"))
+    if not isinstance(record.get("schema"), str) or not record["schema"]:
+        issues.append(ValidationIssue("missing_field", "schema is required", "schema"))
     if "revision_id" in record and not isinstance(record["revision_id"], str):
         issues.append(
             ValidationIssue("invalid_revision", "revision_id must be a string", "revision_id")
         )
+    nested_revision = _revision_id(record)
+    if nested_revision is not None and not isinstance(nested_revision, str):
+        issues.append(
+            ValidationIssue(
+                "invalid_revision", "world_revision.world_revision_id must be a string",
+                "world_revision.world_revision_id",
+            )
+        )
     return issues
+
+
+def _episode_id(record: dict[str, Any]) -> Any:
+    nested = record.get("episode")
+    if isinstance(nested, dict) and "episode_id" in nested:
+        return nested.get("episode_id")
+    return record.get("episode_id")
+
+
+def _revision_id(record: dict[str, Any]) -> Any:
+    nested = record.get("world_revision")
+    if isinstance(nested, dict) and "world_revision_id" in nested:
+        return nested.get("world_revision_id")
+    return record.get("revision_id")
 
 
 def validate_worldepisode_contract(record: dict[str, Any]) -> list[ValidationIssue]:
@@ -215,9 +238,7 @@ def validate_worldepisode_contract(record: dict[str, Any]) -> list[ValidationIss
                     )
                 )
     world_revision = record.get("world_revision", {})
-    world_revision_id = (
-        world_revision.get("world_revision_id") if isinstance(world_revision, dict) else None
-    )
+    world_revision_id = _revision_id(record)
     if not isinstance(world_revision_id, str) or not re.fullmatch(
         r"sha256:[0-9a-f]{64}", world_revision_id
     ):

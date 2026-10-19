@@ -1,0 +1,26 @@
+{
+  "schema": "benchstudio_source_snapshot_v1",
+  "repository": "AlpaBridge",
+  "remote": "https://github.com/amtellezfernandez/AlpaBridge.git",
+  "commit": "27c96e6118a6d0137fe9b1774f227b07ef3d9aa2",
+  "tree": "0d72a01dfe45b12182e16338603923dd87891d3e",
+  "commit_subject": "research: add SmolVLA driving feasibility gates",
+  "resolution": "retained_local_source_manifest",
+  "files": {
+    "src/alpabridge/driver/camera_calibration.py": "f2ecef4834502681f0daa1f17b39acda238fd0a506f7f878a073080a077ea434",
+    "src/alpabridge/driver/driver_service.py": "d8db8d0dc6a296edcd7e52793b3b03da60414457b416a2cc3829926db1d81b6f",
+    "src/alpabridge/driver/policy_registry.py": "b4c4fb44bf95e296363866aec2f19ea096b817f837dd423ed7a39651108780da",
+    "src/alpabridge/neutral/alpasim_metrics.py": "4e55083695485f7405f1bc6992699b16a747665513bd24036ddd29e67acc182c",
+    "src/alpabridge/simulator/alpasim_contract.py": "a9c2e2cdd31d680f5d67f7512e45f14b3b95e81285c00adbe0570069126f461f",
+    "src/alpabridge/simulator/alpasim_signal.py": "3a18ae0293f8c9aa738a787f17fb9b0ba363833c790e61ec9fa1503ec6f04838",
+    "src/alpabridge/simulator/baseline_drivers.py": "6e2fca16528f78758b4af6ed62fee672ffbf880e7731253335488d37276d0250",
+    "src/alpabridge/simulator/camera_rectification.py": "d28b7e7c640f96193bbc5a2f3bf00e9f50ac8eb2cf5b924c64095ef9c92c96a0",
+    "src/alpabridge/simulator/environment.py": "1cb8028276ca34d7bee2f8e4b1787fad282ce7250ff776eca47554d81300d6c6",
+    "src/alpabridge/simulator/image_ops.py": "9004d96f5d9a8db9962195535aa42a3afbd411111457a73945f6bd702d401a34",
+    "src/alpabridge/simulator/inference_rate_cache.py": "ce5a75b469d7c12c35ea6d434ea78f1ea6d4b885b552cb11abd24fa91455d94b",
+    "src/alpabridge/simulator/lifecycle_service.py": "cd380c740ef5957d3f980188a3b726c33504cf1662c566684cf30bbf06f9cf24",
+    "src/alpabridge/simulator/mpc_planner.py": "bf67ad43c767bf81d3f07e45af1a3e7990b48d925cd776195311573043a3621d",
+    "src/alpabridge/simulator/smolvla_driving_contract.py": "e97d1a5608e9e3f7ab90724b6f79e8fff82f17953eef85d9aca1e15ef75d27f6",
+    "src/alpabridge/simulator/trajectory_selector.py": "5dfe55ef11fda051170b1b1753f262d439ab45e940d7bea679c80c0054228b50"
+  }
+}

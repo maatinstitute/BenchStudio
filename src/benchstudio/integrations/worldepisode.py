@@ -93,7 +93,9 @@ def _identity_diagnostics(
     expected_revision_id: str | None,
 ) -> tuple[dict[str, Any], ...]:
     diagnostics: list[dict[str, Any]] = []
-    if expected_episode_id is not None and payload.get("episode_id") != expected_episode_id:
+    episode_id = _nested_or_legacy(payload, "episode", "episode_id", "episode_id")
+    revision_id = _nested_or_legacy(payload, "world_revision", "world_revision_id", "revision_id")
+    if expected_episode_id is not None and episode_id != expected_episode_id:
         diagnostics.append(
             {
                 "code": "episode_identity_mismatch",
@@ -101,7 +103,7 @@ def _identity_diagnostics(
                 "message": "episode_id does not match the frozen evaluation identity",
             }
         )
-    if expected_revision_id is not None and payload.get("revision_id") != expected_revision_id:
+    if expected_revision_id is not None and revision_id != expected_revision_id:
         diagnostics.append(
             {
                 "code": "revision_identity_mismatch",
@@ -110,6 +112,13 @@ def _identity_diagnostics(
             }
         )
     return tuple(diagnostics)
+
+
+def _nested_or_legacy(payload: dict[str, Any], container: str, nested: str, legacy: str) -> Any:
+    value = payload.get(container)
+    if isinstance(value, dict) and nested in value:
+        return value.get(nested)
+    return payload.get(legacy)
 
 
 def _reference_issue_to_dict(issue: Any) -> dict[str, Any]:
