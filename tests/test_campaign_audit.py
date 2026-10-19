@@ -193,3 +193,26 @@ def test_campaign_audit_exposes_unverified_imported_source_gates():
         "external gate runtime is not verified: 'unverified'",
     )
     assert audit.to_dict()["source_gates_verified"] is False
+
+
+def test_campaign_audit_fail_closes_on_malformed_source_gate_values():
+    plan = CampaignPlanner(
+        run_id="malformed-source-gates",
+        scenario_id="task",
+        conditions=[{"x": 1}],
+        seeds=[1],
+        protocol={"external_gates": {"runtime": {"status": "verified"}}},
+    ).freeze()
+    audit = audit_campaign(
+        plan,
+        [
+            {
+                "attempt_id": plan.attempts[0].key.attempt_id,
+                "status": "completed",
+                "evidence_verified": True,
+            }
+        ],
+        claim_type=ClaimType.SINGLE_RUN_OUTCOME,
+    )
+    assert audit.source_gates_verified is False
+    assert "external gate runtime is not verified" in audit.source_gate_issues[0]

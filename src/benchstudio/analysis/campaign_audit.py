@@ -186,7 +186,10 @@ def _source_gate_audit(
         if not isinstance(name, str) or not name:
             issues.append("external gate names must be non-empty strings")
             continue
-        if value not in {True, "verified", "passed", "complete"}:
+        verified = value is True or (
+            isinstance(value, str) and value in {"verified", "passed", "complete"}
+        )
+        if not verified:
             issues.append(f"external gate {name} is not verified: {value!r}")
     return source_status, not issues, tuple(issues)
 
