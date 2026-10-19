@@ -29,6 +29,15 @@ from .world_scene_package import (
     validate_world_scene_package,
     world_scene_package_digest,
 )
+from .world_rollout import (
+    WorldRolloutCheckerProfile,
+    WorldRolloutDecisionRecord,
+    WorldRolloutImport,
+    WorldRolloutModuleSpec,
+    WorldRolloutTraceRecord,
+    build_world_rollout_campaign,
+    import_world_rollout_results,
+)
 
 __all__ += [
     "WorldScenePackageManifest",
@@ -39,4 +48,11 @@ __all__ += [
     "WorldScenePackageVersionRecord",
     "validate_world_scene_package",
     "world_scene_package_digest",
+    "WorldRolloutCheckerProfile",
+    "WorldRolloutDecisionRecord",
+    "WorldRolloutImport",
+    "WorldRolloutModuleSpec",
+    "WorldRolloutTraceRecord",
+    "build_world_rollout_campaign",
+    "import_world_rollout_results",
 ]

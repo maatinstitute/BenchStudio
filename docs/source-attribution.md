@@ -26,6 +26,15 @@
   `1d9cf5c2604409dc90ba231eb7d65f87a5edd76c914b938bf4c1587acf9683a5`.
   Registry listing also preserves latest-version selection, owner/tag/query
   filtering, runtime-target summaries, and metadata trust-level derivation.
+- `benchstudio.scenarios.world_rollout` ports the dependency-free URDF Studio
+  rollout campaign/checker-profile, artifact-digest, bounded NDJSON trace and
+  decision import, and decision-counting boundary from
+  `backend/models/world_rollouts.py` and `backend/services/world_rollouts.py`.
+  The external rollout CLI, worker queue, and simulator execution remain
+  external. Source digests:
+  `c1d2329aa26353ce9f3bc0b6495a76f93539bf90d37d5e1308f43e474a737b7f`,
+  `634985720723ecba023fbc48b99186a0c6d55f90cbbfe5cd791e5212d74e2407`, and
+  `71da3c8737d37bd2e116c9647c2a172dfb32dca32c05272dec2fa4c14aa0db91`.
 
 BenchStudio uses source-backed adapters and explicit independent boundaries for
 the following projects. Product runtimes are not vendored into this repository.
