@@ -70,7 +70,7 @@ has been evaluated.
 | CI workflow | Prepared locally, not uploaded | `.github/workflows/ci.yml` exists locally. GitHub rejected its upload because the current OAuth token lacks workflow scope; source and smoke tests are published. |
 | Python compatibility | Locally verified | Python 3.10.12 compiles and imports the package; the full pytest suite runs under the configured Python 3.13 environment; a subprocess smoke test imports core BenchStudio and parity analysis with NumPy explicitly blocked, proving optional integration dependencies are not eagerly required. |
 | Source provenance resolution | Implemented | AlpaBridge commit/tree identity and hashes for every ported source file are retained in `docs/source-snapshots/alpabridge-27c96e6.json`; `benchstudio.cli --verify-source-snapshot` and `scripts/verify_source_snapshot.py` independently check all 15 file hashes against a supplied local checkout because the current public branch no longer exposes that historical commit. |
-| Current verification snapshot | Verified locally | Full suite: 726 passed, 1 expected ZIP duplicate-entry warning, 27 subtests passed. |
+| Current verification snapshot | Verified locally | Full suite: 734 passed, 1 expected ZIP duplicate-entry warning, 27 subtests passed. |
 
 The repository remains private and proprietary. External benchmark scoring,
 physical safety, emergency stops, and hardware authorization are intentionally
