@@ -10,9 +10,10 @@ policy adapter -> temporal scheduler -> simulator adapter
 
 `Policy` and `Simulator` are the stable contracts. The scheduler records
 observation age, policy latency, action execution intervals, action prefix, and
-termination state. A future RoboChallenge adapter should translate the public
-benchmark interface while leaving safety checks, emergency stops, and official
-scoring on the platform side.
+termination state. The current RoboChallenge boundary is observe-only and
+transport-testable; it translates canonical public messages while leaving
+safety checks, emergency stops, execution, and official scoring on the platform
+side.
 
 Independent model runtimes may use the built-in `external_command` adapter. It
 invokes a supplied executable without a shell, sends a versioned JSON request
@@ -75,8 +76,10 @@ reported rather than inferred.
 Distributed workers use exclusive attempt leases and durable ledger commits.
 The policy parity harness compares canonical action-chunk digests across a
 reference and instrumented adapter. The RoboChallenge integration is
-observe-only: it validates opaque message digests and records acknowledgments,
-while execution, safety, and official scoring remain external.
+observe-only: it validates opaque message digests and records acknowledgments.
+The JSONL audit CLI and `examples/external_runtime/robochallenge_mock.py`
+exercise the message boundary without pretending to provide physics, safety,
+or official scoring. Those authorities remain external.
 
 The WorldEpisode integration is an adapter boundary: if the reference
 validator is installed, BenchStudio delegates to it; otherwise it returns a
