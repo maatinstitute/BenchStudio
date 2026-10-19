@@ -70,6 +70,15 @@ the following projects. Product runtimes are not vendored into this repository.
   contract checks, producer/environment action agreement, same-condition
   replay checks, and initial-state-only paired comparisons. NumPy is lazy and
   optional until hashed array records are validated.
+- Refinement/Refresh query recovery: `benchstudio.analysis.refinement_query_recovery`
+  ports the dependency-free direct-record query recovery boundary from
+  `experiments/tooling/analyze_execution.py` at the same upstream commit;
+  source digest `5dddcedec6bc6ef76dd207759cdb951afc0ec4d5bdce15be8811ad18f29634ea`
+  and source-test digest
+  `9582bce0d57d499f47a65ee48d79648ca5ced6d98ca318fad2c8762f8383c800`.
+  It preserves the fixed query/projection protocol, all-attempt wall-time
+  denominator, explicit zero-success undefined status, and unknown-field
+  behavior. Full rollout reconciliation and model execution remain external.
 - RoboPAD: `benchstudio.analysis.responsiveness` is a source-backed port of
   `experiments/metrics.py`, and `benchstudio.campaigns.outcome_plan` is a
   source-backed port of `experiments/outcome_plan.py`, from upstream commit

@@ -119,6 +119,13 @@ from .responsiveness import summarize as summarize_selective_responsiveness
 from .responsiveness import validate as validate_selective_responsiveness
 from .result_metrics import completed_outcomes
 from .result_metrics import summarize as summarize_refinement_results
+from .refinement_query_recovery import (
+    QUERY_RECOVERY_PROTOCOL,
+    audit_query_recovery,
+    canonical_sha as query_recovery_sha,
+    query_answer_check,
+    recover_direct_query,
+)
 from .robopad_exposure import LIMITATIONS, audit_splits, build_inventory, demo_family, family_id
 from .robopad_visual_balance import image_distance, match_candidates
 from .score_coverage import ScoreCoverage, audit_score_coverage
@@ -224,6 +231,11 @@ __all__ = [
     "summarize_transfer_fidelity",
     "load_transfer_records",
     "write_transfer_fidelity_report",
+    "QUERY_RECOVERY_PROTOCOL",
+    "audit_query_recovery",
+    "query_recovery_sha",
+    "query_answer_check",
+    "recover_direct_query",
     "PolicyParityReport",
     "ObservationParityReport",
     "PairedOutcomeSummary",
