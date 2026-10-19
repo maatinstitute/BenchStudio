@@ -18,6 +18,7 @@ from benchstudio.integrations import (
     RoboChallengeAction,
     RoboChallengeObservation,
     RoboChallengeObserveOnlyAdapter,
+    audit_robochallenge_wire_records,
     TracePolicy,
     observation_digest_sha256,
     preflight_worldepisode,
@@ -315,6 +316,27 @@ def test_robochallenge_adapter_audits_rejected_message_failures():
     assert audit.event_count == 0
     assert any("observation payload digest mismatch" in issue for issue in audit.issues)
     assert any("action execution timestamp must be non-negative" in issue for issue in audit.issues)
+
+
+def test_robochallenge_wire_audit_retains_malformed_records_and_continues():
+    payload = b"observation"
+    report = audit_robochallenge_wire_records(
+        [
+            {"event_type": "unknown"},
+            {
+                "event_type": "robochallenge_observation",
+                "observation_id": "obs-1",
+                "timestamp_ns": 10,
+                "payload_base64": "b2JzZXJ2YXRpb24=",
+                "payload_digest_sha256": hashlib.sha256(payload).hexdigest(),
+            },
+        ]
+    )
+    assert report["valid"] is False
+    assert report["event_count"] == 1
+    assert report["observation_count"] == 1
+    assert report["canonical_records"][0]["observation_id"] == "obs-1"
+    assert any("unsupported event_type" in issue for issue in report["issues"])
 
 
 def test_robochallenge_validation_rejects_malformed_runtime_types():
