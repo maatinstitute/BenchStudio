@@ -65,9 +65,10 @@ has been evaluated.
 | Refinement/Refresh query recovery | Implemented at analysis boundary | Source-backed fixed direct-record queries and projections preserve all-attempt timing denominators, zero-success undefined ratios, and unknown-field semantics; full rollout reconciliation remains external. |
 | Refinement/Refresh rollout manifest audit | Implemented at analysis boundary | Source-backed schedule/runtime digest binding, paired-cell completeness, completion totals, and aggregate-success reconciliation prevent surviving rows from redefining the planned population; action journals and rollout execution remain external. |
 | Refinement/Refresh rollout journal audit | Implemented at analysis boundary | Source-backed state hashes, keyed generation/noise cadence, action binding, terminal semantics, and completion records are independently reconciled; simulator execution remains external. |
+| Refinement/Refresh microbenchmark validation | Implemented at analysis boundary | Source-backed paired instrumentation allocation, action/timing parity, shared-noise, hook-count, and artifact checks are enforced before overhead analysis; model execution remains external. |
 | CI workflow | Prepared locally, not uploaded | `.github/workflows/ci.yml` exists locally. GitHub rejected its upload because the current OAuth token lacks workflow scope; source and smoke tests are published. |
 | Python compatibility | Locally verified | Python 3.10.12 compiles and imports the package; the full pytest suite runs under the configured Python 3.13 environment. |
-| Current verification snapshot | Verified locally | Full suite: 690 passed, 1 expected ZIP duplicate-entry warning, 27 subtests passed. |
+| Current verification snapshot | Verified locally | Full suite: 692 passed, 1 expected ZIP duplicate-entry warning, 27 subtests passed. |
 
 The repository remains private and proprietary. External benchmark scoring,
 physical safety, emergency stops, and hardware authorization are intentionally

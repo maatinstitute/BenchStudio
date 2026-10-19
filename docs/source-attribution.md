@@ -92,6 +92,15 @@ the following projects. Product runtimes are not vendored into this repository.
   content-addressed numeric states, keyed noise/generation cadence,
   producer-to-environment action binding, terminal flags, termination reasons,
   and completion records; simulator execution remains external.
+- Refinement/Refresh microbenchmark validation: `benchstudio.analysis.
+  refinement_microbenchmark` ports `validate_microbenchmark` from
+  `experiments/tooling/analyze_execution.py` at the same upstream commit;
+  source digest `5dddcedec6bc6ef76dd207759cdb951afc0ec4d5bdce15be8811ad18f29634ea`
+  and source-test digest
+  `9582bce0d57d499f47a65ee48d79648ca5ced6d98ca318fad2c8762f8383c800`.
+  It preserves declared allocation, paired on/off action and timing hashes,
+  shared-noise keys, instrumentation hook counts, action-artifact identity,
+  and measurement-only output selection; model execution remains external.
 - RoboPAD: `benchstudio.analysis.responsiveness` is a source-backed port of
   `experiments/metrics.py`, and `benchstudio.campaigns.outcome_plan` is a
   source-backed port of `experiments/outcome_plan.py`, from upstream commit
