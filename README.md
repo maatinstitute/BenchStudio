@@ -71,6 +71,15 @@ For a transport-only local mock, send JSONL requests to
 `examples/external_runtime/robochallenge_mock.py`; it emits the same canonical
 records without simulating physics or scoring.
 
+Run the checked-in observe/acknowledge/audit transport checkpoint with:
+
+```bash
+PYTHONPATH=src python examples/run_robochallenge_mock.py
+```
+
+This validates subprocess transport and payload identity only; execution and
+official scoring remain external.
+
 Audit a completed frozen campaign directory without constructing or rerunning
 its model and simulator adapters:
 
