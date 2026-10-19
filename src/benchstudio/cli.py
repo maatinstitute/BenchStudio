@@ -25,6 +25,7 @@ from .campaigns import (
     LocalArtifactStore,
     compile_campaign_spec,
     compile_counterfactual_plan,
+    compile_refinement_source_plan,
     load_campaign_document,
     load_frozen_campaign_plan,
     retrieve_campaign_archive,
@@ -70,6 +71,15 @@ def main() -> int:
         "--frozen-plan",
         type=Path,
         help="Load an existing frozen campaign plan for recovery or direct execution.",
+    )
+    parser.add_argument(
+        "--refinement-plan",
+        type=Path,
+        help="Import an upstream robopad.proposed_evaluation_plan without regenerating its schedule.",
+    )
+    parser.add_argument(
+        "--refinement-run-id",
+        help="Run identity for an imported Refinement/Refresh plan.",
     )
     parser.add_argument(
         "--plan-output",
@@ -459,6 +469,25 @@ def main() -> int:
             )
         print(json.dumps(payload, sort_keys=True))
         return 0 if report.equivalent else 2
+    if args.refinement_plan is not None:
+        if args.campaign_spec is not None or args.frozen_plan is not None:
+            parser.error("--refinement-plan cannot be combined with campaign or frozen-plan execution")
+        plan = compile_refinement_source_plan(args.refinement_plan, run_id=args.refinement_run_id)
+        plan.write(args.plan_output)
+        print(
+            json.dumps(
+                {
+                    "schema": "benchstudio.refinement_source_import.v1",
+                    "run_id": plan.run_id,
+                    "attempts": len(plan.attempts),
+                    "plan_digest_sha256": plan.plan_digest_sha256,
+                    "source_spec_sha256": plan.source_spec_sha256,
+                    "output": str(args.plan_output),
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
     if args.transfer_records is not None:
         report = summarize_transfer_fidelity(load_transfer_records(args.transfer_records))
         if args.transfer_output is not None:

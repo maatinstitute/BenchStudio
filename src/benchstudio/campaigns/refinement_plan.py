@@ -199,3 +199,133 @@ def compile_refinement_campaign_plan(
         source_spec_sha256=source_plan["scheduling"]["schedule_sha256"],
         protocol={"source": "refinement-refresh-robot-policies", "schema": source_plan["schema"]},
     )
+
+
+def load_refinement_source_plan(path: Path) -> tuple[dict[str, Any], str]:
+    """Load and verify an upstream Refinement/Refresh plan without rewriting it.
+
+    The source plan's schedule digest is authoritative.  The returned file
+    digest binds the imported artifact itself, so a later campaign cannot be
+    mistaken for the source plan that was actually inspected.
+    """
+    raw = path.read_bytes()
+    file_sha256 = hashlib.sha256(raw).hexdigest()
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("refinement source plan must be UTF-8 JSON") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("refinement source plan must be a mapping")
+    if payload.get("schema") != "robopad.proposed_evaluation_plan":
+        raise ValueError("unsupported refinement source plan schema")
+    schedule = payload.get("schedule")
+    scheduling = payload.get("scheduling")
+    if not isinstance(schedule, list) or not schedule:
+        raise ValueError("refinement source plan schedule must be a non-empty list")
+    if not isinstance(scheduling, dict):
+        raise ValueError("refinement source plan scheduling must be a mapping")
+    declared_schedule_sha256 = scheduling.get("schedule_sha256")
+    if not isinstance(declared_schedule_sha256, str) or len(declared_schedule_sha256) != 64:
+        raise ValueError("refinement source plan schedule digest is missing")
+    actual_schedule_sha256 = digest(schedule)
+    if declared_schedule_sha256 != actual_schedule_sha256:
+        raise ValueError(
+            "refinement source plan schedule digest mismatch: "
+            f"expected {declared_schedule_sha256}, got {actual_schedule_sha256}"
+        )
+    _validate_source_schedule(schedule)
+    return payload, file_sha256
+
+
+def compile_refinement_source_plan(
+    path: Path, *, run_id: str | None = None
+) -> FrozenCampaignPlan:
+    """Compile the exact schedule from an upstream plan into BenchStudio.
+
+    This is the consolidation path: it consumes the source artifact's rows
+    directly and never regenerates or reorders them.
+    """
+    source_plan, file_sha256 = load_refinement_source_plan(path)
+    schedule = source_plan["schedule"]
+    source_schedule_sha256 = source_plan["scheduling"]["schedule_sha256"]
+    resolved_run_id = run_id or f"refinement-source-{source_plan.get('design_revision', 'plan')}"
+    if not isinstance(resolved_run_id, str) or not resolved_run_id:
+        raise ValueError("run_id must be a non-empty string")
+    attempts: list[PlannedAttempt] = []
+    for index, row in enumerate(schedule):
+        identity = row["episode_identity"]
+        attempts.append(
+            PlannedAttempt(
+                key=AttemptKey(
+                    run_id=resolved_run_id,
+                    scenario_id=f"{identity['suite']}:{identity['task_id']}",
+                    pair_id=row["block_id"],
+                    condition_id=row["condition_id"],
+                    attempt_id=f"attempt-{index:06d}",
+                ),
+                task_seed=identity["initial_state_id"],
+                policy_seed=identity["policy_seed"],
+                metadata={
+                    "source_plan_file_sha256": file_sha256,
+                    "source_schedule_sha256": source_schedule_sha256,
+                    "source_schedule_index": row["schedule_index"],
+                    "source_planned_run_id": row["planned_run_id"],
+                    "source_row": dict(row),
+                },
+            )
+        )
+    protocol = {
+        "source": "refinement-refresh-robot-policies",
+        "schema": source_plan["schema"],
+        "source_plan_file_sha256": file_sha256,
+        "source_schedule_sha256": source_schedule_sha256,
+    }
+    plan_digest = _plan_digest(
+        resolved_run_id,
+        attempts,
+        paired_schedule=schedule,
+        source_spec_sha256=file_sha256,
+        protocol=protocol,
+    )
+    return FrozenCampaignPlan(
+        run_id=resolved_run_id,
+        attempts=tuple(attempts),
+        plan_digest_sha256=plan_digest,
+        paired_schedule=tuple(dict(row) for row in schedule),
+        source_spec_sha256=file_sha256,
+        protocol=protocol,
+    )
+
+
+def _validate_source_schedule(schedule: list[Any]) -> None:
+    required = {
+        "schedule_index",
+        "block_index",
+        "condition_index",
+        "block_id",
+        "episode_identity",
+        "condition_id",
+        "planned_run_id",
+        "h",
+        "denoising_steps",
+        "native_reference",
+    }
+    seen_indices: set[int] = set()
+    seen_runs: set[str] = set()
+    for index, row in enumerate(schedule):
+        if not isinstance(row, dict) or not required.issubset(row):
+            raise ValueError(f"refinement source schedule row {index} is incomplete")
+        if row["schedule_index"] != index or type(row["schedule_index"]) is not int:
+            raise ValueError("refinement source schedule indices must be contiguous")
+        if row["schedule_index"] in seen_indices:
+            raise ValueError("refinement source schedule contains duplicate indices")
+        seen_indices.add(row["schedule_index"])
+        planned_run_id = row["planned_run_id"]
+        if not isinstance(planned_run_id, str) or not planned_run_id or planned_run_id in seen_runs:
+            raise ValueError("refinement source schedule contains invalid planned_run_id values")
+        seen_runs.add(planned_run_id)
+        identity = row["episode_identity"]
+        if not isinstance(identity, dict) or not all(
+            key in identity for key in ("suite", "task_id", "initial_state_id", "policy_seed")
+        ):
+            raise ValueError(f"refinement source schedule row {index} has invalid identity")

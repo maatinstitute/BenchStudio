@@ -15,7 +15,9 @@ from benchstudio.campaigns import (
     SUITES,
     TASK_IDS,
     compile_refinement_campaign_plan,
+    compile_refinement_source_plan,
     digest,
+    load_refinement_source_plan,
     make_plan,
     write_plan,
 )
@@ -100,3 +102,27 @@ def test_source_schedule_adapts_to_frozen_campaign_plan():
     assert len(plan.paired_schedule) == 320
     assert plan.source_spec_sha256 == plan.attempts[0].metadata["source_schedule_sha256"]
     assert plan.attempts[0].key.attempt_id.endswith(plan.attempts[0].key.condition_id)
+
+
+def test_source_plan_import_preserves_upstream_rows_and_binds_file(tmp_path):
+    source_path = tmp_path / "upstream-plan.json"
+    write_plan(source_path, make_plan())
+    source, file_sha256 = load_refinement_source_plan(source_path)
+    imported = compile_refinement_source_plan(source_path, run_id="imported-refinement")
+
+    assert imported.run_id == "imported-refinement"
+    assert imported.source_spec_sha256 == file_sha256
+    assert list(imported.paired_schedule) == source["schedule"]
+    assert imported.attempts[0].metadata["source_plan_file_sha256"] == file_sha256
+    assert imported.attempts[0].metadata["source_planned_run_id"] == (
+        source["schedule"][0]["planned_run_id"]
+    )
+
+
+def test_source_plan_import_rejects_schedule_mutation(tmp_path):
+    source = make_plan()
+    source["schedule"][0]["h"] = 99
+    path = tmp_path / "mutated-plan.json"
+    path.write_text(json.dumps(source), encoding="utf-8")
+    with pytest.raises(ValueError, match="schedule digest mismatch"):
+        compile_refinement_source_plan(path)

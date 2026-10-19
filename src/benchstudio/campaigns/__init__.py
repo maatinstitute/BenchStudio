@@ -90,7 +90,9 @@ from .refinement_plan import (
     block_id,
     canonical_json,
     compile_refinement_campaign_plan,
+    compile_refinement_source_plan,
     digest,
+    load_refinement_source_plan,
     make_plan,
     write_plan,
 )
@@ -167,6 +169,8 @@ __all__ = [
     "RESET_HORIZON",
     "canonical_json",
     "compile_refinement_campaign_plan",
+    "compile_refinement_source_plan",
+    "load_refinement_source_plan",
     "digest",
     "block_id",
     "make_plan",

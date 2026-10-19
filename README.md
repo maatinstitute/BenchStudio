@@ -285,6 +285,21 @@ This is a deterministic adapter and simulator checkpoint for exercising the
 campaign/evidence path; it is not a claim about a downloaded model checkpoint
 or benchmark performance.
 
+For the Refinement/Refresh research campaign, BenchStudio can import the
+upstream frozen plan directly instead of regenerating its schedule:
+
+```bash
+python -m benchstudio.cli \
+  --refinement-plan /path/to/pilot_evaluation.json \
+  --refinement-run-id smolvla-pilot \
+  --plan-output /tmp/smolvla-pilot-benchstudio-plan.json
+```
+
+The importer verifies the upstream `robopad.proposed_evaluation_plan` schema,
+the canonical schedule digest, contiguous identities, and duplicate planned
+runs. The resulting plan records the source file digest and retains every
+source schedule row for independent audit.
+
 Compare two or more completed or partially completed frozen campaigns directly
 from their evidence directories. Missing attempts stay missing, and malformed
 attempt summaries are reported as execution failures:
