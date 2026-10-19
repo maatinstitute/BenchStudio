@@ -46,6 +46,11 @@ verifies commit `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2` and tree
 does not expose that historical commit, so the snapshot manifest is the
 authoritative provenance record rather than an unresolved GitHub URL.
 
+The ordinary `CampaignExecutor` consumes an optional frozen
+`protocol.worldepisode` binding and runs the source-backed preflight before
+scheduling attempts; the executor owns scheduling while WorldEpisode remains
+the canonical semantic validator.
+
 - WorldEpisode / `leWorldDataset`: the optional validator binding follows the
   published validator/preflight boundary. The replay fixture identifies
   `tools/replay_adapter_conformance.py` as its source basis and deliberately

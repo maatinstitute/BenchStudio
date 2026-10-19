@@ -61,6 +61,54 @@ def test_campaign_executor_uses_frozen_attempts_and_resumes_idempotently(tmp_pat
     }
 
 
+def test_campaign_executor_preflights_frozen_nested_worldepisode_binding(tmp_path):
+    plan = CampaignPlanner(
+        run_id="worldepisode-run",
+        scenario_id="mock-task",
+        conditions=[{"x": 1}],
+        seeds=[7],
+        protocol={
+            "worldepisode": {
+                "record": {
+                    "schema": "worldepisode",
+                    "episode": {"episode_id": "episode-1"},
+                    "world_revision": {"world_revision_id": "rev-1"},
+                },
+                "expected_episode_id": "episode-1",
+                "expected_revision_id": "rev-1",
+            }
+        },
+    ).freeze()
+    executor = CampaignExecutor(
+        plan, tmp_path / "campaign", lambda _: MockPolicy(), lambda _: MockSimulator()
+    )
+    assert executor.run().committed_attempt_ids == ("attempt-000000",)
+
+
+def test_campaign_executor_rejects_invalid_frozen_worldepisode_binding(tmp_path):
+    plan = CampaignPlanner(
+        run_id="invalid-worldepisode-run",
+        scenario_id="mock-task",
+        conditions=[{"x": 1}],
+        seeds=[7],
+        protocol={
+            "worldepisode": {
+                "record": {
+                    "schema": "worldepisode",
+                    "episode": {"episode_id": "episode-1"},
+                    "world_revision": {"world_revision_id": "rev-1"},
+                },
+                "expected_episode_id": "episode-2",
+                "expected_revision_id": "rev-1",
+            }
+        },
+    ).freeze()
+    with pytest.raises(ValueError, match="WorldEpisode preflight failed"):
+        CampaignExecutor(
+            plan, tmp_path / "campaign", lambda _: MockPolicy(), lambda _: MockSimulator()
+        )
+
+
 def test_campaign_executor_can_load_the_frozen_plan_from_disk(tmp_path):
     plan = CampaignPlanner(
         run_id="file-plan", scenario_id="mock-task", conditions=[{"x": 1}], seeds=[3]

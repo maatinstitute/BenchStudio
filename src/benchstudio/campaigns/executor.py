@@ -114,6 +114,7 @@ class CampaignExecutor:
                     "campaign model requirements are not satisfied: " + "; ".join(issues)
                 )
         _validate_execution_safety(plan)
+        _validate_worldepisode_protocol(plan)
         planned_ids = {attempt.key.attempt_id for attempt in plan.attempts}
         unknown = self.cancelled_attempts - planned_ids
         if unknown:
@@ -582,6 +583,33 @@ def _validate_execution_safety(plan: FrozenCampaignPlan) -> None:
             raise ValueError(
                 f"physical environment {environment_id} must disable automatic retries"
             )
+
+
+def _validate_worldepisode_protocol(plan: FrozenCampaignPlan) -> None:
+    """Apply the frozen WorldEpisode contract before any attempt is scheduled."""
+    protocol = plan.protocol or {}
+    binding = protocol.get("worldepisode")
+    if binding is None:
+        return
+    if not isinstance(binding, dict):
+        raise ValueError("frozen plan worldepisode binding must be a mapping")
+    record = binding.get("record")
+    if not isinstance(record, dict):
+        raise ValueError("frozen plan worldepisode binding requires a record mapping")
+    from ..integrations.worldepisode import preflight_worldepisode
+
+    result = preflight_worldepisode(
+        record,
+        require_reference=binding.get("require_reference", False) is True,
+        strict=binding.get("strict", False) is True,
+        expected_episode_id=binding.get("expected_episode_id"),
+        expected_revision_id=binding.get("expected_revision_id"),
+    )
+    if not result.valid:
+        raise ValueError(
+            "frozen plan WorldEpisode preflight failed: "
+            + "; ".join(str(item.get("message", item)) for item in result.diagnostics)
+        )
 
 
 def _resource_budget(plan: FrozenCampaignPlan) -> ResourceBudget | None:
