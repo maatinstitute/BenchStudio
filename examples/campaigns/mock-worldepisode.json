@@ -1,0 +1,55 @@
+{
+  "schema": "benchstudio.campaign.v1",
+  "experiment": {
+    "name": "mock-worldepisode-checkpoint",
+    "protocol_revision": "v1",
+    "mode": "controlled_comparison"
+  },
+  "model": {
+    "adapter": "mock",
+    "architecture": "deterministic-smoke"
+  },
+  "task": {
+    "benchmark": "benchstudio-smoke",
+    "task_id": "mock-task",
+    "task_revision": "v1"
+  },
+  "environments": [
+    {
+      "id": "mock-simulation",
+      "kind": "simulator"
+    }
+  ],
+  "worldepisode": {
+    "record": {
+      "schema": "worldepisode",
+      "episode": {
+        "episode_id": "mock-episode-1"
+      },
+      "world_revision": {
+        "world_revision_id": "mock-revision-1"
+      }
+    },
+    "expected_episode_id": "mock-episode-1",
+    "expected_revision_id": "mock-revision-1"
+  },
+  "evaluation": {
+    "initial_conditions": "frozen",
+    "seeds": [100, 101],
+    "conditions": [
+      {
+        "id": "baseline",
+        "denoising_steps": 10,
+        "action_prefix": 2
+      },
+      {
+        "id": "low_refinement",
+        "denoising_steps": 2,
+        "action_prefix": 2
+      }
+    ],
+    "paired": true,
+    "missing_outcomes": "preserve",
+    "confirmation_plan": "frozen"
+  }
+}

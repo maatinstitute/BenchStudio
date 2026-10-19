@@ -65,6 +65,17 @@ Compile a declarative campaign before execution (the CLI input is JSON):
 python -m benchstudio.cli --campaign-spec campaign.json --plan-output campaign-plan.json
 ```
 
+An end-to-end frozen campaign example, including nested WorldEpisode identity
+binding, is provided at
+`examples/campaigns/mock-worldepisode.json`:
+
+```bash
+python -m benchstudio.cli \
+  --campaign-spec examples/campaigns/mock-worldepisode.json \
+  --execute-mock --workers 2 --audit \
+  --output runs/mock-worldepisode
+```
+
 Each run emits `manifest.json`, `episodes.jsonl`, and `summary.json`.
 
 Matched instrumented-versus-baseline timing can be persisted as

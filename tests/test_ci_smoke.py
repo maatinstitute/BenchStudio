@@ -13,6 +13,15 @@ def test_frozen_campaign_ci_smoke_is_end_to_end(tmp_path):
             "model": {"adapter": "mock"},
             "task": {"task_id": "mock-task"},
             "environments": [{"id": "mock", "kind": "simulator"}],
+            "worldepisode": {
+                "record": {
+                    "schema": "worldepisode",
+                    "episode": {"episode_id": "ci-episode"},
+                    "world_revision": {"world_revision_id": "ci-revision"},
+                },
+                "expected_episode_id": "ci-episode",
+                "expected_revision_id": "ci-revision",
+            },
             "evaluation": {
                 "seeds": [10, 11],
                 "paired": True,

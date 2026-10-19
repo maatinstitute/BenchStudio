@@ -38,6 +38,7 @@ def compile_campaign_spec(spec: dict[str, Any]) -> FrozenCampaignPlan:
         raise ValueError("evaluation.conditions must be a non-empty list of mappings")
     _validate_condition_controls(conditions)
     _validate_protocol_sections(spec)
+    _validate_worldepisode_binding(spec)
     if evaluation.get("paired") is not True:
         raise ValueError("evaluation.paired must be true for this compiler")
     if evaluation.get("missing_outcomes") not in (None, "preserve"):
@@ -222,6 +223,27 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
             raise ValueError(f"{section} must be a mapping of boolean controls")
 
 
+def _validate_worldepisode_binding(spec: dict[str, Any]) -> None:
+    binding = spec.get("worldepisode")
+    if binding is None:
+        return
+    if not isinstance(binding, dict):
+        raise ValueError("worldepisode must be a mapping")
+    record = binding.get("record")
+    if not isinstance(record, dict):
+        raise ValueError("worldepisode.record must be a mapping")
+    if not isinstance(record.get("schema"), str) or not record["schema"]:
+        raise ValueError("worldepisode.record.schema must be a non-empty string")
+    for field in ("expected_episode_id", "expected_revision_id"):
+        value = binding.get(field)
+        if value is not None and (not isinstance(value, str) or not value):
+            raise ValueError(f"worldepisode.{field} must be a non-empty string")
+    for field in ("require_reference", "strict"):
+        value = binding.get(field, False)
+        if not isinstance(value, bool):
+            raise ValueError(f"worldepisode.{field} must be boolean")
+
+
 def _validate_resource_budget(evaluation: dict[str, Any]) -> None:
     budget = evaluation.get("resource_budget", {})
     if not isinstance(budget, dict):
@@ -359,6 +381,7 @@ def _protocol_record(spec: dict[str, Any]) -> dict[str, Any]:
     return {
         "schema": spec["schema"],
         "protocol": spec.get("experiment", {}).get("protocol_revision"),
+        "worldepisode": spec.get("worldepisode"),
         "P": {
             "experiment": spec.get("experiment", {}),
             "evaluation": spec.get("evaluation", {}),

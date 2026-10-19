@@ -289,6 +289,54 @@ def test_campaign_spec_freezes_enabled_environment_identity_and_protocol():
     assert plan.protocol["S"]["task"]["task_revision"] == "rev-1"
 
 
+def test_campaign_spec_freezes_worldepisode_binding_for_executor_preflight():
+    plan = compile_campaign_spec(
+        {
+            "schema": "benchstudio.campaign.v1",
+            "experiment": {"name": "worldepisode-spec"},
+            "task": {"task_id": "task"},
+            "environments": [{"id": "sim", "kind": "simulator"}],
+            "worldepisode": {
+                "record": {
+                    "schema": "worldepisode",
+                    "episode": {"episode_id": "episode-1"},
+                    "world_revision": {"world_revision_id": "rev-1"},
+                },
+                "expected_episode_id": "episode-1",
+                "expected_revision_id": "rev-1",
+            },
+            "evaluation": {
+                "seeds": [1],
+                "paired": True,
+                "conditions": [{"id": "baseline", "action_prefix": 1}],
+            },
+        }
+    )
+    assert plan.protocol["worldepisode"]["expected_episode_id"] == "episode-1"
+
+
+def test_campaign_spec_rejects_malformed_worldepisode_binding():
+    base = {
+        "schema": "benchstudio.campaign.v1",
+        "experiment": {"name": "bad-worldepisode"},
+        "task": {"task_id": "task"},
+        "environments": [{"id": "sim", "kind": "simulator"}],
+        "evaluation": {"seeds": [1], "paired": True, "conditions": [{"x": 1}]},
+    }
+    with pytest.raises(ValueError, match="worldepisode.record"):
+        compile_campaign_spec({**base, "worldepisode": {"record": []}})
+    with pytest.raises(ValueError, match="expected_episode_id"):
+        compile_campaign_spec(
+            {
+                **base,
+                "worldepisode": {
+                    "record": {"schema": "worldepisode"},
+                    "expected_episode_id": 1,
+                },
+            }
+        )
+
+
 def test_campaign_spec_freezes_execution_semantics_in_protocol_envelope():
     plan = compile_campaign_spec(
         {
