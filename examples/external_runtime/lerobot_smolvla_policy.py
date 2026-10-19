@@ -24,9 +24,33 @@ import sys
 from typing import Any
 
 
-def _error(message: str) -> None:
-    print(json.dumps({"schema": "benchstudio.policy_error.v1", "error": message}), file=sys.stderr)
+def _error(message: str, *, code: str = "external_runtime_error") -> None:
+    print(
+        json.dumps(
+            {"schema": "benchstudio.policy_error.v1", "code": code, "error": message}
+        ),
+        file=sys.stderr,
+    )
     raise SystemExit(2)
+
+
+checkpoint = os.environ.get("BENCHSTUDIO_LEROBOT_CHECKPOINT")
+if not checkpoint:
+    _error(
+        "BENCHSTUDIO_LEROBOT_CHECKPOINT must name a local checkpoint directory",
+        code="checkpoint_missing",
+    )
+if not os.path.isdir(checkpoint):
+    _error(
+        "BENCHSTUDIO_LEROBOT_CHECKPOINT does not name an existing directory",
+        code="checkpoint_unavailable",
+    )
+checkpoint_sha256 = os.environ.get("BENCHSTUDIO_LEROBOT_CHECKPOINT_SHA256")
+if not isinstance(checkpoint_sha256, str) or re.fullmatch(r"[0-9a-f]{64}", checkpoint_sha256) is None:
+    _error(
+        "BENCHSTUDIO_LEROBOT_CHECKPOINT_SHA256 must be lowercase SHA-256 hex",
+        code="checkpoint_digest_invalid",
+    )
 
 
 try:
@@ -35,22 +59,19 @@ try:
 except ModuleNotFoundError as exc:  # pragma: no cover - exercised in the owning runtime
     _error(
         "LeRobot SmolVLA runtime is unavailable; install the external runtime "
-        f"before starting this process ({exc.name})"
+        f"before starting this process ({exc.name})",
+        code="runtime_unavailable",
     )
 
-
-checkpoint = os.environ.get("BENCHSTUDIO_LEROBOT_CHECKPOINT")
-if not checkpoint:
-    _error("BENCHSTUDIO_LEROBOT_CHECKPOINT must name a local checkpoint directory")
-checkpoint_sha256 = os.environ.get("BENCHSTUDIO_LEROBOT_CHECKPOINT_SHA256")
-if not isinstance(checkpoint_sha256, str) or re.fullmatch(r"[0-9a-f]{64}", checkpoint_sha256) is None:
-    _error("BENCHSTUDIO_LEROBOT_CHECKPOINT_SHA256 must be lowercase SHA-256 hex")
 
 try:
     policy = SmolVLAPolicy.from_pretrained(checkpoint)
     policy.eval()
 except Exception as exc:  # pragma: no cover - depends on external checkpoint/runtime
-    _error(f"could not load SmolVLA checkpoint: {type(exc).__name__}: {exc}")
+    _error(
+        f"could not load SmolVLA checkpoint: {type(exc).__name__}: {exc}",
+        code="checkpoint_load_failed",
+    )
 
 
 def _tensorize(value: Any) -> Any:
