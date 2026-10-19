@@ -159,6 +159,9 @@ python -m benchstudio.cli --fetch-artifact SHA256 \
 When comparing frozen simulation and physical campaign directories, add
 `--transfer-backends SIMULATION=PHYSICAL` to include paired transfer-fidelity
 statistics in the comparison report. Missing physical outcomes remain missing.
+The comparison also verifies that the frozen task, model, execution semantics,
+conditions, seeds, and initial-state identities match; backend declarations may
+differ because that is the transfer being measured.
 
 Model runtimes can also be kept outside BenchStudio behind the registered
 `external_command` adapter. It sends one JSON request per inference and

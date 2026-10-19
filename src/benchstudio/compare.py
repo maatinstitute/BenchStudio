@@ -8,6 +8,7 @@ from typing import Any
 
 from .analysis.paired import clopper_pearson_interval
 from .analysis.transfer import summarize_transfer_fidelity
+from .campaigns.frozen_plan import FrozenCampaignPlan, load_frozen_campaign_plan
 
 COMPARISON_SCHEMA = "benchstudio_comparison_report_v1"
 
@@ -56,16 +57,29 @@ def build_campaign_comparison_report(
     """
     reports: dict[str, list[dict[str, Any] | None]] = {}
     errors: dict[str, list[str]] = {}
+    plans: dict[str, FrozenCampaignPlan] = {}
     for backend, root in backend_campaigns.items():
         backend_reports, backend_errors = _load_campaign_reports(root)
         reports[backend] = backend_reports
         if backend_errors:
             errors[backend] = backend_errors
+        try:
+            plans[backend] = load_frozen_campaign_plan(root / "campaign-plan.json")
+        except ValueError as exc:
+            errors.setdefault(backend, []).append(f"frozen campaign plan is invalid: {exc}")
+    compatibility_issues = _plan_compatibility_issues(plans)
+    if compatibility_issues:
+        errors["plan_compatibility"] = compatibility_issues
     report = build_comparison_report(
         scenario_id=scenario_id,
         per_backend_reports=reports,
         per_backend_errors=errors,
     )
+    report["plan_compatibility"] = {
+        "valid": not compatibility_issues,
+        "issues": compatibility_issues,
+        "backends": sorted(plans),
+    }
     if transfer_backends is not None:
         simulation_backend, physical_backend = transfer_backends
         if simulation_backend not in reports or physical_backend not in reports:
@@ -82,6 +96,55 @@ def build_campaign_comparison_report(
             ).to_dict()
         report["errors"] = {k: v for k, v in errors.items() if v}
     return report
+
+
+def _plan_compatibility_issues(plans: dict[str, FrozenCampaignPlan]) -> list[str]:
+    """Check that compared backends share the frozen experiment semantics.
+
+    Environment declarations are intentionally excluded: transfer comparisons
+    are expected to differ in backend and calibration. Task, model, execution,
+    condition, seed, and initial-state identities must remain matched.
+    """
+    if len(plans) < 2:
+        return []
+    names = sorted(plans)
+    reference_name = names[0]
+    reference = plans[reference_name]
+    reference_signature = _comparison_plan_signature(reference)
+    issues: list[str] = []
+    for name in names[1:]:
+        candidate = plans[name]
+        if candidate.run_id != reference.run_id:
+            issues.append(
+                f"{name}: run_id {candidate.run_id!r} does not match "
+                f"{reference_name}: {reference.run_id!r}"
+            )
+        signature = _comparison_plan_signature(candidate)
+        if signature["protocol"] != reference_signature["protocol"]:
+            issues.append(f"{name}: frozen task/model/execution protocol does not match {reference_name}")
+        if signature["attempts"] != reference_signature["attempts"]:
+            issues.append(f"{name}: frozen condition/seed/initial-state schedule does not match {reference_name}")
+    return issues
+
+
+def _comparison_plan_signature(plan: FrozenCampaignPlan) -> dict[str, Any]:
+    protocol = plan.protocol or {}
+    protocol_copy = json.loads(json.dumps(protocol, sort_keys=True))
+    section = protocol_copy.get("S")
+    if isinstance(section, dict):
+        section.pop("environments", None)
+    attempts = sorted(
+        (
+            attempt.key.scenario_id,
+            attempt.key.pair_id,
+            attempt.key.condition_id,
+            attempt.task_seed,
+            attempt.policy_seed,
+            json.dumps(attempt.metadata.get("condition", {}), sort_keys=True),
+        )
+        for attempt in plan.attempts
+    )
+    return {"protocol": protocol_copy, "attempts": attempts}
 
 
 def _load_campaign_reports(root: Path) -> tuple[list[dict[str, Any] | None], list[str]]:

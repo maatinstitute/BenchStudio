@@ -204,3 +204,35 @@ def test_campaign_comparison_adds_transfer_fidelity_for_named_backends(tmp_path)
     transfer = report["transfer_fidelity"]
     assert transfer["schema"] == "benchstudio_transfer_fidelity_report_v1"
     assert transfer["success_gap_physical_minus_simulation"] == -1.0
+
+
+def test_campaign_comparison_rejects_mismatched_frozen_semantics(tmp_path):
+    def spec(name, seed):
+        return compile_campaign_spec(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": name},
+                "model": {"adapter": "mock"},
+                "task": {"task_id": "task", "task_revision": "v1"},
+                "environments": [{"id": "sim", "kind": "simulator"}],
+                "evaluation": {
+                    "seeds": [seed],
+                    "paired": True,
+                    "conditions": [{"id": "base", "action_prefix": 1}],
+                },
+            }
+        )
+
+    roots = {"simulation": tmp_path / "simulation", "physical": tmp_path / "physical"}
+    plans = {"simulation": spec("matched", 1), "physical": spec("matched", 2)}
+    for name, plan in plans.items():
+        root = roots[name]
+        (root / "attempts").mkdir(parents=True)
+        (root / "campaign-plan.json").write_text(json.dumps(plan.to_dict()), encoding="utf-8")
+    report = build_campaign_comparison_report(
+        scenario_id="task",
+        backend_campaigns=roots,
+        transfer_backends=("simulation", "physical"),
+    )
+    assert report["plan_compatibility"]["valid"] is False
+    assert any("schedule does not match" in item for item in report["errors"]["plan_compatibility"])
