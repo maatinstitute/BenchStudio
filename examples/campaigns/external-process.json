@@ -1,0 +1,44 @@
+{
+  "schema": "benchstudio.campaign.v1",
+  "experiment": {
+    "name": "external-process-checkpoint",
+    "protocol_revision": "v1"
+  },
+  "model": {
+    "adapter": "smolvla",
+    "architecture": "declared-external-policy",
+    "adapter_config": {
+      "command": ["python", "examples/external_runtime/mock_policy.py"],
+      "timeout_s": 5
+    }
+  },
+  "task": {
+    "task_id": "external-process-task",
+    "task_revision": "example-v1"
+  },
+  "environments": [
+    {
+      "id": "external-simulator",
+      "kind": "simulator",
+      "adapter": "external_command",
+      "adapter_config": {
+        "command": ["python", "examples/external_runtime/mock_simulator.py"],
+        "timeout_s": 5
+      }
+    }
+  ],
+  "evaluation": {
+    "seeds": [7, 8],
+    "conditions": [
+      {
+        "id": "baseline",
+        "denoising_steps": 2,
+        "action_prefix": 1,
+        "max_episode_steps": 3
+      }
+    ],
+    "paired": true,
+    "missing_outcomes": "preserve",
+    "confirmation_plan": "frozen"
+  }
+}

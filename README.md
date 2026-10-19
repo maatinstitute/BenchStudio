@@ -178,6 +178,19 @@ adapters. These names identify the declared VLA protocol and capability profile;
 checkpoint loading, preprocessing, and accelerator ownership remain in the
 external process, so no model weights are downloaded implicitly.
 
+The process-backed registry path is runnable without a model package or
+simulator installation:
+
+```bash
+python -m benchstudio.cli \
+  --campaign-spec examples/campaigns/external-process.json \
+  --execute-registry --workers 2 --audit \
+  --output runs/external-process
+```
+
+The example programs under `examples/external_runtime/` are deliberately small
+protocol fixtures; they do not represent model quality or physics fidelity.
+
 External simulators can use the simulator registry's `external_command`
 adapter as a persistent JSON-line process. It supports `reset`, `observe`,
 `step`, and `close` messages while leaving physics and safety authority in
