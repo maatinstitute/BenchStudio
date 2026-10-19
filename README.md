@@ -191,6 +191,12 @@ python -m benchstudio.cli \
 The example programs under `examples/external_runtime/` are deliberately small
 protocol fixtures; they do not represent model quality or physics fidelity.
 
+The approved physical-boundary example is
+`examples/campaigns/approved-physical-boundary.json`. It includes a disabled
+physical environment with explicit authorization and no-retry declarations;
+compilation schedules only the enabled simulator until a separate approved
+protocol enables hardware.
+
 External simulators can use the simulator registry's `external_command`
 adapter as a persistent JSON-line process. It supports `reset`, `observe`,
 `step`, and `close` messages while leaving physics and safety authority in

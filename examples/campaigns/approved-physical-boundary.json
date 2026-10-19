@@ -1,0 +1,44 @@
+{
+  "schema": "benchstudio.campaign.v1",
+  "experiment": {
+    "name": "approved-physical-boundary",
+    "protocol_revision": "v1",
+    "mode": "controlled_comparison"
+  },
+  "model": {
+    "adapter": "mock",
+    "architecture": "boundary-checkpoint"
+  },
+  "task": {
+    "task_id": "boundary-task",
+    "task_revision": "example-v1"
+  },
+  "environments": [
+    {
+      "id": "approved-simulation",
+      "kind": "simulator"
+    },
+    {
+      "id": "approved-robot",
+      "kind": "physical",
+      "enabled": false,
+      "requires_authorization": true,
+      "retry_policy": "none",
+      "auto_retry": false
+    }
+  ],
+  "evaluation": {
+    "initial_conditions": "frozen",
+    "seeds": [100],
+    "conditions": [
+      {
+        "id": "baseline",
+        "denoising_steps": 2,
+        "action_prefix": 1
+      }
+    ],
+    "paired": true,
+    "missing_outcomes": "preserve",
+    "confirmation_plan": "frozen"
+  }
+}
