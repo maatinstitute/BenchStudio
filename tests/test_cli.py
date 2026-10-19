@@ -52,6 +52,41 @@ def test_cli_verifies_robopad_outcome_plan(monkeypatch, tmp_path, capsys):
     assert len(output["source_file_sha256"]) == 64
 
 
+def test_cli_verifies_source_snapshot(monkeypatch, tmp_path, capsys):
+    source_root = tmp_path / "source"
+    source_file = source_root / "module.py"
+    source_root.mkdir()
+    source_file.write_text("value = 1\n", encoding="utf-8")
+    import hashlib
+
+    manifest = tmp_path / "snapshot.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "schema": "benchstudio_source_snapshot_v1",
+                "repository": "example",
+                "commit": "abc",
+                "files": {"module.py": hashlib.sha256(source_file.read_bytes()).hexdigest()},
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--verify-source-snapshot",
+            str(manifest),
+            "--source-root",
+            str(source_root),
+        ],
+    )
+    assert main() == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["valid"] is True
+    assert report["checked_files"] == 1
+
+
 def test_cli_executes_independently_loaded_frozen_plan(monkeypatch, tmp_path, capsys):
     from benchstudio.campaigns import CampaignPlanner
 

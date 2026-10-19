@@ -38,6 +38,7 @@ from .mock import MockPolicy, MockSimulator
 from .model_adapters import default_model_registry
 from .runner import RunConfig, run_episodes
 from .scenarios import verify_scenario_archive
+from .source_snapshot import verify_source_snapshot
 
 
 def _positive_int(value: str) -> int:
@@ -86,6 +87,16 @@ def main() -> int:
         "--outcome-plan",
         type=Path,
         help="Verify a RoboPAD smolvla_outcome_plan_v1 preflight artifact.",
+    )
+    parser.add_argument(
+        "--verify-source-snapshot",
+        type=Path,
+        help="Verify a retained source-snapshot manifest against --source-root.",
+    )
+    parser.add_argument(
+        "--source-root",
+        type=Path,
+        help="Local checkout used by --verify-source-snapshot.",
     )
     parser.add_argument(
         "--plan-output",
@@ -510,6 +521,16 @@ def main() -> int:
             )
         )
         return 0
+    if args.verify_source_snapshot is not None:
+        if args.source_root is None:
+            parser.error("--verify-source-snapshot requires --source-root")
+        try:
+            report = verify_source_snapshot(args.verify_source_snapshot, args.source_root)
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            print(json.dumps({"valid": False, "error": f"{type(exc).__name__}: {exc}"}))
+            return 2
+        print(json.dumps(report, sort_keys=True))
+        return 0 if report["valid"] else 2
     if args.transfer_records is not None:
         report = summarize_transfer_fidelity(load_transfer_records(args.transfer_records))
         if args.transfer_output is not None:
