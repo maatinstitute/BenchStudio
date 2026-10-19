@@ -293,6 +293,15 @@ It exercises frozen-plan compatibility, paired campaign loading, and transfer
 gap analysis. Both backends are fixtures; execution, physics, and scoring are
 external.
 
+Exercise resumable frozen-plan recovery with:
+
+```bash
+PYTHONPATH=src python examples/run_mock_recovery.py --output runs/mock-recovery
+```
+
+The checkpoint runs a partial batch, resumes the same plan, and reports
+committed, skipped, missing, and independently audited attempts.
+
 Missing outcomes remain explicit and cause a non-zero validation status.
 
 Counterfactual branch records can be summarized similarly:
