@@ -87,6 +87,13 @@ The end-to-end frozen-campaign CI gate can be run directly with:
 python -m pytest -q tests/test_ci_smoke.py
 ```
 
+Run the complete local CI-equivalent gate, including the full suite and
+cross-version-friendly bytecode compilation, with:
+
+```bash
+bash scripts/verify_local_ci.sh
+```
+
 Compile a declarative campaign before execution (the CLI input is JSON):
 
 ```bash
