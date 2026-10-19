@@ -191,6 +191,14 @@ python -m benchstudio.cli \
 The example programs under `examples/external_runtime/` are deliberately small
 protocol fixtures; they do not represent model quality or physics fidelity.
 
+For a real SmolVLA checkpoint, run
+`examples/external_runtime/lerobot_smolvla_policy.py` from the separate
+LeRobot environment that owns the checkpoint. Set
+`BENCHSTUDIO_LEROBOT_CHECKPOINT` to a local checkpoint directory and provide a
+frozen `observation.payload.policy_batch` mapping. BenchStudio does not install
+LeRobot, download weights, or infer image preprocessing; those choices remain
+owned by the external runtime and must be frozen in the campaign protocol.
+
 The approved physical-boundary example is
 `examples/campaigns/approved-physical-boundary.json`. It includes a disabled
 physical environment with explicit authorization and no-retry declarations;
