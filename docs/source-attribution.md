@@ -419,6 +419,17 @@ the following projects. Product runtimes are not vendored into this repository.
   queries, native-success gating, explicit wall-clock/environment-terminal
   outcomes, and pending-action execution-unknown evidence; environment,
   policy, and persistence authorities remain external.
+- RoboPAD remaining reference evidence: `benchstudio.integrations.robopad_remaining`
+  ports the dependency-light scope, bounded persistence, scalar conversion, and
+  dense/terminal frame-retention helpers from
+  `experiments/icra_reference_remaining.py` at upstream commit
+  `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
+  `69088b253df546782235f772c140f9d8b0c2490620758534531299731315a210` and
+  source-test digest
+  `c390738762972785707a618f4a99b9092bd05d5c5e7fce5f99d91f93ac964bcf`.
+  The port preserves the fixed six-parent world scope, non-retry rule, results
+  quota policy, and original/physics RGB frame names; MuJoCo/reference rollout
+  execution remains external.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
   `urdf-ops`: BenchStudio exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment

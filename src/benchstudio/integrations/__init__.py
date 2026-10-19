@@ -107,6 +107,14 @@ from .robopad_reference import FixedReference
 from .robopad_reference_adapter import CandidateGoals, SourceGeometry, build_goals, extract_geometry
 from .robopad_reference_cache import SourceCache, cache_executed_source, select_prefix
 from .robopad_rollout import RolloutFailure, rollout
+from .robopad_remaining import (
+    MAX_BYTES as REMAINING_MAX_BYTES,
+    persist as persist_remaining,
+    remaining_worlds,
+    retain_frame,
+    scalar,
+    sha as sha_remaining,
+)
 from .robopad_state_evidence import json_numpy
 from .robopad_supervisor import (
     KILL_AFTER,
@@ -198,6 +206,12 @@ __all__ = [
     "json_numpy",
     "RolloutFailure",
     "rollout",
+    "REMAINING_MAX_BYTES",
+    "persist_remaining",
+    "remaining_worlds",
+    "retain_frame",
+    "scalar",
+    "sha_remaining",
     "MAX_BYTES",
     "checked_rotation_delta",
     "compact_record",
