@@ -699,8 +699,25 @@ def _benchmark_validity(plan: FrozenCampaignPlan) -> dict[str, Any] | None:
 
 
 def _model_reference(plan: FrozenCampaignPlan) -> dict[str, Any] | None:
-    model = (plan.protocol or {}).get("M", {})
+    protocol = plan.protocol or {}
+    model = protocol.get("M", {})
     if not isinstance(model, dict) or not model:
+        # Direct source-plan imports do not have a generic campaign ``M``
+        # section. Preserve the source checkpoint identity in every attempt
+        # manifest so evidence cannot silently detach from the imported plan.
+        checkpoint = protocol.get("checkpoint")
+        if isinstance(checkpoint, dict) and checkpoint:
+            reference: dict[str, Any] = {
+                "source": protocol.get("source"),
+                "checkpoint": dict(checkpoint),
+            }
+            native_config = protocol.get("native_config")
+            if isinstance(native_config, dict):
+                reference["native_config"] = dict(native_config)
+            design_revision = protocol.get("design_revision")
+            if isinstance(design_revision, str) and design_revision:
+                reference["design_revision"] = design_revision
+            return {key: value for key, value in reference.items() if value is not None}
         return None
     allowed = ("adapter", "architecture", "checkpoint", "robot_profile")
     return {name: model[name] for name in allowed if name in model}

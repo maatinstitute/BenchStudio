@@ -508,6 +508,34 @@ def test_campaign_executor_persists_checkpoint_pinned_model_reference(tmp_path):
     }
 
 
+def test_imported_source_plan_binds_checkpoint_to_attempt_manifest():
+    from benchstudio.campaigns.executor import _model_reference
+    from benchstudio.campaigns.frozen_plan import FrozenCampaignPlan
+
+    plan = FrozenCampaignPlan(
+        run_id="source-reference-test",
+        attempts=(),
+        plan_digest_sha256="digest",
+        paired_schedule=(),
+        source_spec_sha256="source",
+        protocol={
+            "source": "refinement-refresh-robot-policies",
+            "design_revision": "2026-09-12-focused-pilot",
+            "checkpoint": {
+                "repository": "HuggingFaceVLA/smolvla_libero",
+                "revision": "6721902bc4d61e50a3bfdb11dfb4cb626f05d102",
+            },
+            "native_config": {"condition_id": "h1_d10"},
+        },
+    )
+    reference = _model_reference(plan)
+    assert reference["source"] == "refinement-refresh-robot-policies"
+    assert reference["checkpoint"]["revision"] == (
+        "6721902bc4d61e50a3bfdb11dfb4cb626f05d102"
+    )
+    assert reference["native_config"]["condition_id"] == "h1_d10"
+
+
 def test_campaign_executor_wires_resource_sampler_per_attempt(tmp_path):
     plan = CampaignPlanner(
         run_id="resource-run", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
