@@ -371,6 +371,20 @@ the canonical schedule digest, contiguous identities, and duplicate planned
 runs. The resulting plan records the source file digest and retains every
 source schedule row for independent audit.
 
+The imported plan can also pass through the standard resumable executor with
+deterministic adapters for a protocol checkpoint:
+
+```bash
+python -m benchstudio.cli \
+  --refinement-plan /path/to/pilot_evaluation.json \
+  --refinement-run-id smolvla-pilot \
+  --plan-output /tmp/smolvla-pilot-benchstudio-plan.json \
+  --execute-mock --workers 4 --output /tmp/smolvla-pilot-campaign --audit
+```
+
+This exercises plan binding, attempt ledgers, artifact verification, and
+resumable execution; it does not claim model or simulator fidelity.
+
 RoboPAD outcome preflight artifacts can also be verified without launching
 training or evaluation:
 

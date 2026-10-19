@@ -524,6 +524,8 @@ def main() -> int:
     if args.refinement_plan is not None:
         if args.campaign_spec is not None or args.frozen_plan is not None:
             parser.error("--refinement-plan cannot be combined with campaign or frozen-plan execution")
+        if args.execute_registry:
+            parser.error("--refinement-plan currently supports --execute-mock only")
         plan = compile_refinement_source_plan(args.refinement_plan, run_id=args.refinement_run_id)
         plan.write(args.plan_output)
         print(
@@ -539,6 +541,34 @@ def main() -> int:
                 sort_keys=True,
             )
         )
+        if args.execute_mock:
+            executor = CampaignExecutor(
+                plan,
+                args.output,
+                _mock_policy_factory,
+                _mock_simulator_factory,
+                adapter_registry=default_registry(),
+            )
+            summary = executor.run_parallel(args.workers) if args.workers > 1 else executor.run()
+            campaign_status = (
+                "failed"
+                if summary.failed_attempt_ids or summary.missing_attempt_ids
+                else "completed"
+            )
+            print(
+                f"campaign_status={campaign_status} "
+                f"committed={len(summary.committed_attempt_ids)} "
+                f"failed={len(summary.failed_attempt_ids)} "
+                f"missing={len(summary.missing_attempt_ids)}"
+            )
+            if args.audit:
+                audit = executor.audit()
+                print(
+                    f"audit_status={audit.claim.status} "
+                    f"attempts_complete={audit.attempts_complete} "
+                    f"evidence_verified={audit.evidence_verified}"
+                )
+            return 0 if campaign_status == "completed" else 2
         return 0
     if args.outcome_plan is not None:
         payload, file_sha256 = load_outcome_plan(args.outcome_plan)

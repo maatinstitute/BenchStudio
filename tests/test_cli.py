@@ -1,6 +1,12 @@
 import json
 
-from benchstudio.campaigns import LocalArtifactStore, build_outcome_plan, load_campaign_document
+from benchstudio.campaigns import (
+    LocalArtifactStore,
+    build_outcome_plan,
+    load_campaign_document,
+    make_plan,
+    write_plan,
+)
 from benchstudio.cli import main
 
 
@@ -50,6 +56,36 @@ def test_cli_verifies_robopad_outcome_plan(monkeypatch, tmp_path, capsys):
     assert output["status"] == "preflight_only"
     assert output["counts"]["max_policy_queries"] == 567120
     assert len(output["source_file_sha256"]) == 64
+
+
+def test_cli_executes_imported_refinement_plan_through_standard_executor(
+    monkeypatch, tmp_path, capsys
+):
+    source_path = tmp_path / "pilot_evaluation.json"
+    plan_path = tmp_path / "benchstudio-plan.json"
+    write_plan(source_path, make_plan())
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--refinement-plan",
+            str(source_path),
+            "--refinement-run-id",
+            "cli-refinement",
+            "--plan-output",
+            str(plan_path),
+            "--execute-mock",
+            "--workers",
+            "4",
+            "--output",
+            str(tmp_path / "campaign"),
+            "--audit",
+        ],
+    )
+    assert main() == 0
+    output = capsys.readouterr().out
+    assert "campaign_status=completed committed=320 failed=0 missing=0" in output
+    assert "attempts_complete=True evidence_verified=True" in output
 
 
 def test_cli_verifies_source_snapshot(monkeypatch, tmp_path, capsys):
