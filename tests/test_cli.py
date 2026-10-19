@@ -547,6 +547,50 @@ def test_cli_writes_transfer_fidelity_report(monkeypatch, tmp_path):
     assert report["success_gap_physical_minus_simulation"] == -1.0
 
 
+def test_cli_compiles_counterfactual_plan_from_frozen_plan(monkeypatch, tmp_path, capsys):
+    from benchstudio.campaigns import CampaignPlanner
+
+    frozen_plan = tmp_path / "campaign-plan.json"
+    CampaignPlanner(
+        run_id="cli-counterfactual",
+        scenario_id="task",
+        conditions=[{"id": "base"}],
+        seeds=[1, 2],
+    ).freeze().write(frozen_plan)
+    interventions = tmp_path / "interventions.json"
+    interventions.write_text(
+        json.dumps(
+            [
+                {
+                    "intervention_id": "sensor-delay",
+                    "transition_index": 2,
+                    "kind": "sensor_delay",
+                    "parameters": {"ms": 50},
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    output = tmp_path / "counterfactual-plan.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--frozen-plan",
+            str(frozen_plan),
+            "--counterfactual-interventions",
+            str(interventions),
+            "--counterfactual-output",
+            str(output),
+        ],
+    )
+    assert main() == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["schema"] == "benchstudio.counterfactual.v1"
+    assert payload["pair_count"] == 2
+    assert json.loads(output.read_text(encoding="utf-8"))["schema"] == "benchstudio.counterfactual.v1"
+
+
 def test_cli_writes_recovery_report(monkeypatch, tmp_path):
     records = tmp_path / "recovery.jsonl"
     records.write_text(

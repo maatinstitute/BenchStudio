@@ -21,8 +21,10 @@ from .analysis import (
 from .campaigns import (
     CampaignExecutor,
     HttpArtifactStore,
+    Intervention,
     LocalArtifactStore,
     compile_campaign_spec,
+    compile_counterfactual_plan,
     load_campaign_document,
     load_frozen_campaign_plan,
     retrieve_campaign_archive,
@@ -186,6 +188,16 @@ def main() -> int:
     parser.add_argument("--recovery-output", type=Path)
     parser.add_argument("--recovery-plan", type=Path)
     parser.add_argument(
+        "--counterfactual-interventions",
+        type=Path,
+        help="JSON array of frozen robustness interventions to bind to --frozen-plan.",
+    )
+    parser.add_argument(
+        "--counterfactual-output",
+        type=Path,
+        help="Write a serialized counterfactual plan.",
+    )
+    parser.add_argument(
         "--validate-search-plan",
         type=Path,
         help="Load and validate a serialized counterexample-search plan.",
@@ -298,6 +310,62 @@ def main() -> int:
         return 0
     if args.extract_output is not None:
         parser.error("--extract-output requires --fetch-artifact")
+    counterfactual_options = (
+        args.counterfactual_interventions is not None,
+        args.counterfactual_output is not None,
+    )
+    if any(counterfactual_options):
+        if args.frozen_plan is None:
+            parser.error("counterfactual options require --frozen-plan")
+        if args.counterfactual_interventions is None or args.counterfactual_output is None:
+            parser.error(
+                "--counterfactual-interventions and --counterfactual-output must be supplied together"
+            )
+        plan = load_frozen_campaign_plan(args.frozen_plan)
+        raw_interventions = json.loads(
+            args.counterfactual_interventions.read_text(encoding="utf-8")
+        )
+        if not isinstance(raw_interventions, list) or not raw_interventions:
+            parser.error("counterfactual interventions must be a non-empty JSON array")
+        interventions = []
+        for index, value in enumerate(raw_interventions):
+            if not isinstance(value, dict):
+                parser.error(f"counterfactual intervention {index} must be a mapping")
+            transition_index = value.get("transition_index")
+            if (
+                isinstance(transition_index, bool)
+                or not isinstance(transition_index, int)
+                or transition_index < 0
+            ):
+                parser.error(
+                    f"counterfactual intervention {index}.transition_index must be non-negative"
+                )
+            intervention_id = value.get("intervention_id")
+            kind = value.get("kind")
+            parameters = value.get("parameters", {})
+            if not isinstance(intervention_id, str) or not intervention_id:
+                parser.error(f"counterfactual intervention {index}.intervention_id is required")
+            if not isinstance(kind, str) or not kind:
+                parser.error(f"counterfactual intervention {index}.kind is required")
+            if not isinstance(parameters, dict):
+                parser.error(f"counterfactual intervention {index}.parameters must be a mapping")
+            interventions.append(Intervention(intervention_id, transition_index, kind, parameters))
+        counterfactual = compile_counterfactual_plan(plan, interventions)
+        counterfactual.write(args.counterfactual_output)
+        print(
+            json.dumps(
+                {
+                    "schema": "benchstudio.counterfactual.v1",
+                    "run_id": counterfactual.run_id,
+                    "pair_count": len(counterfactual.pairs),
+                    "source_plan_digest_sha256": counterfactual.source_plan_digest_sha256,
+                    "plan_digest_sha256": counterfactual.plan_digest_sha256,
+                    "output": str(args.counterfactual_output),
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
     if args.validate_search_plan is not None and args.validate_confirmation_plan is not None:
         parser.error("plan validation options are mutually exclusive")
     if args.validate_search_plan is not None:

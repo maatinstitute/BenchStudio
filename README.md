@@ -226,6 +226,16 @@ Pass `--recovery-plan counterfactual-plan.json` to validate every recorded
 branch against the frozen nominal/intervention plan; mismatched or missing
 lineage fails closed.
 
+Counterfactual plans can be compiled directly from an independently loaded
+frozen campaign plan:
+
+```bash
+python -m benchstudio.cli \
+  --frozen-plan campaign-plan.json \
+  --counterfactual-interventions interventions.json \
+  --counterfactual-output counterfactual-plan.json
+```
+
 Serialized counterexample discovery and confirmation plans can be checked
 independently before use:
 
