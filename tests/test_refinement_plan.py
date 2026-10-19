@@ -41,6 +41,22 @@ def test_expected_count_and_full_factorial():
     assert actual == expected
 
 
+def test_refinement_source_golden_vector_is_byte_identical():
+    """Keep the BenchStudio planner aligned with the source planner."""
+    plan = make_plan()
+    # Generated from Refinement/Refresh experiments/make_evaluation_plan.py at
+    # the source revision recorded in docs/source-attribution.md.
+    assert plan["scheduling"]["schedule_sha256"] == (
+        "3e7959353447d2a02e1a7b42bfa1a756b7259a28f22d20df072ab3750917ad0b"
+    )
+    assert plan["schedule"][0]["planned_run_id"] == (
+        "libero_10.task006.state013.seed2000.h1_d10"
+    )
+    assert plan["schedule"][-1]["planned_run_id"] == (
+        "libero_object.task005.state014.seed2001.h5_d10"
+    )
+
+
 def test_contiguous_complete_blocks_and_native_reference():
     rows = make_plan()["schedule"]
     for start in range(0, len(rows), 4):

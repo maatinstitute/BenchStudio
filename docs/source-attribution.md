@@ -66,6 +66,9 @@ the canonical semantic validator.
   schedule digest, external gates, and exclusive-write semantics; it then
   converts that exact schedule into `FrozenCampaignPlan`. The heavy
   CUDA/LeRobot runtime remains external.
+  `tests/test_refinement_plan.py::test_refinement_source_golden_vector_is_byte_identical`
+  verifies the default 320-row schedule digest and boundary identities against
+  the source-generated vector.
   `load_refinement_source_plan()` and `compile_refinement_source_plan()` also
   import an existing upstream JSON plan without regenerating or reordering its
   rows; the imported BenchStudio plan records both the source-file and source-
