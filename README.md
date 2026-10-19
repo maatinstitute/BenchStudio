@@ -302,6 +302,15 @@ PYTHONPATH=src python examples/run_mock_recovery.py --output runs/mock-recovery
 The checkpoint runs a partial batch, resumes the same plan, and reports
 committed, skipped, missing, and independently audited attempts.
 
+Exercise parallel lease-owning workers with:
+
+```bash
+PYTHONPATH=src python examples/run_mock_workers.py --output runs/mock-workers --workers 3
+```
+
+This verifies shared lease ownership and exactly-once ledger accounting for a
+local fixture campaign.
+
 Missing outcomes remain explicit and cause a non-zero validation status.
 
 Counterfactual branch records can be summarized similarly:
