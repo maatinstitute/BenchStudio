@@ -68,7 +68,7 @@ has been evaluated.
 | Refinement/Refresh microbenchmark validation | Implemented at analysis boundary | Source-backed paired instrumentation allocation, action/timing parity, shared-noise, hook-count, and artifact checks are enforced before overhead analysis; model execution remains external. |
 | CI workflow | Prepared locally, not uploaded | `.github/workflows/ci.yml` exists locally. GitHub rejected its upload because the current OAuth token lacks workflow scope; source and smoke tests are published. |
 | Python compatibility | Locally verified | Python 3.10.12 compiles and imports the package; the full pytest suite runs under the configured Python 3.13 environment. |
-| Current verification snapshot | Verified locally | Full suite: 713 passed, 1 expected ZIP duplicate-entry warning, 27 subtests passed. |
+| Current verification snapshot | Verified locally | Full suite: 715 passed, 1 expected ZIP duplicate-entry warning, 27 subtests passed. |
 
 The repository remains private and proprietary. External benchmark scoring,
 physical safety, emergency stops, and hardware authorization are intentionally

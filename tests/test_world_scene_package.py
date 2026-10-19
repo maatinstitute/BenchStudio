@@ -43,3 +43,26 @@ def test_registry_lists_latest_versions_with_trust_and_filters(tmp_path):
     assert len(entries) == 1
     assert entries[0].trust_level == "metadata_only"
     assert entries[0].runtime_targets == ()
+
+
+def test_registry_reports_capabilities_and_validation_warnings(tmp_path):
+    registry = WorldScenePackageRegistry(tmp_path / "world-registry.json")
+    validation = registry.validate(_manifest())
+    capabilities = registry.get_capabilities()
+    assert validation.valid is True
+    assert any("No runtime_targets declared" in warning for warning in validation.warnings)
+    assert capabilities.available is True
+    assert capabilities.can_publish is True
+
+
+def test_registry_rejects_static_scene_with_nonzero_time(tmp_path):
+    registry = WorldScenePackageRegistry(tmp_path / "world-registry.json")
+    manifest = _manifest()
+    # Constructing through the dataclass keeps the invalid state available for
+    # the registry validator, matching the source service's validation stage.
+    invalid = WorldScenePackageManifest(
+        **{**manifest.__dict__, "world_snapshot": WorldSnapshot("<robot/>", {"joint": 0.0}, scenario_time_ms=100)}
+    )
+    result = registry.validate(invalid)
+    assert result.valid is False
+    assert "scenario_time_ms must be between zero and scenario_duration_ms" in result.errors

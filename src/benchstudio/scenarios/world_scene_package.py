@@ -140,6 +140,23 @@ class WorldScenePackageVersionRecord:
 
 
 @dataclass(frozen=True)
+class WorldScenePackageValidationResponse:
+    valid: bool
+    digest_sha256: str
+    warnings: tuple[str, ...] = ()
+    errors: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class WorldRegistryCapabilities:
+    source: str
+    available: bool
+    can_list: bool
+    can_get_version: bool
+    can_publish: bool
+
+
+@dataclass(frozen=True)
 class WorldScenePackageListEntry:
     package_id: str
     latest_version: str
@@ -197,10 +214,35 @@ class WorldScenePackageRegistry:
         self.path = Path(path)
         self._lock = Lock()
 
+    def validate(self, manifest: WorldScenePackageManifest) -> WorldScenePackageValidationResponse:
+        errors = validate_world_scene_package(manifest)
+        canonical_size = len(json.dumps(manifest.to_dict(), sort_keys=True, separators=(",", ":")).encode("utf-8"))
+        if canonical_size > MAX_WORLD_SCENE_PACKAGE_MANIFEST_BYTES:
+            errors.append(
+                "World scene package manifest exceeds the allowed serialized size: "
+                f"{canonical_size} > {MAX_WORLD_SCENE_PACKAGE_MANIFEST_BYTES} bytes."
+            )
+        warnings: list[str] = []
+        if not manifest.runtime_targets:
+            warnings.append("No runtime_targets declared. Cross-runtime compatibility cannot be inferred.")
+        if not manifest.artifacts:
+            warnings.append("No external artifacts declared. Package is embedded-only.")
+        if not manifest.security.signature_ref:
+            warnings.append("No signature_ref present. Package remains metadata-only.")
+        return WorldScenePackageValidationResponse(
+            not errors, world_scene_package_digest(manifest), tuple(warnings), tuple(errors)
+        )
+
+    def get_capabilities(self) -> WorldRegistryCapabilities:
+        return WorldRegistryCapabilities(
+            source="urdf-studio-world-registry", available=True,
+            can_list=True, can_get_version=True, can_publish=True,
+        )
+
     def publish(self, manifest: WorldScenePackageManifest) -> WorldScenePackageVersionRecord:
-        issues = validate_world_scene_package(manifest)
-        if issues:
-            raise ValueError("invalid world scene package: " + "; ".join(issues))
+        validation = self.validate(manifest)
+        if not validation.valid:
+            raise ValueError("invalid world scene package: " + "; ".join(validation.errors))
         with self._lock:
             state = self._load()
             versions = state.setdefault(manifest.package_id, {})
