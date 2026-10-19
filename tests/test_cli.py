@@ -1,6 +1,6 @@
 import json
 
-from benchstudio.campaigns import LocalArtifactStore, load_campaign_document
+from benchstudio.campaigns import LocalArtifactStore, build_outcome_plan, load_campaign_document
 from benchstudio.cli import main
 
 
@@ -30,6 +30,26 @@ def test_cli_compiles_campaign_spec(monkeypatch, tmp_path, capsys):
     assert main() == 0
     assert json.loads(plan_path.read_text(encoding="utf-8"))["run_id"] == "cli-run"
     assert "compiled_plan=" in capsys.readouterr().out
+
+
+def test_cli_verifies_robopad_outcome_plan(monkeypatch, tmp_path, capsys):
+    plan_path = tmp_path / "outcome-plan.json"
+    plan_path.write_text(
+        json.dumps(
+            build_outcome_plan(
+                recovery_parents=[f"recovery-{index}" for index in range(24)],
+                reset_parents=[f"reset-{index}" for index in range(24)],
+            )
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("sys.argv", ["benchstudio-run", "--outcome-plan", str(plan_path)])
+    assert main() == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["schema"] == "benchstudio.robopad_outcome_plan_import.v1"
+    assert output["status"] == "preflight_only"
+    assert output["counts"]["max_policy_queries"] == 567120
+    assert len(output["source_file_sha256"]) == 64
 
 
 def test_cli_executes_independently_loaded_frozen_plan(monkeypatch, tmp_path, capsys):
