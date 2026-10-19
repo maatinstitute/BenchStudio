@@ -131,6 +131,7 @@ from .refinement_microbenchmark import validate_microbenchmark
 from .robopad_exposure import LIMITATIONS, audit_splits, build_inventory, demo_family, family_id
 from .robopad_visual_balance import image_distance, match_candidates
 from .score_coverage import ScoreCoverage, audit_score_coverage
+from .smolvla_deployment import load_smolvla_deployment_evidence
 from .transfer import (
     TransferFidelityReport,
     TransferGap,
@@ -206,6 +207,7 @@ __all__ = [
     "resolve_manifest",
     "ScoreCoverage",
     "audit_score_coverage",
+    "load_smolvla_deployment_evidence",
     "bookmark_critical_events",
     "audit_resources",
     "estimate_transfer_gap",

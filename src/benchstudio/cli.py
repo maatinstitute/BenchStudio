@@ -11,6 +11,7 @@ from .analysis import (
     audit_campaign_directory,
     audit_evaluation_acceptance,
     compare_policy_trace_files,
+    load_smolvla_deployment_evidence,
     load_recovery_records,
     load_transfer_records,
     summarize_recovery_outcomes,
@@ -108,6 +109,21 @@ def main() -> int:
         "--robochallenge-output",
         type=Path,
         help="Write the RoboChallenge protocol audit report.",
+    )
+    parser.add_argument(
+        "--smolvla-manifest",
+        type=Path,
+        help="Validate an archived external SmolVLA deployment manifest.",
+    )
+    parser.add_argument(
+        "--smolvla-summary",
+        type=Path,
+        help="Summary JSON paired with --smolvla-manifest.",
+    )
+    parser.add_argument(
+        "--smolvla-output",
+        type=Path,
+        help="Write the archived SmolVLA evidence report.",
     )
     parser.add_argument(
         "--plan-output",
@@ -573,6 +589,19 @@ def main() -> int:
         return 0 if report["valid"] else 2
     if args.robochallenge_output is not None:
         parser.error("--robochallenge-output requires --robochallenge-records")
+    if args.smolvla_manifest is not None or args.smolvla_summary is not None:
+        if args.smolvla_manifest is None or args.smolvla_summary is None:
+            parser.error("--smolvla-manifest and --smolvla-summary must be supplied together")
+        report = load_smolvla_deployment_evidence(args.smolvla_manifest, args.smolvla_summary)
+        if args.smolvla_output is not None:
+            args.smolvla_output.parent.mkdir(parents=True, exist_ok=True)
+            args.smolvla_output.write_text(
+                json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+            )
+        print(json.dumps(report, sort_keys=True))
+        return 0 if report["valid"] else 2
+    if args.smolvla_output is not None:
+        parser.error("--smolvla-output requires --smolvla-manifest and --smolvla-summary")
     if args.transfer_records is not None:
         report = summarize_transfer_fidelity(load_transfer_records(args.transfer_records))
         if args.transfer_output is not None:

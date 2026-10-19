@@ -226,6 +226,19 @@ not copied into BenchStudio evidence. BenchStudio does not install LeRobot,
 download weights, or infer image preprocessing; those choices remain owned by
 the external runtime and must be frozen in the campaign protocol.
 
+An archived external SmolVLA/LIBERO deployment pilot can be checked without
+loading its weights or runtime:
+
+```bash
+python -m benchstudio.cli \
+  --smolvla-manifest /path/to/real_smolvla/manifest.json \
+  --smolvla-summary /path/to/real_smolvla/results/summary.json \
+  --smolvla-output smolvla-evidence.json
+```
+
+This verifies pinned checkpoint/runtime revisions and summary arithmetic while
+preserving the archive's pairing and timing limitations.
+
 The approved physical-boundary example is
 `examples/campaigns/approved-physical-boundary.json`. It includes a disabled
 physical environment with explicit authorization and no-retry declarations;
