@@ -317,6 +317,16 @@ the following projects. Product runtimes are not vendored into this repository.
   from `alpasim_contract.py`, preserving session reset, pose/camera lag checks,
   timestamp advancement, frozen-image detection, and structured diagnostics.
   Its source/test provenance is the same pair recorded above.
+- SmolVLA driving contract: `benchstudio.integrations.
+  smolvla_driving_contract` ports
+  `src/alpabridge/simulator/smolvla_driving_contract.py` at upstream commit
+  `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`; source digest
+  `e97d1a5608e9e3f7ab90724b6f79e8fff82f17953eef85d9aca1e15ef75d27f6` and
+  source-test digest
+  `62de11f3823ceaac817a1aef1b7ead7c512e1cc44ce0a8e62ae5895bb00c6d3f`.
+  It preserves the four-camera provenance manifest, ego-frame trajectory-only
+  output boundary, monotonic timestamps, and rejection of result-derived
+  inference signals; SmolVLA weights and serving remain external.
 - URDF Studio / `urdf-ops`: `benchstudio.conformance.dataset_alignment` ports
   the dataset-alignment registry boundary from `backend/services/
   dataset_alignment.py` at upstream commit
