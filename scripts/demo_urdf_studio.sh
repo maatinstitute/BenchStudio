@@ -35,7 +35,14 @@ if [[ -e "$OUTPUT" ]]; then
 fi
 
 STAGING=$(mktemp -d /tmp/benchstudio-so101-cube.XXXXXX)
-trap 'rm -rf "$STAGING"' EXIT
+RECOVERY_STAGING=""
+cleanup() {
+    rm -rf "$STAGING"
+    if [[ -n "$RECOVERY_STAGING" ]]; then
+        rm -rf "$RECOVERY_STAGING"
+    fi
+}
+trap cleanup EXIT
 cp -R "$ROOT/examples/urdf_studio_so101_cube/." "$STAGING/"
 cp -R "$URDF_STUDIO_ROOT/web/public/demo/assets" "$STAGING/assets"
 "$URDF_STUDIO_PYTHON" "$ROOT/scripts/prepare_urdf_studio_robot.py" \
@@ -51,6 +58,42 @@ PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
     "$STAGING" "${SIM_ARGS[@]}" --out "$OUTPUT"
 
 if [[ "$HAS_MUJOCO" == true ]]; then
+    RECOVERY_EPISODE_INDEX=${BENCHSTUDIO_RECOVERY_EPISODE_INDEX:-2}
+    RECOVERY_MANIFEST="$OUTPUT/manifests/episode-$RECOVERY_EPISODE_INDEX.json"
+    if [[ -f "$RECOVERY_MANIFEST" ]]; then
+        RECOVERY_ROOT="$OUTPUT/recovery/episode-$RECOVERY_EPISODE_INDEX"
+        FAILED_DIR="$RECOVERY_ROOT/attempt-0"
+        RECOVERED_DIR="$RECOVERY_ROOT/attempt-1"
+        RECOVERY_STAGING=$(mktemp -d /tmp/benchstudio-so101-recovery.XXXXXX)
+        "$URDF_STUDIO_PYTHON" "$ROOT/scripts/build_recovery_fixture.py" prepare \
+            --source "$OUTPUT/scenario" \
+            --output "$RECOVERY_STAGING/scenario" \
+            --max-steps 125
+        mkdir -p "$RECOVERY_ROOT"
+        cp "$RECOVERY_STAGING/scenario/recovery-intervention.json" \
+            "$RECOVERY_ROOT/intervention.json"
+
+        echo "[recovery] episode $RECOVERY_EPISODE_INDEX attempt 0: constrained horizon"
+        PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+            "$URDF_STUDIO_PYTHON" -m backend.scripts.scenario_episode_worker \
+            --scenario "$RECOVERY_STAGING/scenario" \
+            --sim mujoco \
+            --episode-manifest "$RECOVERY_MANIFEST" \
+            --out "$FAILED_DIR"
+
+        echo "[recovery] episode $RECOVERY_EPISODE_INDEX attempt 1: protocol horizon restored"
+        PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+            "$URDF_STUDIO_PYTHON" -m backend.scripts.scenario_episode_worker \
+            --scenario "$OUTPUT/scenario" \
+            --sim mujoco \
+            --episode-manifest "$RECOVERY_MANIFEST" \
+            --out "$RECOVERED_DIR"
+
+        cp "$RECOVERED_DIR/report.json" "$RECOVERED_DIR/trace.ndjson" \
+            "$RECOVERED_DIR/decisions.ndjson" "$RECOVERED_DIR/episode.mp4" \
+            "$OUTPUT/mujoco/episode-$RECOVERY_EPISODE_INDEX/"
+    fi
+
     for MANIFEST in "$OUTPUT"/manifests/episode-*.json; do
         EPISODE_NAME=$(basename "$MANIFEST" .json)
         EPISODE_DIR="$OUTPUT/mujoco/$EPISODE_NAME"
@@ -68,6 +111,32 @@ if [[ "$HAS_MUJOCO" == true ]]; then
             echo "Robot replay render unavailable for $EPISODE_NAME; keeping schematic video." >&2
         fi
     done
+
+    if [[ -f "${RECOVERY_MANIFEST:-}" ]]; then
+        for ATTEMPT_DIR in "$FAILED_DIR" "$RECOVERED_DIR"; do
+            ATTEMPT_VIDEO="$ATTEMPT_DIR/episode-robot.mp4"
+            if MUJOCO_GL=egl PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+                "$URDF_STUDIO_PYTHON" "$ROOT/scripts/render_urdf_studio_episode.py" \
+                --scenario "$OUTPUT/scenario/scenario.yaml" \
+                --manifest "$RECOVERY_MANIFEST" \
+                --trace "$ATTEMPT_DIR/trace.ndjson" \
+                --output "$ATTEMPT_VIDEO"; then
+                mv "$ATTEMPT_DIR/episode.mp4" "$ATTEMPT_DIR/episode-schematic.mp4"
+                mv "$ATTEMPT_VIDEO" "$ATTEMPT_DIR/episode.mp4"
+            else
+                echo "Robot replay render unavailable for $ATTEMPT_DIR; keeping schematic video." >&2
+            fi
+        done
+        "$URDF_STUDIO_PYTHON" "$ROOT/scripts/build_recovery_fixture.py" bind \
+            --output "$OUTPUT/recovery.json" \
+            --episode-index "$RECOVERY_EPISODE_INDEX" \
+            --manifest "$RECOVERY_MANIFEST" \
+            --intervention "$RECOVERY_ROOT/intervention.json" \
+            --failed-dir "$FAILED_DIR" \
+            --recovered-dir "$RECOVERED_DIR" \
+            --failed-policy "$RECOVERY_STAGING/scenario/waypoints.json" \
+            --recovered-policy "$OUTPUT/scenario/waypoints.json"
+    fi
 fi
 
 PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \

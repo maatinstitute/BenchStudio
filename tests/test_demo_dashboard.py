@@ -173,6 +173,55 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
             },
         )
 
+    _write_json(
+        evidence / "urdf-studio" / "recovery.json",
+        {
+            "schema": "benchstudio.robot_recovery.v1",
+            "backend": "mujoco",
+            "episode_index": 2,
+            "seed": 43,
+            "status": "recovered",
+            "policy_changed": False,
+            "policy_binding": {
+                "failed_attempt_sha256": "e" * 64,
+                "recovered_attempt_sha256": "e" * 64,
+                "unchanged": True,
+            },
+            "intervention": {
+                "kind": "extend_episode_horizon",
+                "parameter": "runtime.max_episode_steps",
+                "failed_value": 125,
+                "recovered_value": 400,
+                "policy_changed": False,
+            },
+            "attempts": [
+                {
+                    "attempt": 0,
+                    "success": False,
+                    "stop_reason": "max_steps",
+                    "steps": 125,
+                    "sim_time_s": 2.5,
+                    "files": {
+                        "episode.mp4": {
+                            "path": "recovery/episode-2/attempt-0/episode.mp4"
+                        }
+                    },
+                },
+                {
+                    "attempt": 1,
+                    "success": True,
+                    "stop_reason": "success",
+                    "steps": 235,
+                    "sim_time_s": 4.7,
+                    "files": {
+                        "episode.mp4": {
+                            "path": "recovery/episode-2/attempt-1/episode.mp4"
+                        }
+                    },
+                },
+            ],
+        },
+    )
     output = build_demo_dashboard(evidence, tmp_path / "site" / "index.html")
     document = output.read_text(encoding="utf-8")
 
@@ -192,7 +241,10 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert 'href="campaign-plan.json"' not in document
     assert "SO-101 · Cube lift" in document
     assert "ROBOT EPISODES</span><b>4/4 COMPLETED" in document
-    assert "EVALUATION RESULT</span><b>4/4 LIFT CHECKER PASS" in document
+    assert "FINAL RESULT</span><b>4/4 LIFT CHECKER PASS" in document
+    assert "FIRST-PASS RATE</span><b>3/4" in document
+    assert "RECOVERY</span><b>1/1 RECOVERED" in document
+    assert "EXECUTIONS</span><b>5 TOTAL" in document
     assert "CONTACT GRASP</span><b>NOT EVALUATED" in document
     assert "This is not a contact-realistic grasp" in document
     assert "welded cube crossed the 0.10 m lift threshold" in document
@@ -210,9 +262,8 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert 'value="mujoco" selected>MuJoCo · evaluated' in document
     assert 'value="genesis" disabled>Genesis · failed' in document
     assert "this report stays bound to the evaluated episode batch" in document
-    assert "900 TOTAL</b>" in document
-    assert "306 TOTAL</b>" in document
     assert 'data-artifact="robot_episodes"' in document
+    assert 'data-artifact="robot_recovery"' in document
     assert 'data-artifact="robot_policy"' in document
     assert "Waypoint baseline · sha256" in document
     assert "ready 0.0s · close + attach 3.0s · lift 4.8s" in document
@@ -221,3 +272,11 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert "genesis package is unavailable" in document
     assert "Lift checker pass rate" in document
     assert 'data-artifact="simulator_debug"' in document
+    assert "Episode 03 · Linked attempts" in document
+    assert "ATTEMPT 01 · FAILED" in document
+    assert "MAX STEPS" in document
+    assert "125 → 400" in document
+    assert "policy unchanged · eeeeeeeeeeee" in document
+    assert "ATTEMPT 02 · PASSED" in document
+    assert "recovery/episode-2/attempt-0/episode.mp4" in document
+    assert "recovery/episode-2/attempt-1/episode.mp4" in document

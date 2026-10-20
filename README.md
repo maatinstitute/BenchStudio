@@ -134,6 +134,14 @@ add contact realism. The control room therefore reports the lift-checker pass
 count and `CONTACT GRASP NOT EVALUATED` rather than using the run as evidence of
 physical grasp quality.
 
+Episode 03 also runs a linked failure/recovery pair. Attempt 01 uses the same
+seed, cube pose, simulator, and policy with a deliberately constrained
+125-control-step horizon, producing a real `max_steps` failure before attach.
+Attempt 02 restores the frozen 400-step protocol and passes. Both reports,
+traces, decisions, videos, and SHA-256 bindings are retained in `recovery.json`;
+the dashboard reports the 3/4 first-pass rate separately from the 4/4 final
+rate. This demonstrates recovery accounting, not policy adaptation.
+
 Run the complete local CI-equivalent gate, including the full suite and
 cross-version-friendly bytecode compilation, with:
 

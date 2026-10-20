@@ -54,6 +54,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     robot_episodes: list[dict[str, Any]] = []
     robot_comparison: dict[str, Any] = {}
     robot_policy: dict[str, Any] = {}
+    robot_recovery: dict[str, Any] = {}
     simulator_debug: dict[str, Any] = {}
     robot_policy_digest = "not loaded"
     robot_policy_timeline = "No policy artifact loaded"
@@ -67,6 +68,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
         comparison_path = robot_root / "comparison.json"
         policy_path = robot_root / "scenario" / "waypoints.json"
         simulator_debug_path = robot_root / "simulator-debug.json"
+        recovery_path = robot_root / "recovery.json"
         episode_count = int(robot_run.get("episodes", 0) or 0)
         for episode_index in range(episode_count):
             report_path = (
@@ -104,6 +106,8 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
                     robot_policy_timeline = " · ".join(events)
         if simulator_debug_path.is_file():
             simulator_debug = _load_json(simulator_debug_path)
+        if recovery_path.is_file():
+            robot_recovery = _load_json(recovery_path)
 
     attempts = plan.get("attempts", [])
     completed = sum(row.get("status") == "completed" for row in ledger)
@@ -174,6 +178,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
             "robot_episodes": robot_episodes,
             "robot_comparison": robot_comparison,
             "robot_policy": robot_policy,
+            "robot_recovery": robot_recovery,
             "simulator_debug": simulator_debug,
         },
         separators=(",", ":"),
@@ -198,6 +203,14 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
         if isinstance(episode.get("report"), dict)
     ]
     robot_lift_passes = sum(report.get("success") is True for report in robot_reports)
+    recovery_status = str(robot_recovery.get("status", "not_run"))
+    recovery_episode_index = int(robot_recovery.get("episode_index", -1) or -1)
+    recovery_attempts = robot_recovery.get("attempts", [])
+    if not isinstance(recovery_attempts, list):
+        recovery_attempts = []
+    recovered_episode_count = 1 if recovery_status == "recovered" else 0
+    robot_first_passes = max(0, robot_lift_passes - recovered_episode_count)
+    robot_execution_count = robot_episode_count + len(recovery_attempts) - recovered_episode_count
     robot_grasp_attach_used = any(
         report.get("grasp_attach_used") is True for report in robot_reports
     )
@@ -261,6 +274,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
                 cube_xy = f"x {float(cube_position[0]):.3f} · y {float(cube_position[1]):+.3f} m"
             seed = manifest.get("seed", "—") if isinstance(manifest, dict) else "—"
             passed = report.get("success") is True if isinstance(report, dict) else False
+            recovered = recovery_status == "recovered" and episode_index == recovery_episode_index
             sim_time = float(report.get("sim_time_s", 0.0) or 0.0) if isinstance(report, dict) else 0.0
             autoplay = " autoplay" if position == 0 else ""
             episode_cards.append(
@@ -270,7 +284,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
                 f'<source src="urdf-studio/{html.escape(selected_simulator)}/episode-{episode_index}/episode.mp4" '
                 'type="video/mp4"></video>'
                 '<div class="episode-meta">'
-                f'<div><span>EPISODE {episode_index + 1:02d}</span><b>{"LIFT PASS" if passed else "CHECKER FAIL"}</b></div>'
+                f'<div><span>EPISODE {episode_index + 1:02d}</span><b>{"RECOVERED" if recovered else ("LIFT PASS" if passed else "CHECKER FAIL")}</b></div>'
                 f'<div><span>SEED {html.escape(str(seed))}</span><small>{html.escape(cube_xy)}</small></div>'
                 f'<time>{sim_time:.2f} s</time>'
                 '</div></article>'
@@ -281,6 +295,36 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
             '<div class="episode-empty">NO ROBOT EPISODE LOADED<br>'
             'Run scripts/demo_urdf_studio.sh first.</div>'
         )
+
+    recovery_panel = ""
+    if recovery_status == "recovered" and len(recovery_attempts) >= 2:
+        failed_attempt = recovery_attempts[0] if isinstance(recovery_attempts[0], dict) else {}
+        recovered_attempt = recovery_attempts[1] if isinstance(recovery_attempts[1], dict) else {}
+        failed_files = failed_attempt.get("files", {}) if isinstance(failed_attempt, dict) else {}
+        recovered_files = recovered_attempt.get("files", {}) if isinstance(recovered_attempt, dict) else {}
+        failed_video = failed_files.get("episode.mp4", {}) if isinstance(failed_files, dict) else {}
+        recovered_video = recovered_files.get("episode.mp4", {}) if isinstance(recovered_files, dict) else {}
+        failed_video_path = str(failed_video.get("path", "")) if isinstance(failed_video, dict) else ""
+        recovered_video_path = str(recovered_video.get("path", "")) if isinstance(recovered_video, dict) else ""
+        intervention = robot_recovery.get("intervention", {})
+        policy_binding = robot_recovery.get("policy_binding", {})
+        recovery_policy_sha = (
+            str(policy_binding.get("recovered_attempt_sha256", "unbound"))[:12]
+            if isinstance(policy_binding, dict)
+            else "unbound"
+        )
+        failed_limit = intervention.get("failed_value", "—") if isinstance(intervention, dict) else "—"
+        recovered_limit = intervention.get("recovered_value", "—") if isinstance(intervention, dict) else "—"
+        recovery_panel = f'''
+      <section class="recovery-panel" aria-label="Recovered episode evidence">
+        <div class="recovery-head"><div><div class="section-label">Failure and recovery</div><h2>Episode {recovery_episode_index + 1:02d} · Linked attempts</h2><p class="section-copy">Same seed, cube pose, simulator, and policy. Only the episode horizon changes.</p></div><span class="recovery-state">RECOVERED</span></div>
+        <div class="recovery-flow">
+          <article class="recovery-attempt failed"><video controls muted playsinline preload="metadata"><source src="urdf-studio/{html.escape(failed_video_path)}" type="video/mp4"></video><div><span>ATTEMPT 01 · FAILED</span><b>{html.escape(str(failed_attempt.get("stop_reason", "failed")).replace("_", " ").upper())}</b><small>{failed_attempt.get("steps", "—")} steps · {float(failed_attempt.get("sim_time_s", 0.0) or 0.0):.2f} s</small></div></article>
+          <div class="recovery-change"><span>CONTROL CHANGE</span><strong>{html.escape(str(failed_limit))} → {html.escape(str(recovered_limit))}</strong><small>max episode steps<br>policy unchanged · {html.escape(recovery_policy_sha)}</small></div>
+          <article class="recovery-attempt passed"><video controls muted playsinline preload="metadata"><source src="urdf-studio/{html.escape(recovered_video_path)}" type="video/mp4"></video><div><span>ATTEMPT 02 · PASSED</span><b>LIFT CHECKER PASS</b><small>{recovered_attempt.get("steps", "—")} steps · {float(recovered_attempt.get("sim_time_s", 0.0) or 0.0):.2f} s</small></div></article>
+        </div>
+        <div class="recovery-foot"><span>SEED {html.escape(str(robot_recovery.get("seed", "—")))}</span><span>FIRST-PASS RATE {robot_first_passes}/{robot_episode_count}</span><span>FINAL RATE {robot_lift_passes}/{robot_episode_count}</span><button class="artifact-button" data-artifact="robot_recovery">Inspect recovery evidence</button></div>
+      </section>'''
 
     debug_backends = simulator_debug.get("backends", {})
     debug_shared = simulator_debug.get("shared_parameters", {})
@@ -404,6 +448,21 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     .run-result div {{ padding:12px; border:1px solid var(--line); border-radius:6px; background:var(--raised); }}
     .run-result span {{ display:block; color:#777; font:9px/1 "Noto Sans Mono",monospace; }} .run-result b {{ display:block; margin-top:7px; font-size:13px; font-weight:500; }}
     .truth-note {{ margin:16px 0 0; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; line-height:1.55; }}
+    .recovery-panel {{ border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:18px; background:var(--surface); }}
+    .recovery-head {{ display:flex; justify-content:space-between; align-items:start; gap:20px; padding:22px 24px; border-bottom:1px solid var(--line); }}
+    .recovery-head h2 {{ margin-bottom:4px; }}
+    .recovery-state {{ color:var(--ok); border:1px solid #466056; border-radius:5px; padding:6px 9px; font:9px/1 "Noto Sans Mono",monospace; letter-spacing:.06em; }}
+    .recovery-flow {{ display:grid; grid-template-columns:1fr 170px 1fr; align-items:stretch; background:#111; }}
+    .recovery-attempt {{ min-width:0; }}
+    .recovery-attempt video {{ display:block; width:100%; aspect-ratio:16/9; object-fit:contain; background:#090909; }}
+    .recovery-attempt > div {{ padding:12px 14px; border-top:1px solid var(--line); }}
+    .recovery-attempt span,.recovery-attempt small,.recovery-change span,.recovery-change small {{ display:block; color:#777; font:9px/1.45 "Noto Sans Mono",monospace; }}
+    .recovery-attempt b {{ display:block; margin:5px 0 3px; font:500 12px/1.3 "Noto Sans Mono",monospace; }}
+    .recovery-attempt.failed b {{ color:var(--warn); }} .recovery-attempt.passed b {{ color:var(--ok); }}
+    .recovery-change {{ display:grid; place-content:center; text-align:center; padding:20px; border-left:1px solid var(--line); border-right:1px solid var(--line); background:#171717; }}
+    .recovery-change strong {{ display:block; margin:12px 0 9px; color:#ddd; font:500 24px/1 "Noto Sans Mono",monospace; }}
+    .recovery-foot {{ display:flex; align-items:center; flex-wrap:wrap; gap:22px; padding:12px 16px; border-top:1px solid var(--line); color:#888; font:9px/1.4 "Noto Sans Mono",monospace; }}
+    .recovery-foot button {{ margin-left:auto; }}
     .story {{ display:grid; grid-template-columns:1.4fr .8fr; border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:18px; background:var(--surface); }}
     .transfer {{ padding:28px; border-right:1px solid var(--line); }}
     .section-label {{ color:var(--muted); font:500 10px/1.2 "Noto Sans Mono", monospace; letter-spacing:.08em; text-transform:uppercase; }}
@@ -453,7 +512,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     .close {{ appearance:none; border:1px solid var(--line); border-radius:5px; background:var(--raised); color:#bbb; padding:6px 9px; cursor:pointer; }}
     #artifact-content {{ margin:0; padding:20px; overflow:auto; color:#c8c8c8; font:11px/1.7 "Noto Sans Mono",monospace; white-space:pre-wrap; word-break:break-word; }}
     footer {{ display:flex; justify-content:space-between; gap:20px; color:#707070; border-top:1px solid var(--line); padding-top:18px; font-size:10px; }}
-    @media(max-width:800px) {{ .robot-run,.story {{ grid-template-columns:1fr; }} .episode-view,.transfer {{ border-right:0; border-bottom:1px solid var(--line); }} .metrics {{ grid-template-columns:1fr 1fr; }} .metric:nth-child(2) {{ border-right:0; }} .metric:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} .evidence {{ grid-template-columns:1fr 1fr; }} .evidence div:nth-child(2) {{ border-right:0; }} .evidence div:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} .shared-params {{ grid-template-columns:1fr 1fr; }} .debug-row {{ grid-template-columns:90px repeat(3,minmax(120px,1fr)); }} .sim-debug {{ overflow-x:auto; }} }}
+    @media(max-width:800px) {{ .robot-run,.story {{ grid-template-columns:1fr; }} .episode-view,.transfer {{ border-right:0; border-bottom:1px solid var(--line); }} .recovery-flow {{ grid-template-columns:1fr; }} .recovery-change {{ border:0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }} .metrics {{ grid-template-columns:1fr 1fr; }} .metric:nth-child(2) {{ border-right:0; }} .metric:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} .evidence {{ grid-template-columns:1fr 1fr; }} .evidence div:nth-child(2) {{ border-right:0; }} .evidence div:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} .shared-params {{ grid-template-columns:1fr 1fr; }} .debug-row {{ grid-template-columns:90px repeat(3,minmax(120px,1fr)); }} .sim-debug {{ overflow-x:auto; }} }}
     @media(max-width:560px) {{ .shell {{ width:calc(100% - 24px); }} .run-context {{ grid-template-columns:1fr; }} .run-context div {{ border-right:0; border-bottom:1px solid var(--line); }} .episode-grid {{ grid-template-columns:1fr; }} .matrix-row {{ grid-template-columns:76px repeat(2,1fr); }} .bar {{ grid-template-columns:100px 1fr 36px; }} footer {{ flex-direction:column; }} }}
   </style>
 </head>
@@ -478,17 +537,19 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
           <div class="field"><label>POLICY</label><div class="field-output">Waypoint baseline · sha256 {html.escape(robot_policy_digest[:12])}</div></div>
           <div class="policy-timeline">{html.escape(robot_policy_timeline)}</div>
           <div class="run-result">
-            <div><span>EVALUATION RESULT</span><b>{robot_lift_passes}/{robot_episode_count} LIFT CHECKER PASS</b></div>
+            <div><span>FINAL RESULT</span><b>{robot_lift_passes}/{robot_episode_count} LIFT CHECKER PASS</b></div>
             <div><span>CONTACT GRASP</span><b>{'NOT EVALUATED' if robot_grasp_attach_used else 'NO ATTACH REPORTED'}</b></div>
             <div><span>ROBOT EPISODES</span><b>{robot_completed_episodes}/{robot_episode_count} {'COMPLETED' if robot_completed_episodes else 'NOT RUN'}</b></div>
-            <div><span>MEAN SIM TIME</span><b>{robot_sim_time:.2f} s</b></div>
-            <div><span>CONTROL STEPS</span><b>{robot_steps} TOTAL</b></div>
-            <div><span>TRACE RECORDS</span><b>{robot_trace_records} TOTAL</b></div>
+            <div><span>FIRST-PASS RATE</span><b>{robot_first_passes}/{robot_episode_count}</b></div>
+            <div><span>RECOVERY</span><b>{recovered_episode_count}/1 RECOVERED</b></div>
+            <div><span>EXECUTIONS</span><b>{robot_execution_count} TOTAL</b></div>
           </div>
           <p class="truth-note">{html.escape(simulator_name)} {html.escape(simulator_version)} · mean wall time {robot_wall_time:.2f} s. The batch varies the cube pose under frozen seeds and one frozen policy. This is not a contact-realistic grasp: the policy triggers a kinematic weld to <code>gripper_frame_link</code> at 3.0 s, and this SO-101 fixture does not provide robot collision geometry. A pass means only that the welded cube crossed the 0.10 m lift threshold.</p>
           <div class="links"><button class="artifact-button" data-artifact="robot_policy">Inspect policy</button><button class="artifact-button" data-artifact="robot_episodes">Inspect episode evidence</button><button class="artifact-button" data-artifact="robot_comparison">Inspect comparison</button></div>
         </aside>
       </section>
+
+      {recovery_panel}
 
       <section class="sim-debug" aria-label="Simulator parameter debugger">
         <div class="sim-debug-head"><div><div class="section-label">Cross-simulator debugging</div><h2>Simulator parameter matrix</h2><p class="section-copy">Shared inputs stay frozen; backend status and outcomes remain visibly separate.</p></div><button class="artifact-button" data-artifact="simulator_debug">Inspect debug manifest</button></div>
@@ -566,7 +627,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
   <script>
     const cells = {matrix_json};
     const artifacts = {artifact_json};
-    const artifactTitles = {{plan:'Frozen campaign plan',ledger:'Attempt ledger',transfer:'Transfer fidelity report',robustness:'Counterfactual robustness report',transport:'RoboChallenge transport audit',robot_policy:'SO-101 waypoint policy',robot_episodes:'SO-101 episode batch evidence',robot_comparison:'URDF Studio comparison report',simulator_debug:'Simulator debug manifest'}};
+    const artifactTitles = {{plan:'Frozen campaign plan',ledger:'Attempt ledger',transfer:'Transfer fidelity report',robustness:'Counterfactual robustness report',transport:'RoboChallenge transport audit',robot_policy:'SO-101 waypoint policy',robot_episodes:'SO-101 episode batch evidence',robot_recovery:'SO-101 failure and recovery evidence',robot_comparison:'URDF Studio comparison report',simulator_debug:'Simulator debug manifest'}};
     const pairs = [...new Set(cells.map(c => c.pair))];
     const conditions = [...new Set(cells.map(c => c.condition))];
     const matrix = document.getElementById('matrix');
