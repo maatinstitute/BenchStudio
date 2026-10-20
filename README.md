@@ -96,6 +96,19 @@ The end-to-end frozen-campaign CI gate can be run directly with:
 python -m pytest -q tests/test_ci_smoke.py
 ```
 
+For a presentation-ready local demo using only the checked-in deterministic
+fixtures, run:
+
+```bash
+bash scripts/demo.sh /tmp/benchstudio-demo
+```
+
+It executes a frozen campaign, robustness evidence flow, matched transfer
+comparison, and RoboChallenge observe/action transport audit. The generated
+files under `/tmp/benchstudio-demo` are inspectable evidence artifacts. These
+fixtures demonstrate BenchStudio's execution and audit boundaries; they are
+not physical-robot or model-quality results.
+
 Run the complete local CI-equivalent gate, including the full suite and
 cross-version-friendly bytecode compilation, with:
 
