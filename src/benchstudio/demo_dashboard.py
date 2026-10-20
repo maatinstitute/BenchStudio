@@ -106,6 +106,16 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
         )
 
     matrix_json = json.dumps(matrix_cells, separators=(",", ":")).replace("</", "<\\/")
+    artifact_json = json.dumps(
+        {
+            "plan": plan,
+            "ledger": ledger,
+            "transfer": transfer,
+            "robustness": robustness,
+            "transport": robochallenge,
+        },
+        separators=(",", ":"),
+    ).replace("</", "<\\/")
     run_id = html.escape(str(plan.get("run_id", "BenchStudio demo")))
     plan_digest = _short(plan.get("plan_digest_sha256"), 16)
     transport_valid = robochallenge.get("valid") is True
@@ -129,11 +139,10 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     .mark {{ width:14px; height:14px; border-radius:4px; background:var(--pink); }}
     .brand span:last-child {{ color:var(--muted); font-weight:400; }}
     .tag {{ color:#cfcfcf; border:1px solid var(--line); border-radius:5px; padding:5px 8px; font-size:10px; letter-spacing:.04em; }}
-    .hero {{ padding:72px 0 56px; max-width:920px; }}
-    .kicker {{ color:var(--muted); font:500 11px/1.2 "Noto Sans Mono", monospace; letter-spacing:.1em; text-transform:uppercase; }}
-    h1 {{ margin:18px 0 20px; font-size:clamp(42px, 6vw, 72px); line-height:1.04; letter-spacing:-.045em; font-weight:500; }}
-    .hero p {{ margin:0; max-width:720px; color:#b8b8b8; font-size:17px; line-height:1.65; }}
-    .runline {{ display:flex; flex-wrap:wrap; gap:18px; margin-top:28px; color:#777; font:10px/1.3 "Noto Sans Mono", monospace; }}
+    .run-context {{ display:grid; grid-template-columns:1.5fr 1fr 1fr; border:1px solid var(--line); border-radius:10px; overflow:hidden; margin:18px 0; }}
+    .run-context div {{ padding:14px 18px; background:var(--surface); border-right:1px solid var(--line); min-width:0; }} .run-context div:last-child {{ border:0; }}
+    .run-context span {{ display:block; color:#777; font:9px/1 "Noto Sans Mono",monospace; letter-spacing:.08em; }}
+    .run-context b {{ display:block; margin-top:7px; overflow:hidden; text-overflow:ellipsis; color:#c8c8c8; font:500 11px/1.4 "Noto Sans Mono",monospace; white-space:nowrap; }}
     .metrics {{ display:grid; grid-template-columns:repeat(4,1fr); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:18px; }}
     .metric {{ padding:18px 20px; background:var(--surface); border-right:1px solid var(--line); }}
     .metric:last-child {{ border-right:0; }}
@@ -174,28 +183,33 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     .evidence div {{ padding:15px; background:var(--raised); border-right:1px solid var(--line); }} .evidence div:last-child {{ border:0; }}
     .evidence span {{ display:block; color:#777; font:9px/1 "Noto Sans Mono",monospace; }}
     .evidence b {{ display:block; margin:9px 0 4px; font-size:12px; font-weight:500; }} .evidence small {{ color:#858585; font:9px/1.4 "Noto Sans Mono",monospace; }}
-    .links {{ display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }}
-    .links a {{ color:#aaa; text-decoration:none; border-bottom:1px solid #555; padding:3px 0; margin-right:12px; font-size:11px; }} .links a:hover {{ color:#fff; border-color:var(--pink); }}
+    .links {{ display:flex; flex-wrap:wrap; gap:18px; margin-top:18px; }}
+    .artifact-button {{ appearance:none; border:0; border-bottom:1px solid #555; background:none; color:#aaa; padding:3px 0; font:11px/1.4 "Noto Sans",Arial,sans-serif; cursor:pointer; }} .artifact-button:hover {{ color:#fff; border-color:var(--pink); }}
     details {{ border:1px solid var(--line); border-radius:10px; background:var(--surface); margin-bottom:18px; }}
     summary {{ cursor:pointer; padding:17px 20px; color:#aaa; font-size:10px; letter-spacing:.04em; }}
     .json-panel {{ margin:0 20px 20px; padding:17px; border:1px solid var(--line); border-radius:7px; background:#171717; overflow:auto; }}
     .json-panel code {{ color:#c8c8c8; font-size:11px; line-height:1.8; white-space:pre; }}
     .json-key {{ color:#d98ab9; }} .json-string {{ color:#b8aec4; }} .json-number {{ color:#a5bdc5; }} .json-ok {{ color:var(--ok); }}
+    dialog {{ width:min(820px,calc(100% - 32px)); max-height:82vh; padding:0; color:var(--text); background:var(--surface); border:1px solid #444; border-radius:10px; }}
+    dialog::backdrop {{ background:rgba(0,0,0,.72); }}
+    .dialog-head {{ display:flex; justify-content:space-between; align-items:center; padding:16px 18px; border-bottom:1px solid var(--line); }}
+    .dialog-head strong {{ font-size:13px; font-weight:500; }} .dialog-head span {{ display:block; color:var(--muted); font:9px/1.4 "Noto Sans Mono",monospace; margin-top:3px; }}
+    .close {{ appearance:none; border:1px solid var(--line); border-radius:5px; background:var(--raised); color:#bbb; padding:6px 9px; cursor:pointer; }}
+    #artifact-content {{ margin:0; padding:20px; overflow:auto; color:#c8c8c8; font:11px/1.7 "Noto Sans Mono",monospace; white-space:pre-wrap; word-break:break-word; }}
     footer {{ display:flex; justify-content:space-between; gap:20px; color:#707070; border-top:1px solid var(--line); padding-top:18px; font-size:10px; }}
     @media(max-width:800px) {{ .story {{ grid-template-columns:1fr; }} .transfer {{ border-right:0; border-bottom:1px solid var(--line); }} .metrics {{ grid-template-columns:1fr 1fr; }} .metric:nth-child(2) {{ border-right:0; }} .metric:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} .evidence {{ grid-template-columns:1fr 1fr; }} .evidence div:nth-child(2) {{ border-right:0; }} .evidence div:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} }}
-    @media(max-width:560px) {{ .shell {{ width:calc(100% - 24px); }} .hero {{ padding:52px 0 40px; }} h1 {{ font-size:42px; }} .matrix-row {{ grid-template-columns:76px repeat(2,1fr); }} .bar {{ grid-template-columns:100px 1fr 36px; }} .brand span:last-child {{ display:none; }} footer {{ flex-direction:column; }} }}
+    @media(max-width:560px) {{ .shell {{ width:calc(100% - 24px); }} .run-context {{ grid-template-columns:1fr; }} .run-context div {{ border-right:0; border-bottom:1px solid var(--line); }} .matrix-row {{ grid-template-columns:76px repeat(2,1fr); }} .bar {{ grid-template-columns:100px 1fr 36px; }} footer {{ flex-direction:column; }} }}
   </style>
 </head>
 <body>
   <div class="shell">
-    <header><div class="brand"><span class="mark"></span>BenchStudio <span>/ evaluation report</span></div><span class="tag">QUALIFIED EVIDENCE</span></header>
+    <header><div class="brand"><span class="mark"></span>BenchStudio <span>/ Eval Control Room</span></div><span class="mono" style="color:#777;font-size:10px">{scheduled} ATTEMPTS · {matched_pairs} TRANSFER PAIRS</span></header>
 
     <main>
-      <section class="hero">
-        <div class="kicker">Controlled comparison · deterministic fixture</div>
-        <h1>The evaluation is complete.<br>The transfer claim is not.</h1>
-        <p>BenchStudio accounted for every scheduled attempt and verified every evidence record. The matched fixture still produced a {gap:+d} percentage-point transfer gap, so the result supports pipeline integrity—not real-world performance.</p>
-        <div class="runline"><span>RUN {run_id}</span><span>PLAN {plan_digest}</span><span>{matched_pairs} MATCHED TRANSFER PAIRS</span></div>
+      <section class="run-context" aria-label="Run identity">
+        <div><span>RUN</span><b>{run_id}</b></div>
+        <div><span>MODE</span><b>CONTROLLED COMPARISON</b></div>
+        <div><span>PLAN</span><b>{plan_digest}</b></div>
       </section>
 
       <section class="metrics" aria-label="Campaign integrity">
@@ -239,7 +253,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
           <div><span>03</span><b>Counterfactual branches</b><small>{complete_branches}/{branches} complete</small></div>
           <div><span>04</span><b>Transport audit</b><small>{transport_events} events · {'valid' if transport_valid else 'invalid'}</small></div>
         </div>
-        <div class="links"><a href="campaign-plan.json">Frozen plan ↗</a><a href="campaign/attempt-results.jsonl">Attempt ledger ↗</a><a href="transfer/transfer-report.json">Transfer report ↗</a><a href="robustness/counterfactual-summary.json">Robustness report ↗</a></div>
+        <div class="links"><button class="artifact-button" data-artifact="plan">Inspect frozen plan</button><button class="artifact-button" data-artifact="ledger">Inspect attempt ledger</button><button class="artifact-button" data-artifact="transfer">Inspect transfer report</button><button class="artifact-button" data-artifact="robustness">Inspect robustness report</button><button class="artifact-button" data-artifact="transport">Inspect transport audit</button></div>
       </section>
 
       <details>
@@ -255,16 +269,26 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
       </details>
     </main>
 
-    <footer><span>BenchStudio · evaluation evidence, not benchmark theater</span><span>Physics and official scoring remain external</span></footer>
+    <footer><span>BenchStudio · independent evaluation infrastructure for embodied AI</span><span>Model-agnostic · benchmark-agnostic · evidence-first</span></footer>
   </div>
+  <dialog id="artifact-dialog" aria-labelledby="artifact-title">
+    <div class="dialog-head"><div><strong id="artifact-title">Evidence artifact</strong><span>READ-ONLY · GENERATED FROM THIS RUN</span></div><button class="close" type="button" aria-label="Close evidence inspector">Close</button></div>
+    <pre id="artifact-content"></pre>
+  </dialog>
   <script>
     const cells = {matrix_json};
+    const artifacts = {artifact_json};
+    const artifactTitles = {{plan:'Frozen campaign plan',ledger:'Attempt ledger',transfer:'Transfer fidelity report',robustness:'Counterfactual robustness report',transport:'RoboChallenge transport audit'}};
     const pairs = [...new Set(cells.map(c => c.pair))];
     const conditions = [...new Set(cells.map(c => c.condition))];
     const matrix = document.getElementById('matrix');
     const head = document.createElement('div'); head.className = 'matrix-row';
     head.innerHTML = '<div class="matrix-label">INITIAL STATE</div>' + conditions.map(c => `<div class="matrix-label">${{c.replaceAll('_',' ').toUpperCase()}}</div>`).join(''); matrix.appendChild(head);
     pairs.forEach((pair, index) => {{ const row = document.createElement('div'); row.className = 'matrix-row'; row.innerHTML = `<div class="matrix-label">PAIR ${{String(index + 1).padStart(2,'0')}}</div>` + conditions.map(condition => {{ const cell = cells.find(c => c.pair === pair && c.condition === condition); return `<div class="matrix-cell"><div><strong>${{cell?.steps ?? '—'}} denoise steps</strong><br><small>${{cell?.verified ? 'verified' : 'unverified'}}</small></div><span class="check">${{cell?.success ? '✓' : '—'}}</span></div>`; }}).join(''); matrix.appendChild(row); }});
+    const dialog = document.getElementById('artifact-dialog');
+    document.querySelectorAll('[data-artifact]').forEach(button => button.addEventListener('click', () => {{ const key=button.dataset.artifact; document.getElementById('artifact-title').textContent=artifactTitles[key]; document.getElementById('artifact-content').textContent=JSON.stringify(artifacts[key],null,2); dialog.showModal(); }}));
+    dialog.querySelector('.close').addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', event => {{ if(event.target===dialog) dialog.close(); }});
   </script>
 </body>
 </html>
