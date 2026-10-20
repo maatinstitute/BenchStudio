@@ -124,6 +124,12 @@ auto-detects a sibling `urdf-studio` checkout. Otherwise set
 `URDF_STUDIO_ROOT=/path/to/urdf-studio`. Limit or reorder the requested backends
 with `BENCHSTUDIO_SIMULATORS=mujoco`, `genesis`, or `mujoco,genesis`.
 
+The included SO-101 run is an orchestration fixture, not a contact-realistic
+grasp benchmark. Its policy explicitly welds the cube to `gripper_frame_link`,
+and its pass condition is a 0.10 m object lift. The control room therefore
+reports `LIFT CHECKER PASS` and `CONTACT GRASP NOT EVALUATED` rather than using
+the run as evidence of physical grasp quality.
+
 Run the complete local CI-equivalent gate, including the full suite and
 cross-version-friendly bytecode compilation, with:
 

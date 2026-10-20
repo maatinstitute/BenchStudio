@@ -166,6 +166,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     transport_valid = robochallenge.get("valid") is True
     transport_events = int(robochallenge.get("event_count", 0) or 0)
     robot_success = robot_report.get("success") is True
+    robot_grasp_attach_used = robot_report.get("grasp_attach_used") is True
     robot_episode_count = int(robot_run.get("episodes", 0) or 0)
     robot_summary = robot_comparison.get("summary", {})
     robot_backend_summary = (
@@ -257,7 +258,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
         ("Run status", "shared inputs", backend_value("mujoco", "status"), backend_value("genesis", "status")),
         ("Engine package", "—", backend_value("mujoco", "package_version", "available"), backend_value("genesis", "package_version", "unavailable")),
         ("Episodes", str(debug_shared.get("episodes", "—")), f'{backend_value("mujoco", "completed")}/{backend_value("mujoco", "episodes")}', f'{backend_value("genesis", "completed")}/{backend_value("genesis", "episodes")}'),
-        ("Success rate", "same checker", rate_value("mujoco"), rate_value("genesis")),
+        ("Lift checker pass rate", "same checker", rate_value("mujoco"), rate_value("genesis")),
         ("Mean sim time", "same timeout", seconds_value("mujoco", "mean_sim_time_s"), seconds_value("genesis", "mean_sim_time_s")),
         ("Mean wall time", "host measured", seconds_value("mujoco", "mean_wall_time_s"), seconds_value("genesis", "mean_wall_time_s")),
         ("Backend error", "—", backend_error("mujoco"), backend_error("genesis")),
@@ -411,12 +412,14 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
           <div class="field"><label>POLICY</label><div class="field-output">Waypoint baseline · sha256 {html.escape(robot_policy_digest[:12])}</div></div>
           <div class="policy-timeline">{html.escape(robot_policy_timeline)}</div>
           <div class="run-result">
-            <div><span>ROBOT EPISODES</span><b>{robot_completed_episodes}/{robot_episode_count} {'SUCCESS' if robot_success else 'NOT RUN'}</b></div>
+            <div><span>EVALUATION RESULT</span><b>{'LIFT CHECKER PASS' if robot_success else 'CHECKER FAIL'}</b></div>
+            <div><span>CONTACT GRASP</span><b>{'NOT EVALUATED' if robot_grasp_attach_used else 'NO ATTACH REPORTED'}</b></div>
+            <div><span>ROBOT EPISODES</span><b>{robot_completed_episodes}/{robot_episode_count} {'COMPLETED' if robot_completed_episodes else 'NOT RUN'}</b></div>
             <div><span>SIM TIME</span><b>{robot_sim_time:.2f} s</b></div>
             <div><span>CONTROL STEPS</span><b>{robot_steps}</b></div>
             <div><span>TRACE RECORDS</span><b>{robot_trace_records}</b></div>
           </div>
-          <p class="truth-note">{html.escape(simulator_name)} {html.escape(simulator_version)} · wall time {robot_wall_time:.2f} s. This baseline uses URDF Studio's declared weld-attach mechanism; it validates orchestration and evidence capture, not contact-realistic grasp physics.</p>
+          <p class="truth-note">{html.escape(simulator_name)} {html.escape(simulator_version)} · wall time {robot_wall_time:.2f} s. This is not a contact-realistic grasp: the policy triggers a kinematic weld to <code>gripper_frame_link</code> at 3.0 s, and this SO-101 fixture does not provide robot collision geometry. The pass means only that the welded cube crossed the 0.10 m lift threshold.</p>
           <div class="links"><button class="artifact-button" data-artifact="robot_policy">Inspect policy</button><button class="artifact-button" data-artifact="robot_episode">Inspect episode evidence</button><button class="artifact-button" data-artifact="robot_comparison">Inspect comparison</button></div>
         </aside>
       </section>
@@ -453,6 +456,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
           <h2>What the evidence permits</h2>
           <div class="decision supported"><b>Campaign integrity</b><span>All frozen attempts are terminal and accounted for.</span></div>
           <div class="decision supported"><b>Evidence integrity</b><span>Every committed result passed local verification.</span></div>
+          <div class="decision unsupported"><b>Contact-realistic grasp</b><span>Not evaluated; this fixture uses a policy-triggered weld.</span></div>
           <div class="decision unsupported"><b>Real-world transfer</b><span>Not supported by this deterministic fixture.</span></div>
           <div class="decision unsupported"><b>Model quality</b><span>No model-performance claim is made.</span></div>
         </aside>

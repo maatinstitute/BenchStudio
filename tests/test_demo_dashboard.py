@@ -146,6 +146,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
         evidence / "urdf-studio" / "mujoco" / "episode-0" / "report.json",
         {
             "success": True,
+            "grasp_attach_used": True,
             "sim_time_s": 1.5,
             "wall_time_s": 0.4,
             "steps": 75,
@@ -172,7 +173,11 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert 'data-artifact="plan"' in document
     assert 'href="campaign-plan.json"' not in document
     assert "SO-101 · Cube lift" in document
-    assert "ROBOT EPISODES</span><b>1/1 SUCCESS" in document
+    assert "ROBOT EPISODES</span><b>1/1 COMPLETED" in document
+    assert "EVALUATION RESULT</span><b>LIFT CHECKER PASS" in document
+    assert "CONTACT GRASP</span><b>NOT EVALUATED" in document
+    assert "This is not a contact-realistic grasp" in document
+    assert "welded cube crossed the 0.10 m lift threshold" in document
     assert "Separate accounting fixture; not additional SO-101 videos." in document
     assert "Attempts completed</span><strong>2/2" in document
     assert "urdf-studio/mujoco/episode-0/episode.mp4" in document
@@ -187,4 +192,5 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert "Simulator parameter matrix" in document
     assert "PHYSICS STEP" in document
     assert "genesis package is unavailable" in document
+    assert "Lift checker pass rate" in document
     assert 'data-artifact="simulator_debug"' in document
