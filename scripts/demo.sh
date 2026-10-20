@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 OUTPUT=${1:-"$ROOT/runs/benchstudio-demo"}
 SERVE=${2:-""}
-SIMULATOR=${BENCHSTUDIO_SIMULATOR:-mujoco}
+SIMULATORS=${BENCHSTUDIO_SIMULATORS:-${BENCHSTUDIO_SIMULATOR:-mujoco,genesis}}
 URDF_STUDIO_ROOT=${URDF_STUDIO_ROOT:-"$(cd "$ROOT/.." && pwd)/urdf-studio"}
 
 if [[ -e "$OUTPUT" ]]; then
@@ -35,9 +35,9 @@ python "$ROOT/examples/run_robochallenge_mock.py" >"$OUTPUT/robochallenge-report
 cat "$OUTPUT/robochallenge-report.json"
 
 if [[ -d "$URDF_STUDIO_ROOT/backend" ]]; then
-    echo "[5/5] URDF Studio SO-101 cube-lift evaluation ($SIMULATOR)"
+    echo "[5/5] URDF Studio SO-101 cube-lift evaluation ($SIMULATORS)"
     URDF_STUDIO_ROOT="$URDF_STUDIO_ROOT" \
-        bash "$ROOT/scripts/demo_urdf_studio.sh" "$OUTPUT/urdf-studio" "$SIMULATOR"
+        bash "$ROOT/scripts/demo_urdf_studio.sh" "$OUTPUT/urdf-studio" "$SIMULATORS"
 else
     echo "[5/5] URDF Studio checkout not found; robot episode skipped"
     echo "      Set URDF_STUDIO_ROOT to enable the SO-101 cube-lift evaluation."

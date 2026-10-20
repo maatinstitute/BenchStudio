@@ -53,6 +53,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     robot_report: dict[str, Any] = {}
     robot_comparison: dict[str, Any] = {}
     robot_policy: dict[str, Any] = {}
+    simulator_debug: dict[str, Any] = {}
     robot_policy_digest = "not loaded"
     robot_policy_timeline = "No policy artifact loaded"
     robot_root = root / "urdf-studio"
@@ -65,6 +66,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
         report_path = robot_root / selected_simulator / "episode-0" / "report.json"
         comparison_path = robot_root / "comparison.json"
         policy_path = robot_root / "scenario" / "waypoints.json"
+        simulator_debug_path = robot_root / "simulator-debug.json"
         if report_path.is_file():
             robot_report = _load_json(report_path)
         if comparison_path.is_file():
@@ -83,6 +85,8 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
                     events.append(f"{label} {time_s:.1f}s")
                 if events:
                     robot_policy_timeline = " · ".join(events)
+        if simulator_debug_path.is_file():
+            simulator_debug = _load_json(simulator_debug_path)
 
     attempts = plan.get("attempts", [])
     completed = sum(row.get("status") == "completed" for row in ledger)
@@ -153,6 +157,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
             "robot_episode": robot_report,
             "robot_comparison": robot_comparison,
             "robot_policy": robot_policy,
+            "simulator_debug": simulator_debug,
         },
         separators=(",", ":"),
     ).replace("</", "<\\/")
@@ -188,13 +193,22 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
         if isinstance(robot_packages, dict)
         else "not reported"
     )
-    simulator_options = "".join(
-        f'<option value="{simulator}" '
-        f'{"selected" if simulator == selected_simulator else "disabled"}>'
-        f'{display_name} · '
-        f'{"evaluated" if simulator == selected_simulator else "run required"}</option>'
-        for simulator, display_name in simulator_display_names.items()
-    )
+    simulator_debug_backends = simulator_debug.get("backends", {})
+    simulator_options_parts = []
+    for simulator, display_name in simulator_display_names.items():
+        debug_backend = (
+            simulator_debug_backends.get(simulator, {})
+            if isinstance(simulator_debug_backends, dict)
+            else {}
+        )
+        status = str(debug_backend.get("status", "not_run")) if isinstance(debug_backend, dict) else "not_run"
+        status_label = "run required" if status == "not_run" else status
+        simulator_options_parts.append(
+            f'<option value="{simulator}" '
+            f'{"selected" if simulator == selected_simulator else "disabled"}>'
+            f'{display_name} · {html.escape(status_label)}</option>'
+        )
+    simulator_options = "".join(simulator_options_parts)
     if robot_report:
         episode_media = (
             f'<video controls autoplay muted loop playsinline aria-label="SO-101 cube-lift episode">'
@@ -206,6 +220,69 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
             '<div class="episode-empty">NO ROBOT EPISODE LOADED<br>'
             'Run scripts/demo_urdf_studio.sh first.</div>'
         )
+
+    debug_backends = simulator_debug.get("backends", {})
+    debug_shared = simulator_debug.get("shared_parameters", {})
+    debug_digests = simulator_debug.get("input_digests", {})
+
+    def backend_value(backend_id: str, key: str, default: str = "—") -> str:
+        backend = debug_backends.get(backend_id, {}) if isinstance(debug_backends, dict) else {}
+        if not isinstance(backend, dict):
+            return default
+        value = backend.get(key)
+        if value is None:
+            return default
+        return str(value)
+
+    def rate_value(backend_id: str) -> str:
+        raw = backend_value(backend_id, "success_rate")
+        if raw == "—":
+            return raw
+        return f"{float(raw) * 100:.0f}%"
+
+    def seconds_value(backend_id: str, key: str) -> str:
+        raw = backend_value(backend_id, key)
+        if raw == "—":
+            return raw
+        return f"{float(raw):.2f} s"
+
+    def backend_error(backend_id: str) -> str:
+        backend = debug_backends.get(backend_id, {}) if isinstance(debug_backends, dict) else {}
+        errors = backend.get("errors", []) if isinstance(backend, dict) else []
+        if isinstance(errors, list) and errors:
+            return str(errors[0]).splitlines()[-1][:120]
+        return "none"
+
+    debug_rows = [
+        ("Run status", "shared inputs", backend_value("mujoco", "status"), backend_value("genesis", "status")),
+        ("Engine package", "—", backend_value("mujoco", "package_version", "available"), backend_value("genesis", "package_version", "unavailable")),
+        ("Episodes", str(debug_shared.get("episodes", "—")), f'{backend_value("mujoco", "completed")}/{backend_value("mujoco", "episodes")}', f'{backend_value("genesis", "completed")}/{backend_value("genesis", "episodes")}'),
+        ("Success rate", "same checker", rate_value("mujoco"), rate_value("genesis")),
+        ("Mean sim time", "same timeout", seconds_value("mujoco", "mean_sim_time_s"), seconds_value("genesis", "mean_sim_time_s")),
+        ("Mean wall time", "host measured", seconds_value("mujoco", "mean_wall_time_s"), seconds_value("genesis", "mean_wall_time_s")),
+        ("Backend error", "—", backend_error("mujoco"), backend_error("genesis")),
+    ]
+    debug_rows_html = "".join(
+        "<div class=\"debug-row\">"
+        + "".join(f"<div>{html.escape(value)}</div>" for value in row)
+        + "</div>"
+        for row in debug_rows
+    )
+    shared_parameters = [
+        ("PHYSICS STEP", f'{debug_shared.get("physics_timestep_s", "—")} s'),
+        ("CONTROL", f'{debug_shared.get("control_hz", "—")} Hz'),
+        ("CHECKER", f'every {debug_shared.get("checker_interval_steps", "—")} steps'),
+        ("MAX STEPS", str(debug_shared.get("max_episode_steps", "—"))),
+        ("ATTACH", f'{debug_shared.get("grasp_attach", "—")} → {debug_shared.get("attach_link", "—")}'),
+    ]
+    shared_parameters_html = "".join(
+        f'<div><span>{label}</span><b>{html.escape(value)}</b></div>'
+        for label, value in shared_parameters
+    )
+    input_bindings_html = " · ".join(
+        f'{name.removesuffix("_sha256")} {str(value)[:10]}'
+        for name, value in debug_digests.items()
+    ) if isinstance(debug_digests, dict) else "not loaded"
 
     document = f"""<!doctype html>
 <html lang="en">
@@ -237,6 +314,16 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     .metric-label {{ display:block; color:var(--muted); font-size:9px; letter-spacing:.08em; text-transform:uppercase; }}
     .metric strong {{ display:block; margin-top:8px; font-size:27px; line-height:1; letter-spacing:-.035em; font-weight:500; }}
     .robot-run {{ display:grid; grid-template-columns:1.35fr .65fr; border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:18px; background:var(--surface); }}
+    .sim-debug {{ border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:18px; background:var(--surface); }}
+    .sim-debug-head {{ display:flex; justify-content:space-between; gap:24px; padding:24px; border-bottom:1px solid var(--line); }}
+    .sim-debug-head h2 {{ margin-bottom:4px; }}
+    .shared-params {{ display:grid; grid-template-columns:repeat(5,1fr); border-bottom:1px solid var(--line); }}
+    .shared-params div {{ padding:14px 16px; border-right:1px solid var(--line); }} .shared-params div:last-child {{ border:0; }}
+    .shared-params span {{ display:block; color:#777; font:9px/1 "Noto Sans Mono",monospace; }} .shared-params b {{ display:block; margin-top:7px; color:#ccc; font:500 10px/1.4 "Noto Sans Mono",monospace; }}
+    .debug-row {{ display:grid; grid-template-columns:1.05fr .9fr 1fr 1fr; border-bottom:1px solid var(--line); }} .debug-row:last-child {{ border:0; }}
+    .debug-row div {{ min-width:0; padding:11px 14px; border-right:1px solid var(--line); color:#aaa; font:10px/1.45 "Noto Sans Mono",monospace; overflow-wrap:anywhere; }} .debug-row div:last-child {{ border:0; }}
+    .debug-row.header div {{ color:#ddd; background:var(--raised); font-weight:600; }}
+    .debug-bindings {{ padding:12px 16px; border-top:1px solid var(--line); color:#777; font:9px/1.5 "Noto Sans Mono",monospace; }}
     .episode-view {{ min-height:390px; background:#111; display:grid; place-items:center; border-right:1px solid var(--line); }}
     .episode-view video {{ display:block; width:100%; height:100%; max-height:520px; object-fit:contain; background:#111; }}
     .episode-empty {{ color:#777; font:11px/1.6 "Noto Sans Mono",monospace; text-align:center; padding:40px; }}
@@ -299,7 +386,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     .close {{ appearance:none; border:1px solid var(--line); border-radius:5px; background:var(--raised); color:#bbb; padding:6px 9px; cursor:pointer; }}
     #artifact-content {{ margin:0; padding:20px; overflow:auto; color:#c8c8c8; font:11px/1.7 "Noto Sans Mono",monospace; white-space:pre-wrap; word-break:break-word; }}
     footer {{ display:flex; justify-content:space-between; gap:20px; color:#707070; border-top:1px solid var(--line); padding-top:18px; font-size:10px; }}
-    @media(max-width:800px) {{ .robot-run,.story {{ grid-template-columns:1fr; }} .episode-view,.transfer {{ border-right:0; border-bottom:1px solid var(--line); }} .metrics {{ grid-template-columns:1fr 1fr; }} .metric:nth-child(2) {{ border-right:0; }} .metric:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} .evidence {{ grid-template-columns:1fr 1fr; }} .evidence div:nth-child(2) {{ border-right:0; }} .evidence div:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} }}
+    @media(max-width:800px) {{ .robot-run,.story {{ grid-template-columns:1fr; }} .episode-view,.transfer {{ border-right:0; border-bottom:1px solid var(--line); }} .metrics {{ grid-template-columns:1fr 1fr; }} .metric:nth-child(2) {{ border-right:0; }} .metric:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} .evidence {{ grid-template-columns:1fr 1fr; }} .evidence div:nth-child(2) {{ border-right:0; }} .evidence div:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} .shared-params {{ grid-template-columns:1fr 1fr; }} .debug-row {{ grid-template-columns:90px repeat(3,minmax(120px,1fr)); }} .sim-debug {{ overflow-x:auto; }} }}
     @media(max-width:560px) {{ .shell {{ width:calc(100% - 24px); }} .run-context {{ grid-template-columns:1fr; }} .run-context div {{ border-right:0; border-bottom:1px solid var(--line); }} .matrix-row {{ grid-template-columns:76px repeat(2,1fr); }} .bar {{ grid-template-columns:100px 1fr 36px; }} footer {{ flex-direction:column; }} }}
   </style>
 </head>
@@ -332,6 +419,14 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
           <p class="truth-note">{html.escape(simulator_name)} {html.escape(simulator_version)} · wall time {robot_wall_time:.2f} s. This baseline uses URDF Studio's declared weld-attach mechanism; it validates orchestration and evidence capture, not contact-realistic grasp physics.</p>
           <div class="links"><button class="artifact-button" data-artifact="robot_policy">Inspect policy</button><button class="artifact-button" data-artifact="robot_episode">Inspect episode evidence</button><button class="artifact-button" data-artifact="robot_comparison">Inspect comparison</button></div>
         </aside>
+      </section>
+
+      <section class="sim-debug" aria-label="Simulator parameter debugger">
+        <div class="sim-debug-head"><div><div class="section-label">Cross-simulator debugging</div><h2>Simulator parameter matrix</h2><p class="section-copy">Shared inputs stay frozen; backend status and outcomes remain visibly separate.</p></div><button class="artifact-button" data-artifact="simulator_debug">Inspect debug manifest</button></div>
+        <div class="shared-params">{shared_parameters_html}</div>
+        <div class="debug-row header"><div>PARAMETER</div><div>SHARED CONTRACT</div><div>MUJOCO</div><div>GENESIS</div></div>
+        {debug_rows_html}
+        <div class="debug-bindings">INPUT BINDINGS · {html.escape(input_bindings_html)}</div>
       </section>
 
       <div class="campaign-scope"><div class="section-label">Frozen campaign fixture</div><p>Separate accounting fixture; not additional SO-101 videos.</p></div>
@@ -401,7 +496,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
   <script>
     const cells = {matrix_json};
     const artifacts = {artifact_json};
-    const artifactTitles = {{plan:'Frozen campaign plan',ledger:'Attempt ledger',transfer:'Transfer fidelity report',robustness:'Counterfactual robustness report',transport:'RoboChallenge transport audit',robot_policy:'SO-101 waypoint policy',robot_episode:'SO-101 episode evidence',robot_comparison:'URDF Studio comparison report'}};
+    const artifactTitles = {{plan:'Frozen campaign plan',ledger:'Attempt ledger',transfer:'Transfer fidelity report',robustness:'Counterfactual robustness report',transport:'RoboChallenge transport audit',robot_policy:'SO-101 waypoint policy',robot_episode:'SO-101 episode evidence',robot_comparison:'URDF Studio comparison report',simulator_debug:'Simulator debug manifest'}};
     const pairs = [...new Set(cells.map(c => c.pair))];
     const conditions = [...new Set(cells.map(c => c.condition))];
     const matrix = document.getElementById('matrix');

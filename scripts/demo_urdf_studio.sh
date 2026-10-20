@@ -4,14 +4,21 @@ set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 OUTPUT=${1:-"$ROOT/runs/urdf-studio-so101-cube"}
-SIMULATOR=${2:-mujoco}
+SIMULATORS=${2:-mujoco}
 URDF_STUDIO_ROOT=${URDF_STUDIO_ROOT:-"$(cd "$ROOT/.." && pwd)/urdf-studio"}
 URDF_STUDIO_PYTHON=${URDF_STUDIO_PYTHON:-"$URDF_STUDIO_ROOT/.venv/bin/python"}
 
-case "$SIMULATOR" in
-    mujoco|genesis) ;;
-    *) echo "Unsupported simulator: $SIMULATOR (choose mujoco or genesis)" >&2; exit 2 ;;
-esac
+IFS=',' read -r -a SIMULATOR_LIST <<<"$SIMULATORS"
+SIM_ARGS=()
+HAS_MUJOCO=false
+for simulator in "${SIMULATOR_LIST[@]}"; do
+    case "$simulator" in
+        mujoco) HAS_MUJOCO=true ;;
+        genesis) ;;
+        *) echo "Unsupported simulator: $simulator (choose mujoco or genesis)" >&2; exit 2 ;;
+    esac
+    SIM_ARGS+=(--sim "$simulator")
+done
 
 if [[ ! -d "$URDF_STUDIO_ROOT/backend" ]]; then
     echo "URDF Studio source was not found: $URDF_STUDIO_ROOT" >&2
@@ -35,15 +42,15 @@ cp -R "$URDF_STUDIO_ROOT/web/public/demo/assets" "$STAGING/assets"
     "$URDF_STUDIO_ROOT/web/public/demo/robot.urdf" "$STAGING/robot.urdf"
 
 echo "BenchStudio × URDF Studio"
-echo "robot=SO-101 task=cube-lift simulator=$SIMULATOR"
+echo "robot=SO-101 task=cube-lift simulators=$SIMULATORS"
 echo "source=$URDF_STUDIO_ROOT"
 
 cd "$URDF_STUDIO_ROOT"
 PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
     "$URDF_STUDIO_PYTHON" -m backend.scripts.scenario_run \
-    "$STAGING" --sim "$SIMULATOR" --out "$OUTPUT" --episodes 1
+    "$STAGING" "${SIM_ARGS[@]}" --out "$OUTPUT" --episodes 1
 
-if [[ "$SIMULATOR" == "mujoco" ]]; then
+if [[ "$HAS_MUJOCO" == true && -f "$OUTPUT/mujoco/episode-0/report.json" ]]; then
     EPISODE_DIR="$OUTPUT/mujoco/episode-0"
     ROBOT_VIDEO="$EPISODE_DIR/episode-robot.mp4"
     if MUJOCO_GL=egl PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
@@ -58,6 +65,13 @@ if [[ "$SIMULATOR" == "mujoco" ]]; then
         echo "Robot replay render unavailable; keeping URDF Studio's schematic video." >&2
     fi
 fi
+
+PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+    "$URDF_STUDIO_PYTHON" "$ROOT/scripts/build_simulator_debug_manifest.py" \
+    --scenario "$OUTPUT/scenario" \
+    --run "$OUTPUT/run.json" \
+    --comparison "$OUTPUT/comparison.json" \
+    --output "$OUTPUT/simulator-debug.json"
 
 echo
 echo "URDF Studio evaluation complete: $OUTPUT"

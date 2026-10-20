@@ -105,6 +105,44 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
         },
     )
     _write_json(
+        evidence / "urdf-studio" / "simulator-debug.json",
+        {
+            "schema": "benchstudio.simulator_debug.v1",
+            "shared_parameters": {
+                "physics_timestep_s": 0.0002,
+                "control_hz": 50.0,
+                "checker_interval_steps": 5,
+                "max_episode_steps": 400,
+                "grasp_attach": "weld",
+                "attach_link": "gripper_frame_link",
+                "episodes": 1,
+            },
+            "input_digests": {
+                "scenario_sha256": "a" * 64,
+                "robot_sha256": "b" * 64,
+                "policy_sha256": "c" * 64,
+            },
+            "backends": {
+                "mujoco": {
+                    "status": "evaluated",
+                    "package_version": "3.12.0",
+                    "episodes": 1,
+                    "completed": 1,
+                    "success_rate": 1.0,
+                    "mean_sim_time_s": 1.5,
+                    "mean_wall_time_s": 0.4,
+                    "errors": [],
+                },
+                "genesis": {
+                    "status": "failed",
+                    "episodes": 0,
+                    "completed": 0,
+                    "errors": ["genesis package is unavailable"],
+                },
+            },
+        },
+    )
+    _write_json(
         evidence / "urdf-studio" / "mujoco" / "episode-0" / "report.json",
         {
             "success": True,
@@ -139,10 +177,14 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert "Attempts completed</span><strong>2/2" in document
     assert "urdf-studio/mujoco/episode-0/episode.mp4" in document
     assert 'value="mujoco" selected>MuJoCo · evaluated' in document
-    assert 'value="genesis" disabled>Genesis · run required' in document
+    assert 'value="genesis" disabled>Genesis · failed' in document
     assert "this report stays bound to the evaluated episode" in document
     assert "225</b>" in document
     assert 'data-artifact="robot_episode"' in document
     assert 'data-artifact="robot_policy"' in document
     assert "Waypoint baseline · sha256" in document
     assert "ready 0.0s · close + attach 3.0s · lift 4.8s" in document
+    assert "Simulator parameter matrix" in document
+    assert "PHYSICS STEP" in document
+    assert "genesis package is unavailable" in document
+    assert 'data-artifact="simulator_debug"' in document

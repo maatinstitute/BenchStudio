@@ -110,17 +110,19 @@ as `episode-schematic.mp4`. The connector adds explicit damping to the staged
 URDF copy because the upstream demonstration URDF does not declare joint
 dynamics; the upstream checkout remains unchanged. The control room binds the
 waypoint policy by SHA-256 and exposes its timed events for inspection.
-BenchStudio adds campaign accounting, robustness
-evidence, matched transfer, and the RoboChallenge transport audit, then serves
-the robot episode and evidence in the Eval Control Room at
+The default demo requests both MuJoCo and Genesis with the same frozen inputs;
+the simulator matrix reports evaluated, failed, or unavailable backends without
+turning missing runs into zero scores. BenchStudio adds campaign accounting,
+robustness evidence, matched transfer, and the RoboChallenge transport audit,
+then serves the robot episode and evidence in the Eval Control Room at
 `http://127.0.0.1:8765`. The generated files
 under `/tmp/benchstudio-demo` remain inspectable evidence artifacts. If that
 directory already exists, the script creates a timestamped sibling rather than
 overwriting it. These fixtures demonstrate BenchStudio's execution and audit
 boundaries; they are not physical-robot or model-quality results. BenchStudio
 auto-detects a sibling `urdf-studio` checkout. Otherwise set
-`URDF_STUDIO_ROOT=/path/to/urdf-studio`. Choose another supported scenario
-backend with `BENCHSTUDIO_SIMULATOR=genesis`; MuJoCo is the default.
+`URDF_STUDIO_ROOT=/path/to/urdf-studio`. Limit or reorder the requested backends
+with `BENCHSTUDIO_SIMULATORS=mujoco`, `genesis`, or `mujoco,genesis`.
 
 Run the complete local CI-equivalent gate, including the full suite and
 cross-version-friendly bytecode compilation, with:
