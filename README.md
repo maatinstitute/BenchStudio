@@ -103,10 +103,12 @@ robot performing a cube-lift evaluation in MuJoCo, run:
 bash scripts/demo.sh /tmp/benchstudio-demo --serve
 ```
 
-It executes the URDF Studio scenario through its native MuJoCo runner, then
-replays the recorded SO-101 joints and cube poses through that same backend for
-the visible 3D episode. URDF Studio's portable schematic recording is retained
-as `episode-schematic.mp4`. The connector adds explicit damping to the staged
+It executes four seeded URDF Studio episodes through its native MuJoCo runner,
+varying the cube pose inside a fixed grasp region while keeping the policy and
+checker frozen. It then replays every episode's recorded SO-101 joints and cube
+poses through that same backend, producing one visible 3D video per episode.
+URDF Studio's portable schematic recordings are retained as
+`episode-schematic.mp4`. The connector adds explicit damping to the staged
 URDF copy because the upstream demonstration URDF does not declare joint
 dynamics; the upstream checkout remains unchanged. The control room binds the
 waypoint policy by SHA-256 and exposes its timed events for inspection.
@@ -114,7 +116,7 @@ The default demo requests both MuJoCo and Genesis with the same frozen inputs;
 the simulator matrix reports evaluated, failed, or unavailable backends without
 turning missing runs into zero scores. BenchStudio adds campaign accounting,
 robustness evidence, matched transfer, and the RoboChallenge transport audit,
-then serves the robot episode and evidence in the Eval Control Room at
+then serves the robot episode batch and evidence in the Eval Control Room at
 `http://127.0.0.1:8765`. The generated files
 under `/tmp/benchstudio-demo` remain inspectable evidence artifacts. If that
 directory already exists, the script creates a timestamped sibling rather than
@@ -124,11 +126,13 @@ auto-detects a sibling `urdf-studio` checkout. Otherwise set
 `URDF_STUDIO_ROOT=/path/to/urdf-studio`. Limit or reorder the requested backends
 with `BENCHSTUDIO_SIMULATORS=mujoco`, `genesis`, or `mujoco,genesis`.
 
-The included SO-101 run is an orchestration fixture, not a contact-realistic
+The included SO-101 batch is an orchestration fixture, not a contact-realistic
 grasp benchmark. Its policy explicitly welds the cube to `gripper_frame_link`,
-and its pass condition is a 0.10 m object lift. The control room therefore
-reports `LIFT CHECKER PASS` and `CONTACT GRASP NOT EVALUATED` rather than using
-the run as evidence of physical grasp quality.
+and its pass condition is a 0.10 m object lift. Multiple seeds exercise episode
+generation, artifact accounting, replay, and aggregate reporting; they do not
+add contact realism. The control room therefore reports the lift-checker pass
+count and `CONTACT GRASP NOT EVALUATED` rather than using the run as evidence of
+physical grasp quality.
 
 Run the complete local CI-equivalent gate, including the full suite and
 cross-version-friendly bytecode compilation, with:

@@ -48,22 +48,26 @@ echo "source=$URDF_STUDIO_ROOT"
 cd "$URDF_STUDIO_ROOT"
 PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
     "$URDF_STUDIO_PYTHON" -m backend.scripts.scenario_run \
-    "$STAGING" "${SIM_ARGS[@]}" --out "$OUTPUT" --episodes 1
+    "$STAGING" "${SIM_ARGS[@]}" --out "$OUTPUT"
 
-if [[ "$HAS_MUJOCO" == true && -f "$OUTPUT/mujoco/episode-0/report.json" ]]; then
-    EPISODE_DIR="$OUTPUT/mujoco/episode-0"
-    ROBOT_VIDEO="$EPISODE_DIR/episode-robot.mp4"
-    if MUJOCO_GL=egl PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
-        "$URDF_STUDIO_PYTHON" "$ROOT/scripts/render_urdf_studio_episode.py" \
-        --scenario "$OUTPUT/scenario/scenario.yaml" \
-        --manifest "$OUTPUT/manifests/episode-0.json" \
-        --trace "$EPISODE_DIR/trace.ndjson" \
-        --output "$ROBOT_VIDEO"; then
-        mv "$EPISODE_DIR/episode.mp4" "$EPISODE_DIR/episode-schematic.mp4"
-        mv "$ROBOT_VIDEO" "$EPISODE_DIR/episode.mp4"
-    else
-        echo "Robot replay render unavailable; keeping URDF Studio's schematic video." >&2
-    fi
+if [[ "$HAS_MUJOCO" == true ]]; then
+    for MANIFEST in "$OUTPUT"/manifests/episode-*.json; do
+        EPISODE_NAME=$(basename "$MANIFEST" .json)
+        EPISODE_DIR="$OUTPUT/mujoco/$EPISODE_NAME"
+        [[ -f "$EPISODE_DIR/report.json" ]] || continue
+        ROBOT_VIDEO="$EPISODE_DIR/episode-robot.mp4"
+        if MUJOCO_GL=egl PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+            "$URDF_STUDIO_PYTHON" "$ROOT/scripts/render_urdf_studio_episode.py" \
+            --scenario "$OUTPUT/scenario/scenario.yaml" \
+            --manifest "$MANIFEST" \
+            --trace "$EPISODE_DIR/trace.ndjson" \
+            --output "$ROBOT_VIDEO"; then
+            mv "$EPISODE_DIR/episode.mp4" "$EPISODE_DIR/episode-schematic.mp4"
+            mv "$ROBOT_VIDEO" "$EPISODE_DIR/episode.mp4"
+        else
+            echo "Robot replay render unavailable for $EPISODE_NAME; keeping schematic video." >&2
+        fi
+    done
 fi
 
 PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \

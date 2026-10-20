@@ -28,8 +28,15 @@ task:
       world_object_id: grasp_cube
   randomization:
     seed: 17
-    object_pose: {}
-    regions: {}
+    object_pose:
+      grasp_cube:
+        position_jitter_m: [0.012, 0.012, 0.0]
+        yaw_jitter_rad: 0.20
+        region: grasp_zone
+    regions:
+      grasp_zone:
+        aabb_min: [0.255, -0.015, 0.0225]
+        aabb_max: [0.285, 0.015, 0.0225]
 success:
   all_of:
     - liftup:
@@ -55,8 +62,8 @@ policy:
     waypoints_file: ./waypoints.json
 metrics: [success_rate, time_to_success_s, final_object_pose_error_m]
 evaluation:
-  episodes: 1
-  seeds: [17]
+  episodes: 4
+  seeds: [17, 29, 43, 61]
   record_trace: true
   record_decisions: true
   record_video: true

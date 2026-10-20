@@ -79,14 +79,14 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
             "schema": "scenario_run.v1",
             "scenario_id": "so101_cube_lift",
             "sims": ["mujoco"],
-            "episodes": 1,
+            "episodes": 4,
         },
     )
     _write_json(
         evidence / "urdf-studio" / "comparison.json",
         {
             "scenario_id": "so101_cube_lift",
-            "summary": {"mujoco": {"episodes": 1, "completed": 1, "success_rate": 1.0}},
+            "summary": {"mujoco": {"episodes": 4, "completed": 4, "success_rate": 1.0}},
         },
     )
     _write_json(
@@ -115,7 +115,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
                 "max_episode_steps": 400,
                 "grasp_attach": "weld",
                 "attach_link": "gripper_frame_link",
-                "episodes": 1,
+                "episodes": 4,
             },
             "input_digests": {
                 "scenario_sha256": "a" * 64,
@@ -126,34 +126,52 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
                 "mujoco": {
                     "status": "evaluated",
                     "package_version": "3.12.0",
-                    "episodes": 1,
-                    "completed": 1,
+                    "episodes": 4,
+                    "completed": 4,
                     "success_rate": 1.0,
-                    "mean_sim_time_s": 1.5,
-                    "mean_wall_time_s": 0.4,
+                    "mean_sim_time_s": 1.65,
+                    "mean_wall_time_s": 0.55,
                     "errors": [],
                 },
                 "genesis": {
                     "status": "failed",
-                    "episodes": 0,
+                    "episodes": 4,
                     "completed": 0,
                     "errors": ["genesis package is unavailable"],
                 },
             },
         },
     )
-    _write_json(
-        evidence / "urdf-studio" / "mujoco" / "episode-0" / "report.json",
-        {
-            "success": True,
-            "grasp_attach_used": True,
-            "sim_time_s": 1.5,
-            "wall_time_s": 0.4,
-            "steps": 75,
-            "artifacts": {"trace_ndjson": {"record_count": 225}},
-            "environment": {"packages": {"mujoco": "3.12.0"}},
-        },
-    )
+    seeds = [17, 29, 43, 61]
+    for episode_index, seed in enumerate(seeds):
+        _write_json(
+            evidence
+            / "urdf-studio"
+            / "mujoco"
+            / f"episode-{episode_index}"
+            / "report.json",
+            {
+                "success": True,
+                "grasp_attach_used": True,
+                "sim_time_s": 1.5 + episode_index * 0.1,
+                "wall_time_s": 0.4 + episode_index * 0.1,
+                "steps": 75 + episode_index,
+                "artifacts": {"trace_ndjson": {"record_count": 225}},
+                "environment": {"packages": {"mujoco": "3.12.0"}},
+            },
+        )
+        _write_json(
+            evidence / "urdf-studio" / "manifests" / f"episode-{episode_index}.json",
+            {
+                "episode_index": episode_index,
+                "seed": seed,
+                "object_placements": {
+                    "grasp_cube": {
+                        "position_xyz": [0.270 + episode_index * 0.001, 0.007, 0.0225]
+                    }
+                },
+            },
+        )
 
     output = build_demo_dashboard(evidence, tmp_path / "site" / "index.html")
     document = output.read_text(encoding="utf-8")
@@ -173,19 +191,28 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert 'data-artifact="plan"' in document
     assert 'href="campaign-plan.json"' not in document
     assert "SO-101 · Cube lift" in document
-    assert "ROBOT EPISODES</span><b>1/1 COMPLETED" in document
-    assert "EVALUATION RESULT</span><b>LIFT CHECKER PASS" in document
+    assert "ROBOT EPISODES</span><b>4/4 COMPLETED" in document
+    assert "EVALUATION RESULT</span><b>4/4 LIFT CHECKER PASS" in document
     assert "CONTACT GRASP</span><b>NOT EVALUATED" in document
     assert "This is not a contact-realistic grasp" in document
     assert "welded cube crossed the 0.10 m lift threshold" in document
+    assert "varies the cube pose under frozen seeds" in document
     assert "Separate accounting fixture; not additional SO-101 videos." in document
     assert "Attempts completed</span><strong>2/2" in document
     assert "urdf-studio/mujoco/episode-0/episode.mp4" in document
+    assert "urdf-studio/mujoco/episode-1/episode.mp4" in document
+    assert "urdf-studio/mujoco/episode-2/episode.mp4" in document
+    assert "urdf-studio/mujoco/episode-3/episode.mp4" in document
+    assert "EPISODE 01" in document
+    assert "EPISODE 04" in document
+    assert "SEED 17" in document
+    assert "SEED 61" in document
     assert 'value="mujoco" selected>MuJoCo · evaluated' in document
     assert 'value="genesis" disabled>Genesis · failed' in document
-    assert "this report stays bound to the evaluated episode" in document
-    assert "225</b>" in document
-    assert 'data-artifact="robot_episode"' in document
+    assert "this report stays bound to the evaluated episode batch" in document
+    assert "900 TOTAL</b>" in document
+    assert "306 TOTAL</b>" in document
+    assert 'data-artifact="robot_episodes"' in document
     assert 'data-artifact="robot_policy"' in document
     assert "Waypoint baseline · sha256" in document
     assert "ready 0.0s · close + attach 3.0s · lift 4.8s" in document

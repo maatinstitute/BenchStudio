@@ -51,6 +51,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
 
     robot_run: dict[str, Any] = {}
     robot_report: dict[str, Any] = {}
+    robot_episodes: list[dict[str, Any]] = []
     robot_comparison: dict[str, Any] = {}
     robot_policy: dict[str, Any] = {}
     simulator_debug: dict[str, Any] = {}
@@ -63,12 +64,28 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
         simulator_names = robot_run.get("sims", [])
         if isinstance(simulator_names, list) and simulator_names:
             selected_simulator = str(simulator_names[0])
-        report_path = robot_root / selected_simulator / "episode-0" / "report.json"
         comparison_path = robot_root / "comparison.json"
         policy_path = robot_root / "scenario" / "waypoints.json"
         simulator_debug_path = robot_root / "simulator-debug.json"
-        if report_path.is_file():
-            robot_report = _load_json(report_path)
+        episode_count = int(robot_run.get("episodes", 0) or 0)
+        for episode_index in range(episode_count):
+            report_path = (
+                robot_root
+                / selected_simulator
+                / f"episode-{episode_index}"
+                / "report.json"
+            )
+            manifest_path = robot_root / "manifests" / f"episode-{episode_index}.json"
+            if not report_path.is_file():
+                continue
+            episode = {
+                "episode_index": episode_index,
+                "report": _load_json(report_path),
+                "manifest": _load_json(manifest_path) if manifest_path.is_file() else {},
+            }
+            robot_episodes.append(episode)
+        if robot_episodes:
+            robot_report = robot_episodes[0]["report"]
         if comparison_path.is_file():
             robot_comparison = _load_json(comparison_path)
         if policy_path.is_file():
@@ -154,7 +171,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
             "robustness": robustness,
             "transport": robochallenge,
             "robot_run": robot_run,
-            "robot_episode": robot_report,
+            "robot_episodes": robot_episodes,
             "robot_comparison": robot_comparison,
             "robot_policy": robot_policy,
             "simulator_debug": simulator_debug,
@@ -165,8 +182,6 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     plan_digest = _short(plan.get("plan_digest_sha256"), 16)
     transport_valid = robochallenge.get("valid") is True
     transport_events = int(robochallenge.get("event_count", 0) or 0)
-    robot_success = robot_report.get("success") is True
-    robot_grasp_attach_used = robot_report.get("grasp_attach_used") is True
     robot_episode_count = int(robot_run.get("episodes", 0) or 0)
     robot_summary = robot_comparison.get("summary", {})
     robot_backend_summary = (
@@ -177,12 +192,34 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
         if isinstance(robot_backend_summary, dict)
         else 0
     )
-    robot_sim_time = float(robot_report.get("sim_time_s", 0.0) or 0.0)
-    robot_wall_time = float(robot_report.get("wall_time_s", 0.0) or 0.0)
-    robot_steps = int(robot_report.get("steps", 0) or 0)
-    robot_artifacts = robot_report.get("artifacts", {})
-    robot_trace = robot_artifacts.get("trace_ndjson", {}) if isinstance(robot_artifacts, dict) else {}
-    robot_trace_records = int(robot_trace.get("record_count", 0) or 0) if isinstance(robot_trace, dict) else 0
+    robot_reports = [
+        episode["report"]
+        for episode in robot_episodes
+        if isinstance(episode.get("report"), dict)
+    ]
+    robot_lift_passes = sum(report.get("success") is True for report in robot_reports)
+    robot_grasp_attach_used = any(
+        report.get("grasp_attach_used") is True for report in robot_reports
+    )
+    robot_sim_time = (
+        sum(float(report.get("sim_time_s", 0.0) or 0.0) for report in robot_reports)
+        / len(robot_reports)
+        if robot_reports
+        else 0.0
+    )
+    robot_wall_time = (
+        sum(float(report.get("wall_time_s", 0.0) or 0.0) for report in robot_reports)
+        / len(robot_reports)
+        if robot_reports
+        else 0.0
+    )
+    robot_steps = sum(int(report.get("steps", 0) or 0) for report in robot_reports)
+    robot_trace_records = 0
+    for report in robot_reports:
+        artifacts = report.get("artifacts", {})
+        trace = artifacts.get("trace_ndjson", {}) if isinstance(artifacts, dict) else {}
+        if isinstance(trace, dict):
+            robot_trace_records += int(trace.get("record_count", 0) or 0)
     robot_environment = robot_report.get("environment", {})
     robot_packages = robot_environment.get("packages", {}) if isinstance(robot_environment, dict) else {}
     simulator_display_names = {"mujoco": "MuJoCo", "genesis": "Genesis"}
@@ -210,12 +247,35 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
             f'{display_name} · {html.escape(status_label)}</option>'
         )
     simulator_options = "".join(simulator_options_parts)
-    if robot_report:
-        episode_media = (
-            f'<video controls autoplay muted loop playsinline aria-label="SO-101 cube-lift episode">'
-            f'<source src="urdf-studio/{html.escape(selected_simulator)}/episode-0/episode.mp4" '
-            'type="video/mp4"></video>'
-        )
+    if robot_episodes:
+        episode_cards = []
+        for position, episode in enumerate(robot_episodes):
+            episode_index = int(episode.get("episode_index", position))
+            report = episode.get("report", {})
+            manifest = episode.get("manifest", {})
+            placements = manifest.get("object_placements", {}) if isinstance(manifest, dict) else {}
+            cube = placements.get("grasp_cube", {}) if isinstance(placements, dict) else {}
+            cube_position = cube.get("position_xyz", []) if isinstance(cube, dict) else []
+            cube_xy = "unreported"
+            if isinstance(cube_position, list) and len(cube_position) >= 2:
+                cube_xy = f"x {float(cube_position[0]):.3f} · y {float(cube_position[1]):+.3f} m"
+            seed = manifest.get("seed", "—") if isinstance(manifest, dict) else "—"
+            passed = report.get("success") is True if isinstance(report, dict) else False
+            sim_time = float(report.get("sim_time_s", 0.0) or 0.0) if isinstance(report, dict) else 0.0
+            autoplay = " autoplay" if position == 0 else ""
+            episode_cards.append(
+                '<article class="episode-card">'
+                f'<video controls{autoplay} muted loop playsinline preload="metadata" '
+                f'aria-label="SO-101 cube-lift episode {episode_index + 1}">'
+                f'<source src="urdf-studio/{html.escape(selected_simulator)}/episode-{episode_index}/episode.mp4" '
+                'type="video/mp4"></video>'
+                '<div class="episode-meta">'
+                f'<div><span>EPISODE {episode_index + 1:02d}</span><b>{"LIFT PASS" if passed else "CHECKER FAIL"}</b></div>'
+                f'<div><span>SEED {html.escape(str(seed))}</span><small>{html.escape(cube_xy)}</small></div>'
+                f'<time>{sim_time:.2f} s</time>'
+                '</div></article>'
+            )
+        episode_media = f'<div class="episode-grid">{"".join(episode_cards)}</div>'
     else:
         episode_media = (
             '<div class="episode-empty">NO ROBOT EPISODE LOADED<br>'
@@ -325,8 +385,14 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     .debug-row div {{ min-width:0; padding:11px 14px; border-right:1px solid var(--line); color:#aaa; font:10px/1.45 "Noto Sans Mono",monospace; overflow-wrap:anywhere; }} .debug-row div:last-child {{ border:0; }}
     .debug-row.header div {{ color:#ddd; background:var(--raised); font-weight:600; }}
     .debug-bindings {{ padding:12px 16px; border-top:1px solid var(--line); color:#777; font:9px/1.5 "Noto Sans Mono",monospace; }}
-    .episode-view {{ min-height:390px; background:#111; display:grid; place-items:center; border-right:1px solid var(--line); }}
-    .episode-view video {{ display:block; width:100%; height:100%; max-height:520px; object-fit:contain; background:#111; }}
+    .episode-view {{ min-height:390px; background:#111; border-right:1px solid var(--line); }}
+    .episode-grid {{ display:grid; grid-template-columns:1fr 1fr; gap:1px; width:100%; height:100%; background:var(--line); }}
+    .episode-card {{ min-width:0; background:#111; }}
+    .episode-card video {{ display:block; width:100%; aspect-ratio:16/9; object-fit:contain; background:#0b0b0b; }}
+    .episode-meta {{ display:grid; grid-template-columns:1fr 1.2fr auto; gap:10px; align-items:center; padding:10px 12px; border-top:1px solid #292929; }}
+    .episode-meta span,.episode-meta small {{ display:block; color:#777; font:8px/1.4 "Noto Sans Mono",monospace; }}
+    .episode-meta b {{ display:block; margin-top:3px; color:var(--ok); font:500 10px/1.3 "Noto Sans Mono",monospace; }}
+    .episode-meta time {{ color:#aaa; font:9px/1 "Noto Sans Mono",monospace; white-space:nowrap; }}
     .episode-empty {{ color:#777; font:11px/1.6 "Noto Sans Mono",monospace; text-align:center; padding:40px; }}
     .run-config {{ padding:24px; }}
     .run-config h2 {{ margin-bottom:22px; }}
@@ -388,7 +454,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     #artifact-content {{ margin:0; padding:20px; overflow:auto; color:#c8c8c8; font:11px/1.7 "Noto Sans Mono",monospace; white-space:pre-wrap; word-break:break-word; }}
     footer {{ display:flex; justify-content:space-between; gap:20px; color:#707070; border-top:1px solid var(--line); padding-top:18px; font-size:10px; }}
     @media(max-width:800px) {{ .robot-run,.story {{ grid-template-columns:1fr; }} .episode-view,.transfer {{ border-right:0; border-bottom:1px solid var(--line); }} .metrics {{ grid-template-columns:1fr 1fr; }} .metric:nth-child(2) {{ border-right:0; }} .metric:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} .evidence {{ grid-template-columns:1fr 1fr; }} .evidence div:nth-child(2) {{ border-right:0; }} .evidence div:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} .shared-params {{ grid-template-columns:1fr 1fr; }} .debug-row {{ grid-template-columns:90px repeat(3,minmax(120px,1fr)); }} .sim-debug {{ overflow-x:auto; }} }}
-    @media(max-width:560px) {{ .shell {{ width:calc(100% - 24px); }} .run-context {{ grid-template-columns:1fr; }} .run-context div {{ border-right:0; border-bottom:1px solid var(--line); }} .matrix-row {{ grid-template-columns:76px repeat(2,1fr); }} .bar {{ grid-template-columns:100px 1fr 36px; }} footer {{ flex-direction:column; }} }}
+    @media(max-width:560px) {{ .shell {{ width:calc(100% - 24px); }} .run-context {{ grid-template-columns:1fr; }} .run-context div {{ border-right:0; border-bottom:1px solid var(--line); }} .episode-grid {{ grid-template-columns:1fr; }} .matrix-row {{ grid-template-columns:76px repeat(2,1fr); }} .bar {{ grid-template-columns:100px 1fr 36px; }} footer {{ flex-direction:column; }} }}
   </style>
 </head>
 <body>
@@ -407,20 +473,20 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
         <aside class="run-config">
           <div class="section-label">URDF Studio execution</div>
           <h2>SO-101 · Cube lift</h2>
-          <div class="field"><label for="simulator-select">SIMULATOR</label><select id="simulator-select" aria-describedby="simulator-help">{simulator_options}</select><small id="simulator-help" class="field-help">Choose the backend before the run; this report stays bound to the evaluated episode.</small></div>
+          <div class="field"><label for="simulator-select">SIMULATOR</label><select id="simulator-select" aria-describedby="simulator-help">{simulator_options}</select><small id="simulator-help" class="field-help">Choose the backend before the run; this report stays bound to the evaluated episode batch.</small></div>
           <div class="field"><label>ROBOT SOURCE</label><div class="field-output">URDF Studio / SO-101</div></div>
           <div class="field"><label>POLICY</label><div class="field-output">Waypoint baseline · sha256 {html.escape(robot_policy_digest[:12])}</div></div>
           <div class="policy-timeline">{html.escape(robot_policy_timeline)}</div>
           <div class="run-result">
-            <div><span>EVALUATION RESULT</span><b>{'LIFT CHECKER PASS' if robot_success else 'CHECKER FAIL'}</b></div>
+            <div><span>EVALUATION RESULT</span><b>{robot_lift_passes}/{robot_episode_count} LIFT CHECKER PASS</b></div>
             <div><span>CONTACT GRASP</span><b>{'NOT EVALUATED' if robot_grasp_attach_used else 'NO ATTACH REPORTED'}</b></div>
             <div><span>ROBOT EPISODES</span><b>{robot_completed_episodes}/{robot_episode_count} {'COMPLETED' if robot_completed_episodes else 'NOT RUN'}</b></div>
-            <div><span>SIM TIME</span><b>{robot_sim_time:.2f} s</b></div>
-            <div><span>CONTROL STEPS</span><b>{robot_steps}</b></div>
-            <div><span>TRACE RECORDS</span><b>{robot_trace_records}</b></div>
+            <div><span>MEAN SIM TIME</span><b>{robot_sim_time:.2f} s</b></div>
+            <div><span>CONTROL STEPS</span><b>{robot_steps} TOTAL</b></div>
+            <div><span>TRACE RECORDS</span><b>{robot_trace_records} TOTAL</b></div>
           </div>
-          <p class="truth-note">{html.escape(simulator_name)} {html.escape(simulator_version)} · wall time {robot_wall_time:.2f} s. This is not a contact-realistic grasp: the policy triggers a kinematic weld to <code>gripper_frame_link</code> at 3.0 s, and this SO-101 fixture does not provide robot collision geometry. The pass means only that the welded cube crossed the 0.10 m lift threshold.</p>
-          <div class="links"><button class="artifact-button" data-artifact="robot_policy">Inspect policy</button><button class="artifact-button" data-artifact="robot_episode">Inspect episode evidence</button><button class="artifact-button" data-artifact="robot_comparison">Inspect comparison</button></div>
+          <p class="truth-note">{html.escape(simulator_name)} {html.escape(simulator_version)} · mean wall time {robot_wall_time:.2f} s. The batch varies the cube pose under frozen seeds and one frozen policy. This is not a contact-realistic grasp: the policy triggers a kinematic weld to <code>gripper_frame_link</code> at 3.0 s, and this SO-101 fixture does not provide robot collision geometry. A pass means only that the welded cube crossed the 0.10 m lift threshold.</p>
+          <div class="links"><button class="artifact-button" data-artifact="robot_policy">Inspect policy</button><button class="artifact-button" data-artifact="robot_episodes">Inspect episode evidence</button><button class="artifact-button" data-artifact="robot_comparison">Inspect comparison</button></div>
         </aside>
       </section>
 
@@ -500,7 +566,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
   <script>
     const cells = {matrix_json};
     const artifacts = {artifact_json};
-    const artifactTitles = {{plan:'Frozen campaign plan',ledger:'Attempt ledger',transfer:'Transfer fidelity report',robustness:'Counterfactual robustness report',transport:'RoboChallenge transport audit',robot_policy:'SO-101 waypoint policy',robot_episode:'SO-101 episode evidence',robot_comparison:'URDF Studio comparison report',simulator_debug:'Simulator debug manifest'}};
+    const artifactTitles = {{plan:'Frozen campaign plan',ledger:'Attempt ledger',transfer:'Transfer fidelity report',robustness:'Counterfactual robustness report',transport:'RoboChallenge transport audit',robot_policy:'SO-101 waypoint policy',robot_episodes:'SO-101 episode batch evidence',robot_comparison:'URDF Studio comparison report',simulator_debug:'Simulator debug manifest'}};
     const pairs = [...new Set(cells.map(c => c.pair))];
     const conditions = [...new Set(cells.map(c => c.condition))];
     const matrix = document.getElementById('matrix');
