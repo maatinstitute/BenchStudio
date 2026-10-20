@@ -340,6 +340,9 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert "AWAITING<br>DATA" in workbench
     assert "trajectory pending" in workbench
     assert "divergence —" in workbench
+    assert "PLANNED PARAMETERS" in workbench
+    assert "physics dt" in workbench
+    assert "contact_source" in workbench
 
     assert "BenchStudio — Study control room" in document
     assert "Batch authorization" in document
