@@ -289,11 +289,31 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
             ],
         },
     )
+    _write_json(
+        evidence / "urdf-studio" / "study-manifest.json",
+        {
+            "schema": "benchstudio.study_manifest.v1",
+            "study_id": "so101-cube-grasp-cross-sim-v1",
+            "episode_count": 100,
+            "manifest_sha256": "d" * 64,
+            "episodes": [
+                {
+                    "episode_id": f"episode-{index:03d}",
+                    "seed": index + 1000,
+                    "policy_condition": "production_candidate",
+                    "object_placements": {
+                        "grasp_cube": {"position_xyz": [0.27, 0.0, 0.0225]}
+                    },
+                }
+                for index in range(100)
+            ],
+        },
+    )
     output = build_demo_dashboard(evidence, tmp_path / "site" / "index.html")
     document = output.read_text(encoding="utf-8")
 
     assert "BenchStudio — Study control room" in document
-    assert "Study control room" in document
+    assert "Batch authorization" in document
     assert "Scientific verdict" not in document
     assert "EVIDENCE QUALIFIED" not in document
     assert "Transfer fidelity" not in document
@@ -305,25 +325,34 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert "--pink:#ff4fba" in document
     assert "radial-gradient" not in document
     assert "text-shadow" not in document
-    assert "EPISODES / SIMULATOR" in document
-    assert "PLANNED RUNS" in document
-    assert ">300</b>" in document
-    assert "SIMULATORS" in document
-    assert ">3</b>" in document
+    assert "TARGET BATCH" in document
+    assert ">100</b>" in document
+    assert "PREFLIGHT EXECUTED" in document
+    assert "BATCH WITHHELD" in document
+    assert ">96</b>" in document
+    assert "VERIFIED BACKEND" in document
+    assert "Production batch blocked" in document
+    assert "BLOCKED · TASK SUCCESS REQUIRED" in document
+    assert "Authorize 100 episodes" in document
+    assert "Approve 100 episodes" in document
+    assert 'data-artifact="preflight_gate"' in document
     assert "EXPERIMENT SETUP" in document
     assert "SEEDING & PAIRING" in document
     assert "sha256(study_id, episode_index)" in document
     assert "RANDOMIZATION" in document
     assert "12 × 12 × 0 mm" in document
-    assert "SIMULATOR MATRIX" in document
     assert "MuJoCo" in document
-    assert "Genesis" in document
-    assert "Isaac Sim" in document
+    assert "100-EPISODE EXECUTION MANIFEST" in document
+    assert "Every batch slot is accounted for" in document
+    assert "episode-000" in document
+    assert "episode-099" in document
+    assert document.count('class="manifest-row"') == 100
+    assert 'data-artifact="study_manifest"' in document
     assert "TASK-SPECIFIC" in document
-    assert "SHARED ACROSS SIMULATORS" in document
-    assert "SIMULATOR-SPECIFIC EVIDENCE" in document
+    assert "STUDY GOVERNANCE" in document
+    assert "MUJOCO EVIDENCE" in document
     assert "no kinematic attach or weld" in document
-    assert "PhysX contact impulse" in document
+    assert "constraint force" in document
     assert "PARAMETER PILOT · MUJOCO" in document
     assert "4 controlled conditions · 4 failures" in document
     assert "No population-level rate is reported" in document
@@ -352,5 +381,4 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert "500.5 → 252.7 N" in document
     assert "61.7 → 137.0 mm" in document
     assert "Lift still failed" in document
-    assert "Study definition ready" in document
-    assert "Scale blockers visible" in document
+    assert "Preflight evidence gates batch execution" in document

@@ -240,6 +240,9 @@ if [[ "$HAS_MUJOCO" == true ]]; then
     "$URDF_STUDIO_PYTHON" "$ROOT/scripts/build_pilot_cohort.py" \
         --run-root "$OUTPUT" \
         --output "$OUTPUT/pilot-cohort.json"
+    "$URDF_STUDIO_PYTHON" "$ROOT/scripts/build_study_manifest.py" \
+        --study "$OUTPUT/scenario/study-definition.json" \
+        --output "$OUTPUT/study-manifest.json"
 fi
 
 PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
