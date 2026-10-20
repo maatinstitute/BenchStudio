@@ -5,6 +5,8 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 OUTPUT=${1:-"$ROOT/runs/benchstudio-demo"}
 SERVE=${2:-""}
+SIMULATOR=${BENCHSTUDIO_SIMULATOR:-mujoco}
+URDF_STUDIO_ROOT=${URDF_STUDIO_ROOT:-"$(cd "$ROOT/.." && pwd)/urdf-studio"}
 
 if [[ -e "$OUTPUT" ]]; then
     SUFFIX=$(date +%Y%m%d-%H%M%S)
@@ -15,22 +17,31 @@ fi
 mkdir -p "$OUTPUT"
 export PYTHONPATH="$ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 
-echo "[1/4] Frozen campaign execution"
+echo "[1/5] Frozen campaign execution"
 python -m benchstudio.cli \
   --campaign-spec "$ROOT/examples/campaigns/mock-worldepisode.json" \
   --plan-output "$OUTPUT/campaign-plan.json" \
   --execute-mock --workers 2 --audit \
   --output "$OUTPUT/campaign"
 
-echo "[2/4] Robustness and recovery evidence"
+echo "[2/5] Robustness and recovery evidence"
 python "$ROOT/examples/run_mock_robustness.py" --output "$OUTPUT/robustness"
 
-echo "[3/4] Matched transfer-fidelity fixture"
+echo "[3/5] Matched transfer-fidelity fixture"
 python "$ROOT/examples/run_mock_transfer.py" --output "$OUTPUT/transfer"
 
-echo "[4/4] RoboChallenge observe/action transport boundary"
+echo "[4/5] RoboChallenge observe/action transport boundary"
 python "$ROOT/examples/run_robochallenge_mock.py" >"$OUTPUT/robochallenge-report.json"
 cat "$OUTPUT/robochallenge-report.json"
+
+if [[ -d "$URDF_STUDIO_ROOT/backend" ]]; then
+    echo "[5/5] URDF Studio SO-101 cube-lift evaluation ($SIMULATOR)"
+    URDF_STUDIO_ROOT="$URDF_STUDIO_ROOT" \
+        bash "$ROOT/scripts/demo_urdf_studio.sh" "$OUTPUT/urdf-studio" "$SIMULATOR"
+else
+    echo "[5/5] URDF Studio checkout not found; robot episode skipped"
+    echo "      Set URDF_STUDIO_ROOT to enable the SO-101 cube-lift evaluation."
+fi
 
 python -m benchstudio.demo_dashboard \
   --input "$OUTPUT" \

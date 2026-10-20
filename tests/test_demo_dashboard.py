@@ -73,6 +73,25 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     _write_json(
         evidence / "robochallenge-report.json", {"valid": True, "event_count": 2}
     )
+    _write_json(
+        evidence / "urdf-studio" / "run.json",
+        {"schema": "scenario_run.v1", "scenario_id": "so101_cube_lift", "sims": ["mujoco"]},
+    )
+    _write_json(
+        evidence / "urdf-studio" / "comparison.json",
+        {"scenario_id": "so101_cube_lift", "backends": {"mujoco": {"success_rate": 1.0}}},
+    )
+    _write_json(
+        evidence / "urdf-studio" / "mujoco" / "episode-0" / "report.json",
+        {
+            "success": True,
+            "sim_time_s": 1.5,
+            "wall_time_s": 0.4,
+            "steps": 75,
+            "artifacts": {"trace_ndjson": {"record_count": 225}},
+            "environment": {"packages": {"mujoco": "3.12.0"}},
+        },
+    )
 
     output = build_demo_dashboard(evidence, tmp_path / "site" / "index.html")
     document = output.read_text(encoding="utf-8")
@@ -91,3 +110,10 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert "VIEW MACHINE-READABLE SUMMARY" in document
     assert 'data-artifact="plan"' in document
     assert 'href="campaign-plan.json"' not in document
+    assert "SO-101 · Cube lift" in document
+    assert "urdf-studio/mujoco/episode-0/episode.mp4" in document
+    assert 'value="mujoco" selected>MuJoCo · evaluated' in document
+    assert 'value="genesis" disabled>Genesis · run required' in document
+    assert "this report stays bound to the evaluated episode" in document
+    assert "225</b>" in document
+    assert 'data-artifact="robot_episode"' in document

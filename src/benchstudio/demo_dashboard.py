@@ -48,6 +48,23 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     transfer = _load_json(root / "transfer" / "transfer-report.json")
     robochallenge = _load_json(root / "robochallenge-report.json")
 
+    robot_run: dict[str, Any] = {}
+    robot_report: dict[str, Any] = {}
+    robot_comparison: dict[str, Any] = {}
+    robot_root = root / "urdf-studio"
+    selected_simulator = "mujoco"
+    if (robot_root / "run.json").is_file():
+        robot_run = _load_json(robot_root / "run.json")
+        simulator_names = robot_run.get("sims", [])
+        if isinstance(simulator_names, list) and simulator_names:
+            selected_simulator = str(simulator_names[0])
+        report_path = robot_root / selected_simulator / "episode-0" / "report.json"
+        comparison_path = robot_root / "comparison.json"
+        if report_path.is_file():
+            robot_report = _load_json(report_path)
+        if comparison_path.is_file():
+            robot_comparison = _load_json(comparison_path)
+
     attempts = plan.get("attempts", [])
     completed = sum(row.get("status") == "completed" for row in ledger)
     failed = sum(row.get("status") != "completed" for row in ledger)
@@ -113,6 +130,9 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
             "transfer": transfer,
             "robustness": robustness,
             "transport": robochallenge,
+            "robot_run": robot_run,
+            "robot_episode": robot_report,
+            "robot_comparison": robot_comparison,
         },
         separators=(",", ":"),
     ).replace("</", "<\\/")
@@ -120,6 +140,42 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     plan_digest = _short(plan.get("plan_digest_sha256"), 16)
     transport_valid = robochallenge.get("valid") is True
     transport_events = int(robochallenge.get("event_count", 0) or 0)
+    robot_success = robot_report.get("success") is True
+    robot_sim_time = float(robot_report.get("sim_time_s", 0.0) or 0.0)
+    robot_wall_time = float(robot_report.get("wall_time_s", 0.0) or 0.0)
+    robot_steps = int(robot_report.get("steps", 0) or 0)
+    robot_artifacts = robot_report.get("artifacts", {})
+    robot_trace = robot_artifacts.get("trace_ndjson", {}) if isinstance(robot_artifacts, dict) else {}
+    robot_trace_records = int(robot_trace.get("record_count", 0) or 0) if isinstance(robot_trace, dict) else 0
+    robot_environment = robot_report.get("environment", {})
+    robot_packages = robot_environment.get("packages", {}) if isinstance(robot_environment, dict) else {}
+    simulator_display_names = {"mujoco": "MuJoCo", "genesis": "Genesis"}
+    simulator_name = simulator_display_names.get(
+        selected_simulator, selected_simulator.replace("_", " ").title()
+    )
+    simulator_version = (
+        str(robot_packages.get(selected_simulator, "not reported"))
+        if isinstance(robot_packages, dict)
+        else "not reported"
+    )
+    simulator_options = "".join(
+        f'<option value="{simulator}" '
+        f'{"selected" if simulator == selected_simulator else "disabled"}>'
+        f'{display_name} · '
+        f'{"evaluated" if simulator == selected_simulator else "run required"}</option>'
+        for simulator, display_name in simulator_display_names.items()
+    )
+    if robot_report:
+        episode_media = (
+            f'<video controls autoplay muted loop playsinline aria-label="SO-101 cube-lift episode">'
+            f'<source src="urdf-studio/{html.escape(selected_simulator)}/episode-0/episode.mp4" '
+            'type="video/mp4"></video>'
+        )
+    else:
+        episode_media = (
+            '<div class="episode-empty">NO ROBOT EPISODE LOADED<br>'
+            'Run scripts/demo_urdf_studio.sh first.</div>'
+        )
 
     document = f"""<!doctype html>
 <html lang="en">
@@ -148,6 +204,19 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     .metric:last-child {{ border-right:0; }}
     .metric-label {{ display:block; color:var(--muted); font-size:9px; letter-spacing:.08em; text-transform:uppercase; }}
     .metric strong {{ display:block; margin-top:8px; font-size:27px; line-height:1; letter-spacing:-.035em; font-weight:500; }}
+    .robot-run {{ display:grid; grid-template-columns:1.35fr .65fr; border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:18px; background:var(--surface); }}
+    .episode-view {{ min-height:390px; background:#111; display:grid; place-items:center; border-right:1px solid var(--line); }}
+    .episode-view video {{ display:block; width:100%; height:100%; max-height:520px; object-fit:contain; background:#111; }}
+    .episode-empty {{ color:#777; font:11px/1.6 "Noto Sans Mono",monospace; text-align:center; padding:40px; }}
+    .run-config {{ padding:24px; }}
+    .run-config h2 {{ margin-bottom:22px; }}
+    .field {{ margin-bottom:16px; }} .field label {{ display:block; color:#777; font:9px/1 "Noto Sans Mono",monospace; letter-spacing:.08em; margin-bottom:7px; }}
+    .field-help {{ display:block; margin-top:7px; color:#777; font-size:10px; line-height:1.45; }}
+    .field select,.field-output {{ width:100%; border:1px solid var(--line); border-radius:6px; background:var(--raised); color:#ddd; padding:9px 10px; font:11px/1.3 "Noto Sans Mono",monospace; }}
+    .run-result {{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:22px; }}
+    .run-result div {{ padding:12px; border:1px solid var(--line); border-radius:6px; background:var(--raised); }}
+    .run-result span {{ display:block; color:#777; font:9px/1 "Noto Sans Mono",monospace; }} .run-result b {{ display:block; margin-top:7px; font-size:13px; font-weight:500; }}
+    .truth-note {{ margin:16px 0 0; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; line-height:1.55; }}
     .story {{ display:grid; grid-template-columns:1.4fr .8fr; border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:18px; background:var(--surface); }}
     .transfer {{ padding:28px; border-right:1px solid var(--line); }}
     .section-label {{ color:var(--muted); font:500 10px/1.2 "Noto Sans Mono", monospace; letter-spacing:.08em; text-transform:uppercase; }}
@@ -197,7 +266,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     .close {{ appearance:none; border:1px solid var(--line); border-radius:5px; background:var(--raised); color:#bbb; padding:6px 9px; cursor:pointer; }}
     #artifact-content {{ margin:0; padding:20px; overflow:auto; color:#c8c8c8; font:11px/1.7 "Noto Sans Mono",monospace; white-space:pre-wrap; word-break:break-word; }}
     footer {{ display:flex; justify-content:space-between; gap:20px; color:#707070; border-top:1px solid var(--line); padding-top:18px; font-size:10px; }}
-    @media(max-width:800px) {{ .story {{ grid-template-columns:1fr; }} .transfer {{ border-right:0; border-bottom:1px solid var(--line); }} .metrics {{ grid-template-columns:1fr 1fr; }} .metric:nth-child(2) {{ border-right:0; }} .metric:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} .evidence {{ grid-template-columns:1fr 1fr; }} .evidence div:nth-child(2) {{ border-right:0; }} .evidence div:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} }}
+    @media(max-width:800px) {{ .robot-run,.story {{ grid-template-columns:1fr; }} .episode-view,.transfer {{ border-right:0; border-bottom:1px solid var(--line); }} .metrics {{ grid-template-columns:1fr 1fr; }} .metric:nth-child(2) {{ border-right:0; }} .metric:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} .evidence {{ grid-template-columns:1fr 1fr; }} .evidence div:nth-child(2) {{ border-right:0; }} .evidence div:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} }}
     @media(max-width:560px) {{ .shell {{ width:calc(100% - 24px); }} .run-context {{ grid-template-columns:1fr; }} .run-context div {{ border-right:0; border-bottom:1px solid var(--line); }} .matrix-row {{ grid-template-columns:76px repeat(2,1fr); }} .bar {{ grid-template-columns:100px 1fr 36px; }} footer {{ flex-direction:column; }} }}
   </style>
 </head>
@@ -210,6 +279,25 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
         <div><span>RUN</span><b>{run_id}</b></div>
         <div><span>MODE</span><b>CONTROLLED COMPARISON</b></div>
         <div><span>PLAN</span><b>{plan_digest}</b></div>
+      </section>
+
+      <section class="robot-run" aria-label="URDF Studio robot evaluation">
+        <div class="episode-view">{episode_media}</div>
+        <aside class="run-config">
+          <div class="section-label">URDF Studio execution</div>
+          <h2>SO-101 · Cube lift</h2>
+          <div class="field"><label for="simulator-select">SIMULATOR</label><select id="simulator-select" aria-describedby="simulator-help">{simulator_options}</select><small id="simulator-help" class="field-help">Choose the backend before the run; this report stays bound to the evaluated episode.</small></div>
+          <div class="field"><label>ROBOT SOURCE</label><div class="field-output">URDF Studio / SO-101</div></div>
+          <div class="field"><label>POLICY</label><div class="field-output">Scripted waypoint baseline</div></div>
+          <div class="run-result">
+            <div><span>OUTCOME</span><b>{'SUCCESS' if robot_success else 'NOT RUN'}</b></div>
+            <div><span>SIM TIME</span><b>{robot_sim_time:.2f} s</b></div>
+            <div><span>CONTROL STEPS</span><b>{robot_steps}</b></div>
+            <div><span>TRACE RECORDS</span><b>{robot_trace_records}</b></div>
+          </div>
+          <p class="truth-note">{html.escape(simulator_name)} {html.escape(simulator_version)} · wall time {robot_wall_time:.2f} s. This baseline uses URDF Studio's declared weld-attach mechanism; it validates orchestration and evidence capture, not contact-realistic grasp physics.</p>
+          <div class="links"><button class="artifact-button" data-artifact="robot_episode">Inspect episode evidence</button><button class="artifact-button" data-artifact="robot_comparison">Inspect comparison</button></div>
+        </aside>
       </section>
 
       <section class="metrics" aria-label="Campaign integrity">
@@ -278,7 +366,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
   <script>
     const cells = {matrix_json};
     const artifacts = {artifact_json};
-    const artifactTitles = {{plan:'Frozen campaign plan',ledger:'Attempt ledger',transfer:'Transfer fidelity report',robustness:'Counterfactual robustness report',transport:'RoboChallenge transport audit'}};
+    const artifactTitles = {{plan:'Frozen campaign plan',ledger:'Attempt ledger',transfer:'Transfer fidelity report',robustness:'Counterfactual robustness report',transport:'RoboChallenge transport audit',robot_episode:'SO-101 episode evidence',robot_comparison:'URDF Studio comparison report'}};
     const pairs = [...new Set(cells.map(c => c.pair))];
     const conditions = [...new Set(cells.map(c => c.condition))];
     const matrix = document.getElementById('matrix');

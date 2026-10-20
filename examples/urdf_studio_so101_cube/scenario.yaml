@@ -1,0 +1,62 @@
+schema_version: scenario-v1
+scenario_id: so101_cube_lift
+title: SO-101 cube lift
+world:
+  package: ./cube-lift.world-package.json
+  frame_map: identity
+  include_hidden: false
+robot:
+  urdf: ./robot.urdf
+  base_pose:
+    xyz: [0.0, 0.0, 0.0]
+    rpy: [0.0, 0.0, 0.0]
+  init_joint_positions:
+    shoulder_pan: 0.0
+    shoulder_lift: 0.0
+    elbow_flex: 0.0
+    wrist_flex: 0.0
+    wrist_roll: 0.0
+    gripper: 1.2
+  init_noise_joint_regex: {}
+  end_effector_link: gripper_link
+task:
+  family: pick
+  instruction: Grasp and lift the {object:cube}
+  objects:
+    cube:
+      role: target
+      world_object_id: grasp_cube
+  randomization:
+    seed: 17
+    object_pose: {}
+    regions: {}
+success:
+  all_of:
+    - liftup:
+        object: grasp_cube
+        height_m: 0.05
+  guards:
+    - above_plane:
+        object: grasp_cube
+        z_min: 0.0
+  timeout_sim_seconds: 8.0
+runtime:
+  physics_timestep_s: 0.0002
+  control_hz: 50.0
+  checker_interval_steps: 5
+  max_episode_steps: 400
+  observation:
+    modalities: [joint_positions, object_poses]
+  grasp_attach: weld
+  attach_link: gripper_link
+policy:
+  kind: waypoint
+  params:
+    waypoints_file: ./waypoints.json
+metrics: [success_rate, time_to_success_s, final_object_pose_error_m]
+evaluation:
+  episodes: 1
+  seeds: [17]
+  record_trace: true
+  record_decisions: true
+  record_video: true

@@ -1,0 +1,49 @@
+{
+  "waypoints": [
+    {
+      "time_s": 0.0,
+      "joints": {
+        "shoulder_pan": 0.0,
+        "shoulder_lift": 0.0,
+        "elbow_flex": 0.0,
+        "wrist_flex": 0.0,
+        "wrist_roll": 0.0,
+        "gripper": 1.2
+      }
+    },
+    {
+      "time_s": 0.1,
+      "joints": {
+        "shoulder_pan": 0.0,
+        "shoulder_lift": 0.0,
+        "elbow_flex": 0.0,
+        "wrist_flex": 0.0,
+        "wrist_roll": 0.0,
+        "gripper": 1.0
+      },
+      "attach": "grasp_cube"
+    },
+    {
+      "time_s": 0.8,
+      "joints": {
+        "shoulder_pan": 0.0,
+        "shoulder_lift": 0.0,
+        "elbow_flex": 0.0,
+        "wrist_flex": 0.0,
+        "wrist_roll": 0.0,
+        "gripper": 0.15
+      }
+    },
+    {
+      "time_s": 2.8,
+      "joints": {
+        "shoulder_pan": 0.0,
+        "shoulder_lift": -0.4,
+        "elbow_flex": -1.2,
+        "wrist_flex": 0.0,
+        "wrist_roll": 0.0,
+        "gripper": 0.15
+      }
+    }
+  ]
+}

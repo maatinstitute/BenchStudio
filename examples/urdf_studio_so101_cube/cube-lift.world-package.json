@@ -1,0 +1,52 @@
+{
+  "package_id": "benchstudio-so101-cube-lift",
+  "version": "1.0.0",
+  "description": "URDF Studio SO-101 cube-lift evaluation scene.",
+  "provenance": {
+    "source": "benchstudio-urdf-studio-connector"
+  },
+  "artifacts": [],
+  "world": {
+    "name": "SO-101 Cube Lift",
+    "objects": [
+      {
+        "id": "work_table",
+        "name": "Work table",
+        "type": "cube",
+        "position_xyz": [0.3, 0.0, -0.03],
+        "rotation_rpy_rad": [0.0, 0.0, 0.0],
+        "size_xyz": [0.6, 0.5, 0.06],
+        "color": "#303030",
+        "physics": {
+          "fixed": true,
+          "collision": true,
+          "friction": 0.9
+        }
+      },
+      {
+        "id": "grasp_cube",
+        "name": "Pink evaluation cube",
+        "type": "cube",
+        "position_xyz": [0.3, 0.0, 0.235],
+        "rotation_rpy_rad": [0.0, 0.0, 0.0],
+        "size_xyz": [0.045, 0.045, 0.045],
+        "color": "#ff4fba",
+        "physics": {
+          "fixed": false,
+          "collision": true,
+          "mass_kg": 0.08,
+          "friction": 0.9,
+          "semantic_role": "manipulation_target"
+        }
+      }
+    ],
+    "scenario_time_ms": 0,
+    "scenario_duration_ms": 0,
+    "urdf_xml": "<robot name='so101_cube_lift'><link name='base_link'/></robot>",
+    "joint_positions": {},
+    "cameras": [],
+    "environment": {
+      "frame_convention": "ros-rep-103"
+    }
+  }
+}

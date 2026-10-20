@@ -96,20 +96,27 @@ The end-to-end frozen-campaign CI gate can be run directly with:
 python -m pytest -q tests/test_ci_smoke.py
 ```
 
-For a presentation-ready local demo using only the checked-in deterministic
-fixtures, run:
+For a presentation-ready local demo, including the existing URDF Studio SO-101
+robot performing a cube-lift evaluation in MuJoCo, run:
 
 ```bash
 bash scripts/demo.sh /tmp/benchstudio-demo --serve
 ```
 
-It executes a frozen campaign, robustness evidence flow, matched transfer
-comparison, and RoboChallenge observe/action transport audit, then serves a
-visual evaluation control room at `http://127.0.0.1:8765`. The generated files
+It executes the URDF Studio scenario through its native MuJoCo runner, then
+replays the recorded SO-101 joints and cube poses through that same backend for
+the visible 3D episode. URDF Studio's portable schematic recording is retained
+as `episode-schematic.mp4`. BenchStudio adds campaign accounting, robustness
+evidence, matched transfer, and the RoboChallenge transport audit, then serves
+the robot episode and evidence in the Eval Control Room at
+`http://127.0.0.1:8765`. The generated files
 under `/tmp/benchstudio-demo` remain inspectable evidence artifacts. If that
 directory already exists, the script creates a timestamped sibling rather than
 overwriting it. These fixtures demonstrate BenchStudio's execution and audit
-boundaries; they are not physical-robot or model-quality results.
+boundaries; they are not physical-robot or model-quality results. BenchStudio
+auto-detects a sibling `urdf-studio` checkout. Otherwise set
+`URDF_STUDIO_ROOT=/path/to/urdf-studio`. Choose another supported scenario
+backend with `BENCHSTUDIO_SIMULATOR=genesis`; MuJoCo is the default.
 
 Run the complete local CI-equivalent gate, including the full suite and
 cross-version-friendly bytecode compilation, with:
