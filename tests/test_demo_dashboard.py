@@ -327,6 +327,10 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert "PILOT BATCH · MUJOCO" in document
     assert "4 retained episodes · 4 failures" in document
     assert "No population-level rate is reported" in document
+    assert document.count("<video") == 1
+    assert "RETAINED EPISODES · SELECT TO INSPECT" in document
+    assert document.count('data-episode-position="') == 4
+    assert 'id="pilot-video"' in document
     assert "urdf-studio/mujoco/episode-0/episode.mp4" in document
     assert "urdf-studio/mujoco/episode-1/episode.mp4" in document
     assert "urdf-studio/mujoco/episode-2/episode.mp4" in document
@@ -334,7 +338,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert "EP 01" in document
     assert "EP 04" in document
     assert "SEED 17" in document
-    assert "SEED 61" in document
+    assert "seed 61" in document
     assert 'data-artifact="study"' in document
     assert 'data-artifact="episode_0"' in document
     assert 'data-artifact="recovery"' in document
