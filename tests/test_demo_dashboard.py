@@ -352,6 +352,15 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert "SIMULATOR SELECTOR" in workbench
     assert ".primary-empty[hidden]{display:none!important}" in workbench
     assert ".inspector video[hidden]{display:none!important}" in workbench
+    assert "TIME-ALIGNED TRACE · SIMULATION CLOCK" in workbench
+    assert "Peak normal solver force" in workbench
+    assert "Physics sampling" in workbench
+    assert "0.2 ms · 5 kHz" in workbench
+    assert "Policy control" in workbench
+    assert "20 ms · 50 Hz" in workbench
+    assert "Success checker" in workbench
+    assert "100 ms · 10 Hz" in workbench
+    assert "not calibrated hardware force" in workbench
 
     assert "BenchStudio — Study control room" in document
     assert "location.replace('./')" in document
