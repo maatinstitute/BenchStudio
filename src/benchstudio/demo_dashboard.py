@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 from pathlib import Path
@@ -51,6 +52,9 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     robot_run: dict[str, Any] = {}
     robot_report: dict[str, Any] = {}
     robot_comparison: dict[str, Any] = {}
+    robot_policy: dict[str, Any] = {}
+    robot_policy_digest = "not loaded"
+    robot_policy_timeline = "No policy artifact loaded"
     robot_root = root / "urdf-studio"
     selected_simulator = "mujoco"
     if (robot_root / "run.json").is_file():
@@ -60,10 +64,25 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
             selected_simulator = str(simulator_names[0])
         report_path = robot_root / selected_simulator / "episode-0" / "report.json"
         comparison_path = robot_root / "comparison.json"
+        policy_path = robot_root / "scenario" / "waypoints.json"
         if report_path.is_file():
             robot_report = _load_json(report_path)
         if comparison_path.is_file():
             robot_comparison = _load_json(comparison_path)
+        if policy_path.is_file():
+            robot_policy = _load_json(policy_path)
+            robot_policy_digest = hashlib.sha256(policy_path.read_bytes()).hexdigest()
+            raw_waypoints = robot_policy.get("waypoints", [])
+            if isinstance(raw_waypoints, list):
+                events = []
+                for waypoint in raw_waypoints:
+                    if not isinstance(waypoint, dict):
+                        continue
+                    label = str(waypoint.get("label", "waypoint"))
+                    time_s = float(waypoint.get("time_s", 0.0) or 0.0)
+                    events.append(f"{label} {time_s:.1f}s")
+                if events:
+                    robot_policy_timeline = " · ".join(events)
 
     attempts = plan.get("attempts", [])
     completed = sum(row.get("status") == "completed" for row in ledger)
@@ -133,6 +152,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
             "robot_run": robot_run,
             "robot_episode": robot_report,
             "robot_comparison": robot_comparison,
+            "robot_policy": robot_policy,
         },
         separators=(",", ":"),
     ).replace("</", "<\\/")
@@ -213,6 +233,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     .field {{ margin-bottom:16px; }} .field label {{ display:block; color:#777; font:9px/1 "Noto Sans Mono",monospace; letter-spacing:.08em; margin-bottom:7px; }}
     .field-help {{ display:block; margin-top:7px; color:#777; font-size:10px; line-height:1.45; }}
     .field select,.field-output {{ width:100%; border:1px solid var(--line); border-radius:6px; background:var(--raised); color:#ddd; padding:9px 10px; font:11px/1.3 "Noto Sans Mono",monospace; }}
+    .policy-timeline {{ margin:-8px 0 16px; color:#999; font:10px/1.6 "Noto Sans Mono",monospace; }}
     .run-result {{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:22px; }}
     .run-result div {{ padding:12px; border:1px solid var(--line); border-radius:6px; background:var(--raised); }}
     .run-result span {{ display:block; color:#777; font:9px/1 "Noto Sans Mono",monospace; }} .run-result b {{ display:block; margin-top:7px; font-size:13px; font-weight:500; }}
@@ -288,7 +309,8 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
           <h2>SO-101 · Cube lift</h2>
           <div class="field"><label for="simulator-select">SIMULATOR</label><select id="simulator-select" aria-describedby="simulator-help">{simulator_options}</select><small id="simulator-help" class="field-help">Choose the backend before the run; this report stays bound to the evaluated episode.</small></div>
           <div class="field"><label>ROBOT SOURCE</label><div class="field-output">URDF Studio / SO-101</div></div>
-          <div class="field"><label>POLICY</label><div class="field-output">Scripted waypoint baseline</div></div>
+          <div class="field"><label>POLICY</label><div class="field-output">Waypoint baseline · sha256 {html.escape(robot_policy_digest[:12])}</div></div>
+          <div class="policy-timeline">{html.escape(robot_policy_timeline)}</div>
           <div class="run-result">
             <div><span>OUTCOME</span><b>{'SUCCESS' if robot_success else 'NOT RUN'}</b></div>
             <div><span>SIM TIME</span><b>{robot_sim_time:.2f} s</b></div>
@@ -296,7 +318,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
             <div><span>TRACE RECORDS</span><b>{robot_trace_records}</b></div>
           </div>
           <p class="truth-note">{html.escape(simulator_name)} {html.escape(simulator_version)} · wall time {robot_wall_time:.2f} s. This baseline uses URDF Studio's declared weld-attach mechanism; it validates orchestration and evidence capture, not contact-realistic grasp physics.</p>
-          <div class="links"><button class="artifact-button" data-artifact="robot_episode">Inspect episode evidence</button><button class="artifact-button" data-artifact="robot_comparison">Inspect comparison</button></div>
+          <div class="links"><button class="artifact-button" data-artifact="robot_policy">Inspect policy</button><button class="artifact-button" data-artifact="robot_episode">Inspect episode evidence</button><button class="artifact-button" data-artifact="robot_comparison">Inspect comparison</button></div>
         </aside>
       </section>
 
@@ -366,7 +388,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
   <script>
     const cells = {matrix_json};
     const artifacts = {artifact_json};
-    const artifactTitles = {{plan:'Frozen campaign plan',ledger:'Attempt ledger',transfer:'Transfer fidelity report',robustness:'Counterfactual robustness report',transport:'RoboChallenge transport audit',robot_episode:'SO-101 episode evidence',robot_comparison:'URDF Studio comparison report'}};
+    const artifactTitles = {{plan:'Frozen campaign plan',ledger:'Attempt ledger',transfer:'Transfer fidelity report',robustness:'Counterfactual robustness report',transport:'RoboChallenge transport audit',robot_policy:'SO-101 waypoint policy',robot_episode:'SO-101 episode evidence',robot_comparison:'URDF Studio comparison report'}};
     const pairs = [...new Set(cells.map(c => c.pair))];
     const conditions = [...new Set(cells.map(c => c.condition))];
     const matrix = document.getElementById('matrix');

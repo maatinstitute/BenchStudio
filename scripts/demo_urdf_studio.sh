@@ -30,8 +30,9 @@ fi
 STAGING=$(mktemp -d /tmp/benchstudio-so101-cube.XXXXXX)
 trap 'rm -rf "$STAGING"' EXIT
 cp -R "$ROOT/examples/urdf_studio_so101_cube/." "$STAGING/"
-cp "$URDF_STUDIO_ROOT/web/public/demo/robot.urdf" "$STAGING/robot.urdf"
 cp -R "$URDF_STUDIO_ROOT/web/public/demo/assets" "$STAGING/assets"
+"$URDF_STUDIO_PYTHON" "$ROOT/scripts/prepare_urdf_studio_robot.py" \
+    "$URDF_STUDIO_ROOT/web/public/demo/robot.urdf" "$STAGING/robot.urdf"
 
 echo "BenchStudio × URDF Studio"
 echo "robot=SO-101 task=cube-lift simulator=$SIMULATOR"

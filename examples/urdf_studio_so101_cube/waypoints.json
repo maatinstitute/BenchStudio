@@ -1,6 +1,7 @@
 {
   "waypoints": [
     {
+      "label": "ready",
       "time_s": 0.0,
       "joints": {
         "shoulder_pan": 0.0,
@@ -12,6 +13,7 @@
       }
     },
     {
+      "label": "approach",
       "time_s": 1.2,
       "joints": {
         "shoulder_pan": 0.0,
@@ -23,6 +25,7 @@
       }
     },
     {
+      "label": "descend",
       "time_s": 2.4,
       "joints": {
         "shoulder_pan": 0.0,
@@ -34,6 +37,7 @@
       }
     },
     {
+      "label": "close + attach",
       "time_s": 3.0,
       "joints": {
         "shoulder_pan": 0.0,
@@ -46,6 +50,7 @@
       "attach": "grasp_cube"
     },
     {
+      "label": "lift",
       "time_s": 4.8,
       "joints": {
         "shoulder_pan": 0.0,

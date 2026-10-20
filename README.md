@@ -106,7 +106,11 @@ bash scripts/demo.sh /tmp/benchstudio-demo --serve
 It executes the URDF Studio scenario through its native MuJoCo runner, then
 replays the recorded SO-101 joints and cube poses through that same backend for
 the visible 3D episode. URDF Studio's portable schematic recording is retained
-as `episode-schematic.mp4`. BenchStudio adds campaign accounting, robustness
+as `episode-schematic.mp4`. The connector adds explicit damping to the staged
+URDF copy because the upstream demonstration URDF does not declare joint
+dynamics; the upstream checkout remains unchanged. The control room binds the
+waypoint policy by SHA-256 and exposes its timed events for inspection.
+BenchStudio adds campaign accounting, robustness
 evidence, matched transfer, and the RoboChallenge transport audit, then serves
 the robot episode and evidence in the Eval Control Room at
 `http://127.0.0.1:8765`. The generated files

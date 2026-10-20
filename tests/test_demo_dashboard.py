@@ -82,6 +82,21 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
         {"scenario_id": "so101_cube_lift", "backends": {"mujoco": {"success_rate": 1.0}}},
     )
     _write_json(
+        evidence / "urdf-studio" / "scenario" / "waypoints.json",
+        {
+            "waypoints": [
+                {"label": "ready", "time_s": 0.0, "joints": {"gripper": 1.2}},
+                {
+                    "label": "close + attach",
+                    "time_s": 3.0,
+                    "joints": {"gripper": 0.15},
+                    "attach": "grasp_cube",
+                },
+                {"label": "lift", "time_s": 4.8, "joints": {"gripper": 0.15}},
+            ]
+        },
+    )
+    _write_json(
         evidence / "urdf-studio" / "mujoco" / "episode-0" / "report.json",
         {
             "success": True,
@@ -117,3 +132,6 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert "this report stays bound to the evaluated episode" in document
     assert "225</b>" in document
     assert 'data-artifact="robot_episode"' in document
+    assert 'data-artifact="robot_policy"' in document
+    assert "Waypoint baseline · sha256" in document
+    assert "ready 0.0s · close + attach 3.0s · lift 4.8s" in document
