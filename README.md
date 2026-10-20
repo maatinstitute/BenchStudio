@@ -100,14 +100,16 @@ For a presentation-ready local demo using only the checked-in deterministic
 fixtures, run:
 
 ```bash
-bash scripts/demo.sh /tmp/benchstudio-demo
+bash scripts/demo.sh /tmp/benchstudio-demo --serve
 ```
 
 It executes a frozen campaign, robustness evidence flow, matched transfer
-comparison, and RoboChallenge observe/action transport audit. The generated
-files under `/tmp/benchstudio-demo` are inspectable evidence artifacts. These
-fixtures demonstrate BenchStudio's execution and audit boundaries; they are
-not physical-robot or model-quality results.
+comparison, and RoboChallenge observe/action transport audit, then serves a
+visual evaluation control room at `http://127.0.0.1:8765`. The generated files
+under `/tmp/benchstudio-demo` remain inspectable evidence artifacts. If that
+directory already exists, the script creates a timestamped sibling rather than
+overwriting it. These fixtures demonstrate BenchStudio's execution and audit
+boundaries; they are not physical-robot or model-quality results.
 
 Run the complete local CI-equivalent gate, including the full suite and
 cross-version-friendly bytecode compilation, with:

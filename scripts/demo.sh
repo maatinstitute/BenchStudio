@@ -4,10 +4,12 @@ set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 OUTPUT=${1:-"$ROOT/runs/benchstudio-demo"}
+SERVE=${2:-""}
 
 if [[ -e "$OUTPUT" ]]; then
-    echo "Refusing to overwrite existing demo output: $OUTPUT" >&2
-    exit 2
+    SUFFIX=$(date +%Y%m%d-%H%M%S)
+    OUTPUT="${OUTPUT}-${SUFFIX}"
+    echo "Requested output already exists; using: $OUTPUT"
 fi
 
 mkdir -p "$OUTPUT"
@@ -30,6 +32,18 @@ echo "[4/4] RoboChallenge observe/action transport boundary"
 python "$ROOT/examples/run_robochallenge_mock.py" >"$OUTPUT/robochallenge-report.json"
 cat "$OUTPUT/robochallenge-report.json"
 
+python -m benchstudio.demo_dashboard \
+  --input "$OUTPUT" \
+  --output "$OUTPUT/index.html"
+
 echo
 echo "Demo complete. Evidence is in: $OUTPUT"
 find "$OUTPUT" -maxdepth 2 -type f | sort
+
+if [[ "$SERVE" == "--serve" ]]; then
+    echo
+    echo "Opening the visual control room at http://127.0.0.1:8765"
+    echo "Press Ctrl-C to stop the demo server."
+    cd "$OUTPUT"
+    python -m http.server 8765 --bind 127.0.0.1
+fi
