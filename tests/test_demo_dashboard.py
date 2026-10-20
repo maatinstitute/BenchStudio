@@ -322,16 +322,17 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert workbench.count('class="coverage-cell') == 300
     assert "Paired intervention" not in workbench
     assert "Evidence records" not in workbench
-    assert 'data-view="coverage">Evaluation' in workbench
-    assert 'data-view="report">Study report' in workbench
+    assert "STUDY STATUS" in workbench
+    assert "BATCH BLOCKED" in workbench
+    assert "Recorded backend" in workbench
+    assert "Awaiting data" in workbench
     assert "PHYSICS CLOCK" in workbench
     assert "CONTROL CLOCK" in workbench
     assert "100 physics steps" in workbench
     assert "CHECKER CLOCK" in workbench
     assert "5 control ticks · 100 ms · 500 physics steps" in workbench
-    assert 'data-view="report"' in workbench
-    assert 'id="view-report"' in workbench
-    assert 'data-src="scientific-report.html"' in workbench
+    assert 'data-view="report"' not in workbench
+    assert 'id="view-report"' not in workbench
     assert 'href="scientific-report.html"' not in workbench
     assert 'id="inspect-video"' in workbench
     assert 'id="inspect-evidence"' in workbench
@@ -343,6 +344,10 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert "PLANNED PARAMETERS" in workbench
     assert "physics dt" in workbench
     assert "contact_source" in workbench
+    assert "cube 0.270, 0.000, 0.022 m" in workbench
+    assert 'id="inspect-empty"' in workbench
+    assert "switchSimulator" in workbench
+    assert "planned parameters shown below" in workbench
 
     assert "BenchStudio — Study control room" in document
     assert "Batch authorization" in document
