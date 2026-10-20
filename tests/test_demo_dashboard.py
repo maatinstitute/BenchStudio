@@ -324,19 +324,19 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert "SIMULATOR-SPECIFIC EVIDENCE" in document
     assert "no kinematic attach or weld" in document
     assert "PhysX contact impulse" in document
-    assert "PILOT BATCH · MUJOCO" in document
-    assert "4 retained episodes · 4 failures" in document
+    assert "PARAMETER PILOT · MUJOCO" in document
+    assert "4 controlled conditions · 4 failures" in document
     assert "No population-level rate is reported" in document
     assert document.count("<video") == 1
-    assert "RETAINED EPISODES · SELECT TO INSPECT" in document
+    assert "CONTROLLED CONDITIONS · SELECT TO INSPECT" in document
     assert document.count('data-episode-position="') == 4
     assert 'id="pilot-video"' in document
     assert "urdf-studio/mujoco/episode-0/episode.mp4" in document
     assert "urdf-studio/mujoco/episode-1/episode.mp4" in document
     assert "urdf-studio/mujoco/episode-2/episode.mp4" in document
     assert "urdf-studio/mujoco/episode-3/episode.mp4" in document
-    assert "EP 01" in document
-    assert "EP 04" in document
+    assert "Episode 01" in document
+    assert "Episode 04" in document
     assert "SEED 17" in document
     assert "seed 61" in document
     assert 'data-artifact="study"' in document

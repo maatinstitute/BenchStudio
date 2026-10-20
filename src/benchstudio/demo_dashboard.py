@@ -60,6 +60,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     comparison = _optional_json(robot_root / "comparison.json")
     simulator_debug = _optional_json(robot_root / "simulator-debug.json")
     recovery = _optional_json(robot_root / "recovery.json")
+    pilot_cohort = _optional_json(robot_root / "pilot-cohort.json")
     policy_path = robot_root / "scenario" / "waypoints.json"
     policy = _optional_json(policy_path)
     study = _optional_json(robot_root / "scenario" / "study-definition.json") or _fallback_study()
@@ -85,6 +86,28 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
         report = _optional_json(base / "report.json")
         if report:
             episodes.append({"index": index, "report": report, "manifest": _optional_json(robot_root / "manifests" / f"episode-{index}.json"), "analysis": _optional_json(base / "contact-analysis.json")})
+
+    cohort_entries = pilot_cohort.get("entries", [])
+    if isinstance(cohort_entries, list) and cohort_entries:
+        cohort_episodes = []
+        for entry in cohort_entries:
+            if not isinstance(entry, dict):
+                continue
+            index = int(entry.get("episode_index", 0) or 0)
+            report_path = robot_root / str(entry.get("report_path", ""))
+            analysis_path = robot_root / str(entry.get("analysis_path", ""))
+            report = _optional_json(report_path)
+            if not report:
+                continue
+            cohort_episodes.append({
+                "index": index,
+                "report": report,
+                "manifest": _optional_json(robot_root / "manifests" / f"episode-{index}.json"),
+                "analysis": _optional_json(analysis_path),
+                "cohort": entry,
+            })
+        if cohort_episodes:
+            episodes = cohort_episodes
 
     pilot_passes = sum(item["report"].get("success") is True for item in episodes)
     pilot_failures = len(episodes) - pilot_passes
@@ -134,8 +157,16 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     episode_nav, episode_rows, episode_media = [], [], []
     for position, episode in enumerate(episodes):
         index, report, manifest, analysis = int(episode["index"]), episode["report"], episode["manifest"], episode["analysis"]
+        cohort_entry = episode.get("cohort", {}) if isinstance(episode.get("cohort"), dict) else {}
         seed = manifest.get("seed", "—")
         outcome = "pass" if report.get("success") is True else "fail"
+        condition_label = str(cohort_entry.get("label", f"Episode {index + 1:02d}"))
+        duration = float(report.get("sim_time_s", 0.0) or 0.0)
+        changed_parameters = cohort_entry.get("changed_parameters", {})
+        if isinstance(changed_parameters, dict):
+            change_text = " · ".join(f"{key}={_format_value(value)}" for key, value in changed_parameters.items())
+        else:
+            change_text = ""
         diagnosis = str(analysis.get("failure_class", report.get("stop_reason", "unclassified"))).replace("_", " ")
         motion = analysis.get("motion", {}) if isinstance(analysis.get("motion"), dict) else {}
         telemetry = analysis.get("physics_contact_telemetry", {}) if isinstance(analysis.get("physics_contact_telemetry"), dict) else {}
@@ -144,14 +175,17 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
         lift = float(motion.get("max_lift_m", 0.0) or 0.0) * 1000
         force = contact.get("peak_normal_force_n")
         force_text = "—" if force is None else f"{float(force):.1f} N"
-        video_path = f"urdf-studio/{selected_sim}/episode-{index}/episode.mp4"
-        episode_media.append({"index": index, "seed": seed, "outcome": outcome, "diagnosis": diagnosis, "src": video_path})
+        cohort_video = cohort_entry.get("video", {}) if isinstance(cohort_entry.get("video"), dict) else {}
+        relative_video = str(cohort_video.get("path", f"{selected_sim}/episode-{index}/episode.mp4"))
+        video_path = f"urdf-studio/{relative_video}"
+        detail_text = f"{change_text} · {diagnosis}" if change_text else diagnosis
+        episode_media.append({"index": index, "seed": seed, "label": condition_label, "duration": duration, "change": change_text, "outcome": outcome, "diagnosis": diagnosis, "detail": detail_text, "src": video_path})
         episode_nav.append(
             f'<button class="episode-option {"selected" if position == 0 else ""}" data-episode-position="{position}">'
-            f'<span>EP {index + 1:02d}</span><small>seed {html.escape(str(seed))}</small><b class="{outcome}">{outcome.upper()}</b></button>'
+            f'<span>{html.escape(condition_label)}</span><small>seed {html.escape(str(seed))} · {duration:.1f} s</small><b class="{outcome}">{outcome.upper()}</b></button>'
         )
         episode_rows.append('<div class="episode-row">'
-            f'<div><b>EP {index + 1:02d}</b><span>seed {html.escape(str(seed))}</span></div><div><b class="{outcome}">{outcome.upper()}</b><span>{html.escape(diagnosis)}</span></div>'
+            f'<div><b>{html.escape(condition_label)}</b><span>seed {html.escape(str(seed))} · {duration:.1f} s</span></div><div><b class="{outcome}">{outcome.upper()}</b><span>{html.escape(detail_text)}</span></div>'
             f'<div><b>{displacement:.1f} mm</b><span>horizontal displacement</span></div><div><b>{lift:.1f} mm</b><span>maximum lift</span></div>'
             f'<div><b>{html.escape(force_text)}</b><span>peak solver force</span></div><button data-artifact="episode_{index}">Evidence</button></div>')
 
@@ -166,12 +200,12 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
         <div class="change-grid"><div><span>CONTROLLED VARIABLE</span><b>{html.escape(str(intervention.get("parameter", "policy parameter")))}</b></div><div><span>BASELINE → INTERVENTION</span><b>{html.escape(_format_value(intervention.get("baseline_value")))} → {html.escape(_format_value(intervention.get("intervention_value")))} {html.escape(str(intervention.get("unit", "")))}</b></div><div><span>PEAK FORCE</span><b>{float(force_effect.get("baseline", 0) or 0):.1f} → {float(force_effect.get("intervention", 0) or 0):.1f} N</b></div><div><span>DISPLACEMENT</span><b>{float(displacement_effect.get("baseline", 0) or 0) * 1000:.1f} → {float(displacement_effect.get("intervention", 0) or 0) * 1000:.1f} mm</b></div></div>
         <p>Same seed, cube pose, simulator, checker, and geometry. Lift still failed, so the result narrows the cause without claiming recovery.</p></section>'''
 
-    artifacts: dict[str, Any] = {"study": study, "policy": policy, "simulators": simulator_debug, "recovery": recovery}
+    artifacts: dict[str, Any] = {"study": study, "policy": policy, "simulators": simulator_debug, "recovery": recovery, "pilot_cohort": pilot_cohort}
     for episode in episodes:
         artifacts[f'episode_{episode["index"]}'] = episode
     artifacts_json = json.dumps(artifacts, separators=(",", ":")).replace("</", "<\\/")
     episode_media_json = json.dumps(episode_media, separators=(",", ":")).replace("</", "<\\/")
-    initial_media = episode_media[0] if episode_media else {"index": 0, "seed": "—", "outcome": "not run", "diagnosis": "No retained episode", "src": ""}
+    initial_media = episode_media[0] if episode_media else {"index": 0, "seed": "—", "label": "No run", "duration": 0, "change": "", "outcome": "not run", "diagnosis": "No retained episode", "detail": "No retained episode", "src": ""}
 
     document = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#171717"><title>BenchStudio — Study control room</title>
 <style>
@@ -191,10 +225,10 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
 <section class="panel"><div class="section-head"><div><span class="eyebrow">EXPERIMENT SETUP</span><h2>Paired, seeded, reproducible</h2><p>The pilot validates instrumentation. It is not the completed 300-run study.</p></div><button data-artifact="study">Study definition</button></div><div class="setup-grid"><div class="setup-block"><h3>SEEDING & PAIRING</h3><dl><dt>Episode identities</dt><dd>{html.escape(str(pairing.get("seed_count", per_sim)))}</dd><dt>Seed derivation</dt><dd>{html.escape(str(pairing.get("seed_derivation", "—")))}</dd><dt>Cross-simulator manifest</dt><dd>{"reused" if pairing.get("manifest_reused_across_simulators") else "not reused"}</dd><dt>Retry behavior</dt><dd>{"preserve identity" if pairing.get("retry_preserves_manifest") else "new identity"}</dd><dt>Pilot seeds</dt><dd>{html.escape(seed_text)}</dd></dl></div><div class="setup-block"><h3>RANDOMIZATION</h3><dl><dt>Cube position jitter</dt><dd>{html.escape(jitter_text)}</dd><dt>Cube yaw jitter</dt><dd>±{yaw:g} rad</dd><dt>Robot initial state</dt><dd>{html.escape(str(randomization.get("robot_initial_state", "—")))}</dd><dt>Policy</dt><dd>{html.escape(str(randomization.get("policy", "—")))}</dd></dl></div><div class="setup-block"><h3>SHARED RUNTIME</h3><dl><dt>Physics step</dt><dd>{html.escape(_format_value(runtime.get("physics_timestep_s")))} s</dd><dt>Control rate</dt><dd>{html.escape(_format_value(runtime.get("control_hz")))} Hz</dd><dt>Checker interval</dt><dd>{html.escape(_format_value(runtime.get("checker_interval_steps")))} steps</dd><dt>Episode horizon</dt><dd>{html.escape(_format_value(runtime.get("max_episode_steps")))} steps</dd><dt>Grasp attach</dt><dd>{html.escape(str(runtime.get("grasp_attach", "—")))}</dd></dl></div></div></section>
 <section class="panel"><div class="section-head"><div><span class="eyebrow">SIMULATOR MATRIX</span><h2>Backend execution plan</h2><p>Shared episode identity and task checker; native solver evidence remains backend-specific.</p></div><button data-artifact="simulators">Backend manifest</button></div><div class="sim-head"><div>BACKEND</div><div>PLANNED</div><div>PILOT</div><div>NATIVE EVIDENCE</div><div>STATUS</div></div>{''.join(simulator_rows)}</section>
 <section class="panel"><div class="section-head"><div><span class="eyebrow">EVALUATION CRITERIA</span><h2>Criteria separated by scope</h2></div></div><div class="criteria-grid"><div class="criteria"><h3>TASK-SPECIFIC</h3><ul>{''.join(task_criteria)}</ul></div><div class="criteria"><h3>SHARED ACROSS SIMULATORS</h3><ul>{shared_criteria}</ul></div><div class="criteria"><h3>SIMULATOR-SPECIFIC EVIDENCE</h3><ul>{''.join(specific_rows)}</ul></div></div></section>
-<section class="panel"><div class="section-head"><div><span class="eyebrow">PILOT BATCH · MUJOCO</span><h2>{len(episodes)} retained episodes · {pilot_failures} failures</h2><p>Instrumentation and failure-analysis pilot. No population-level rate is reported.</p></div><div class="pilot-summary"><div><b>{pilot_passes}</b><span>passes</span></div><div><b>{pilot_failures}</b><span>failures</span></div></div></div><div class="episode-browser"><div class="player"><video id="pilot-video" controls autoplay muted loop playsinline preload="metadata" aria-label="Selected pilot episode"><source id="pilot-video-source" src="{html.escape(str(initial_media['src']))}" type="video/mp4"></video><div class="player-meta"><div><span id="pilot-identity">EP {int(initial_media['index']) + 1:02d} · SEED {html.escape(str(initial_media['seed']))}</span><small id="pilot-diagnosis">{html.escape(str(initial_media['diagnosis']))}</small></div><b id="pilot-outcome" class="{html.escape(str(initial_media['outcome']))}">{html.escape(str(initial_media['outcome']).upper())}</b></div></div><aside class="episode-queue"><div class="queue-head">RETAINED EPISODES · SELECT TO INSPECT</div>{''.join(episode_nav)}</aside></div><div class="episode-table-head"><div>EPISODE</div><div>OUTCOME / DIAGNOSIS</div><div>DISPLACEMENT</div><div>LIFT</div><div>CONTACT</div><div></div></div>{''.join(episode_rows)}</section>{intervention_panel}
+<section class="panel"><div class="section-head"><div><span class="eyebrow">PARAMETER PILOT · MUJOCO</span><h2>{len(episodes)} controlled conditions · {pilot_failures} failures</h2><p>Policy and runtime probes validate sensitivity and instrumentation. No population-level rate is reported.</p></div><div class="pilot-summary"><div><b>{pilot_passes}</b><span>passes</span></div><div><b>{pilot_failures}</b><span>failures</span></div></div></div><div class="episode-browser"><div class="player"><video id="pilot-video" controls autoplay muted loop playsinline preload="metadata" aria-label="Selected pilot condition"><source id="pilot-video-source" src="{html.escape(str(initial_media['src']))}" type="video/mp4"></video><div class="player-meta"><div><span id="pilot-identity">{html.escape(str(initial_media['label']))} · SEED {html.escape(str(initial_media['seed']))} · {float(initial_media['duration']):.1f} s</span><small id="pilot-diagnosis">{html.escape(str(initial_media['detail']))}</small></div><b id="pilot-outcome" class="{html.escape(str(initial_media['outcome']))}">{html.escape(str(initial_media['outcome']).upper())}</b></div></div><aside class="episode-queue"><div class="queue-head">CONTROLLED CONDITIONS · SELECT TO INSPECT</div>{''.join(episode_nav)}</aside></div><div class="episode-table-head"><div>CONDITION</div><div>CONTROL / OUTCOME</div><div>DISPLACEMENT</div><div>LIFT</div><div>CONTACT</div><div></div></div>{''.join(episode_rows)}</section>{intervention_panel}
 <section class="panel readiness"><div><b>Study definition ready</b><span>100 paired identities, randomization ranges, criteria, and retry semantics are explicit.</span></div><div><b>MuJoCo pilot retained</b><span>{len(episodes)} episodes include video, traces, checker decisions, contact telemetry, and hashes.</span></div><div><b>Scale blockers visible</b><span>Genesis execution and the Isaac Sim connector must run before cross-simulator comparison.</span></div></section>
 </main><footer><span>BenchStudio · reproducible embodied-AI evaluation</span><span>Pilot evidence is never presented as a completed study.</span></footer></div><dialog id="artifact-dialog"><div class="dialog-head"><strong id="artifact-title">Evidence</strong><button id="close-dialog">Close</button></div><pre id="artifact-content"></pre></dialog>
-<script>const artifacts={artifacts_json};const episodeMedia={episode_media_json};const video=document.getElementById('pilot-video');const source=document.getElementById('pilot-video-source');document.querySelectorAll('[data-episode-position]').forEach(button=>button.addEventListener('click',()=>{{const item=episodeMedia[Number(button.dataset.episodePosition)];if(!item)return;document.querySelectorAll('[data-episode-position]').forEach(option=>option.classList.toggle('selected',option===button));source.src=item.src;video.load();video.play().catch(()=>{{}});document.getElementById('pilot-identity').textContent=`EP ${{String(item.index+1).padStart(2,'0')}} · SEED ${{item.seed}}`;document.getElementById('pilot-diagnosis').textContent=item.diagnosis;const outcome=document.getElementById('pilot-outcome');outcome.textContent=item.outcome.toUpperCase();outcome.className=item.outcome;}}));const dialog=document.getElementById('artifact-dialog');document.querySelectorAll('[data-artifact]').forEach(button=>button.addEventListener('click',()=>{{const key=button.dataset.artifact;document.getElementById('artifact-title').textContent=key.replaceAll('_',' ').toUpperCase();document.getElementById('artifact-content').textContent=JSON.stringify(artifacts[key],null,2);dialog.showModal()}}));document.getElementById('close-dialog').addEventListener('click',()=>dialog.close());dialog.addEventListener('click',event=>{{if(event.target===dialog)dialog.close()}});</script></body></html>'''
+<script>const artifacts={artifacts_json};const episodeMedia={episode_media_json};const video=document.getElementById('pilot-video');const source=document.getElementById('pilot-video-source');document.querySelectorAll('[data-episode-position]').forEach(button=>button.addEventListener('click',()=>{{const item=episodeMedia[Number(button.dataset.episodePosition)];if(!item)return;document.querySelectorAll('[data-episode-position]').forEach(option=>option.classList.toggle('selected',option===button));source.src=item.src;video.load();video.play().catch(()=>{{}});document.getElementById('pilot-identity').textContent=`${{item.label}} · SEED ${{item.seed}} · ${{item.duration.toFixed(1)}} s`;document.getElementById('pilot-diagnosis').textContent=item.detail;const outcome=document.getElementById('pilot-outcome');outcome.textContent=item.outcome.toUpperCase();outcome.className=item.outcome;}}));const dialog=document.getElementById('artifact-dialog');document.querySelectorAll('[data-artifact]').forEach(button=>button.addEventListener('click',()=>{{const key=button.dataset.artifact;document.getElementById('artifact-title').textContent=key.replaceAll('_',' ').toUpperCase();document.getElementById('artifact-content').textContent=JSON.stringify(artifacts[key],null,2);dialog.showModal()}}));document.getElementById('close-dialog').addEventListener('click',()=>dialog.close());dialog.addEventListener('click',event=>{{if(event.target===dialog)dialog.close()}});</script></body></html>'''
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(document, encoding="utf-8")

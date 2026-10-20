@@ -37,6 +37,16 @@
     "robot_initial_state": "frozen",
     "policy": "frozen per condition"
   },
+  "pilot_design": {
+    "purpose": "parameter sensitivity and instrumentation validation",
+    "population_estimate": false,
+    "conditions": [
+      {"id": "baseline", "control": "baseline", "max_episode_steps": 400},
+      {"id": "fast_approach", "policy_time_scale": 0.65, "max_episode_steps": 250},
+      {"id": "slow_approach", "approach_duration_s": 2.4, "max_episode_steps": 400},
+      {"id": "lateral_offset", "policy_time_scale": 1.25, "shoulder_pan_offset_rad": 0.22, "max_episode_steps": 325}
+    ]
+  },
   "shared_runtime": {
     "physics_timestep_s": 0.0002,
     "control_hz": 50.0,
