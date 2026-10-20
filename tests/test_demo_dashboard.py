@@ -77,12 +77,14 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     output = build_demo_dashboard(evidence, tmp_path / "site" / "index.html")
     document = output.read_text(encoding="utf-8")
 
-    assert "BenchStudio Evaluation Control Room" in document
+    assert "BenchStudio — Evaluation report" in document
+    assert "The evaluation is complete." in document
+    assert "The transfer claim is not." in document
     assert "pink-demo" in document
     assert '"attempts.scheduled"</span>: <span class="json-number">2</span>' in document
     assert '"transport.valid"</span>: <span class="json-ok">true</span>' in document
-    assert "--ink: #1c1c1c" in document
-    assert "--pink: #ff4fba" in document
+    assert 'font-family:"Noto Sans", Arial, sans-serif' in document
+    assert "--pink:#ff4fba" in document
     assert "radial-gradient" not in document
     assert "text-shadow" not in document
-    assert "Inspect complete JSON" in document
+    assert "VIEW MACHINE-READABLE SUMMARY" in document
