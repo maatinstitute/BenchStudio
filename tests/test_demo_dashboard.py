@@ -348,7 +348,10 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert 'id="inspect-empty"' in workbench
     assert "switchSimulator" in workbench
     assert "planned parameters shown below" in workbench
+    assert "RECORDED DATA" in workbench
+    assert "SIMULATOR SELECTOR" in workbench
     assert ".primary-empty[hidden]{display:none!important}" in workbench
+    assert ".inspector video[hidden]{display:none!important}" in workbench
 
     assert "BenchStudio — Study control room" in document
     assert "location.replace('./')" in document
