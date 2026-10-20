@@ -161,6 +161,16 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     transport_valid = robochallenge.get("valid") is True
     transport_events = int(robochallenge.get("event_count", 0) or 0)
     robot_success = robot_report.get("success") is True
+    robot_episode_count = int(robot_run.get("episodes", 0) or 0)
+    robot_summary = robot_comparison.get("summary", {})
+    robot_backend_summary = (
+        robot_summary.get(selected_simulator, {}) if isinstance(robot_summary, dict) else {}
+    )
+    robot_completed_episodes = (
+        int(robot_backend_summary.get("completed", 0) or 0)
+        if isinstance(robot_backend_summary, dict)
+        else 0
+    )
     robot_sim_time = float(robot_report.get("sim_time_s", 0.0) or 0.0)
     robot_wall_time = float(robot_report.get("wall_time_s", 0.0) or 0.0)
     robot_steps = int(robot_report.get("steps", 0) or 0)
@@ -220,6 +230,8 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     .run-context span {{ display:block; color:#777; font:9px/1 "Noto Sans Mono",monospace; letter-spacing:.08em; }}
     .run-context b {{ display:block; margin-top:7px; overflow:hidden; text-overflow:ellipsis; color:#c8c8c8; font:500 11px/1.4 "Noto Sans Mono",monospace; white-space:nowrap; }}
     .metrics {{ display:grid; grid-template-columns:repeat(4,1fr); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:18px; }}
+    .campaign-scope {{ display:flex; justify-content:space-between; align-items:end; gap:20px; margin:22px 2px 9px; }}
+    .campaign-scope p {{ margin:0; color:#777; font-size:10px; }}
     .metric {{ padding:18px 20px; background:var(--surface); border-right:1px solid var(--line); }}
     .metric:last-child {{ border-right:0; }}
     .metric-label {{ display:block; color:var(--muted); font-size:9px; letter-spacing:.08em; text-transform:uppercase; }}
@@ -293,7 +305,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
 </head>
 <body>
   <div class="shell">
-    <header><div class="brand"><span class="mark"></span>BenchStudio <span>/ Eval Control Room</span></div><span class="mono" style="color:#777;font-size:10px">{scheduled} ATTEMPTS · {matched_pairs} TRANSFER PAIRS</span></header>
+    <header><div class="brand"><span class="mark"></span>BenchStudio <span>/ Eval Control Room</span></div><span class="mono" style="color:#777;font-size:10px">CAMPAIGN FIXTURE · {scheduled} ATTEMPTS · {matched_pairs} TRANSFER PAIRS</span></header>
 
     <main>
       <section class="run-context" aria-label="Run identity">
@@ -312,7 +324,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
           <div class="field"><label>POLICY</label><div class="field-output">Waypoint baseline · sha256 {html.escape(robot_policy_digest[:12])}</div></div>
           <div class="policy-timeline">{html.escape(robot_policy_timeline)}</div>
           <div class="run-result">
-            <div><span>OUTCOME</span><b>{'SUCCESS' if robot_success else 'NOT RUN'}</b></div>
+            <div><span>ROBOT EPISODES</span><b>{robot_completed_episodes}/{robot_episode_count} {'SUCCESS' if robot_success else 'NOT RUN'}</b></div>
             <div><span>SIM TIME</span><b>{robot_sim_time:.2f} s</b></div>
             <div><span>CONTROL STEPS</span><b>{robot_steps}</b></div>
             <div><span>TRACE RECORDS</span><b>{robot_trace_records}</b></div>
@@ -322,11 +334,12 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
         </aside>
       </section>
 
+      <div class="campaign-scope"><div class="section-label">Frozen campaign fixture</div><p>Separate accounting fixture; not additional SO-101 videos.</p></div>
       <section class="metrics" aria-label="Campaign integrity">
-        <div class="metric"><span class="metric-label">Scheduled</span><strong>{scheduled}</strong></div>
-        <div class="metric"><span class="metric-label">Completed</span><strong>{completed}/{scheduled}</strong></div>
-        <div class="metric"><span class="metric-label">Evidence verified</span><strong>{evidence_rate}%</strong></div>
-        <div class="metric"><span class="metric-label">Missing outcomes</span><strong>{missing}</strong></div>
+        <div class="metric"><span class="metric-label">Attempts scheduled</span><strong>{scheduled}</strong></div>
+        <div class="metric"><span class="metric-label">Attempts completed</span><strong>{completed}/{scheduled}</strong></div>
+        <div class="metric"><span class="metric-label">Attempt evidence verified</span><strong>{evidence_rate}%</strong></div>
+        <div class="metric"><span class="metric-label">Attempt outcomes missing</span><strong>{missing}</strong></div>
       </section>
 
       <section class="story">

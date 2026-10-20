@@ -75,11 +75,19 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     )
     _write_json(
         evidence / "urdf-studio" / "run.json",
-        {"schema": "scenario_run.v1", "scenario_id": "so101_cube_lift", "sims": ["mujoco"]},
+        {
+            "schema": "scenario_run.v1",
+            "scenario_id": "so101_cube_lift",
+            "sims": ["mujoco"],
+            "episodes": 1,
+        },
     )
     _write_json(
         evidence / "urdf-studio" / "comparison.json",
-        {"scenario_id": "so101_cube_lift", "backends": {"mujoco": {"success_rate": 1.0}}},
+        {
+            "scenario_id": "so101_cube_lift",
+            "summary": {"mujoco": {"episodes": 1, "completed": 1, "success_rate": 1.0}},
+        },
     )
     _write_json(
         evidence / "urdf-studio" / "scenario" / "waypoints.json",
@@ -126,6 +134,9 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert 'data-artifact="plan"' in document
     assert 'href="campaign-plan.json"' not in document
     assert "SO-101 · Cube lift" in document
+    assert "ROBOT EPISODES</span><b>1/1 SUCCESS" in document
+    assert "Separate accounting fixture; not additional SO-101 videos." in document
+    assert "Attempts completed</span><strong>2/2" in document
     assert "urdf-studio/mujoco/episode-0/episode.mp4" in document
     assert 'value="mujoco" selected>MuJoCo · evaluated' in document
     assert 'value="genesis" disabled>Genesis · run required' in document
