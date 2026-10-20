@@ -12,8 +12,8 @@ robot:
     rpy: [0.0, 0.0, 0.0]
   init_joint_positions:
     shoulder_pan: 0.0
-    shoulder_lift: 0.0
-    elbow_flex: 0.0
+    shoulder_lift: -1.17863
+    elbow_flex: 1.18814
     wrist_flex: 0.0
     wrist_roll: 0.0
     gripper: 1.2
@@ -34,7 +34,7 @@ success:
   all_of:
     - liftup:
         object: grasp_cube
-        height_m: 0.05
+        height_m: 0.10
   guards:
     - above_plane:
         object: grasp_cube
@@ -48,7 +48,7 @@ runtime:
   observation:
     modalities: [joint_positions, object_poses]
   grasp_attach: weld
-  attach_link: gripper_link
+  attach_link: gripper_frame_link
 policy:
   kind: waypoint
   params:

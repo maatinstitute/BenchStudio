@@ -83,10 +83,10 @@ def render_episode(
 
         renderer = mujoco.Renderer(backend._model, height=360, width=640)
         camera = mujoco.MjvCamera()
-        camera.lookat[:] = (0.18, 0.0, 0.18)
-        camera.distance = 0.78
-        camera.azimuth = 145.0
-        camera.elevation = -24.0
+        camera.lookat[:] = (0.20, 0.0, 0.13)
+        camera.distance = 0.66
+        camera.azimuth = 105.0
+        camera.elevation = -16.0
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with imageio.get_writer(str(output_path), fps=20, macro_block_size=None) as writer:
