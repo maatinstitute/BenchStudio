@@ -78,12 +78,18 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
                 / "report.json"
             )
             manifest_path = robot_root / "manifests" / f"episode-{episode_index}.json"
+            contact_analysis_path = report_path.parent / "contact-analysis.json"
             if not report_path.is_file():
                 continue
             episode = {
                 "episode_index": episode_index,
                 "report": _load_json(report_path),
                 "manifest": _load_json(manifest_path) if manifest_path.is_file() else {},
+                "contact_analysis": (
+                    _load_json(contact_analysis_path)
+                    if contact_analysis_path.is_file()
+                    else {}
+                ),
             }
             robot_episodes.append(episode)
         if robot_episodes:
@@ -166,6 +172,12 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
             }
         )
 
+    contact_analyses = [
+        episode.get("contact_analysis", {})
+        for episode in robot_episodes
+        if isinstance(episode.get("contact_analysis"), dict)
+        and episode.get("contact_analysis")
+    ]
     matrix_json = json.dumps(matrix_cells, separators=(",", ":")).replace("</", "<\\/")
     artifact_json = json.dumps(
         {
@@ -176,6 +188,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
             "transport": robochallenge,
             "robot_run": robot_run,
             "robot_episodes": robot_episodes,
+            "contact_analyses": contact_analyses,
             "robot_comparison": robot_comparison,
             "robot_policy": robot_policy,
             "robot_recovery": robot_recovery,
@@ -209,11 +222,19 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     if not isinstance(recovery_attempts, list):
         recovery_attempts = []
     recovered_episode_count = 1 if recovery_status == "recovered" else 0
-    robot_first_passes = max(0, robot_lift_passes - recovered_episode_count)
-    robot_execution_count = robot_episode_count + len(recovery_attempts) - recovered_episode_count
+    robot_first_passes = robot_lift_passes
+    robot_execution_count = robot_episode_count + len(recovery_attempts)
     robot_grasp_attach_used = any(
         report.get("grasp_attach_used") is True for report in robot_reports
     )
+    robot_contact_evaluated = bool(contact_analyses) and all(
+        isinstance(analysis.get("contact_model"), dict)
+        and analysis["contact_model"].get("mode") == "physics_contact"
+        and analysis["contact_model"].get("grasp_attach_used") is False
+        for analysis in contact_analyses
+    )
+    contact_pass_count = sum(analysis.get("success") is True for analysis in contact_analyses)
+    contact_failure_count = len(contact_analyses) - contact_pass_count
     robot_sim_time = (
         sum(float(report.get("sim_time_s", 0.0) or 0.0) for report in robot_reports)
         / len(robot_reports)
@@ -266,6 +287,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
             episode_index = int(episode.get("episode_index", position))
             report = episode.get("report", {})
             manifest = episode.get("manifest", {})
+            contact_analysis = episode.get("contact_analysis", {})
             placements = manifest.get("object_placements", {}) if isinstance(manifest, dict) else {}
             cube = placements.get("grasp_cube", {}) if isinstance(placements, dict) else {}
             cube_position = cube.get("position_xyz", []) if isinstance(cube, dict) else []
@@ -275,6 +297,11 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
             seed = manifest.get("seed", "—") if isinstance(manifest, dict) else "—"
             passed = report.get("success") is True if isinstance(report, dict) else False
             recovered = recovery_status == "recovered" and episode_index == recovery_episode_index
+            failure_class = (
+                str(contact_analysis.get("failure_class", "checker failure"))
+                if isinstance(contact_analysis, dict)
+                else "checker failure"
+            )
             sim_time = float(report.get("sim_time_s", 0.0) or 0.0) if isinstance(report, dict) else 0.0
             autoplay = " autoplay" if position == 0 else ""
             episode_cards.append(
@@ -285,7 +312,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
                 'type="video/mp4"></video>'
                 '<div class="episode-meta">'
                 f'<div><span>EPISODE {episode_index + 1:02d}</span><b>{"RECOVERED" if recovered else ("LIFT PASS" if passed else "CHECKER FAIL")}</b></div>'
-                f'<div><span>SEED {html.escape(str(seed))}</span><small>{html.escape(cube_xy)}</small></div>'
+                f'<div><span>SEED {html.escape(str(seed))}</span><small>{html.escape(cube_xy if passed else failure_class.replace("_", " "))}</small></div>'
                 f'<time>{sim_time:.2f} s</time>'
                 '</div></article>'
             )
@@ -296,8 +323,109 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
             'Run scripts/demo_urdf_studio.sh first.</div>'
         )
 
+    failure_analysis_panel = ""
+    if contact_analyses:
+        primary_analysis = next(
+            (analysis for analysis in contact_analyses if analysis.get("success") is not True),
+            contact_analyses[0],
+        )
+        primary_motion = primary_analysis.get("motion", {})
+        primary_timeline = primary_analysis.get("timeline", {})
+        primary_gripper = primary_analysis.get("gripper", {})
+        primary_telemetry = primary_analysis.get("physics_contact_telemetry", {})
+        if not isinstance(primary_motion, dict):
+            primary_motion = {}
+        if not isinstance(primary_timeline, dict):
+            primary_timeline = {}
+        if not isinstance(primary_gripper, dict):
+            primary_gripper = {}
+        if not isinstance(primary_telemetry, dict):
+            primary_telemetry = {}
+        primary_telemetry_capture = primary_telemetry.get("capture", {})
+        primary_telemetry_contact = primary_telemetry.get("contact", {})
+        primary_telemetry_equivalence = primary_telemetry.get("equivalence", {})
+        primary_telemetry_capture = primary_telemetry_capture if isinstance(primary_telemetry_capture, dict) else {}
+        primary_telemetry_contact = primary_telemetry_contact if isinstance(primary_telemetry_contact, dict) else {}
+        primary_telemetry_equivalence = primary_telemetry_equivalence if isinstance(primary_telemetry_equivalence, dict) else {}
+
+        failure_rows = []
+        for position, analysis in enumerate(contact_analyses):
+            motion = analysis.get("motion", {})
+            timeline = analysis.get("timeline", {})
+            gripper = analysis.get("gripper", {})
+            telemetry = analysis.get("physics_contact_telemetry", {})
+            motion = motion if isinstance(motion, dict) else {}
+            timeline = timeline if isinstance(timeline, dict) else {}
+            gripper = gripper if isinstance(gripper, dict) else {}
+            telemetry = telemetry if isinstance(telemetry, dict) else {}
+            telemetry_contact = telemetry.get("contact", {})
+            telemetry_contact = telemetry_contact if isinstance(telemetry_contact, dict) else {}
+            event_ms = timeline.get("first_contact_ms")
+            event_kind = "contact"
+            if event_ms is None:
+                event_ms = motion.get("largest_frame_displacement_t_ms")
+                event_kind = "impact window"
+            event_text = "not retained" if event_ms is None else f"{float(event_ms) / 1000:.2f} s {event_kind}"
+            displacement_mm = float(motion.get("horizontal_displacement_m", 0.0) or 0.0) * 1000
+            max_lift_mm = float(motion.get("max_lift_m", 0.0) or 0.0) * 1000
+            bilateral_frames = int(timeline.get("bilateral_contact_frames", 0) or 0)
+            tracking_error = gripper.get("final_tracking_error_rad")
+            tracking_text = "—" if tracking_error is None else f"{float(tracking_error):.3f} rad"
+            peak_force = telemetry_contact.get("peak_normal_force_n")
+            force_text = "—" if peak_force is None else f"{float(peak_force):.1f} N"
+            failure_class = str(analysis.get("failure_class") or "passed").replace("_", " ")
+            failure_rows.append(
+                '<div class="failure-row">'
+                f'<div><b>EP {int(analysis.get("episode_index", position)) + 1:02d}</b><span>seed {html.escape(str(analysis.get("seed", "—")))}</span></div>'
+                f'<div><b>{html.escape(failure_class)}</b><span>{html.escape(event_text)}</span></div>'
+                f'<div><b>{displacement_mm:.1f} mm</b><span>cube displacement</span></div>'
+                f'<div><b>{max_lift_mm:.1f} mm</b><span>maximum lift</span></div>'
+                f'<div><b>{bilateral_frames}</b><span>bilateral frames</span></div>'
+                f'<div><b>{html.escape(force_text)}</b><span>peak normal force</span></div>'
+                f'<div><b>{html.escape(tracking_text)}</b><span>closure error</span></div>'
+                '</div>'
+            )
+
+        primary_event_ms = primary_timeline.get("first_contact_ms")
+        if primary_event_ms is None:
+            primary_event_ms = primary_motion.get("largest_frame_displacement_t_ms")
+        primary_event = "not retained" if primary_event_ms is None else f"{float(primary_event_ms) / 1000:.2f} s"
+        primary_displacement = float(primary_motion.get("horizontal_displacement_m", 0.0) or 0.0) * 1000
+        primary_lift = float(primary_motion.get("max_lift_m", 0.0) or 0.0) * 1000
+        primary_bilateral = int(primary_timeline.get("bilateral_contact_frames", 0) or 0)
+        primary_tracking = primary_gripper.get("final_tracking_error_rad")
+        primary_tracking_text = "—" if primary_tracking is None else f"{float(primary_tracking):.3f} rad"
+        primary_peak_force = primary_telemetry_contact.get("peak_normal_force_n")
+        primary_force_text = "—" if primary_peak_force is None else f"{float(primary_peak_force):.1f} N"
+        primary_impulse = primary_telemetry_contact.get("normal_impulse_ns")
+        primary_impulse_text = "—" if primary_impulse is None else f"{float(primary_impulse):.4f} N·s"
+        primary_penetration = primary_telemetry_contact.get("maximum_penetration_m")
+        primary_penetration_text = "—" if primary_penetration is None else f"{float(primary_penetration) * 1000:.2f} mm"
+        sample_rate = primary_telemetry_capture.get("effective_sample_rate_hz")
+        sample_rate_text = "50 Hz fallback" if sample_rate is None else f"{float(sample_rate) / 1000:.1f} kHz"
+        equivalence_text = "VERIFIED" if primary_telemetry_equivalence.get("verified") is True else "NOT VERIFIED"
+        primary_class = str(primary_analysis.get("failure_class") or "successful_contact_grasp").replace("_", " ")
+        failure_analysis_panel = f'''
+      <section class="failure-analysis" aria-label="Contact grasp failure analysis">
+        <div class="failure-head"><div><div class="section-label">Root-cause analysis</div><h2>{contact_failure_count}/{len(contact_analyses)} grasps failed</h2><p class="section-copy">{html.escape(str(primary_analysis.get("explanation", "No explanation retained.")))}</p></div><span class="failure-badge">{html.escape(primary_class.upper())}</span></div>
+        <div class="failure-kpis">
+          <div><span>FAILURE WINDOW</span><b>{html.escape(primary_event)}</b></div>
+          <div><span>CUBE DISPLACEMENT</span><b>{primary_displacement:.1f} mm</b></div>
+          <div><span>MAXIMUM LIFT</span><b>{primary_lift:.1f} mm</b></div>
+          <div><span>BILATERAL RETENTION</span><b>{primary_bilateral} frames</b></div>
+          <div><span>CLOSURE ERROR</span><b>{html.escape(primary_tracking_text)}</b></div>
+          <div><span>PEAK NORMAL FORCE</span><b>{html.escape(primary_force_text)}</b></div>
+          <div><span>NORMAL IMPULSE</span><b>{html.escape(primary_impulse_text)}</b></div>
+          <div><span>MAX PENETRATION</span><b>{html.escape(primary_penetration_text)}</b></div>
+          <div><span>CONTACT CAPTURE</span><b>{html.escape(sample_rate_text)} · {equivalence_text}</b></div>
+        </div>
+        <div class="failure-table-head"><div>EPISODE</div><div>DIAGNOSIS / EVENT</div><div>DISPLACEMENT</div><div>LIFT</div><div>RETENTION</div><div>FORCE</div><div>TRACKING</div></div>
+        {''.join(failure_rows)}
+        <div class="failure-foot"><p>Evidence boundary: robot–cube contacts are retained at every {html.escape(sample_rate_text)} physics step with geom pairs, positions, contact frames, penetration, friction, solver force/torque, cube velocity, joint state, targets, and actuator forces. Solver evidence is accepted only when the replay matches the evaluated run; it is not a calibrated hardware-force measurement.</p><button class="artifact-button" data-artifact="contact_analyses">Inspect failure evidence</button></div>
+      </section>'''
+
     recovery_panel = ""
-    if recovery_status == "recovered" and len(recovery_attempts) >= 2:
+    if recovery_status in {"recovered", "lift_still_failed"} and len(recovery_attempts) >= 2:
         failed_attempt = recovery_attempts[0] if isinstance(recovery_attempts[0], dict) else {}
         recovered_attempt = recovery_attempts[1] if isinstance(recovery_attempts[1], dict) else {}
         failed_files = failed_attempt.get("files", {}) if isinstance(failed_attempt, dict) else {}
@@ -308,22 +436,37 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
         recovered_video_path = str(recovered_video.get("path", "")) if isinstance(recovered_video, dict) else ""
         intervention = robot_recovery.get("intervention", {})
         policy_binding = robot_recovery.get("policy_binding", {})
-        recovery_policy_sha = (
-            str(policy_binding.get("recovered_attempt_sha256", "unbound"))[:12]
-            if isinstance(policy_binding, dict)
-            else "unbound"
-        )
-        failed_limit = intervention.get("failed_value", "—") if isinstance(intervention, dict) else "—"
-        recovered_limit = intervention.get("recovered_value", "—") if isinstance(intervention, dict) else "—"
+        baseline_policy_sha = str(policy_binding.get("failed_attempt_sha256", "unbound"))[:8] if isinstance(policy_binding, dict) else "unbound"
+        intervention_policy_sha = str(policy_binding.get("recovered_attempt_sha256", "unbound"))[:8] if isinstance(policy_binding, dict) else "unbound"
+        baseline_value = intervention.get("baseline_value", "—") if isinstance(intervention, dict) else "—"
+        intervention_value = intervention.get("intervention_value", "—") if isinstance(intervention, dict) else "—"
+        intervention_unit = intervention.get("unit", "") if isinstance(intervention, dict) else ""
+        recovery_succeeded = recovered_attempt.get("success") is True
+        recovery_state_label = "LIFT RECOVERED" if recovery_succeeded else "LIFT STILL FAILED"
+        recovery_result_label = "LIFT CHECKER PASS" if recovery_succeeded else str(
+            recovered_attempt.get("stop_reason", "checker fail")
+        ).replace("_", " ").upper()
+        intervention_effect = robot_recovery.get("effect", {})
+        intervention_effect = intervention_effect if isinstance(intervention_effect, dict) else {}
+        force_effect = intervention_effect.get("peak_normal_force_n", {})
+        displacement_effect = intervention_effect.get("horizontal_displacement_m", {})
+        force_effect = force_effect if isinstance(force_effect, dict) else {}
+        displacement_effect = displacement_effect if isinstance(displacement_effect, dict) else {}
+        baseline_force = force_effect.get("baseline")
+        changed_force = force_effect.get("intervention")
+        baseline_displacement = displacement_effect.get("baseline")
+        changed_displacement = displacement_effect.get("intervention")
+        force_comparison = "—" if baseline_force is None or changed_force is None else f"{float(baseline_force):.1f} → {float(changed_force):.1f} N peak"
+        displacement_comparison = "—" if baseline_displacement is None or changed_displacement is None else f"{float(baseline_displacement) * 1000:.1f} → {float(changed_displacement) * 1000:.1f} mm displacement"
         recovery_panel = f'''
-      <section class="recovery-panel" aria-label="Recovered episode evidence">
-        <div class="recovery-head"><div><div class="section-label">Failure and recovery</div><h2>Episode {recovery_episode_index + 1:02d} · Linked attempts</h2><p class="section-copy">Same seed, cube pose, simulator, and policy. Only the episode horizon changes.</p></div><span class="recovery-state">RECOVERED</span></div>
+      <section class="recovery-panel" aria-label="Causal intervention evidence">
+        <div class="recovery-head"><div><div class="section-label">Causal intervention</div><h2>Episode {recovery_episode_index + 1:02d} · Baseline vs slower approach</h2><p class="section-copy">Same seed, cube pose, simulator, checker, and geometry. The intervention changes only approach duration to test whether lower approach velocity reduces the pre-close collision.</p></div><span class="recovery-state {'passed' if recovery_succeeded else 'failed'}">{recovery_state_label}</span></div>
         <div class="recovery-flow">
-          <article class="recovery-attempt failed"><video controls muted playsinline preload="metadata"><source src="urdf-studio/{html.escape(failed_video_path)}" type="video/mp4"></video><div><span>ATTEMPT 01 · FAILED</span><b>{html.escape(str(failed_attempt.get("stop_reason", "failed")).replace("_", " ").upper())}</b><small>{failed_attempt.get("steps", "—")} steps · {float(failed_attempt.get("sim_time_s", 0.0) or 0.0):.2f} s</small></div></article>
-          <div class="recovery-change"><span>CONTROL CHANGE</span><strong>{html.escape(str(failed_limit))} → {html.escape(str(recovered_limit))}</strong><small>max episode steps<br>policy unchanged · {html.escape(recovery_policy_sha)}</small></div>
-          <article class="recovery-attempt passed"><video controls muted playsinline preload="metadata"><source src="urdf-studio/{html.escape(recovered_video_path)}" type="video/mp4"></video><div><span>ATTEMPT 02 · PASSED</span><b>LIFT CHECKER PASS</b><small>{recovered_attempt.get("steps", "—")} steps · {float(recovered_attempt.get("sim_time_s", 0.0) or 0.0):.2f} s</small></div></article>
+          <article class="recovery-attempt failed"><video controls muted playsinline preload="metadata"><source src="urdf-studio/{html.escape(failed_video_path)}" type="video/mp4"></video><div><span>ATTEMPT 01 · BASELINE</span><b>{html.escape(str(failed_attempt.get("stop_reason", "failed")).replace("_", " ").upper())}</b><small>{failed_attempt.get("steps", "—")} steps · {float(failed_attempt.get("sim_time_s", 0.0) or 0.0):.2f} s</small></div></article>
+          <div class="recovery-change"><span>APPROACH DURATION</span><strong>{html.escape(str(baseline_value))} → {html.escape(str(intervention_value))} {html.escape(str(intervention_unit))}</strong><small>single policy parameter<br>{html.escape(baseline_policy_sha)} → {html.escape(intervention_policy_sha)}</small></div>
+          <article class="recovery-attempt {'passed' if recovery_succeeded else 'failed'}"><video controls muted playsinline preload="metadata"><source src="urdf-studio/{html.escape(recovered_video_path)}" type="video/mp4"></video><div><span>ATTEMPT 02 · INTERVENTION</span><b>{html.escape(recovery_result_label)}</b><small>{recovered_attempt.get("steps", "—")} steps · {float(recovered_attempt.get("sim_time_s", 0.0) or 0.0):.2f} s</small></div></article>
         </div>
-        <div class="recovery-foot"><span>SEED {html.escape(str(robot_recovery.get("seed", "—")))}</span><span>FIRST-PASS RATE {robot_first_passes}/{robot_episode_count}</span><span>FINAL RATE {robot_lift_passes}/{robot_episode_count}</span><button class="artifact-button" data-artifact="robot_recovery">Inspect recovery evidence</button></div>
+        <div class="recovery-foot"><span>SEED {html.escape(str(robot_recovery.get("seed", "—")))}</span><span>{html.escape(force_comparison)}</span><span>{html.escape(displacement_comparison)}</span><button class="artifact-button" data-artifact="robot_recovery">Inspect intervention evidence</button></div>
       </section>'''
 
     debug_backends = simulator_debug.get("backends", {})
@@ -378,7 +521,12 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
         ("CONTROL", f'{debug_shared.get("control_hz", "—")} Hz'),
         ("CHECKER", f'every {debug_shared.get("checker_interval_steps", "—")} steps'),
         ("MAX STEPS", str(debug_shared.get("max_episode_steps", "—"))),
-        ("ATTACH", f'{debug_shared.get("grasp_attach", "—")} → {debug_shared.get("attach_link", "—")}'),
+        (
+            "ATTACH",
+            "disabled"
+            if debug_shared.get("grasp_attach") == "none"
+            else f'{debug_shared.get("grasp_attach", "—")} → {debug_shared.get("attach_link") or "—"}',
+        ),
     ]
     shared_parameters_html = "".join(
         f'<div><span>{label}</span><b>{html.escape(value)}</b></div>'
@@ -448,10 +596,26 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     .run-result div {{ padding:12px; border:1px solid var(--line); border-radius:6px; background:var(--raised); }}
     .run-result span {{ display:block; color:#777; font:9px/1 "Noto Sans Mono",monospace; }} .run-result b {{ display:block; margin-top:7px; font-size:13px; font-weight:500; }}
     .truth-note {{ margin:16px 0 0; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; line-height:1.55; }}
+    .failure-analysis {{ border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:18px; background:var(--surface); }}
+    .failure-head {{ display:flex; justify-content:space-between; align-items:start; gap:24px; padding:24px; border-bottom:1px solid var(--line); }}
+    .failure-head h2 {{ margin-bottom:5px; }}
+    .failure-badge {{ max-width:230px; color:var(--warn); border:1px solid #66533d; border-radius:5px; padding:7px 9px; font:9px/1.35 "Noto Sans Mono",monospace; letter-spacing:.05em; text-align:right; }}
+    .failure-kpis {{ display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid var(--line); }}
+    .failure-kpis div {{ padding:16px; border-right:1px solid var(--line); }} .failure-kpis div:last-child {{ border:0; }}
+    .failure-kpis span,.failure-table-head div {{ display:block; color:#777; font:9px/1.35 "Noto Sans Mono",monospace; }}
+    .failure-kpis b {{ display:block; margin-top:8px; color:#ddd; font:500 16px/1.2 "Noto Sans Mono",monospace; }}
+    .failure-table-head,.failure-row {{ display:grid; grid-template-columns:.5fr 1.65fr repeat(5,.8fr); }}
+    .failure-table-head {{ background:var(--raised); border-bottom:1px solid var(--line); }}
+    .failure-table-head div,.failure-row > div {{ min-width:0; padding:10px 12px; border-right:1px solid var(--line); }} .failure-table-head div:last-child,.failure-row > div:last-child {{ border:0; }}
+    .failure-row {{ border-bottom:1px solid var(--line); }}
+    .failure-row b,.failure-row span {{ display:block; overflow-wrap:anywhere; }}
+    .failure-row b {{ color:#bbb; font:500 10px/1.45 "Noto Sans Mono",monospace; }} .failure-row span {{ margin-top:3px; color:#747474; font:9px/1.4 "Noto Sans Mono",monospace; }}
+    .failure-row > div:nth-child(2) b {{ color:var(--warn); }}
+    .failure-foot {{ display:flex; align-items:center; justify-content:space-between; gap:24px; padding:13px 16px; }} .failure-foot p {{ max-width:820px; margin:0; color:#858585; font-size:10px; line-height:1.5; }}
     .recovery-panel {{ border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:18px; background:var(--surface); }}
     .recovery-head {{ display:flex; justify-content:space-between; align-items:start; gap:20px; padding:22px 24px; border-bottom:1px solid var(--line); }}
     .recovery-head h2 {{ margin-bottom:4px; }}
-    .recovery-state {{ color:var(--ok); border:1px solid #466056; border-radius:5px; padding:6px 9px; font:9px/1 "Noto Sans Mono",monospace; letter-spacing:.06em; }}
+    .recovery-state {{ border-radius:5px; padding:6px 9px; font:9px/1 "Noto Sans Mono",monospace; letter-spacing:.06em; }} .recovery-state.passed {{ color:var(--ok); border:1px solid #466056; }} .recovery-state.failed {{ color:var(--warn); border:1px solid #66533d; }}
     .recovery-flow {{ display:grid; grid-template-columns:1fr 170px 1fr; align-items:stretch; background:#111; }}
     .recovery-attempt {{ min-width:0; }}
     .recovery-attempt video {{ display:block; width:100%; aspect-ratio:16/9; object-fit:contain; background:#090909; }}
@@ -512,7 +676,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     .close {{ appearance:none; border:1px solid var(--line); border-radius:5px; background:var(--raised); color:#bbb; padding:6px 9px; cursor:pointer; }}
     #artifact-content {{ margin:0; padding:20px; overflow:auto; color:#c8c8c8; font:11px/1.7 "Noto Sans Mono",monospace; white-space:pre-wrap; word-break:break-word; }}
     footer {{ display:flex; justify-content:space-between; gap:20px; color:#707070; border-top:1px solid var(--line); padding-top:18px; font-size:10px; }}
-    @media(max-width:800px) {{ .robot-run,.story {{ grid-template-columns:1fr; }} .episode-view,.transfer {{ border-right:0; border-bottom:1px solid var(--line); }} .recovery-flow {{ grid-template-columns:1fr; }} .recovery-change {{ border:0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }} .metrics {{ grid-template-columns:1fr 1fr; }} .metric:nth-child(2) {{ border-right:0; }} .metric:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} .evidence {{ grid-template-columns:1fr 1fr; }} .evidence div:nth-child(2) {{ border-right:0; }} .evidence div:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} .shared-params {{ grid-template-columns:1fr 1fr; }} .debug-row {{ grid-template-columns:90px repeat(3,minmax(120px,1fr)); }} .sim-debug {{ overflow-x:auto; }} }}
+    @media(max-width:800px) {{ .robot-run,.story {{ grid-template-columns:1fr; }} .episode-view,.transfer {{ border-right:0; border-bottom:1px solid var(--line); }} .recovery-flow {{ grid-template-columns:1fr; }} .recovery-change {{ border:0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }} .metrics {{ grid-template-columns:1fr 1fr; }} .metric:nth-child(2) {{ border-right:0; }} .metric:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} .evidence {{ grid-template-columns:1fr 1fr; }} .evidence div:nth-child(2) {{ border-right:0; }} .evidence div:nth-child(-n+2) {{ border-bottom:1px solid var(--line); }} .shared-params {{ grid-template-columns:1fr 1fr; }} .debug-row {{ grid-template-columns:90px repeat(3,minmax(120px,1fr)); }} .sim-debug {{ overflow-x:auto; }} .failure-kpis {{ grid-template-columns:repeat(2,1fr); }} .failure-table-head {{ display:none; }} .failure-row {{ grid-template-columns:repeat(3,1fr); }} .failure-head,.failure-foot {{ align-items:start; flex-direction:column; }} }}
     @media(max-width:560px) {{ .shell {{ width:calc(100% - 24px); }} .run-context {{ grid-template-columns:1fr; }} .run-context div {{ border-right:0; border-bottom:1px solid var(--line); }} .episode-grid {{ grid-template-columns:1fr; }} .matrix-row {{ grid-template-columns:76px repeat(2,1fr); }} .bar {{ grid-template-columns:100px 1fr 36px; }} footer {{ flex-direction:column; }} }}
   </style>
 </head>
@@ -538,16 +702,18 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
           <div class="policy-timeline">{html.escape(robot_policy_timeline)}</div>
           <div class="run-result">
             <div><span>FINAL RESULT</span><b>{robot_lift_passes}/{robot_episode_count} LIFT CHECKER PASS</b></div>
-            <div><span>CONTACT GRASP</span><b>{'NOT EVALUATED' if robot_grasp_attach_used else 'NO ATTACH REPORTED'}</b></div>
+            <div><span>CONTACT GRASP</span><b>{'PHYSICS EVALUATED' if robot_contact_evaluated else ('KINEMATIC ATTACH' if robot_grasp_attach_used else 'NOT EVALUATED')}</b></div>
             <div><span>ROBOT EPISODES</span><b>{robot_completed_episodes}/{robot_episode_count} {'COMPLETED' if robot_completed_episodes else 'NOT RUN'}</b></div>
             <div><span>FIRST-PASS RATE</span><b>{robot_first_passes}/{robot_episode_count}</b></div>
-            <div><span>RECOVERY</span><b>{recovered_episode_count}/1 RECOVERED</b></div>
+            <div><span>INTERVENTION</span><b>{'1 EVALUATED' if recovery_attempts else 'NOT RUN'}</b></div>
             <div><span>EXECUTIONS</span><b>{robot_execution_count} TOTAL</b></div>
           </div>
-          <p class="truth-note">{html.escape(simulator_name)} {html.escape(simulator_version)} · mean wall time {robot_wall_time:.2f} s. The batch varies the cube pose under frozen seeds and one frozen policy. This is not a contact-realistic grasp: the policy triggers a kinematic weld to <code>gripper_frame_link</code> at 3.0 s, and this SO-101 fixture does not provide robot collision geometry. A pass means only that the welded cube crossed the 0.10 m lift threshold.</p>
+          <p class="truth-note">{html.escape(simulator_name)} {html.escape(simulator_version)} · mean wall time {robot_wall_time:.2f} s. The batch varies the cube pose under frozen seeds and one frozen policy. Exact finger-mesh collisions participate in MuJoCo contact; no attach or weld event is permitted. Physics-step diagnostic replay retains solver force/torque, impulse, penetration, cube velocity, and controller state and is accepted only after deterministic equivalence verification.</p>
           <div class="links"><button class="artifact-button" data-artifact="robot_policy">Inspect policy</button><button class="artifact-button" data-artifact="robot_episodes">Inspect episode evidence</button><button class="artifact-button" data-artifact="robot_comparison">Inspect comparison</button></div>
         </aside>
       </section>
+
+      {failure_analysis_panel}
 
       {recovery_panel}
 
@@ -583,7 +749,9 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
           <h2>What the evidence permits</h2>
           <div class="decision supported"><b>Campaign integrity</b><span>All frozen attempts are terminal and accounted for.</span></div>
           <div class="decision supported"><b>Evidence integrity</b><span>Every committed result passed local verification.</span></div>
-          <div class="decision unsupported"><b>Contact-realistic grasp</b><span>Not evaluated; this fixture uses a policy-triggered weld.</span></div>
+          <div class="decision supported"><b>Contact-grasp execution</b><span>Evaluated with collision response and no attachment shortcut.</span></div>
+          <div class="decision supported"><b>Simulator contact diagnostics</b><span>Physics-step solver forces, impulses, penetration, and controller state are retained with replay equivalence checks.</span></div>
+          <div class="decision unsupported"><b>Hardware force calibration</b><span>Not established; MuJoCo solver forces are not physical sensor measurements.</span></div>
           <div class="decision unsupported"><b>Real-world transfer</b><span>Not supported by this deterministic fixture.</span></div>
           <div class="decision unsupported"><b>Model quality</b><span>No model-performance claim is made.</span></div>
         </aside>
@@ -627,7 +795,7 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
   <script>
     const cells = {matrix_json};
     const artifacts = {artifact_json};
-    const artifactTitles = {{plan:'Frozen campaign plan',ledger:'Attempt ledger',transfer:'Transfer fidelity report',robustness:'Counterfactual robustness report',transport:'RoboChallenge transport audit',robot_policy:'SO-101 waypoint policy',robot_episodes:'SO-101 episode batch evidence',robot_recovery:'SO-101 failure and recovery evidence',robot_comparison:'URDF Studio comparison report',simulator_debug:'Simulator debug manifest'}};
+    const artifactTitles = {{plan:'Frozen campaign plan',ledger:'Attempt ledger',transfer:'Transfer fidelity report',robustness:'Counterfactual robustness report',transport:'RoboChallenge transport audit',robot_policy:'SO-101 waypoint policy',robot_episodes:'SO-101 episode batch evidence',contact_analyses:'Contact-grasp failure analyses',robot_recovery:'SO-101 causal intervention evidence',robot_comparison:'URDF Studio comparison report',simulator_debug:'Simulator debug manifest'}};
     const pairs = [...new Set(cells.map(c => c.pair))];
     const conditions = [...new Set(cells.map(c => c.condition))];
     const matrix = document.getElementById('matrix');

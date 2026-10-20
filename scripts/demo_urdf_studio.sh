@@ -46,7 +46,8 @@ trap cleanup EXIT
 cp -R "$ROOT/examples/urdf_studio_so101_cube/." "$STAGING/"
 cp -R "$URDF_STUDIO_ROOT/web/public/demo/assets" "$STAGING/assets"
 "$URDF_STUDIO_PYTHON" "$ROOT/scripts/prepare_urdf_studio_robot.py" \
-    "$URDF_STUDIO_ROOT/web/public/demo/robot.urdf" "$STAGING/robot.urdf"
+    "$URDF_STUDIO_ROOT/third_party/so-arm100/Simulation/SO101/so101_new_calib.urdf" \
+    "$STAGING/robot.urdf"
 
 echo "BenchStudio × URDF Studio"
 echo "robot=SO-101 task=cube-lift simulators=$SIMULATORS"
@@ -58,6 +59,27 @@ PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
     "$STAGING" "${SIM_ARGS[@]}" --out "$OUTPUT"
 
 if [[ "$HAS_MUJOCO" == true ]]; then
+    for MANIFEST in "$OUTPUT"/manifests/episode-*.json; do
+        EPISODE_NAME=$(basename "$MANIFEST" .json)
+        EPISODE_DIR="$OUTPUT/mujoco/$EPISODE_NAME"
+        [[ -f "$EPISODE_DIR/report.json" ]] || continue
+        PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+            "$URDF_STUDIO_PYTHON" "$ROOT/scripts/record_contact_telemetry.py" \
+            --scenario "$OUTPUT/scenario/scenario.yaml" \
+            --manifest "$MANIFEST" \
+            --reference-report "$EPISODE_DIR/report.json" \
+            --output "$EPISODE_DIR/contact-telemetry.ndjson" \
+            --summary "$EPISODE_DIR/contact-telemetry-summary.json"
+        PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+            "$URDF_STUDIO_PYTHON" "$ROOT/scripts/analyze_contact_grasp.py" \
+            --scenario "$OUTPUT/scenario/scenario.yaml" \
+            --manifest "$MANIFEST" \
+            --trace "$EPISODE_DIR/trace.ndjson" \
+            --report "$EPISODE_DIR/report.json" \
+            --contact-summary "$EPISODE_DIR/contact-telemetry-summary.json" \
+            --output "$EPISODE_DIR/contact-analysis.json"
+    done
+
     RECOVERY_EPISODE_INDEX=${BENCHSTUDIO_RECOVERY_EPISODE_INDEX:-2}
     RECOVERY_MANIFEST="$OUTPUT/manifests/episode-$RECOVERY_EPISODE_INDEX.json"
     if [[ -f "$RECOVERY_MANIFEST" ]]; then
@@ -68,30 +90,49 @@ if [[ "$HAS_MUJOCO" == true ]]; then
         "$URDF_STUDIO_PYTHON" "$ROOT/scripts/build_recovery_fixture.py" prepare \
             --source "$OUTPUT/scenario" \
             --output "$RECOVERY_STAGING/scenario" \
-            --max-steps 125
+            --approach-duration-s 2.4
         mkdir -p "$RECOVERY_ROOT"
-        cp "$RECOVERY_STAGING/scenario/recovery-intervention.json" \
+        cp "$RECOVERY_STAGING/scenario/intervention.json" \
             "$RECOVERY_ROOT/intervention.json"
 
-        echo "[recovery] episode $RECOVERY_EPISODE_INDEX attempt 0: constrained horizon"
-        PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
-            "$URDF_STUDIO_PYTHON" -m backend.scripts.scenario_episode_worker \
-            --scenario "$RECOVERY_STAGING/scenario" \
-            --sim mujoco \
-            --episode-manifest "$RECOVERY_MANIFEST" \
-            --out "$FAILED_DIR"
-
-        echo "[recovery] episode $RECOVERY_EPISODE_INDEX attempt 1: protocol horizon restored"
+        echo "[intervention] episode $RECOVERY_EPISODE_INDEX attempt 0: baseline policy"
         PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
             "$URDF_STUDIO_PYTHON" -m backend.scripts.scenario_episode_worker \
             --scenario "$OUTPUT/scenario" \
             --sim mujoco \
             --episode-manifest "$RECOVERY_MANIFEST" \
+            --out "$FAILED_DIR"
+
+        echo "[intervention] episode $RECOVERY_EPISODE_INDEX attempt 1: approach duration 2.4 s"
+        PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+            "$URDF_STUDIO_PYTHON" -m backend.scripts.scenario_episode_worker \
+            --scenario "$RECOVERY_STAGING/scenario" \
+            --sim mujoco \
+            --episode-manifest "$RECOVERY_MANIFEST" \
             --out "$RECOVERED_DIR"
 
-        cp "$RECOVERED_DIR/report.json" "$RECOVERED_DIR/trace.ndjson" \
-            "$RECOVERED_DIR/decisions.ndjson" "$RECOVERED_DIR/episode.mp4" \
-            "$OUTPUT/mujoco/episode-$RECOVERY_EPISODE_INDEX/"
+        for ATTEMPT_DIR in "$FAILED_DIR" "$RECOVERED_DIR"; do
+            ATTEMPT_SCENARIO="$OUTPUT/scenario/scenario.yaml"
+            if [[ "$ATTEMPT_DIR" == "$RECOVERED_DIR" ]]; then
+                ATTEMPT_SCENARIO="$RECOVERY_STAGING/scenario/scenario.yaml"
+            fi
+            PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+                "$URDF_STUDIO_PYTHON" "$ROOT/scripts/record_contact_telemetry.py" \
+                --scenario "$ATTEMPT_SCENARIO" \
+                --manifest "$RECOVERY_MANIFEST" \
+                --reference-report "$ATTEMPT_DIR/report.json" \
+                --output "$ATTEMPT_DIR/contact-telemetry.ndjson" \
+                --summary "$ATTEMPT_DIR/contact-telemetry-summary.json"
+            PYTHONPATH="$URDF_STUDIO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+                "$URDF_STUDIO_PYTHON" "$ROOT/scripts/analyze_contact_grasp.py" \
+                --scenario "$ATTEMPT_SCENARIO" \
+                --manifest "$RECOVERY_MANIFEST" \
+                --trace "$ATTEMPT_DIR/trace.ndjson" \
+                --report "$ATTEMPT_DIR/report.json" \
+                --contact-summary "$ATTEMPT_DIR/contact-telemetry-summary.json" \
+                --output "$ATTEMPT_DIR/contact-analysis.json"
+        done
+
     fi
 
     for MANIFEST in "$OUTPUT"/manifests/episode-*.json; do
@@ -134,8 +175,8 @@ if [[ "$HAS_MUJOCO" == true ]]; then
             --intervention "$RECOVERY_ROOT/intervention.json" \
             --failed-dir "$FAILED_DIR" \
             --recovered-dir "$RECOVERED_DIR" \
-            --failed-policy "$RECOVERY_STAGING/scenario/waypoints.json" \
-            --recovered-policy "$OUTPUT/scenario/waypoints.json"
+            --failed-policy "$OUTPUT/scenario/waypoints.json" \
+            --recovered-policy "$RECOVERY_STAGING/scenario/waypoints.json"
     fi
 fi
 

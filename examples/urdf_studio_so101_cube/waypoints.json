@@ -37,7 +37,7 @@
       }
     },
     {
-      "label": "close + attach",
+      "label": "close on contact",
       "time_s": 3.0,
       "joints": {
         "shoulder_pan": 0.0,
@@ -45,9 +45,8 @@
         "elbow_flex": 1.10215,
         "wrist_flex": -0.00879,
         "wrist_roll": 0.0,
-        "gripper": 0.15
-      },
-      "attach": "grasp_cube"
+        "gripper": -0.15
+      }
     },
     {
       "label": "lift",
@@ -58,7 +57,7 @@
         "elbow_flex": 1.24448,
         "wrist_flex": 0.0,
         "wrist_roll": 0.0,
-        "gripper": 0.15
+        "gripper": -0.15
       }
     }
   ]

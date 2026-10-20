@@ -126,21 +126,35 @@ auto-detects a sibling `urdf-studio` checkout. Otherwise set
 `URDF_STUDIO_ROOT=/path/to/urdf-studio`. Limit or reorder the requested backends
 with `BENCHSTUDIO_SIMULATORS=mujoco`, `genesis`, or `mujoco,genesis`.
 
-The included SO-101 batch is an orchestration fixture, not a contact-realistic
-grasp benchmark. Its policy explicitly welds the cube to `gripper_frame_link`,
-and its pass condition is a 0.10 m object lift. Multiple seeds exercise episode
-generation, artifact accounting, replay, and aggregate reporting; they do not
-add contact realism. The control room therefore reports the lift-checker pass
-count and `CONTACT GRASP NOT EVALUATED` rather than using the run as evidence of
-physical grasp quality.
+The included SO-101 batch is a contact-grasp diagnostic fixture. The staged URDF
+keeps the upstream visual model and kinematics, retains only the exact fixed-
+and moving-finger mesh collisions, and adds joint damping.
+The policy is not allowed to weld or attach the cube. Multiple seeds vary cube
+placement while preserving the policy, checker, and simulator parameters. A
+failure is a first-class result: each episode records cube displacement and
+lift, sampled contact and bilateral-retention frames, gripper target tracking,
+failure timing, source hashes, and a bounded root-cause classification.
 
-Episode 03 also runs a linked failure/recovery pair. Attempt 01 uses the same
-seed, cube pose, simulator, and policy with a deliberately constrained
-125-control-step horizon, producing a real `max_steps` failure before attach.
-Attempt 02 restores the frozen 400-step protocol and passes. Both reports,
-traces, decisions, videos, and SHA-256 bindings are retained in `recovery.json`;
-the dashboard reports the 3/4 first-pass rate separately from the 4/4 final
-rate. This demonstrates recovery accounting, not policy adaptation.
+The ordinary rollout trace remains sampled at 50 Hz. BenchStudio therefore
+runs a deterministic diagnostic replay that inspects every 0.2 ms MuJoCo
+physics step (5 kHz) and retains every robot-cube contact: geom pair, world
+position and frame, penetration, friction, solver force and torque, cube pose
+and velocity, joint positions and velocities, targets, and actuator forces.
+The replay is accepted only when success, stop reason, step count, and final
+cube position match the evaluated run. These are simulator solver values, not
+calibrated hardware-force measurements. The fixture is useful for debugging
+policy/geometry/controller mismatch, but is not a hardware-contact or
+real-world-transfer benchmark.
+
+Episode 03 also runs a linked causal intervention. Attempt 01 repeats the
+baseline failure. Attempt 02 keeps the seed, cube pose, simulator, checker,
+geometry, and joint targets fixed but doubles the approach duration from 1.2 s
+to 2.4 s. This directly tests whether lower approach velocity reduces the
+pre-close collision. The dashboard reports both outcome and tradeoff (peak
+normal force and cube displacement), so lower force cannot be mistaken for
+recovery when the lift still fails. Both videos, reports, traces, contact
+analyses, policy hashes, and the changed parameter are retained in
+`recovery.json`.
 
 Run the complete local CI-equivalent gate, including the full suite and
 cross-version-friendly bytecode compilation, with:

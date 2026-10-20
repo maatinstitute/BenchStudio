@@ -46,6 +46,10 @@ success:
     - above_plane:
         object: grasp_cube
         z_min: 0.0
+    - stable_for:
+        object: grasp_cube
+        seconds: 0.5
+        max_drift_m: 0.015
   timeout_sim_seconds: 8.0
 runtime:
   physics_timestep_s: 0.0002
@@ -54,8 +58,7 @@ runtime:
   max_episode_steps: 400
   observation:
     modalities: [joint_positions, object_poses]
-  grasp_attach: weld
-  attach_link: gripper_frame_link
+  grasp_attach: none
 policy:
   kind: waypoint
   params:

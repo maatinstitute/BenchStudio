@@ -86,7 +86,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
         evidence / "urdf-studio" / "comparison.json",
         {
             "scenario_id": "so101_cube_lift",
-            "summary": {"mujoco": {"episodes": 4, "completed": 4, "success_rate": 1.0}},
+            "summary": {"mujoco": {"episodes": 4, "completed": 4, "success_rate": 0.0}},
         },
     )
     _write_json(
@@ -95,12 +95,11 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
             "waypoints": [
                 {"label": "ready", "time_s": 0.0, "joints": {"gripper": 1.2}},
                 {
-                    "label": "close + attach",
+                    "label": "close on contact",
                     "time_s": 3.0,
-                    "joints": {"gripper": 0.15},
-                    "attach": "grasp_cube",
+                    "joints": {"gripper": -0.15},
                 },
-                {"label": "lift", "time_s": 4.8, "joints": {"gripper": 0.15}},
+                {"label": "lift", "time_s": 4.8, "joints": {"gripper": -0.15}},
             ]
         },
     )
@@ -113,8 +112,8 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
                 "control_hz": 50.0,
                 "checker_interval_steps": 5,
                 "max_episode_steps": 400,
-                "grasp_attach": "weld",
-                "attach_link": "gripper_frame_link",
+                "grasp_attach": "none",
+                "attach_link": None,
                 "episodes": 4,
             },
             "input_digests": {
@@ -128,7 +127,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
                     "package_version": "3.12.0",
                     "episodes": 4,
                     "completed": 4,
-                    "success_rate": 1.0,
+                    "success_rate": 0.0,
                     "mean_sim_time_s": 1.65,
                     "mean_wall_time_s": 0.55,
                     "errors": [],
@@ -151,8 +150,9 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
             / f"episode-{episode_index}"
             / "report.json",
             {
-                "success": True,
-                "grasp_attach_used": True,
+                "success": False,
+                "stop_reason": "max_steps",
+                "grasp_attach_used": False,
                 "sim_time_s": 1.5 + episode_index * 0.1,
                 "wall_time_s": 0.4 + episode_index * 0.1,
                 "steps": 75 + episode_index,
@@ -172,6 +172,68 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
                 },
             },
         )
+        _write_json(
+            evidence
+            / "urdf-studio"
+            / "mujoco"
+            / f"episode-{episode_index}"
+            / "contact-analysis.json",
+            {
+                "schema": "benchstudio.contact_grasp_analysis.v1",
+                "episode_index": episode_index,
+                "seed": seed,
+                "backend": "mujoco",
+                "success": False,
+                "stop_reason": "max_steps",
+                "failure_class": "transient_impact_ejected_object",
+                "explanation": "The cube was abruptly displaced between 50 Hz evidence snapshots; bilateral retention never formed.",
+                "contact_model": {
+                    "mode": "physics_contact",
+                    "grasp_attach_used": False,
+                    "fixed_finger_geom": "robot/fixed_finger_contact_mesh",
+                    "moving_finger_geom": "robot/moving_finger_contact_mesh",
+                },
+                "timeline": {
+                    "close_command_ms": 3000,
+                    "first_contact_ms": None,
+                    "contact_frames": 0,
+                    "bilateral_contact_frames": 0,
+                },
+                "motion": {
+                    "horizontal_displacement_m": 0.16 + episode_index * 0.001,
+                    "max_lift_m": 0.009,
+                    "largest_frame_displacement_m": 0.028,
+                    "largest_frame_displacement_t_ms": 2420,
+                },
+                "gripper": {"final_tracking_error_rad": 0.209},
+                "physics_contact_telemetry": {
+                    "capture": {
+                        "kind": "deterministic_diagnostic_replay",
+                        "physics_timestep_s": 0.0002,
+                        "effective_sample_rate_hz": 5000.0,
+                        "physics_steps_scanned": 40000,
+                        "contact_records": 34,
+                        "contact_physics_steps": 34,
+                        "bilateral_contact_physics_steps": 0,
+                        "all_robot_cube_contacts_retained": True,
+                    },
+                    "contact": {
+                        "first_contact_s": 2.418,
+                        "last_contact_s": 2.4246,
+                        "peak_normal_force_n": 42.6,
+                        "peak_tangential_force_n": 4.2,
+                        "normal_impulse_ns": 0.0712,
+                        "tangential_impulse_ns": 0.0081,
+                        "maximum_penetration_m": 0.00031,
+                    },
+                    "equivalence": {"verified": True},
+                },
+                "limitations": [
+                    "Contact reconstruction uses 50 Hz retained state snapshots; impacts shorter than 20 ms may occur between frames.",
+                    "No contact force is claimed because the retained trace does not include solver impulses.",
+                ],
+            },
+        )
 
     _write_json(
         evidence / "urdf-studio" / "recovery.json",
@@ -180,19 +242,24 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
             "backend": "mujoco",
             "episode_index": 2,
             "seed": 43,
-            "status": "recovered",
+            "status": "lift_still_failed",
             "policy_changed": False,
             "policy_binding": {
                 "failed_attempt_sha256": "e" * 64,
-                "recovered_attempt_sha256": "e" * 64,
-                "unchanged": True,
+                "recovered_attempt_sha256": "f" * 64,
+                "unchanged": False,
             },
             "intervention": {
-                "kind": "extend_episode_horizon",
-                "parameter": "runtime.max_episode_steps",
-                "failed_value": 125,
-                "recovered_value": 400,
-                "policy_changed": False,
+                "kind": "slow_approach",
+                "parameter": "policy.approach_duration_s",
+                "baseline_value": 1.2,
+                "intervention_value": 2.4,
+                "unit": "s",
+                "policy_changed": True,
+            },
+            "effect": {
+                "peak_normal_force_n": {"baseline": 500.5, "intervention": 252.7},
+                "horizontal_displacement_m": {"baseline": 0.0617, "intervention": 0.1370},
             },
             "attempts": [
                 {
@@ -209,10 +276,10 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
                 },
                 {
                     "attempt": 1,
-                    "success": True,
-                    "stop_reason": "success",
-                    "steps": 235,
-                    "sim_time_s": 4.7,
+                    "success": False,
+                    "stop_reason": "max_steps",
+                    "steps": 400,
+                    "sim_time_s": 8.0,
                     "files": {
                         "episode.mp4": {
                             "path": "recovery/episode-2/attempt-1/episode.mp4"
@@ -241,13 +308,13 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert 'href="campaign-plan.json"' not in document
     assert "SO-101 · Cube lift" in document
     assert "ROBOT EPISODES</span><b>4/4 COMPLETED" in document
-    assert "FINAL RESULT</span><b>4/4 LIFT CHECKER PASS" in document
-    assert "FIRST-PASS RATE</span><b>3/4" in document
-    assert "RECOVERY</span><b>1/1 RECOVERED" in document
-    assert "EXECUTIONS</span><b>5 TOTAL" in document
-    assert "CONTACT GRASP</span><b>NOT EVALUATED" in document
-    assert "This is not a contact-realistic grasp" in document
-    assert "welded cube crossed the 0.10 m lift threshold" in document
+    assert "FINAL RESULT</span><b>0/4 LIFT CHECKER PASS" in document
+    assert "FIRST-PASS RATE</span><b>0/4" in document
+    assert "INTERVENTION</span><b>1 EVALUATED" in document
+    assert "EXECUTIONS</span><b>6 TOTAL" in document
+    assert "CONTACT GRASP</span><b>PHYSICS EVALUATED" in document
+    assert "no attach or weld event is permitted" in document
+    assert "Physics-step diagnostic replay retains solver force/torque" in document
     assert "varies the cube pose under frozen seeds" in document
     assert "Separate accounting fixture; not additional SO-101 videos." in document
     assert "Attempts completed</span><strong>2/2" in document
@@ -263,20 +330,37 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert 'value="genesis" disabled>Genesis · failed' in document
     assert "this report stays bound to the evaluated episode batch" in document
     assert 'data-artifact="robot_episodes"' in document
+    assert 'data-artifact="contact_analyses"' in document
     assert 'data-artifact="robot_recovery"' in document
     assert 'data-artifact="robot_policy"' in document
     assert "Waypoint baseline · sha256" in document
-    assert "ready 0.0s · close + attach 3.0s · lift 4.8s" in document
+    assert "ready 0.0s · close on contact 3.0s · lift 4.8s" in document
+    assert "Root-cause analysis" in document
+    assert "4/4 grasps failed" in document
+    assert "TRANSIENT IMPACT EJECTED OBJECT" in document
+    assert "160.0 mm" in document
+    assert "9.0 mm" in document
+    assert "0 frames" in document
+    assert "0.209 rad" in document
+    assert "42.6 N" in document
+    assert "0.0712 N·s" in document
+    assert "0.31 mm" in document
+    assert "5.0 kHz · VERIFIED" in document
+    assert "geom pairs, positions, contact frames, penetration" in document
     assert "Simulator parameter matrix" in document
     assert "PHYSICS STEP" in document
     assert "genesis package is unavailable" in document
     assert "Lift checker pass rate" in document
     assert 'data-artifact="simulator_debug"' in document
-    assert "Episode 03 · Linked attempts" in document
-    assert "ATTEMPT 01 · FAILED" in document
+    assert "Episode 03 · Baseline vs slower approach" in document
+    assert "ATTEMPT 01 · BASELINE" in document
     assert "MAX STEPS" in document
-    assert "125 → 400" in document
-    assert "policy unchanged · eeeeeeeeeeee" in document
-    assert "ATTEMPT 02 · PASSED" in document
+    assert "1.2 → 2.4 s" in document
+    assert "eeeeeeee → ffffffff" in document
+    assert "LIFT STILL FAILED" in document
+    assert "changes only approach duration" in document
+    assert "ATTEMPT 02 · INTERVENTION" in document
+    assert "500.5 → 252.7 N peak" in document
+    assert "61.7 → 137.0 mm displacement" in document
     assert "recovery/episode-2/attempt-0/episode.mp4" in document
     assert "recovery/episode-2/attempt-1/episode.mp4" in document
