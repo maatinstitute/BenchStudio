@@ -117,94 +117,90 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#100a12">
+  <meta name="theme-color" content="#1c1c1c">
   <title>BenchStudio Evaluation Control Room</title>
   <style>
     :root {{
       color-scheme: dark;
-      --ink: #100a12; --panel: #18111b; --panel-2: #211525;
-      --line: #3d293f; --muted: #a38da7; --text: #fff7ff;
-      --pink: #ff4fba; --pink-hot: #ff2d96; --violet: #a67cff;
-      --cyan: #68dcff; --ok: #75f5c7; --amber: #ffc36e; --red: #ff7185;
-      --radius: 18px;
+      --ink: #1c1c1c; --panel: #1c1c1c; --panel-2: #242424;
+      --line: #333333; --line-strong: #444444; --muted: #999999; --text: #fafafa;
+      --pink: #ff4fba; --violet: #bba7d6; --cyan: #9bc7d5;
+      --ok: #a9d9c5; --amber: #e2bd83; --red: #df8f99;
+      --radius: 12px;
     }}
     * {{ box-sizing: border-box; }}
-    html {{ scroll-behavior: smooth; }}
-    body {{ margin: 0; background: radial-gradient(circle at 78% -10%, rgba(255,79,186,.12), transparent 32%), var(--ink); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }}
-    body::before {{ content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .32; background-image: linear-gradient(rgba(255,79,186,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,79,186,.035) 1px, transparent 1px); background-size: 40px 40px; mask-image: linear-gradient(to bottom, black, transparent 78%); }}
-    .shell {{ width: min(1440px, calc(100% - 36px)); margin: 0 auto; padding: 24px 0 54px; position: relative; }}
-    .topbar {{ display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 11px 14px 11px 18px; border: 1px solid var(--line); background: rgba(24,17,27,.86); backdrop-filter: blur(16px); border-radius: 14px; position: sticky; top: 12px; z-index: 10; box-shadow: 0 12px 50px rgba(0,0,0,.3), 0 0 40px rgba(255,79,186,.04); }}
+    html {{ scroll-behavior: smooth; scrollbar-gutter: stable; }}
+    body {{ margin: 0; background: var(--ink); color: var(--text); font-family: "Space Grotesk", "Avenir Next", "Segoe UI", ui-sans-serif, system-ui, sans-serif; letter-spacing: .01em; }}
+    .shell {{ width: min(1380px, calc(100% - 40px)); margin: 0 auto; padding: 20px 0 52px; }}
+    .topbar {{ display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 10px 12px 10px 14px; border: 1px solid var(--line); background: rgba(28,28,28,.94); backdrop-filter: blur(12px); border-radius: 10px; position: sticky; top: 10px; z-index: 10; }}
     .brand {{ display: flex; align-items: center; gap: 12px; font-weight: 760; letter-spacing: -.02em; }}
-    .mark {{ width: 26px; height: 26px; border-radius: 8px; background: conic-gradient(from 210deg, var(--pink), var(--violet), var(--cyan), var(--pink)); box-shadow: 0 0 28px rgba(255,79,186,.42); }}
+    .mark {{ width: 22px; height: 22px; border-radius: 6px; background: var(--pink); }}
     .brand small {{ color: var(--muted); font-weight: 550; margin-left: 6px; }}
-    .status {{ display: inline-flex; align-items: center; gap: 8px; padding: 8px 11px; border-radius: 999px; background: rgba(255,79,186,.1); color: #ff8fd1; border: 1px solid rgba(255,79,186,.28); font: 700 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; }}
-    .pulse {{ width: 7px; height: 7px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 0 0 rgba(255,79,186,.6); animation: pulse 2s infinite; }}
-    @keyframes pulse {{ 70% {{ box-shadow: 0 0 0 9px rgba(255,79,186,0); }} 100% {{ box-shadow: 0 0 0 0 rgba(255,79,186,0); }} }}
+    .status {{ display: inline-flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 7px; background: #242424; color: #d8d8d8; border: 1px solid var(--line); font: 500 11px/1 "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .04em; }}
+    .pulse {{ width: 6px; height: 6px; border-radius: 50%; background: var(--pink); }}
     .hero {{ display: grid; grid-template-columns: 1.35fr .65fr; gap: 18px; margin-top: 20px; }}
-    .hero-main, .hero-side, .card {{ border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(145deg, rgba(33,21,37,.97), rgba(19,12,21,.97)); overflow: hidden; box-shadow: inset 0 1px rgba(255,255,255,.025); }}
-    .hero-main {{ min-height: 360px; padding: 42px; position: relative; display: flex; flex-direction: column; justify-content: space-between; }}
-    .hero-main::after {{ content: ""; position: absolute; width: 420px; height: 420px; border-radius: 50%; right: -120px; top: -180px; background: radial-gradient(circle, rgba(255,79,186,.22), rgba(166,124,255,.09) 34%, transparent 68%); }}
-    .eyebrow {{ color: #ff8fd1; font: 700 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .12em; text-transform: uppercase; }}
-    h1 {{ font-size: clamp(42px, 6vw, 78px); line-height: .98; letter-spacing: -.065em; margin: 18px 0; max-width: 840px; }}
-    .subhead {{ color: #a8bac3; max-width: 700px; font-size: 17px; line-height: 1.55; }}
+    .hero-main, .hero-side, .card {{ border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow: hidden; }}
+    .hero-main {{ min-height: 330px; padding: 38px; display: flex; flex-direction: column; justify-content: space-between; }}
+    .eyebrow {{ color: var(--muted); font: 500 11px/1.2 "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; }}
+    h1 {{ font-size: clamp(40px, 5.5vw, 70px); line-height: 1; letter-spacing: -.055em; margin: 18px 0; max-width: 840px; font-weight: 600; }}
+    .subhead {{ color: #b5b5b5; max-width: 700px; font-size: 16px; line-height: 1.6; }}
     .hero-meta {{ display: flex; flex-wrap: wrap; gap: 8px; margin-top: 32px; }}
-    .token {{ padding: 8px 10px; border-radius: 8px; color: #b8c7ce; border: 1px solid var(--line); background: rgba(7,11,15,.52); font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }}
+    .token {{ padding: 7px 9px; border-radius: 6px; color: #a8a8a8; border: 1px solid var(--line); background: var(--panel-2); font: 500 10px/1 "IBM Plex Mono", ui-monospace, monospace; }}
     .hero-side {{ padding: 26px; display: flex; flex-direction: column; justify-content: space-between; }}
     .verdict-label {{ color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }}
-    .verdict {{ margin: 18px 0 8px; color: var(--pink); text-shadow: 0 0 28px rgba(255,79,186,.22); font-size: 38px; line-height: 1; letter-spacing: -.04em; font-weight: 800; }}
-    .verdict-copy {{ color: #9eb0b9; line-height: 1.5; font-size: 14px; }}
-    .ring {{ width: 148px; aspect-ratio: 1; margin: 24px auto 8px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--pink) {evidence_rate}%, #3d293f 0); position: relative; box-shadow: 0 0 44px rgba(255,79,186,.13); }}
+    .verdict {{ margin: 18px 0 8px; color: var(--text); font-size: 34px; line-height: 1; letter-spacing: -.035em; font-weight: 600; }}
+    .verdict-copy {{ color: #a8a8a8; line-height: 1.55; font-size: 13px; }}
+    .ring {{ width: 140px; aspect-ratio: 1; margin: 24px auto 8px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--pink) {evidence_rate}%, #333 0); position: relative; }}
     .ring::before {{ content: ""; position: absolute; inset: 11px; border-radius: 50%; background: var(--panel); }}
     .ring strong {{ z-index: 1; font-size: 32px; letter-spacing: -.04em; }}
     .ring span {{ z-index: 1; position: absolute; margin-top: 48px; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }}
     .metrics {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 12px 0 18px; }}
-    .metric {{ padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: rgba(24,17,27,.92); }}
+    .metric {{ padding: 17px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }}
     .metric span {{ color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }}
     .metric strong {{ display: block; font-size: 30px; letter-spacing: -.045em; margin-top: 8px; }}
-    .metric em {{ font-style: normal; color: #ff8fd1; font: 650 11px/1 ui-monospace, monospace; }}
+    .metric em {{ font-style: normal; color: var(--muted); font: 500 10px/1 "IBM Plex Mono", ui-monospace, monospace; }}
     .grid {{ display: grid; grid-template-columns: 1.15fr .85fr; gap: 18px; }}
     .card {{ padding: 24px; margin-bottom: 18px; }}
     .card-head {{ display: flex; align-items: start; justify-content: space-between; gap: 16px; margin-bottom: 22px; }}
     .card h2 {{ margin: 0; font-size: 20px; letter-spacing: -.03em; }}
     .card p {{ color: var(--muted); margin: 7px 0 0; font-size: 13px; line-height: 1.5; }}
-    .badge {{ color: #ff9cd7; background: rgba(255,79,186,.09); border: 1px solid rgba(255,79,186,.23); padding: 6px 8px; border-radius: 7px; font: 650 10px/1 ui-monospace, monospace; white-space: nowrap; }}
+    .badge {{ color: #c7c7c7; background: var(--panel-2); border: 1px solid var(--line); padding: 6px 8px; border-radius: 6px; font: 500 10px/1 "IBM Plex Mono", ui-monospace, monospace; white-space: nowrap; }}
     .matrix {{ display: grid; gap: 8px; }}
     .matrix-row {{ display: grid; grid-template-columns: 110px repeat(2, minmax(0, 1fr)); gap: 8px; align-items: stretch; }}
     .matrix-label {{ color: var(--muted); font: 600 11px/1.25 ui-monospace, monospace; display: flex; align-items: center; }}
-    .matrix-cell {{ min-height: 72px; border-radius: 11px; padding: 13px; background: linear-gradient(145deg, rgba(255,79,186,.1), rgba(166,124,255,.045)); border: 1px solid rgba(255,79,186,.23); display: flex; justify-content: space-between; align-items: end; }}
+    .matrix-cell {{ min-height: 72px; border-radius: 9px; padding: 13px; background: var(--panel-2); border: 1px solid var(--line); display: flex; justify-content: space-between; align-items: end; }}
     .matrix-cell strong {{ font-size: 13px; }} .matrix-cell small {{ color: var(--muted); }}
     .check {{ color: var(--pink); font-weight: 800; }}
     .bars {{ display: grid; gap: 18px; }}
     .bar-row {{ display: grid; grid-template-columns: 126px 1fr 54px; gap: 12px; align-items: center; }}
     .bar-row label {{ color: #b6c5cc; font-size: 13px; }}
-    .track {{ height: 14px; background: #1a252c; border-radius: 999px; overflow: hidden; }}
-    .fill {{ height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--violet), var(--pink)); transform-origin: left; animation: grow 1s .25s both; box-shadow: 0 0 18px rgba(255,79,186,.3); }}
-    .fill.boundary {{ background: linear-gradient(90deg, var(--amber), var(--red)); }}
-    @keyframes grow {{ from {{ transform: scaleX(0); }} }}
+    .track {{ height: 10px; background: #2b2b2b; border-radius: 999px; overflow: hidden; }}
+    .fill {{ height: 100%; border-radius: inherit; background: var(--pink); }}
+    .fill.boundary {{ background: #666; }}
     .bar-row strong {{ font: 750 13px/1 ui-monospace, monospace; text-align: right; }}
-    .gap-callout {{ display: flex; justify-content: space-between; align-items: center; margin-top: 22px; padding: 14px 16px; background: rgba(255,189,102,.07); border: 1px solid rgba(255,189,102,.17); border-radius: 11px; }}
-    .gap-callout strong {{ color: var(--amber); font-size: 26px; }}
+    .gap-callout {{ display: flex; justify-content: space-between; align-items: center; margin-top: 22px; padding: 13px 14px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; }}
+    .gap-callout strong {{ color: var(--text); font-size: 23px; font-weight: 600; }}
     .branch-map {{ display: grid; grid-template-columns: 1fr 48px 1fr; align-items: center; gap: 10px; }}
-    .branch {{ padding: 16px; border: 1px solid var(--line); border-radius: 11px; background: rgba(7,11,15,.36); }}
+    .branch {{ padding: 16px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-2); }}
     .branch strong {{ display: block; margin-bottom: 5px; }} .branch small {{ color: var(--muted); }}
-    .arrow {{ height: 1px; background: linear-gradient(90deg, var(--violet), var(--pink)); position: relative; }}
-    .arrow::after {{ content: ""; position: absolute; right: 0; top: -3px; width: 7px; height: 7px; border-top: 1px solid var(--pink); border-right: 1px solid var(--pink); transform: rotate(45deg); }}
+    .arrow {{ height: 1px; background: #555; position: relative; }}
+    .arrow::after {{ content: ""; position: absolute; right: 0; top: -3px; width: 7px; height: 7px; border-top: 1px solid #777; border-right: 1px solid #777; transform: rotate(45deg); }}
     .chain {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }}
-    .chain-step {{ position: relative; padding: 16px 12px; border-radius: 11px; background: rgba(7,11,15,.42); border: 1px solid var(--line); min-height: 98px; }}
-    .chain-step:not(:last-child)::after {{ content: ""; position: absolute; right: -9px; top: 48%; width: 9px; height: 1px; background: var(--cyan); z-index: 2; }}
+    .chain-step {{ position: relative; padding: 16px 12px; border-radius: 9px; background: var(--panel-2); border: 1px solid var(--line); min-height: 98px; }}
+    .chain-step:not(:last-child)::after {{ content: ""; position: absolute; right: -9px; top: 48%; width: 9px; height: 1px; background: #555; z-index: 2; }}
     .chain-step b {{ color: var(--pink); font-size: 11px; }} .chain-step strong {{ display: block; margin: 12px 0 6px; font-size: 13px; }} .chain-step small {{ color: var(--muted); font: 10px/1.4 ui-monospace, monospace; }}
     .transport {{ display: grid; grid-template-columns: 1fr 36px 1fr; align-items: center; gap: 10px; }}
-    .packet {{ padding: 17px; border-radius: 11px; border: 1px solid var(--line); background: rgba(166,124,255,.07); }}
-    .json-panel {{ position: relative; padding: 18px; border: 1px solid rgba(255,79,186,.2); border-radius: 12px; background: #0d0910; overflow: auto; box-shadow: inset 0 0 42px rgba(255,79,186,.035); }}
-    .json-panel::before {{ content: "JSON · VERIFIED EVIDENCE"; display: block; color: #866f8a; margin-bottom: 14px; font: 650 9px/1 ui-monospace, monospace; letter-spacing: .12em; }}
-    .json-panel code {{ color: #d7c6da; font: 12px/1.75 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre; }}
-    .json-key {{ color: #ff72c4; }} .json-string {{ color: #c4a9ff; }} .json-number {{ color: #68dcff; }} .json-ok {{ color: var(--ok); }}
+    .packet {{ padding: 17px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel-2); }}
+    .json-panel {{ position: relative; padding: 18px; border: 1px solid var(--line); border-radius: 9px; background: #171717; overflow: auto; }}
+    .json-panel::before {{ content: "JSON · VERIFIED EVIDENCE"; display: block; color: #777; margin-bottom: 14px; font: 500 9px/1 "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .12em; }}
+    .json-panel code {{ color: #c8c8c8; font: 12px/1.75 "IBM Plex Mono", ui-monospace, monospace; white-space: pre; }}
+    .json-key {{ color: #df83bc; }} .json-string {{ color: #b9acc8; }} .json-number {{ color: #a4bec7; }} .json-ok {{ color: var(--ok); }}
     .packet span {{ color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }} .packet strong {{ display: block; margin-top: 8px; }}
     .links {{ display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }}
-    .links a {{ color: #b9cbd2; text-decoration: none; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 11px; background: rgba(7,11,15,.45); }} .links a:hover {{ color: white; border-color: #48616f; }}
+    .links a {{ color: #aaa; text-decoration: none; padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px; font-size: 11px; background: var(--panel-2); transition: border-color .16s ease, color .16s ease; }} .links a:hover {{ color: white; border-color: #666; }}
     footer {{ color: var(--muted); border-top: 1px solid var(--line); margin-top: 8px; padding-top: 22px; display: flex; justify-content: space-between; gap: 20px; font-size: 11px; line-height: 1.5; }}
-    .reveal {{ animation: reveal .7s both; }} .reveal:nth-child(2) {{ animation-delay: .08s; }} .reveal:nth-child(3) {{ animation-delay: .16s; }}
-    @keyframes reveal {{ from {{ opacity: 0; transform: translateY(12px); }} }}
+    .reveal {{ animation: reveal .28s ease-out both; }}
+    @keyframes reveal {{ from {{ opacity: 0; transform: translateY(4px); }} }}
     @media (max-width: 900px) {{ .hero, .grid {{ grid-template-columns: 1fr; }} .metrics {{ grid-template-columns: repeat(2, 1fr); }} .hero-main {{ padding: 28px; min-height: 330px; }} }}
     @media (max-width: 620px) {{ .shell {{ width: min(100% - 20px, 1440px); }} .brand small {{ display: none; }} .metrics {{ grid-template-columns: 1fr 1fr; }} .matrix-row {{ grid-template-columns: 78px repeat(2, 1fr); }} .chain {{ grid-template-columns: 1fr 1fr; }} .chain-step::after {{ display: none; }} footer {{ flex-direction: column; }} h1 {{ font-size: 44px; }} }}
     @media (prefers-reduced-motion: reduce) {{ *, *::before, *::after {{ animation: none !important; scroll-behavior: auto !important; }} }}

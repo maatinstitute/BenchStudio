@@ -81,5 +81,8 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert "pink-demo" in document
     assert '"attempts.scheduled"</span>: <span class="json-number">2</span>' in document
     assert '"transport.valid"</span>: <span class="json-ok">true</span>' in document
+    assert "--ink: #1c1c1c" in document
     assert "--pink: #ff4fba" in document
+    assert "radial-gradient" not in document
+    assert "text-shadow" not in document
     assert "Inspect complete JSON" in document
