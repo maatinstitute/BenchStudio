@@ -38,6 +38,24 @@ def _trace_frames(path: Path) -> list[tuple[int, dict, dict]]:
     return frames
 
 
+def _sample_frames_for_fps(
+    frames: list[tuple[int, dict, dict]], fps: int
+) -> list[tuple[int, dict, dict]]:
+    """Downsample retained states without changing simulation-time playback."""
+    if fps <= 0:
+        raise ValueError("fps must be positive")
+    if not frames:
+        return []
+    period_ms = 1000.0 / fps
+    sampled = [frames[0]]
+    next_t_ms = frames[0][0] + period_ms
+    for frame in frames[1:]:
+        if frame[0] + 1e-9 >= next_t_ms:
+            sampled.append(frame)
+            next_t_ms += period_ms
+    return sampled
+
+
 def render_episode(
     scenario_path: Path,
     manifest_path: Path,
@@ -55,7 +73,8 @@ def render_episode(
     manifest = EpisodeManifest.model_validate_json(
         manifest_path.read_text(encoding="utf-8")
     )
-    frames = _trace_frames(trace_path)
+    output_fps = 20
+    frames = _sample_frames_for_fps(_trace_frames(trace_path), output_fps)
     if not frames:
         raise ValueError(f"No replayable frames in {trace_path}")
 
@@ -89,7 +108,9 @@ def render_episode(
         camera.elevation = -16.0
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        with imageio.get_writer(str(output_path), fps=20, macro_block_size=None) as writer:
+        with imageio.get_writer(
+            str(output_path), fps=output_fps, macro_block_size=None
+        ) as writer:
             for t_ms, joints, objects in frames:
                 backend.set_state(
                     SimState(

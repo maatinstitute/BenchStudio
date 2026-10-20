@@ -51,6 +51,14 @@
     "physics_timestep_s": 0.0002,
     "control_hz": 50.0,
     "checker_interval_steps": 5,
+    "clock_contract": {
+      "physics_step_s": 0.0002,
+      "control_tick_s": 0.02,
+      "physics_steps_per_control_tick": 100,
+      "checker_interval_control_ticks": 5,
+      "checker_period_s": 0.1,
+      "physics_steps_per_checker_tick": 500
+    },
     "max_episode_steps": 400,
     "grasp_attach": "none"
   },

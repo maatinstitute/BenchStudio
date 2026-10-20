@@ -52,6 +52,146 @@ def _format_value(value: Any) -> str:
     return f"{value:g}" if isinstance(value, float) else str(value)
 
 
+def _build_workbench_document(
+    *,
+    study: dict[str, Any],
+    study_manifest: dict[str, Any],
+    episodes: list[dict[str, Any]],
+    recovery: dict[str, Any],
+    policy_digest: str,
+    selected_sim: str,
+) -> str:
+    """Build the interactive evaluation surface; the narrative report is separate."""
+    simulators = study.get("simulators", [])
+    simulator_ids = [str(item.get("id")) for item in simulators if isinstance(item, dict)]
+    simulator_labels = {
+        str(item.get("id")): str(item.get("label", item.get("id")))
+        for item in simulators
+        if isinstance(item, dict)
+    }
+    planned_rows = study_manifest.get("episodes", [])
+    planned_rows = planned_rows if isinstance(planned_rows, list) else []
+    run_payload: dict[str, Any] = {}
+    for item in episodes:
+        index = int(item.get("index", 0))
+        report = item.get("report", {})
+        analysis = item.get("analysis", {})
+        cohort = item.get("cohort", {}) if isinstance(item.get("cohort"), dict) else {}
+        manifest = item.get("manifest", {})
+        contact_telemetry = analysis.get("physics_contact_telemetry", {}) if isinstance(analysis, dict) else {}
+        contact = contact_telemetry.get("contact", {}) if isinstance(contact_telemetry, dict) else {}
+        capture = contact_telemetry.get("capture", {}) if isinstance(contact_telemetry, dict) else {}
+        timeline = analysis.get("timeline", {}) if isinstance(analysis, dict) else {}
+        motion = analysis.get("motion", {}) if isinstance(analysis, dict) else {}
+        video = cohort.get("video", {}) if isinstance(cohort.get("video"), dict) else {}
+        video_sha = str(video.get("sha256") or "")
+        video_path = f"urdf-studio/{video.get('path', f'{selected_sim}/episode-{index}/episode.mp4')}"
+        if video_sha:
+            video_path = f"{video_path}?v={video_sha[:12]}"
+        run_payload[str(index)] = {
+            "episode_index": index,
+            "condition": cohort.get("label", f"Episode {index + 1:02d}"),
+            "seed": cohort.get("seed", manifest.get("seed")),
+            "success": report.get("success") is True,
+            "stop_reason": report.get("stop_reason"),
+            "steps": report.get("steps"),
+            "sim_time_s": report.get("sim_time_s"),
+            "failure_class": analysis.get("failure_class"),
+            "explanation": analysis.get("explanation"),
+            "changed_parameters": cohort.get("changed_parameters", {}),
+            "policy_sha256": cohort.get("policy_sha256", policy_digest),
+            "video_path": video_path,
+            "video_sha256": video_sha or None,
+            "report_path": cohort.get("report_path", f"{selected_sim}/episode-{index}/report.json"),
+            "analysis_path": cohort.get("analysis_path", f"{selected_sim}/episode-{index}/contact-analysis.json"),
+            "first_contact_ms": timeline.get("first_contact_ms"),
+            "last_contact_ms": timeline.get("last_contact_ms"),
+            "close_command_ms": timeline.get("close_command_ms"),
+            "peak_force_n": contact.get("peak_normal_force_n"),
+            "penetration_m": contact.get("maximum_penetration_m"),
+            "contact_records": capture.get("contact_records"),
+            "displacement_m": motion.get("horizontal_displacement_m"),
+            "max_lift_m": motion.get("max_lift_m"),
+            "equivalence_verified": (
+                contact_telemetry.get("equivalence", {}).get("verified") is True
+                if isinstance(contact_telemetry.get("equivalence"), dict)
+                else False
+            ),
+        }
+
+    rows_html = []
+    for index, row in enumerate(planned_rows):
+        if not isinstance(row, dict):
+            continue
+        seed = row.get("seed", "—")
+        condition = str(row.get("policy_condition", "production_candidate")).replace("_", " ")
+        cells = []
+        for simulator_id in simulator_ids:
+            if simulator_id == selected_sim and str(index) in run_payload:
+                run = run_payload[str(index)]
+                state = "pass" if run["success"] else "fail"
+                label = "PASS" if run["success"] else "FAIL"
+                detail = str(run.get("failure_class") or run.get("stop_reason") or "terminal").replace("_", " ")
+            elif simulator_id == selected_sim:
+                state, label, detail = "withheld", "WITHHELD", "preflight gate"
+            else:
+                state, label, detail = "unavailable", "NOT RUN", "adapter unavailable"
+            cells.append(
+                f'<button class="coverage-cell {state}" data-episode="{index}" data-simulator="{html.escape(simulator_id)}">'
+                f'<b>{label}</b><small>{html.escape(detail)}</small></button>'
+            )
+        episode_id = str(row.get("episode_id", f"episode-{index:03d}"))
+        rows_html.append(
+            '<div class="coverage-row" data-row-index="{index}" data-row-text="{search}">'
+            '<div class="episode-id"><b>{episode}</b><span>seed {seed}</span><small>{condition}</small></div>{cells}</div>'.format(
+                index=index,
+                search=html.escape(f"{episode_id} {index} {seed} {condition}".lower()),
+                episode=html.escape(episode_id),
+                seed=html.escape(str(seed)),
+                condition=html.escape(condition),
+                cells="".join(cells),
+            )
+        )
+
+    clock = study.get("shared_runtime", {}).get("clock_contract", {})
+    if not isinstance(clock, dict):
+        clock = {}
+    recovery_attempts = recovery.get("attempts", []) if isinstance(recovery.get("attempts"), list) else []
+    policy_binding = recovery.get("policy_binding", {}) if isinstance(recovery.get("policy_binding"), dict) else {}
+    pair_cards = []
+    for position, attempt in enumerate(recovery_attempts[:2]):
+        if not isinstance(attempt, dict):
+            continue
+        files = attempt.get("files", {}) if isinstance(attempt.get("files"), dict) else {}
+        video = files.get("episode.mp4", {}) if isinstance(files.get("episode.mp4"), dict) else {}
+        policy_sha = policy_binding.get("failed_attempt_sha256" if position == 0 else "recovered_attempt_sha256", "unbound")
+        pair_cards.append(
+            '<article class="pair-record">'
+            f'<span>{"BASELINE" if position == 0 else "SLOW APPROACH"}</span>'
+            f'<b>seed {html.escape(str(recovery.get("seed", "—")))}</b>'
+            f'<small>policy {html.escape(str(policy_sha)[:12])}</small>'
+            f'<small>{html.escape(str(attempt.get("steps", "—")))} control ticks · {float(attempt.get("sim_time_s", 0) or 0):.1f} s</small>'
+            f'<code>{html.escape(str(video.get("path", "video unavailable")))}</code></article>'
+        )
+
+    run_json = json.dumps(run_payload, separators=(",", ":")).replace("</", "<\\/")
+    manifest_json = json.dumps(planned_rows, separators=(",", ":")).replace("</", "<\\/")
+    return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BenchStudio — Evaluation Workbench</title>
+<style>
+:root{{--bg:#151515;--panel:#1b1b1b;--raised:#222;--line:#343434;--text:#e9e9e9;--muted:#818181;--pink:#ff4fba;--ok:#9dcbb7;--warn:#d7ae70;--bad:#d08b7b}}*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 Inter,"Helvetica Neue",Arial,sans-serif;overflow:hidden}}button,input,select,code,.mono{{font-family:"SFMono-Regular",Consolas,monospace}}button{{color:inherit}}.app{{display:grid;grid-template-rows:48px 1fr;height:100vh}}.topbar{{display:flex;align-items:center;gap:24px;padding:0 16px;border-bottom:1px solid var(--line);background:#181818}}.brand{{display:flex;align-items:center;gap:8px;font-weight:650;white-space:nowrap}}.mark{{width:11px;height:11px;border-radius:3px;background:var(--pink)}}.mode-tabs{{display:flex;height:100%}}.mode-tabs button{{border:0;border-bottom:2px solid transparent;background:none;padding:0 15px;color:#888;cursor:pointer}}.mode-tabs button.active{{color:#eee;border-color:var(--pink)}}.topbar a{{margin-left:auto;color:#aaa;text-decoration:none;border-bottom:1px solid #555;font-size:11px}}.workspace{{display:grid;grid-template-columns:220px minmax(520px,1fr) 390px;min-height:0}}.sidebar,.inspector{{background:var(--panel);overflow:auto}}.sidebar{{border-right:1px solid var(--line);padding:16px}}.inspector{{border-left:1px solid var(--line)}}.kicker{{color:#777;font:9px/1.2 "SFMono-Regular",Consolas,monospace;letter-spacing:.08em}}h1{{margin:7px 0 4px;font-size:17px;font-weight:560;letter-spacing:-.02em}}h2{{margin:5px 0;font-size:15px;font-weight:560}}p{{margin:5px 0;color:var(--muted)}}.study-id{{color:#666;font:9px/1.4 "SFMono-Regular",Consolas,monospace;overflow-wrap:anywhere}}.progress{{margin:18px 0}}.progress-head{{display:flex;justify-content:space-between;font-size:10px}}.track{{height:4px;background:#303030;margin-top:8px}}.fill{{width:4%;height:100%;background:var(--pink)}}.clock-list{{margin:18px 0;border-top:1px solid var(--line)}}.clock-list div{{padding:10px 0;border-bottom:1px solid var(--line)}}.clock-list span,.clock-list b{{display:block}}.clock-list span{{color:#777;font-size:9px}}.clock-list b{{margin-top:3px;font:500 10px/1.4 "SFMono-Regular",Consolas,monospace}}.filter{{margin-top:15px}}.filter label{{display:block;margin-bottom:6px;color:#777;font:9px/1 "SFMono-Regular",Consolas,monospace}}.filter input,.filter select{{width:100%;border:1px solid var(--line);border-radius:4px;background:#202020;color:#ddd;padding:8px;font-size:10px}}
+.main-panel{{min-width:0;overflow:auto;background:#171717}}.view{{display:none}}.view.active{{display:block}}.view-head{{position:sticky;top:0;z-index:4;display:flex;justify-content:space-between;align-items:end;padding:15px 18px;background:#191919;border-bottom:1px solid var(--line)}}.view-head p{{font-size:11px}}.legend{{display:flex;gap:12px;color:#777;font-size:9px}}.legend i{{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px}}.legend .actual{{background:var(--warn)}}.legend .withheld{{background:#666}}.legend .unavailable{{background:#333}}.coverage-head,.coverage-row{{display:grid;grid-template-columns:170px repeat({max(1,len(simulator_ids))},minmax(145px,1fr))}}.coverage-head{{position:sticky;top:68px;z-index:3;background:var(--raised);border-bottom:1px solid var(--line)}}.coverage-head div{{padding:9px 11px;color:#777;font:9px/1.2 "SFMono-Regular",Consolas,monospace;border-right:1px solid var(--line)}}.coverage-row{{border-bottom:1px solid #292929}}.episode-id{{padding:9px 11px;border-right:1px solid var(--line)}}.episode-id b,.episode-id span,.episode-id small{{display:block}}.episode-id b{{font:500 10px/1.3 "SFMono-Regular",Consolas,monospace}}.episode-id span,.episode-id small{{color:#6f6f6f;font-size:8px}}.coverage-cell{{display:flex;justify-content:space-between;align-items:center;gap:8px;border:0;border-right:1px solid var(--line);background:none;padding:9px 11px;text-align:left;cursor:pointer}}.coverage-cell:hover,.coverage-cell.selected{{background:#292929;box-shadow:inset 2px 0 var(--pink)}}.coverage-cell b{{font-size:9px}}.coverage-cell small{{color:#6f6f6f;font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}.coverage-cell.fail b{{color:var(--warn)}}.coverage-cell.pass b{{color:var(--ok)}}.coverage-cell.withheld b{{color:#888}}.coverage-cell.unavailable b{{color:#555}}
+.inspector-head{{padding:15px 16px;border-bottom:1px solid var(--line)}}.inspector-head span{{color:#777;font:9px/1.2 "SFMono-Regular",Consolas,monospace}}.inspector video{{display:block;width:100%;aspect-ratio:16/9;background:#090909;object-fit:contain}}.inspect-block{{padding:14px 16px;border-bottom:1px solid var(--line)}}.inspect-grid{{display:grid;grid-template-columns:1fr 1fr;gap:10px}}.inspect-grid div{{padding:9px;background:var(--raised);border:1px solid var(--line);border-radius:4px}}.inspect-grid span,.inspect-grid b{{display:block}}.inspect-grid span{{color:#777;font-size:8px}}.inspect-grid b{{margin-top:4px;font:500 10px/1.3 "SFMono-Regular",Consolas,monospace}}.parameter-list{{font:9px/1.6 "SFMono-Regular",Consolas,monospace;color:#aaa;word-break:break-word}}.timeline{{position:relative;height:72px;margin-top:12px;border-left:1px solid #555;border-right:1px solid #555;background:repeating-linear-gradient(90deg,#242424 0,#242424 1px,transparent 1px,transparent 10%)}}.timeline .event{{position:absolute;height:10px;border-radius:2px}}.timeline .policy{{top:12px;background:#777}}.timeline .contact{{top:31px;background:var(--pink);min-width:2px}}.timeline .checker{{top:50px;width:1px;background:#666}}.timeline-labels{{display:flex;justify-content:space-between;color:#666;font-size:8px;margin-top:3px}}.compare-strip{{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}}.compare-strip div{{padding:8px;border:1px solid var(--line);border-radius:4px}}.compare-strip b,.compare-strip span{{display:block}}.compare-strip b{{font-size:9px}}.compare-strip span{{color:#666;font-size:8px;margin-top:3px}}
+.pair-view,.evidence-view{{padding:20px}}.notice{{padding:13px 15px;border:1px solid #5b4b34;background:#211f1b;color:#c9ae82;border-radius:6px;margin-bottom:16px}}.pair-grid{{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:stretch}}.pair-record{{padding:16px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}}.pair-record span,.pair-record b,.pair-record small,.pair-record code{{display:block}}.pair-record span{{color:#777;font:9px/1.2 "SFMono-Regular",Consolas,monospace}}.pair-record b{{margin:12px 0 5px}}.pair-record small,.pair-record code{{margin-top:5px;color:#888;font-size:9px;overflow-wrap:anywhere}}.pair-link{{display:grid;place-content:center;color:var(--pink);font:10px/1.4 "SFMono-Regular",Consolas,monospace;text-align:center}}.evidence-list{{display:grid;gap:7px;margin-top:18px}}.evidence-list div{{display:grid;grid-template-columns:120px 1fr auto;gap:12px;padding:10px;border:1px solid var(--line);background:var(--panel);font:9px/1.4 "SFMono-Regular",Consolas,monospace}}.evidence-list span{{color:#777}}.evidence-list code{{overflow:hidden;text-overflow:ellipsis}}
+@media(max-width:1050px){{.workspace{{grid-template-columns:190px 1fr 330px}}}}@media(max-width:820px){{body{{overflow:auto}}.app{{height:auto}}.workspace{{grid-template-columns:1fr}}.sidebar,.inspector{{border:0;border-bottom:1px solid var(--line)}}.main-panel{{max-height:70vh}}.inspector{{min-height:500px}}}}
+</style></head><body><div class="app"><header class="topbar"><div class="brand"><span class="mark"></span>BenchStudio <span style="color:#777;font-weight:400">/ Workbench</span></div><nav class="mode-tabs"><button class="active" data-view="coverage">Coverage</button><button data-view="pairing">Paired intervention</button><button data-view="evidence">Evidence</button></nav><a href="scientific-report.html">Scientific report ↗</a></header>
+<div class="workspace"><aside class="sidebar"><span class="kicker">ACTIVE STUDY</span><h1>{html.escape(str(study.get("title","Robot evaluation")))}</h1><div class="study-id">{html.escape(str(study.get("study_id","—")))}</div><div class="progress"><div class="progress-head"><span>PREFLIGHT</span><b>{len(episodes)} / {len(planned_rows)}</b></div><div class="track"><div class="fill"></div></div><p>Full batch blocked by task-success gate.</p></div><div class="clock-list"><div><span>PHYSICS CLOCK</span><b>{float(clock.get("physics_step_s",0.0002))*1000:g} ms / step</b></div><div><span>CONTROL CLOCK</span><b>{float(clock.get("control_tick_s",0.02))*1000:g} ms · {int(clock.get("physics_steps_per_control_tick",100))} physics steps</b></div><div><span>CHECKER CLOCK</span><b>{int(clock.get("checker_interval_control_ticks",5))} control ticks · {float(clock.get("checker_period_s",0.1))*1000:g} ms · {int(clock.get("physics_steps_per_checker_tick",500))} physics steps</b></div></div><div class="filter"><label for="episode-search">FILTER EPISODES</label><input id="episode-search" placeholder="episode, seed, condition"></div><div class="filter"><label for="status-filter">STATUS</label><select id="status-filter"><option value="all">All</option><option value="fail">Failed preflight</option><option value="withheld">Withheld</option><option value="unavailable">Unavailable</option></select></div></aside>
+<main class="main-panel"><section class="view active" id="view-coverage"><div class="view-head"><div><span class="kicker">100 EPISODES × {len(simulator_ids)} SIMULATORS</span><h2>Coverage matrix</h2><p>Select any cell to inspect its run or planned identity.</p></div><div class="legend"><span><i class="actual"></i>executed</span><span><i class="withheld"></i>withheld</span><span><i class="unavailable"></i>not run</span></div></div><div class="coverage-head"><div>EPISODE IDENTITY</div>{''.join(f'<div>{html.escape(simulator_labels.get(sid,sid))}</div>' for sid in simulator_ids)}</div>{''.join(rows_html)}</section>
+<section class="view pair-view" id="view-pairing"><span class="kicker">LINKED COUNTERFACTUAL</span><h2>Seed 43 · baseline versus slower approach</h2><div class="notice">The four parameter probes use different seeds and are unpaired. They support debugging only. This comparison is separately linked because both attempts reuse seed 43, cube pose, geometry, simulator, and checker; only the policy timing changes.</div><div class="pair-grid">{pair_cards[0] if pair_cards else ''}<div class="pair-link">SAME MANIFEST<br>ONE POLICY DELTA</div>{pair_cards[1] if len(pair_cards)>1 else ''}</div></section>
+<section class="view evidence-view" id="view-evidence"><span class="kicker">PROVENANCE</span><h2>Evidence records</h2><p>Every executed run is bound to its policy, video, report, contact analysis, and replay-equivalence result.</p><div class="evidence-list">{''.join(f'<div><b>{html.escape(str(run["condition"]))}</b><code>{html.escape(str(run["report_path"]))}</code><span>{"verified" if run["equivalence_verified"] else "unverified"}</span></div>' for run in run_payload.values())}</div></section></main>
+<aside class="inspector"><div class="inspector-head"><span id="inspect-kicker">RUN INSPECTOR</span><h2 id="inspect-title">Select a matrix cell</h2><p id="inspect-summary">Episode evidence and cross-simulator status appear here.</p></div><video id="inspect-video" controls muted playsinline hidden><source id="inspect-source" type="video/mp4"></video><div class="inspect-block"><div class="inspect-grid"><div><span>STATUS</span><b id="inspect-status">—</b></div><div><span>SEED</span><b id="inspect-seed">—</b></div><div><span>DURATION</span><b id="inspect-duration">—</b></div><div><span>POLICY</span><b id="inspect-policy">—</b></div></div></div><div class="inspect-block"><span class="kicker">PARAMETER DELTA / DIAGNOSIS</span><div class="parameter-list" id="inspect-detail">No cell selected.</div></div><div class="inspect-block"><span class="kicker">TIME-ALIGNED TRACE</span><div class="timeline" id="timeline"><div class="event policy" id="policy-event"></div><div class="event contact" id="contact-event"></div></div><div class="timeline-labels"><span>0 s</span><span id="timeline-end">—</span></div><p id="timeline-caption">Policy, contact, and checker clocks share simulation time.</p></div><div class="inspect-block"><span class="kicker">SAME EPISODE ACROSS SIMULATORS</span><div class="compare-strip" id="compare-strip"></div></div></aside></div></div>
+<script>const runs={run_json};const manifest={manifest_json};const simulatorIds={json.dumps(simulator_ids)};const simulatorLabels={json.dumps(simulator_labels)};const selectedSimulator={json.dumps(selected_sim)};const tabs=document.querySelectorAll('[data-view]');tabs.forEach(tab=>tab.addEventListener('click',()=>{{tabs.forEach(item=>item.classList.toggle('active',item===tab));document.querySelectorAll('.view').forEach(view=>view.classList.toggle('active',view.id===`view-${{tab.dataset.view}}`));}}));const cells=document.querySelectorAll('.coverage-cell');function fmt(value,digits=1){{return value==null?'—':Number(value).toFixed(digits)}}function selectCell(button){{cells.forEach(cell=>cell.classList.toggle('selected',cell===button));const index=Number(button.dataset.episode);const simulator=button.dataset.simulator;const plan=manifest[index]||{{}};const run=simulator===selectedSimulator?runs[String(index)]:null;document.getElementById('inspect-title').textContent=`${{plan.episode_id||`episode-${{String(index).padStart(3,'0')}}`}} · ${{simulatorLabels[simulator]||simulator}}`;document.getElementById('inspect-seed').textContent=plan.seed??'—';const video=document.getElementById('inspect-video');if(run){{document.getElementById('inspect-status').textContent=run.success?'PASS':'FAIL';document.getElementById('inspect-duration').textContent=`${{fmt(run.sim_time_s)}} s · ${{run.steps}} control ticks`;document.getElementById('inspect-policy').textContent=String(run.policy_sha256||'').slice(0,12);document.getElementById('inspect-summary').textContent=run.explanation||run.failure_class||run.stop_reason;document.getElementById('inspect-detail').textContent=Object.entries(run.changed_parameters||{{}}).map(([k,v])=>`${{k}}=${{v}}`).join(' · ')||'baseline control';document.getElementById('inspect-source').src=run.video_path;video.hidden=false;video.load();const duration=Math.max(Number(run.sim_time_s)||1,.001);const close=Number(run.close_command_ms||0)/1000;const first=Number(run.first_contact_ms||0)/1000;const last=Number(run.last_contact_ms||first*1000)/1000;const policyEvent=document.getElementById('policy-event');policyEvent.style.left='0%';policyEvent.style.width=`${{Math.min(100,close/duration*100)}}%`;const contactEvent=document.getElementById('contact-event');contactEvent.style.left=`${{Math.min(100,first/duration*100)}}%`;contactEvent.style.width=`${{Math.max(.5,Math.min(100,(last-first)/duration*100))}}%`;document.getElementById('timeline-end').textContent=`${{duration.toFixed(1)}} s`;document.getElementById('timeline-caption').textContent=`contact ${{fmt(first,3)}}–${{fmt(last,3)}} s · peak ${{fmt(run.peak_force_n)}} N · checker every 100 ms`;}}else{{document.getElementById('inspect-status').textContent=simulator===selectedSimulator?'WITHHELD':'NOT RUN';document.getElementById('inspect-duration').textContent='—';document.getElementById('inspect-policy').textContent=plan.policy_condition||'—';document.getElementById('inspect-summary').textContent=simulator===selectedSimulator?'Blocked by preflight gate.':'Simulator execution is unavailable.';document.getElementById('inspect-detail').textContent=`planned cube pose ${{JSON.stringify(plan.object_placements?.grasp_cube?.position_xyz||[])}}`;video.hidden=true;document.getElementById('timeline-caption').textContent='No trace has been recorded for this cell.';}}document.getElementById('compare-strip').innerHTML=simulatorIds.map(id=>{{const sameRun=id===selectedSimulator?runs[String(index)]:null;return `<div><b>${{simulatorLabels[id]||id}}</b><span>${{sameRun?(sameRun.success?'pass':'failed preflight'):(id===selectedSimulator?'withheld':'not run')}}</span></div>`}}).join('');}}cells.forEach(cell=>cell.addEventListener('click',()=>selectCell(cell)));const search=document.getElementById('episode-search');const status=document.getElementById('status-filter');function filterRows(){{const query=search.value.trim().toLowerCase();document.querySelectorAll('.coverage-row').forEach(row=>{{const text=row.dataset.rowText||'';const matchesText=!query||text.includes(query);const matchesStatus=status.value==='all'||row.querySelector(`.${{status.value}}`);row.style.display=matchesText&&matchesStatus?'grid':'none';}})}}search.addEventListener('input',filterRows);status.addEventListener('change',filterRows);const firstActual=document.querySelector('.coverage-cell.fail,.coverage-cell.pass');if(firstActual)selectCell(firstActual);</script></body></html>'''
+
+
 def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     """Render a standalone cross-simulator study dashboard."""
     root = Path(input_dir)
@@ -288,7 +428,17 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
 <script>const artifacts={artifacts_json};const episodeMedia={episode_media_json};const video=document.getElementById('pilot-video');const source=document.getElementById('pilot-video-source');document.querySelectorAll('[data-episode-position]').forEach(button=>button.addEventListener('click',()=>{{const item=episodeMedia[Number(button.dataset.episodePosition)];if(!item)return;document.querySelectorAll('[data-episode-position]').forEach(option=>option.classList.toggle('selected',option===button));source.src=item.src;video.load();video.play().catch(()=>{{}});document.getElementById('pilot-identity').textContent=`${{item.label}} · SEED ${{item.seed}} · ${{item.duration.toFixed(1)}} s`;document.getElementById('pilot-diagnosis').textContent=item.detail;const outcome=document.getElementById('pilot-outcome');outcome.textContent=item.outcome.toUpperCase();outcome.className=item.outcome;}}));const dialog=document.getElementById('artifact-dialog');document.querySelectorAll('[data-artifact]').forEach(button=>button.addEventListener('click',()=>{{const key=button.dataset.artifact;document.getElementById('artifact-title').textContent=key.replaceAll('_',' ').toUpperCase();document.getElementById('artifact-content').textContent=JSON.stringify(artifacts[key],null,2);dialog.showModal()}}));document.getElementById('close-dialog').addEventListener('click',()=>dialog.close());dialog.addEventListener('click',event=>{{if(event.target===dialog)dialog.close()}});</script></body></html>'''
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(document, encoding="utf-8")
+    report_path = output_path.with_name("scientific-report.html")
+    report_path.write_text(document, encoding="utf-8")
+    workbench = _build_workbench_document(
+        study=study,
+        study_manifest=study_manifest,
+        episodes=episodes,
+        recovery=recovery,
+        policy_digest=policy_digest,
+        selected_sim=selected_sim,
+    )
+    output_path.write_text(workbench, encoding="utf-8")
     return output_path
 
 

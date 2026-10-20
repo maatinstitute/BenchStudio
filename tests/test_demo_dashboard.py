@@ -310,7 +310,28 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
         },
     )
     output = build_demo_dashboard(evidence, tmp_path / "site" / "index.html")
-    document = output.read_text(encoding="utf-8")
+    workbench = output.read_text(encoding="utf-8")
+    document = (tmp_path / "site" / "scientific-report.html").read_text(
+        encoding="utf-8"
+    )
+
+    assert "BenchStudio — Evaluation Workbench" in workbench
+    assert "100 EPISODES × 3 SIMULATORS" in workbench
+    assert "Coverage matrix" in workbench
+    assert workbench.count('class="coverage-row"') == 100
+    assert workbench.count('class="coverage-cell') == 300
+    assert "Paired intervention" in workbench
+    assert "The four parameter probes use different seeds and are unpaired" in workbench
+    assert "Seed 43 · baseline versus slower approach" in workbench
+    assert "SAME MANIFEST" in workbench
+    assert "PHYSICS CLOCK" in workbench
+    assert "CONTROL CLOCK" in workbench
+    assert "100 physics steps" in workbench
+    assert "CHECKER CLOCK" in workbench
+    assert "5 control ticks · 100 ms · 500 physics steps" in workbench
+    assert 'href="scientific-report.html"' in workbench
+    assert 'id="inspect-video"' in workbench
+    assert "SAME EPISODE ACROSS SIMULATORS" in workbench
 
     assert "BenchStudio — Study control room" in document
     assert "Batch authorization" in document
