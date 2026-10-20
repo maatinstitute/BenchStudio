@@ -292,75 +292,61 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     output = build_demo_dashboard(evidence, tmp_path / "site" / "index.html")
     document = output.read_text(encoding="utf-8")
 
-    assert "BenchStudio — Evaluation report" in document
-    assert "Eval Control Room" in document
+    assert "BenchStudio — Study control room" in document
+    assert "Study control room" in document
     assert "Scientific verdict" not in document
     assert "EVIDENCE QUALIFIED" not in document
-    assert "pink-demo" in document
-    assert '"attempts.scheduled"</span>: <span class="json-number">2</span>' in document
-    assert '"transport.valid"</span>: <span class="json-ok">true</span>' in document
-    assert 'font-family:"Noto Sans", Arial, sans-serif' in document
+    assert "Transfer fidelity" not in document
+    assert "VIEW MACHINE-READABLE SUMMARY" not in document
+    assert "Inspect frozen plan" not in document
+    assert "4/4 COMPLETED" not in document
+    assert "Machine-readable" not in document
+    assert 'font:14px/1.5 Inter,"Helvetica Neue",Arial,sans-serif' in document
     assert "--pink:#ff4fba" in document
     assert "radial-gradient" not in document
     assert "text-shadow" not in document
-    assert "VIEW MACHINE-READABLE SUMMARY" in document
-    assert 'data-artifact="plan"' in document
-    assert 'href="campaign-plan.json"' not in document
-    assert "SO-101 · Cube lift" in document
-    assert "ROBOT EPISODES</span><b>4/4 COMPLETED" in document
-    assert "FINAL RESULT</span><b>0/4 LIFT CHECKER PASS" in document
-    assert "FIRST-PASS RATE</span><b>0/4" in document
-    assert "INTERVENTION</span><b>1 EVALUATED" in document
-    assert "EXECUTIONS</span><b>6 TOTAL" in document
-    assert "CONTACT GRASP</span><b>PHYSICS EVALUATED" in document
-    assert "no attach or weld event is permitted" in document
-    assert "Physics-step diagnostic replay retains solver force/torque" in document
-    assert "varies the cube pose under frozen seeds" in document
-    assert "Separate accounting fixture; not additional SO-101 videos." in document
-    assert "Attempts completed</span><strong>2/2" in document
+    assert "EPISODES / SIMULATOR" in document
+    assert "PLANNED RUNS" in document
+    assert ">300</b>" in document
+    assert "SIMULATORS" in document
+    assert ">3</b>" in document
+    assert "EXPERIMENT SETUP" in document
+    assert "SEEDING & PAIRING" in document
+    assert "sha256(study_id, episode_index)" in document
+    assert "RANDOMIZATION" in document
+    assert "12 × 12 × 0 mm" in document
+    assert "SIMULATOR MATRIX" in document
+    assert "MuJoCo" in document
+    assert "Genesis" in document
+    assert "Isaac Sim" in document
+    assert "TASK-SPECIFIC" in document
+    assert "SHARED ACROSS SIMULATORS" in document
+    assert "SIMULATOR-SPECIFIC EVIDENCE" in document
+    assert "no kinematic attach or weld" in document
+    assert "PhysX contact impulse" in document
+    assert "PILOT BATCH · MUJOCO" in document
+    assert "4 retained episodes · 4 failures" in document
+    assert "No population-level rate is reported" in document
     assert "urdf-studio/mujoco/episode-0/episode.mp4" in document
     assert "urdf-studio/mujoco/episode-1/episode.mp4" in document
     assert "urdf-studio/mujoco/episode-2/episode.mp4" in document
     assert "urdf-studio/mujoco/episode-3/episode.mp4" in document
-    assert "EPISODE 01" in document
-    assert "EPISODE 04" in document
+    assert "EP 01" in document
+    assert "EP 04" in document
     assert "SEED 17" in document
     assert "SEED 61" in document
-    assert 'value="mujoco" selected>MuJoCo · evaluated' in document
-    assert 'value="genesis" disabled>Genesis · failed' in document
-    assert "this report stays bound to the evaluated episode batch" in document
-    assert 'data-artifact="robot_episodes"' in document
-    assert 'data-artifact="contact_analyses"' in document
-    assert 'data-artifact="robot_recovery"' in document
-    assert 'data-artifact="robot_policy"' in document
-    assert "Waypoint baseline · sha256" in document
-    assert "ready 0.0s · close on contact 3.0s · lift 4.8s" in document
-    assert "Root-cause analysis" in document
-    assert "4/4 grasps failed" in document
-    assert "TRANSIENT IMPACT EJECTED OBJECT" in document
+    assert 'data-artifact="study"' in document
+    assert 'data-artifact="episode_0"' in document
+    assert 'data-artifact="recovery"' in document
+    assert "transient impact ejected object" in document
     assert "160.0 mm" in document
     assert "9.0 mm" in document
-    assert "0 frames" in document
-    assert "0.209 rad" in document
     assert "42.6 N" in document
-    assert "0.0712 N·s" in document
-    assert "0.31 mm" in document
-    assert "5.0 kHz · VERIFIED" in document
-    assert "geom pairs, positions, contact frames, penetration" in document
-    assert "Simulator parameter matrix" in document
-    assert "PHYSICS STEP" in document
-    assert "genesis package is unavailable" in document
-    assert "Lift checker pass rate" in document
-    assert 'data-artifact="simulator_debug"' in document
-    assert "Episode 03 · Baseline vs slower approach" in document
-    assert "ATTEMPT 01 · BASELINE" in document
-    assert "MAX STEPS" in document
+    assert "PARAMETER EXPERIMENT" in document
+    assert "Slower approach reduced impact, not failure" in document
     assert "1.2 → 2.4 s" in document
-    assert "eeeeeeee → ffffffff" in document
-    assert "LIFT STILL FAILED" in document
-    assert "changes only approach duration" in document
-    assert "ATTEMPT 02 · INTERVENTION" in document
-    assert "500.5 → 252.7 N peak" in document
-    assert "61.7 → 137.0 mm displacement" in document
-    assert "recovery/episode-2/attempt-0/episode.mp4" in document
-    assert "recovery/episode-2/attempt-1/episode.mp4" in document
+    assert "500.5 → 252.7 N" in document
+    assert "61.7 → 137.0 mm" in document
+    assert "Lift still failed" in document
+    assert "Study definition ready" in document
+    assert "Scale blockers visible" in document

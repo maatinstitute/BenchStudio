@@ -1,0 +1,67 @@
+{
+  "schema": "benchstudio.study_definition.v1",
+  "study_id": "so101-cube-grasp-cross-sim-v1",
+  "title": "SO-101 cube grasp",
+  "episodes_per_simulator": 100,
+  "simulators": [
+    {
+      "id": "mujoco",
+      "label": "MuJoCo",
+      "adapter": "native",
+      "contact_source": "constraint solver"
+    },
+    {
+      "id": "genesis",
+      "label": "Genesis",
+      "adapter": "native",
+      "contact_source": "native rigid contact"
+    },
+    {
+      "id": "isaac",
+      "label": "Isaac Sim",
+      "adapter": "connector required",
+      "contact_source": "PhysX contact reports"
+    }
+  ],
+  "pairing": {
+    "unit": "episode_index",
+    "seed_count": 100,
+    "seed_derivation": "sha256(study_id, episode_index)",
+    "manifest_reused_across_simulators": true,
+    "retry_preserves_manifest": true,
+    "pilot_seeds": [17, 29, 43, 61]
+  },
+  "randomization": {
+    "cube_position_jitter_m": [0.012, 0.012, 0.0],
+    "cube_yaw_jitter_rad": 0.2,
+    "robot_initial_state": "frozen",
+    "policy": "frozen per condition"
+  },
+  "shared_runtime": {
+    "physics_timestep_s": 0.0002,
+    "control_hz": 50.0,
+    "checker_interval_steps": 5,
+    "max_episode_steps": 400,
+    "grasp_attach": "none"
+  },
+  "criteria": {
+    "task": [
+      {"id": "lift_height", "operator": ">=", "value": 0.1, "unit": "m"},
+      {"id": "stable_duration", "operator": ">=", "value": 0.5, "unit": "s"},
+      {"id": "stable_drift", "operator": "<=", "value": 0.015, "unit": "m"},
+      {"id": "above_plane", "operator": ">=", "value": 0.0, "unit": "m"}
+    ],
+    "shared": [
+      "terminal outcome for every scheduled episode",
+      "same manifest and policy condition across simulators",
+      "no kinematic attach or weld",
+      "hashed report, trace, decisions, video, and telemetry",
+      "retry lineage preserves episode identity"
+    ],
+    "simulator_specific": {
+      "mujoco": ["constraint force", "normal impulse", "contact penetration"],
+      "genesis": ["native contact force", "contact count", "penetration"],
+      "isaac": ["PhysX contact impulse", "pair contacts", "penetration"]
+    }
+  }
+}
