@@ -22,11 +22,11 @@ _TARGET_THIN_PRISM = (0.0, 0.0, 0.0, 0.0)
 
 def resize_and_center_crop(image: np.ndarray, target_height: int, target_width: int) -> np.ndarray:
     """Resize to cover a target shape and center-crop to exact dimensions."""
-    from PIL import Image as PILImage
-
     height, width = image.shape[:2]
     if height == target_height and width == target_width:
         return image
+    from PIL import Image as PILImage
+
     scale = max(target_height / height, target_width / width)
     new_height, new_width = ceil(height * scale), ceil(width * scale)
     pil_image = PILImage.fromarray(image).resize(
