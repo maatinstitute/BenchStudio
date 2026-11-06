@@ -572,7 +572,7 @@ from benchstudio.libero import LiberoAdapter, replay_libero
 # Use the suite, task, initial state and seed from the recorded RoboPAD attempt.
 adapter = LiberoAdapter("libero_spatial", task_id=0, initial_state_id=0, seed=42,
                         backend="lerobot")
-actions = np.load("nominal_actions.npy", allow_pickle=False).tolist()
+actions = np.load("nominal_actions.npy", allow_pickle=False)
 reference = adapter.capture(actions)
 Path("libero-reference.json").write_text(json.dumps(reference), encoding="utf-8")
 
@@ -584,6 +584,7 @@ Capture and retain the reference on the reviewed baseline stack before replay
 on a candidate environment. Tick zero is the restored initial state. The
 first later divergence identifies state, outcome signals, and observation
 fields that changed. For arrays, comparison includes dtype, shape, and exact
-bytes. A new capture from an archived action file is a new baseline, so
+bytes. The LeRobot path preserves the dtype of a NumPy action array.
+A new capture from an archived action file is a new baseline, so
 retain any original RoboPAD trace separately. Independent evaluator
 qualification uses its own goal checker and outcome evidence.
