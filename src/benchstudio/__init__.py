@@ -198,11 +198,14 @@ from .scenarios import (
 )
 from .libero import LiberoAdapter, replay_libero
 from .pipeline import ReplayPipeline, ReplayResult
+from .replay_worker import ReplayLimits, ReplayWorkerError
 from .trajectory import compare_trajectories, load_trajectory
 from .validity import BenchmarkValidityAudit, BenchmarkValidityRecord, audit_benchmark_validity
 
 __all__ = [
     "LiberoAdapter",
+    "ReplayLimits",
+    "ReplayWorkerError",
     "ReplayPipeline",
     "ReplayResult",
     "replay_libero",
