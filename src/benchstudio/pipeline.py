@@ -1,0 +1,113 @@
+"""Public pipeline for replaying existing RoboPAD validation evidence."""
+
+from __future__ import annotations
+
+import shutil
+import tarfile
+from dataclasses import dataclass
+from pathlib import Path, PurePosixPath
+from tempfile import TemporaryDirectory
+from typing import Any
+
+from .robopad import RoboPADReplay
+
+_MAX_ARCHIVE_BYTES = 16 * 1024**3
+_MAX_ARCHIVE_MEMBERS = 100_000
+
+
+def _extract(source: Path, destination: Path) -> Path:
+    seen: set[PurePosixPath] = set()
+    size = 0
+    with tarfile.open(source, mode="r:gz") as archive:
+        for member in archive:
+            name = PurePosixPath(member.name)
+            if (
+                name.is_absolute() or ".." in name.parts or "\\" in member.name
+                or (not member.isdir() and not member.isfile())
+            ):
+                raise ValueError(f"unsafe archive entry: {member.name}")
+            if name == PurePosixPath(".") and member.isdir():
+                continue
+            if name in seen:
+                raise ValueError(f"duplicate archive entry: {member.name}")
+            seen.add(name)
+            if member.size < 0:
+                raise ValueError(f"invalid archive entry size: {member.name}")
+            size += member.size
+            if len(seen) > _MAX_ARCHIVE_MEMBERS or size > _MAX_ARCHIVE_BYTES:
+                raise ValueError("archive exceeds the replay extraction limits")
+            target = destination.joinpath(*name.parts)
+            if member.isdir():
+                target.mkdir(parents=True, exist_ok=True)
+            else:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                stream = archive.extractfile(member)
+                if stream is None:
+                    raise ValueError(f"cannot read archive entry: {member.name}")
+                with stream, target.open("xb") as output:
+                    shutil.copyfileobj(stream, output)
+    if (destination / "manifest.json").is_file():
+        return destination
+    folders = list(destination.iterdir())
+    if len(folders) == 1 and (folders[0] / "manifest.json").is_file():
+        return folders[0]
+    raise ValueError("archive must contain one RoboPAD campaign manifest at its root")
+
+
+@dataclass(frozen=True)
+class ReplayResult:
+    """Detailed replay evidence with a compact user-facing summary."""
+
+    report: dict[str, Any]
+    environment: dict[str, Any] | None = None
+
+    def summary(self) -> dict[str, Any]:
+        return {
+            "episode": self.report["episode"],
+            "passed": self.report["passed"],
+            "first_difference": self.report["first_difference"],
+            "difference_count": len(self.report["differences"]),
+            "environment_checked": self.environment is not None,
+        }
+
+
+@dataclass(frozen=True)
+class ReplayPipeline:
+    """Replay a saved RoboPAD nominal validation attempt from its archive."""
+
+    archive: Path
+    episode: str | None = None
+
+    @classmethod
+    def from_archive(cls, path: str | Path, *, episode: str | None = None) -> ReplayPipeline:
+        source = Path(path).resolve()
+        if not source.is_dir() and not source.is_file():
+            raise FileNotFoundError(f"replay archive not found: {source}")
+        return cls(source, episode)
+
+    def check(self) -> dict[str, Any]:
+        """Verify archive inputs and render the selected reset state."""
+        return self._execute(check_only=True, verify_environment=True)
+
+    def run(self, *, verify_environment: bool = True) -> ReplayResult:
+        """Replay against the original archive, optionally probing readiness first."""
+        return self._execute(check_only=False, verify_environment=verify_environment)
+
+    def _execute(self, *, check_only: bool, verify_environment: bool) -> Any:
+        if self.archive.is_dir():
+            return self._run_folder(self.archive, check_only, verify_environment)
+        try:
+            with TemporaryDirectory(prefix="benchstudio-replay-") as temporary:
+                root = _extract(self.archive, Path(temporary))
+                return self._run_folder(root, check_only, verify_environment)
+        except tarfile.TarError as exc:
+            raise ValueError("expected a RoboPAD .tar.gz archive or extracted campaign directory") from exc
+
+    def _run_folder(
+        self, root: Path, check_only: bool, verify_environment: bool
+    ) -> ReplayResult | dict[str, Any]:
+        attempt = RoboPADReplay.open(root, episode=self.episode)
+        if check_only:
+            return attempt.check()
+        environment = attempt.check() if verify_environment else None
+        return ReplayResult(attempt.replay(), environment)
