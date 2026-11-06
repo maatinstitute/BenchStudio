@@ -196,10 +196,16 @@ from .scenarios import (
     scenario_archive_digest,
     validate_scenario_pack,
 )
+from .libero import LiberoAdapter, replay_libero
+from .pipeline import ReplayPipeline, ReplayResult
 from .trajectory import compare_trajectories, load_trajectory
 from .validity import BenchmarkValidityAudit, BenchmarkValidityRecord, audit_benchmark_validity
 
 __all__ = [
+    "LiberoAdapter",
+    "ReplayPipeline",
+    "ReplayResult",
+    "replay_libero",
     "ActionChunk",
     "ClaimDecision",
     "CampaignAudit",
