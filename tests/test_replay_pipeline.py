@@ -177,3 +177,13 @@ class ReplayPipelineTests(unittest.TestCase):
                 report = ReplayPipeline.from_archive(root).check()
             self.assertEqual(report["environment_profile"], "legacy_unpinned")
             self.assertTrue(report["notes"])
+
+    @unittest.skipIf(np is None, "archive fixture requires NumPy")
+    def test_failed_evaluation_gives_actionable_error(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            post = _campaign(root)
+            (post / "record.json").unlink()
+            _json(post / "failure.json", {})
+            with self.assertRaisesRegex(ValueError, "archived evaluation fixture failed"):
+                ReplayPipeline.from_archive(root).check()
