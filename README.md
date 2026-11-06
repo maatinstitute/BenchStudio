@@ -582,6 +582,45 @@ This first pipeline supports completed nominal base attempts from RoboPAD's
 and compares the archived observation hashes exactly. Renderer drift can
 appear as an image difference even when the recorded simulator state agrees.
 
+### Pin an archive's replay environment
+
+Add `benchstudio-replay.json` alongside the campaign's `manifest.json` for
+a reproducible handoff. Start from the producing environment and record the
+actual values. This example uses illustrative versions and digest values:
+
+```json
+{
+  "schema": "benchstudio.replay_manifest.v1",
+  "adapter": "robopad.validation_transfer_v1",
+  "episode": "example_key",
+  "runtime": {
+    "python": "3.12.3",
+    "modules": {"numpy": "1.26.4", "mujoco": "3.3.0"},
+    "renderer": {"vendor": "Mesa", "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)"},
+    "variables": {"MUJOCO_GL": "osmesa", "PYOPENGL_PLATFORM": "osmesa"},
+    "requirements_file": "requirements.freeze.txt"
+  },
+  "evidence_sha256": {
+    "manifest.json": "<sha256 of exact file bytes>",
+    "prepared/example_key/record.json": "<sha256>",
+    "evaluations/example_key/base/record.json": "<sha256>",
+    "requirements.freeze.txt": "<sha256>"
+  }
+}
+```
+
+The lockfile is optional. If you include one, use the reviewed dependency
+lock from the producing stack, then install it in a fresh environment after
+inspection. `pipeline.check()` reports the observed versions, the requested
+renderer configuration, and mismatches with suggested corrections. A
+versioned archive also requires the **active** OpenGL renderer to match. If
+it cannot be read, the readiness check reports a mismatch. With
+`verify_environment=True`, mismatches block replay.
+
+Legacy RoboPAD archives are detected automatically. Their readiness report
+says `legacy_unpinned` because it can probe native reset and render but has
+no archived runtime pins to compare.
+
 ## Replay saved actions in LIBERO
 
 Run BenchStudio from the pinned LIBERO environment that owns the task assets
