@@ -621,6 +621,24 @@ Legacy RoboPAD archives are detected automatically. Their readiness report
 says `legacy_unpinned` because it can probe native reset and render but has
 no archived runtime pins to compare.
 
+### Replay with an independently trusted manifest
+
+For a reviewed handoff, obtain the SHA-256 of `benchstudio-replay.json`
+through a separate trusted channel and supply it to the pipeline:
+
+```python
+pipeline = bs.ReplayPipeline.from_archive(
+    "robopad_attempt.tar.gz", trusted_manifest_sha256=reviewed_manifest_sha256
+)
+result = pipeline.run()
+```
+
+This mode requires a compressed archive, stages it in a private temporary
+directory, checks the manifest against the supplied digest, and verifies the
+runtime before replay. The CLI accepts the same value with
+`--trusted-manifest-sha256`. The digest must come from the reviewer. Reading
+it from the same archive would only check self-consistency.
+
 ## Replay saved actions in LIBERO
 
 Run BenchStudio from the pinned LIBERO environment that owns the task assets
