@@ -1,0 +1,657 @@
+{
+ "cases": [
+  {
+   "goal_spec_sha256": "debb80bbc80e9b90a706b5bc5cdc386efa13382ebbb1d19ba111bcb3c6cae96c",
+   "horizon": 6,
+   "kind": "goal_unmet",
+   "recorded_success": null,
+   "samples": [
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1da3215cc4e277bce4e913a26e73fae0a645862dcb0b159ace63429b07327787",
+     "step": 0,
+     "stop_reason": null
+    }
+   ],
+   "suite": "libero_spatial",
+   "task_id": "0"
+  },
+  {
+   "goal_spec_sha256": "debb80bbc80e9b90a706b5bc5cdc386efa13382ebbb1d19ba111bcb3c6cae96c",
+   "horizon": 6,
+   "kind": "horizon_timeout",
+   "recorded_success": false,
+   "samples": [
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1da3215cc4e277bce4e913a26e73fae0a645862dcb0b159ace63429b07327787",
+     "step": 0,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "f7822827fb5862d635352edee1be1fa38d1d92e8abe32e2da0236847b3a5a52e",
+     "step": 1,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1d152fad8074392e03363f346813245951743ee2be7ea9dd129b83c7f0e6826d",
+     "step": 2,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "9a4950064a7729022385648975d95669f7b1f73f2cb23e3d0fe517ba92c0afb0",
+     "step": 3,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "19eddb918174c11068da7768b361c835ce68ffffa62daab86a1ca3ea9773c5cc",
+     "step": 4,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "58e7eea27fc068877e3eb985292dd670cd131a32be14111fa4ba0454e1c7d72c",
+     "step": 5,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "4980050db85135916dc1dfdd1f749cc41b8ddf168a47221126fe9e56e513dffb",
+     "step": 6,
+     "stop_reason": "horizon"
+    }
+   ],
+   "suite": "libero_spatial",
+   "task_id": "0"
+  },
+  {
+   "goal_spec_sha256": "debb80bbc80e9b90a706b5bc5cdc386efa13382ebbb1d19ba111bcb3c6cae96c",
+   "horizon": 6,
+   "kind": "goal_reached",
+   "recorded_success": true,
+   "samples": [
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1da3215cc4e277bce4e913a26e73fae0a645862dcb0b159ace63429b07327787",
+     "step": 0,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "f7822827fb5862d635352edee1be1fa38d1d92e8abe32e2da0236847b3a5a52e",
+     "step": 1,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1d152fad8074392e03363f346813245951743ee2be7ea9dd129b83c7f0e6826d",
+     "step": 2,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "9a4950064a7729022385648975d95669f7b1f73f2cb23e3d0fe517ba92c0afb0",
+     "step": 3,
+     "stop_reason": null
+    },
+    {
+     "goal_met": true,
+     "native_success": true,
+     "per_atom": [
+      true
+     ],
+     "state_sha256": "72813e1ea8efe1c11e0d5e72077e4e46c3438be0b903e2d21bcd179074673641",
+     "step": 4,
+     "stop_reason": "goal"
+    }
+   ],
+   "suite": "libero_spatial",
+   "task_id": "0"
+  },
+  {
+   "goal_spec_sha256": "064b1673425d9f1e840356cd87519445da715fd9619b60e27e6b4ad003ca482c",
+   "horizon": 6,
+   "kind": "goal_unmet",
+   "recorded_success": null,
+   "samples": [
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1da3215cc4e277bce4e913a26e73fae0a645862dcb0b159ace63429b07327787",
+     "step": 0,
+     "stop_reason": null
+    }
+   ],
+   "suite": "libero_object",
+   "task_id": "0"
+  },
+  {
+   "goal_spec_sha256": "064b1673425d9f1e840356cd87519445da715fd9619b60e27e6b4ad003ca482c",
+   "horizon": 6,
+   "kind": "horizon_timeout",
+   "recorded_success": false,
+   "samples": [
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1da3215cc4e277bce4e913a26e73fae0a645862dcb0b159ace63429b07327787",
+     "step": 0,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "f7822827fb5862d635352edee1be1fa38d1d92e8abe32e2da0236847b3a5a52e",
+     "step": 1,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1d152fad8074392e03363f346813245951743ee2be7ea9dd129b83c7f0e6826d",
+     "step": 2,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "9a4950064a7729022385648975d95669f7b1f73f2cb23e3d0fe517ba92c0afb0",
+     "step": 3,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "19eddb918174c11068da7768b361c835ce68ffffa62daab86a1ca3ea9773c5cc",
+     "step": 4,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "58e7eea27fc068877e3eb985292dd670cd131a32be14111fa4ba0454e1c7d72c",
+     "step": 5,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "4980050db85135916dc1dfdd1f749cc41b8ddf168a47221126fe9e56e513dffb",
+     "step": 6,
+     "stop_reason": "horizon"
+    }
+   ],
+   "suite": "libero_object",
+   "task_id": "0"
+  },
+  {
+   "goal_spec_sha256": "064b1673425d9f1e840356cd87519445da715fd9619b60e27e6b4ad003ca482c",
+   "horizon": 6,
+   "kind": "goal_reached",
+   "recorded_success": true,
+   "samples": [
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1da3215cc4e277bce4e913a26e73fae0a645862dcb0b159ace63429b07327787",
+     "step": 0,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "f7822827fb5862d635352edee1be1fa38d1d92e8abe32e2da0236847b3a5a52e",
+     "step": 1,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1d152fad8074392e03363f346813245951743ee2be7ea9dd129b83c7f0e6826d",
+     "step": 2,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "9a4950064a7729022385648975d95669f7b1f73f2cb23e3d0fe517ba92c0afb0",
+     "step": 3,
+     "stop_reason": null
+    },
+    {
+     "goal_met": true,
+     "native_success": true,
+     "per_atom": [
+      true
+     ],
+     "state_sha256": "72813e1ea8efe1c11e0d5e72077e4e46c3438be0b903e2d21bcd179074673641",
+     "step": 4,
+     "stop_reason": "goal"
+    }
+   ],
+   "suite": "libero_object",
+   "task_id": "0"
+  },
+  {
+   "goal_spec_sha256": "16840ddefa1ff93b915c4369e0f37bb3c0ff156ccb1f19085ea87c96b809b412",
+   "horizon": 6,
+   "kind": "goal_unmet",
+   "recorded_success": null,
+   "samples": [
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1da3215cc4e277bce4e913a26e73fae0a645862dcb0b159ace63429b07327787",
+     "step": 0,
+     "stop_reason": null
+    }
+   ],
+   "suite": "libero_goal",
+   "task_id": "0"
+  },
+  {
+   "goal_spec_sha256": "16840ddefa1ff93b915c4369e0f37bb3c0ff156ccb1f19085ea87c96b809b412",
+   "horizon": 6,
+   "kind": "horizon_timeout",
+   "recorded_success": false,
+   "samples": [
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1da3215cc4e277bce4e913a26e73fae0a645862dcb0b159ace63429b07327787",
+     "step": 0,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "f7822827fb5862d635352edee1be1fa38d1d92e8abe32e2da0236847b3a5a52e",
+     "step": 1,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1d152fad8074392e03363f346813245951743ee2be7ea9dd129b83c7f0e6826d",
+     "step": 2,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "9a4950064a7729022385648975d95669f7b1f73f2cb23e3d0fe517ba92c0afb0",
+     "step": 3,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "19eddb918174c11068da7768b361c835ce68ffffa62daab86a1ca3ea9773c5cc",
+     "step": 4,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "58e7eea27fc068877e3eb985292dd670cd131a32be14111fa4ba0454e1c7d72c",
+     "step": 5,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "4980050db85135916dc1dfdd1f749cc41b8ddf168a47221126fe9e56e513dffb",
+     "step": 6,
+     "stop_reason": "horizon"
+    }
+   ],
+   "suite": "libero_goal",
+   "task_id": "0"
+  },
+  {
+   "goal_spec_sha256": "16840ddefa1ff93b915c4369e0f37bb3c0ff156ccb1f19085ea87c96b809b412",
+   "horizon": 6,
+   "kind": "goal_reached",
+   "recorded_success": true,
+   "samples": [
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1da3215cc4e277bce4e913a26e73fae0a645862dcb0b159ace63429b07327787",
+     "step": 0,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "f7822827fb5862d635352edee1be1fa38d1d92e8abe32e2da0236847b3a5a52e",
+     "step": 1,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1d152fad8074392e03363f346813245951743ee2be7ea9dd129b83c7f0e6826d",
+     "step": 2,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "9a4950064a7729022385648975d95669f7b1f73f2cb23e3d0fe517ba92c0afb0",
+     "step": 3,
+     "stop_reason": null
+    },
+    {
+     "goal_met": true,
+     "native_success": true,
+     "per_atom": [
+      true
+     ],
+     "state_sha256": "72813e1ea8efe1c11e0d5e72077e4e46c3438be0b903e2d21bcd179074673641",
+     "step": 4,
+     "stop_reason": "goal"
+    }
+   ],
+   "suite": "libero_goal",
+   "task_id": "0"
+  },
+  {
+   "goal_spec_sha256": "2da867f948fab527cbaa968b16cfd47559c5d78798c4d73b80f3711c586f6161",
+   "horizon": 6,
+   "kind": "goal_unmet",
+   "recorded_success": null,
+   "samples": [
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1da3215cc4e277bce4e913a26e73fae0a645862dcb0b159ace63429b07327787",
+     "step": 0,
+     "stop_reason": null
+    }
+   ],
+   "suite": "libero_10",
+   "task_id": "0"
+  },
+  {
+   "goal_spec_sha256": "2da867f948fab527cbaa968b16cfd47559c5d78798c4d73b80f3711c586f6161",
+   "horizon": 6,
+   "kind": "horizon_timeout",
+   "recorded_success": false,
+   "samples": [
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1da3215cc4e277bce4e913a26e73fae0a645862dcb0b159ace63429b07327787",
+     "step": 0,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "f7822827fb5862d635352edee1be1fa38d1d92e8abe32e2da0236847b3a5a52e",
+     "step": 1,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1d152fad8074392e03363f346813245951743ee2be7ea9dd129b83c7f0e6826d",
+     "step": 2,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "9a4950064a7729022385648975d95669f7b1f73f2cb23e3d0fe517ba92c0afb0",
+     "step": 3,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "19eddb918174c11068da7768b361c835ce68ffffa62daab86a1ca3ea9773c5cc",
+     "step": 4,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "58e7eea27fc068877e3eb985292dd670cd131a32be14111fa4ba0454e1c7d72c",
+     "step": 5,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "4980050db85135916dc1dfdd1f749cc41b8ddf168a47221126fe9e56e513dffb",
+     "step": 6,
+     "stop_reason": "horizon"
+    }
+   ],
+   "suite": "libero_10",
+   "task_id": "0"
+  },
+  {
+   "goal_spec_sha256": "2da867f948fab527cbaa968b16cfd47559c5d78798c4d73b80f3711c586f6161",
+   "horizon": 6,
+   "kind": "goal_reached",
+   "recorded_success": true,
+   "samples": [
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1da3215cc4e277bce4e913a26e73fae0a645862dcb0b159ace63429b07327787",
+     "step": 0,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "f7822827fb5862d635352edee1be1fa38d1d92e8abe32e2da0236847b3a5a52e",
+     "step": 1,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "1d152fad8074392e03363f346813245951743ee2be7ea9dd129b83c7f0e6826d",
+     "step": 2,
+     "stop_reason": null
+    },
+    {
+     "goal_met": false,
+     "native_success": false,
+     "per_atom": [
+      false
+     ],
+     "state_sha256": "9a4950064a7729022385648975d95669f7b1f73f2cb23e3d0fe517ba92c0afb0",
+     "step": 3,
+     "stop_reason": null
+    },
+    {
+     "goal_met": true,
+     "native_success": true,
+     "per_atom": [
+      true
+     ],
+     "state_sha256": "72813e1ea8efe1c11e0d5e72077e4e46c3438be0b903e2d21bcd179074673641",
+     "step": 4,
+     "stop_reason": "goal"
+    }
+   ],
+   "suite": "libero_10",
+   "task_id": "0"
+  }
+ ],
+ "goal_checker_sha256": "0724a9386c99563f6a6ffaae90231b95c7563fd9ed57d815e117620927b43aa6",
+ "model": "pi0.5",
+ "passed": true,
+ "protocol_e_results_sha256": "78a5e44a0f6244f4ff4e67682afb81f00cf9eda4991a9a8a593e2a0418802c0e",
+ "runtime": {
+  "assets": "043fede36dc3171d176e8f056d5510b91c4fb4dffe8cd824540697c8bae51be7",
+  "checkpoint": "347e0f0100429c7bbf16e0f9a9cb19de80469b80acbfc69aaf34c0e9a4576edc",
+  "normalization": "34cbfc875c36144d0616b6a6ca44eee40e28db0d412f2e27888813d73f17a560",
+  "renderer": "2677b4a2f350971f96a4d678fd619efab8e1b42a84e67463ae2c1fee82d71068",
+  "runner": "4b1ef5e43255b739b3989574b02ed7676ee55e01191d825ad0d474e1174fb5b5",
+  "simulator_stack": "a370d3f15f77b9117e31fa0cb5424d792a9a0e1df3e1edb77ebed6f36c70880a"
+ },
+ "schema": "benchstudio.evaluator_qualification.v1"
+}
