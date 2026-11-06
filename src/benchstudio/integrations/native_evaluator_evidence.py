@@ -118,6 +118,13 @@ def native_frame_signature(frame: Mapping[str, Any]) -> dict[str, Any]:
         raise ValueError("native frame requires a nonempty state snapshot")
     if not isinstance(observation, dict) or not observation:
         raise ValueError("native frame requires named observation fields")
+    native = frame["native_success"]
+    recorded = frame["recorded_success"]
+    reason = frame["stop_reason"]
+    if type(native) is not bool or (recorded is not None and type(recorded) is not bool):
+        raise ValueError("native frame outcome signals must be boolean or null when unrecorded")
+    if reason is not None and (not isinstance(reason, str) or reason not in {"goal", "horizon", "other"}):
+        raise ValueError("native frame has an invalid stop reason")
     return {
         "state_sha256": _digest(state),
         "observation_sha256": {key: _digest(value) for key, value in observation.items()},
@@ -150,7 +157,7 @@ def replay_native_fixture(
     frame = restore()
     for tick, reference in enumerate(expected):
         signature = native_frame_signature(frame)
-        if signature != reference:
+        if _digest(signature) != _digest(reference):
             observed_fields = signature["observation_sha256"]
             reference_fields = reference.get("observation_sha256", {})
             if not isinstance(reference_fields, dict):
@@ -163,7 +170,7 @@ def replay_native_fixture(
                 ),
                 "changed_signals": sorted(
                     key for key in signature if key != "observation_sha256"
-                    and signature[key] != reference.get(key)
+                    and (key not in reference or _digest(signature[key]) != _digest(reference[key]))
                 ),
             })
         samples.append({
