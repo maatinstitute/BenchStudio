@@ -6,7 +6,8 @@ import re
 from pathlib import Path
 from typing import Any
 
-from .frozen_plan import FrozenCampaignPlan
+from ..analysis.evaluator_qualification import evaluator_issues
+from .frozen_plan import FrozenCampaignPlan, PlannedAttempt
 
 
 def _sha(value: object) -> bool:
@@ -22,6 +23,26 @@ def _read(path: Path) -> tuple[dict[str, Any], str]:
     if not isinstance(document, dict):
         raise ValueError(f"qualification file {path.name} must be a JSON object")
     return document, hashlib.sha256(raw).hexdigest()
+
+
+def refinement_attempt_horizon(
+    attempt: PlannedAttempt, horizons: dict[str, int]
+) -> int:
+    suite = attempt.metadata.get("suite")
+    if suite is None:
+        source = attempt.metadata.get("source_row", {})
+        identity = source.get("episode_identity", {}) if isinstance(source, dict) else {}
+        suite = identity.get("suite") if isinstance(identity, dict) else None
+    if suite is None and len(horizons) == 1:
+        suite = next(iter(horizons))
+    if not isinstance(suite, str) or suite not in horizons:
+        raise ValueError(f"attempt {attempt.key.attempt_id} has no qualified evaluator suite")
+    horizon = horizons[suite]
+    condition = attempt.metadata.get("condition", {})
+    configured = condition.get("max_episode_steps", horizon) if isinstance(condition, dict) else None
+    if type(configured) is not int or configured != horizon:
+        raise ValueError(f"attempt {attempt.key.attempt_id} has a different evaluator horizon")
+    return horizon
 
 
 def verify_refinement_qualification(
@@ -42,6 +63,18 @@ def verify_refinement_qualification(
     model = declaration.get("model")
     if model not in ("pi0.5", "smolvla") or declaration.get("stage") != "confirmation":
         raise ValueError("refinement_v3 requires a supported confirmation model")
+    horizons = declaration.get("evaluator_horizons")
+    if (
+        not isinstance(horizons, dict)
+        or not horizons
+        or not all(
+            isinstance(suite, str) and suite.strip() and type(steps) is int and steps > 0
+            for suite, steps in horizons.items()
+        )
+    ):
+        raise ValueError("refinement_v3 requires positive evaluator horizons by suite")
+    for attempt in plan.attempts:
+        refinement_attempt_horizon(attempt, horizons)
     runtime = declaration.get("runtime")
     required = {"runner", "checkpoint", "simulator_stack", "renderer", "assets", "normalization"}
     if (
@@ -74,4 +107,8 @@ def verify_refinement_qualification(
         report, report_digest = _read(directory / f"{name}.json")
         if evidence[name] != report_digest or report.get("passed") is not True:
             raise ValueError(f"qualification report {name} is changed or has not passed")
+        if name == "evaluator":
+            issues = evaluator_issues(report, model=model, runtime=runtime, horizons=horizons)
+            if issues:
+                raise ValueError("evaluator qualification failed: " + "; ".join(issues))
     return model
