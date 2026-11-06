@@ -38,6 +38,34 @@ The directory contains:
   report content independently. The guard verifies the authorization and
   its bindings, rather than rerunning those diagnostic checks.
 
+## Capturing runtime and replay evidence in the native process
+
+Call `capture_native_runtime` from
+`benchstudio.integrations.native_evaluator_evidence` after the evaluator has
+imported its dependencies and made its renderer current. Pass the actual
+imported module objects keyed by their distribution names, and the paths
+selected by the evaluator, grouped under `runner`, `checkpoint`, `assets`,
+and `normalization`. Use stable logical file names as the group keys.
+Write the returned `identity` mapping as `runtime.json` and retain the
+full capture separately. It records both distribution and imported versions,
+the hashes and resolved paths of imported files, and OpenGL vendor, renderer,
+and version. Compare the full capture when a fingerprint changes.
+
+For a replay fixture, freeze reset and post-action frame signatures from a
+reviewed reference using `native_frame_signature`, together with its saved
+actions. Open a fresh native environment and pass its restore and step
+callbacks to `replay_native_fixture`. Each callback supplies `state`,
+`observation` (named fields), `native_success`, `stop_reason`, and
+`recorded_success` (null until an outcome exists). Preserve array dtype and
+shape in the JSON representation used by both captures. Keep the same
+serialization and renderer in both captures.
+
+The diagnostic identifies the first differing tick, including reset at tick
+zero, and lists observation fields, state, or outcome signals that changed.
+A passing replay returns a fixture for `build_evaluator_report`. A failed
+replay returns differences and no qualification fixture. The native adapter
+still owns simulator lifecycle, outcome extraction, and goal verification.
+
 ## Evaluator qualification
 
 For each planned suite, capture fixtures with the pinned native evaluator
