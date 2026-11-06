@@ -78,13 +78,17 @@ class ReplayPipeline:
 
     archive: Path
     episode: str | None = None
+    trusted_manifest_sha256: str | None = None
 
     @classmethod
-    def from_archive(cls, path: str | Path, *, episode: str | None = None) -> ReplayPipeline:
+    def from_archive(
+        cls, path: str | Path, *, episode: str | None = None,
+        trusted_manifest_sha256: str | None = None,
+    ) -> ReplayPipeline:
         source = Path(path).resolve()
         if not source.is_dir() and not source.is_file():
             raise FileNotFoundError(f"replay archive not found: {source}")
-        return cls(source, episode)
+        return cls(source, episode, trusted_manifest_sha256)
 
     def check(self) -> dict[str, Any]:
         """Verify archive inputs and render the selected reset state."""
@@ -92,10 +96,14 @@ class ReplayPipeline:
 
     def run(self, *, verify_environment: bool = True) -> ReplayResult:
         """Replay against the original archive, optionally probing readiness first."""
+        if self.trusted_manifest_sha256 is not None and verify_environment is not True:
+            raise ValueError("trusted replay requires verify_environment=True")
         return self._execute(check_only=False, verify_environment=verify_environment)
 
     def _execute(self, *, check_only: bool, verify_environment: bool) -> Any:
         if self.archive.is_dir():
+            if self.trusted_manifest_sha256 is not None:
+                raise ValueError("trusted replay requires a .tar.gz so evidence is privately staged")
             return self._run_folder(self.archive, check_only, verify_environment)
         try:
             with TemporaryDirectory(prefix="benchstudio-replay-") as temporary:
@@ -107,9 +115,16 @@ class ReplayPipeline:
     def _run_folder(
         self, root: Path, check_only: bool, verify_environment: bool
     ) -> ReplayResult | dict[str, Any]:
-        manifest = ReplayManifest.open(root, self.episode)
+        manifest = ReplayManifest.open(
+            root, self.episode, trusted_sha256=self.trusted_manifest_sha256
+        )
         attempt = RoboPADReplay.open(root, episode=manifest.episode)
         environment = manifest.check(attempt) if verify_environment else None
+        if environment is not None:
+            environment["input_trust"] = (
+                "independent_manifest_digest" if self.trusted_manifest_sha256 is not None
+                else "archive_declared"
+            )
         if check_only:
             return environment
         if environment is not None and not environment["ready"]:
