@@ -9,11 +9,13 @@ from typing import TYPE_CHECKING, Any, Callable, Iterable
 from ..analysis.resources import ResourceBudget
 from ..contracts import Policy, Simulator
 from ..evidence import verify_artifact_manifest
+from ..external_policy import DenoisingAttestationError, PersistentExternalCommandPolicy
 from ..measurement import ResourceSampler
 from ..runner import RunConfig, run_episodes
 from ..runtime_receipts import load_runtime_receipt, verify_runtime_receipt
 from .frozen_plan import FrozenCampaignPlan, PlannedAttempt, load_frozen_campaign_plan
 from .ledger import AttemptLedger
+from .qualification import verify_refinement_qualification
 from .worker import LeaseHeartbeat, WorkerLeaseManager
 
 if TYPE_CHECKING:
@@ -84,9 +86,13 @@ class CampaignExecutor:
         simulator_kwargs_factory: SimulatorKwargsFactory | None = None,
         model_registry: "ModelAdapterRegistry | None" = None,
         policy_kwargs_factory: PolicyKwargsFactory | None = None,
+        qualification_directory: Path | None = None,
+        trusted_approval_sha256: str | None = None,
     ) -> None:
         self.plan = plan
         self.output = output
+        self.qualification_directory = qualification_directory
+        self.trusted_approval_sha256 = trusted_approval_sha256
         self.policy_factory = policy_factory
         self.model_registry = model_registry
         self.policy_kwargs_factory = policy_kwargs_factory
@@ -139,6 +145,13 @@ class CampaignExecutor:
         container or GPU workers. The subset is still checked against the
         frozen plan, and the shared ledger remains the authority for recovery.
         """
+        qualified_model = verify_refinement_qualification(
+            self.plan, self.qualification_directory, self.trusted_approval_sha256
+        )
+        if qualified_model and any(
+            record.get("reason") == "denoising_attestation_failed" for record in self.ledger.records()
+        ):
+            raise DenoisingAttestationError("campaign stopped on a recorded instrument incident")
         selected_ids = (
             {attempt.key.attempt_id for attempt in self.plan.attempts}
             if attempt_ids is None
@@ -232,8 +245,15 @@ class CampaignExecutor:
                         initial_condition_id=attempt.key.pair_id,
                         resource_budget=_resource_budget(self.plan),
                     )
+                    policy = self._policy_for_attempt(attempt)
+                    if qualified_model == "pi0.5":
+                        if not isinstance(policy, PersistentExternalCommandPolicy):
+                            raise DenoisingAttestationError("pi0.5 requires the attesting native policy bridge")
+                        if config.execution_strategy != "sync":
+                            raise DenoisingAttestationError("attested pi0.5 execution requires sync strategy")
+                        policy.require_denoising_attestation = True
                     summary = run_episodes(
-                        self._policy_for_attempt(attempt),
+                        policy,
                         self._simulator_for_attempt(attempt),
                         config,
                         attempt_dir,
@@ -243,6 +263,8 @@ class CampaignExecutor:
                             else None
                         ),
                     )
+                if summary.get("campaign_status") == "instrument_failure":
+                    raise DenoisingAttestationError(f"attempt {attempt_id} stopped on a denoising attestation failure")
                 verification = verify_artifact_manifest(attempt_dir)
                 if not verification["valid"]:
                     raise RuntimeError(
@@ -270,6 +292,17 @@ class CampaignExecutor:
                     committed.append(attempt_id)
                 else:
                     failed.append(attempt_id)
+            except DenoisingAttestationError as exc:
+                self.ledger.append_idempotent(
+                    attempt.key,
+                    {
+                        "status": "infrastructure_failure",
+                        "reason": "denoising_attestation_failed",
+                        "error": str(exc),
+                        "evidence_verified": False,
+                    },
+                )
+                raise
             except Exception as exc:
                 committed_failure = self.ledger.append_idempotent(
                     attempt.key,
@@ -337,6 +370,10 @@ class CampaignExecutor:
             raise ValueError("workers must be positive")
         if workers == 1:
             return self.run()
+        if verify_refinement_qualification(
+            self.plan, self.qualification_directory, self.trusted_approval_sha256
+        ):
+            raise ValueError("Refinement v3 confirmation requires a single worker for campaign stop")
         lease_root = (
             self.lease_manager.root if self.lease_manager is not None else self.output / "leases"
         )
