@@ -187,3 +187,55 @@ class ReplayPipelineTests(unittest.TestCase):
             _json(post / "failure.json", {})
             with self.assertRaisesRegex(ValueError, "archived evaluation fixture failed"):
                 ReplayPipeline.from_archive(root).check()
+
+
+    @unittest.skipIf(np is None, "archive fixture requires NumPy")
+    def test_trusted_pipeline_rejects_manifest_replacement_and_environment_bypass(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary) / "campaign"
+            root.mkdir()
+            _campaign(root)
+            paths = ("manifest.json", "prepared/fixture/record.json",
+                     "evaluations/fixture/base/record.json")
+            manifest = {
+                "schema": "benchstudio.replay_manifest.v1",
+                "adapter": "robopad.validation_transfer_v1",
+                "episode": "fixture",
+                "runtime": {
+                    "python": platform.python_version(),
+                    "modules": {"mujoco": "3.3.0"},
+                    "renderer": {"vendor": "Mesa", "renderer": "llvmpipe"},
+                },
+                "evidence_sha256": {name: _digest(root / name) for name in paths},
+            }
+            source = _json(root / "benchstudio-replay.json", manifest)
+            trusted = _digest(source)
+            archive = Path(temporary) / "attempt.tar.gz"
+
+            def pack():
+                with tarfile.open(archive, "w:gz") as tar:
+                    tar.add(root, arcname="campaign")
+
+            pack()
+            pipeline = ReplayPipeline.from_archive(archive, trusted_manifest_sha256=trusted)
+            with self.assertRaisesRegex(ValueError, "verify_environment=True"):
+                pipeline.run(verify_environment=False)
+            probe = {
+                "ready": True,
+                "loaded_modules": {"mujoco": {"version": "3.3.0"}},
+                "active_renderer": {"vendor": "Mesa", "renderer": "llvmpipe"},
+            }
+            with patch.object(RoboPADReplay, "check", return_value=probe) as check:
+                self.assertEqual(pipeline.check()["input_trust"], "independent_manifest_digest")
+                manifest["runtime"]["renderer"]["renderer"] = "different"
+                _json(source, manifest)
+                pack()
+                with self.assertRaisesRegex(ValueError, "independently trusted digest"):
+                    pipeline.check()
+                self.assertEqual(check.call_count, 1)
+
+    def test_trusted_pipeline_requires_private_archive_staging(self):
+        with TemporaryDirectory() as temporary:
+            pipeline = ReplayPipeline.from_archive(temporary, trusted_manifest_sha256="a" * 64)
+            with self.assertRaisesRegex(ValueError, "privately staged"):
+                pipeline.check()
