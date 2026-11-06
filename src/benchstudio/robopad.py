@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .integrations.native_evaluator_evidence import active_opengl_identity
 from .libero import LiberoAdapter, _LiberoRuntime
 
 _FIELDS = ("agentview_image", "robot0_eye_in_hand_image", "robot0_eef_pos",
@@ -146,12 +147,19 @@ class RoboPADReplay:
             raise ValueError("LIBERO task asset differs from the archived BDDL definition")
         return _LiberoRuntime(self.adapter, action_dtype=action_dtype)
 
-    def check(self) -> dict[str, Any]:
+    def check(self, *, inspect_renderer: bool = False) -> dict[str, Any]:
         """Check inputs and render the selected reset state before replay."""
         self._inputs()
         runtime = self._runtime()
+        renderer = None
         try:
             runtime.restore()
+            if inspect_renderer:
+                try:
+                    renderer = active_opengl_identity()
+                except Exception:
+                    # A requested EGL/OSMesa flag is not evidence of an active renderer.
+                    pass
         except Exception as exc:
             raise ValueError(f"LIBERO reset/render failed in this environment: {exc}") from exc
         finally:
@@ -161,6 +169,7 @@ class RoboPADReplay:
             "ready": True,
             "checks": ["archive_identity", "artifact_hashes", "bddl", "native_reset"],
             "requested_renderer": os.getenv("MUJOCO_GL"),
+            "active_renderer": renderer,
             "loaded_modules": {
                 name: {
                     "version": str(getattr(sys.modules[name], "__version__", "unknown")),
