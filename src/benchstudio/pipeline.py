@@ -10,6 +10,7 @@ from tempfile import TemporaryDirectory
 from typing import Any
 
 from .replay_manifest import ReplayEnvironmentError, ReplayManifest
+from .replay_worker import ReplayLimits, ReplayWorkerError, execute_in_worker
 from .robopad import RoboPADReplay
 
 _MAX_ARCHIVE_BYTES = 16 * 1024**3
@@ -79,16 +80,20 @@ class ReplayPipeline:
     archive: Path
     episode: str | None = None
     trusted_manifest_sha256: str | None = None
+    limits: ReplayLimits | None = None
 
     @classmethod
     def from_archive(
         cls, path: str | Path, *, episode: str | None = None,
         trusted_manifest_sha256: str | None = None,
+        limits: ReplayLimits | None = None,
     ) -> ReplayPipeline:
         source = Path(path).resolve()
         if not source.is_dir() and not source.is_file():
             raise FileNotFoundError(f"replay archive not found: {source}")
-        return cls(source, episode, trusted_manifest_sha256)
+        if limits is not None and not isinstance(limits, ReplayLimits):
+            raise TypeError("limits must be a ReplayLimits instance")
+        return cls(source, episode, trusted_manifest_sha256, limits)
 
     def check(self) -> dict[str, Any]:
         """Verify archive inputs and render the selected reset state."""
@@ -101,6 +106,8 @@ class ReplayPipeline:
         return self._execute(check_only=False, verify_environment=verify_environment)
 
     def _execute(self, *, check_only: bool, verify_environment: bool) -> Any:
+        if self.limits is not None:
+            return self._execute_worker(check_only, verify_environment)
         if self.archive.is_dir():
             if self.trusted_manifest_sha256 is not None:
                 raise ValueError("trusted replay requires a .tar.gz so evidence is privately staged")
@@ -111,6 +118,24 @@ class ReplayPipeline:
                 return self._run_folder(root, check_only, verify_environment)
         except tarfile.TarError as exc:
             raise ValueError("expected a RoboPAD .tar.gz archive or extracted campaign directory") from exc
+
+    def _execute_worker(self, check_only: bool, verify_environment: bool) -> Any:
+        payload = execute_in_worker({
+            "archive": str(self.archive),
+            "episode": self.episode,
+            "trusted_manifest_sha256": self.trusted_manifest_sha256,
+            "check_only": check_only,
+            "verify_environment": verify_environment,
+        }, self.limits)
+        status = payload["status"]
+        if status == "environment_error":
+            raise ReplayEnvironmentError(payload["report"])
+        if status == "invalid_input":
+            raise ValueError(payload["message"])
+        if status == "worker_error":
+            raise ReplayWorkerError(payload["message"])
+        result = payload["result"]
+        return result if check_only else ReplayResult(result["report"], result["environment"])
 
     def _run_folder(
         self, root: Path, check_only: bool, verify_environment: bool
