@@ -10,12 +10,13 @@ from ..analysis.resources import ResourceBudget
 from ..contracts import Policy, Simulator
 from ..evidence import verify_artifact_manifest
 from ..external_policy import DenoisingAttestationError, PersistentExternalCommandPolicy
+from ..external_simulator import ExternalCommandSimulator
 from ..measurement import ResourceSampler
 from ..runner import RunConfig, run_episodes
 from ..runtime_receipts import load_runtime_receipt, verify_runtime_receipt
 from .frozen_plan import FrozenCampaignPlan, PlannedAttempt, load_frozen_campaign_plan
 from .ledger import AttemptLedger
-from .qualification import verify_refinement_qualification
+from .qualification import refinement_attempt_horizon, verify_refinement_qualification
 from .worker import LeaseHeartbeat, WorkerLeaseManager
 
 if TYPE_CHECKING:
@@ -152,6 +153,11 @@ class CampaignExecutor:
             record.get("reason") == "denoising_attestation_failed" for record in self.ledger.records()
         ):
             raise DenoisingAttestationError("campaign stopped on a recorded instrument incident")
+        horizons = (
+            self.plan.protocol["P"]["experiment"]["refinement_v3"]["evaluator_horizons"]
+            if qualified_model
+            else None
+        )
         selected_ids = (
             {attempt.key.attempt_id for attempt in self.plan.attempts}
             if attempt_ids is None
@@ -232,7 +238,11 @@ class CampaignExecutor:
                         denoising_steps=condition.get("denoising_steps", 2),
                         action_prefix=condition.get("action_prefix", 2),
                         observation_refresh_ticks=condition.get("observation_refresh_ticks", 1),
-                        max_episode_steps=condition.get("max_episode_steps", 100),
+                        max_episode_steps=(
+                            refinement_attempt_horizon(attempt, horizons)
+                            if horizons is not None
+                            else condition.get("max_episode_steps", 100)
+                        ),
                         execution_strategy=condition.get(
                             "execution_strategy", _execution_strategy(self.plan)
                         ),
@@ -244,6 +254,7 @@ class CampaignExecutor:
                         model_reference=_model_reference(self.plan),
                         initial_condition_id=attempt.key.pair_id,
                         resource_budget=_resource_budget(self.plan),
+                        success_at_any_step=qualified_model is not None,
                     )
                     policy = self._policy_for_attempt(attempt)
                     if qualified_model == "pi0.5":
@@ -252,9 +263,12 @@ class CampaignExecutor:
                         if config.execution_strategy != "sync":
                             raise DenoisingAttestationError("attested pi0.5 execution requires sync strategy")
                         policy.require_denoising_attestation = True
+                    simulator = self._simulator_for_attempt(attempt)
+                    if qualified_model and isinstance(simulator, ExternalCommandSimulator):
+                        simulator.require_outcome_signals = True
                     summary = run_episodes(
                         policy,
-                        self._simulator_for_attempt(attempt),
+                        simulator,
                         config,
                         attempt_dir,
                         resource_sampler=(
