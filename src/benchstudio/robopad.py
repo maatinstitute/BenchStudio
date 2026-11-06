@@ -299,11 +299,14 @@ def main() -> int:
     parser.add_argument("campaign", type=Path)
     parser.add_argument("--episode", help="Archive key, required for multi-episode campaigns.")
     parser.add_argument("--check", action="store_true", help="Check the archive and native reset.")
+    parser.add_argument("--trusted-manifest-sha256", help="Digest obtained from the archive reviewer.")
     args = parser.parse_args()
     from .pipeline import ReplayPipeline
 
     try:
-        pipeline = ReplayPipeline.from_archive(args.campaign, episode=args.episode)
+        pipeline = ReplayPipeline.from_archive(
+            args.campaign, episode=args.episode, trusted_manifest_sha256=args.trusted_manifest_sha256
+        )
         if args.check:
             report = pipeline.check()
         else:
