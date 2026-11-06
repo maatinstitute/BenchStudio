@@ -20,6 +20,7 @@ from .evidence import (
     environment_fingerprint,
     write_manifest_trust_anchor,
 )
+from .external_policy import DenoisingAttestationError
 from .measurement import ResourceSampler, delta_resources, sample_resources
 from .runtime_receipts import build_runtime_receipt, write_runtime_receipt
 
@@ -147,6 +148,8 @@ def run_episodes(
                 resource_sampler=resource_sampler,
             )
             episode_results.append(result)
+            if result.status == "instrument_failure":
+                break
             if result.status not in {"success", "failure"}:
                 campaign_status = "failed"
     except Exception as exc:
@@ -178,6 +181,8 @@ def run_episodes(
                     len(episode_results), exc, status="policy_close_error"
                 )
             )
+    if any(result.status == "instrument_failure" for result in episode_results):
+        campaign_status = "instrument_failure"
     summary = _summary(config, episode_results, campaign_status=campaign_status, output=output)
     (output / "summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -312,7 +317,11 @@ def _run_episode(
                 events,
                 pair_id=pair_id,
                 condition_id=condition_id,
-                status="policy_inference_error",
+                status=(
+                    "instrument_failure"
+                    if isinstance(exc, DenoisingAttestationError)
+                    else "policy_inference_error"
+                ),
                 error=exc,
             )
         inference_finished_ns = time.monotonic_ns()
