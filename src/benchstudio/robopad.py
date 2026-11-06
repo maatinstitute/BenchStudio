@@ -300,12 +300,16 @@ def main() -> int:
     parser.add_argument("--episode", help="Archive key, required for multi-episode campaigns.")
     parser.add_argument("--check", action="store_true", help="Check the archive and native reset.")
     parser.add_argument("--trusted-manifest-sha256", help="Digest obtained from the archive reviewer.")
+    parser.add_argument("--worker", action="store_true", help="Use resource limits in a Linux worker.")
     args = parser.parse_args()
     from .pipeline import ReplayPipeline
+    from .replay_worker import ReplayLimits
 
     try:
         pipeline = ReplayPipeline.from_archive(
-            args.campaign, episode=args.episode, trusted_manifest_sha256=args.trusted_manifest_sha256
+            args.campaign, episode=args.episode,
+            trusted_manifest_sha256=args.trusted_manifest_sha256,
+            limits=ReplayLimits() if args.worker else None,
         )
         if args.check:
             report = pipeline.check()
