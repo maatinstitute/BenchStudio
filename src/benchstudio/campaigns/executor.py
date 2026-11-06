@@ -10,6 +10,7 @@ from ..analysis.resources import ResourceBudget
 from ..contracts import Policy, Simulator
 from ..evidence import verify_artifact_manifest
 from ..external_policy import DenoisingAttestationError, PersistentExternalCommandPolicy
+from ..external_simulator import ExternalCommandSimulator
 from ..measurement import ResourceSampler
 from ..runner import RunConfig, run_episodes
 from ..runtime_receipts import load_runtime_receipt, verify_runtime_receipt
@@ -253,6 +254,7 @@ class CampaignExecutor:
                         model_reference=_model_reference(self.plan),
                         initial_condition_id=attempt.key.pair_id,
                         resource_budget=_resource_budget(self.plan),
+                        success_at_any_step=qualified_model is not None,
                     )
                     policy = self._policy_for_attempt(attempt)
                     if qualified_model == "pi0.5":
@@ -261,9 +263,12 @@ class CampaignExecutor:
                         if config.execution_strategy != "sync":
                             raise DenoisingAttestationError("attested pi0.5 execution requires sync strategy")
                         policy.require_denoising_attestation = True
+                    simulator = self._simulator_for_attempt(attempt)
+                    if qualified_model and isinstance(simulator, ExternalCommandSimulator):
+                        simulator.require_outcome_signals = True
                     summary = run_episodes(
                         policy,
-                        self._simulator_for_attempt(attempt),
+                        simulator,
                         config,
                         attempt_dir,
                         resource_sampler=(
