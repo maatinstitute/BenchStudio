@@ -15,7 +15,7 @@ from ..runner import RunConfig, run_episodes
 from ..runtime_receipts import load_runtime_receipt, verify_runtime_receipt
 from .frozen_plan import FrozenCampaignPlan, PlannedAttempt, load_frozen_campaign_plan
 from .ledger import AttemptLedger
-from .qualification import verify_refinement_qualification
+from .qualification import refinement_attempt_horizon, verify_refinement_qualification
 from .worker import LeaseHeartbeat, WorkerLeaseManager
 
 if TYPE_CHECKING:
@@ -152,6 +152,11 @@ class CampaignExecutor:
             record.get("reason") == "denoising_attestation_failed" for record in self.ledger.records()
         ):
             raise DenoisingAttestationError("campaign stopped on a recorded instrument incident")
+        horizons = (
+            self.plan.protocol["P"]["experiment"]["refinement_v3"]["evaluator_horizons"]
+            if qualified_model
+            else None
+        )
         selected_ids = (
             {attempt.key.attempt_id for attempt in self.plan.attempts}
             if attempt_ids is None
@@ -232,7 +237,11 @@ class CampaignExecutor:
                         denoising_steps=condition.get("denoising_steps", 2),
                         action_prefix=condition.get("action_prefix", 2),
                         observation_refresh_ticks=condition.get("observation_refresh_ticks", 1),
-                        max_episode_steps=condition.get("max_episode_steps", 100),
+                        max_episode_steps=(
+                            refinement_attempt_horizon(attempt, horizons)
+                            if horizons is not None
+                            else condition.get("max_episode_steps", 100)
+                        ),
                         execution_strategy=condition.get(
                             "execution_strategy", _execution_strategy(self.plan)
                         ),
