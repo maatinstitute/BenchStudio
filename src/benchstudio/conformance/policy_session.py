@@ -9,6 +9,7 @@ from enum import Enum
 from typing import Any, Callable, Literal
 
 from ..contracts import ActionChunk, Observation, Policy
+from ..external_policy import DenoisingAttestationError
 from .action_semantics import ActionSpec, validate_action
 
 
@@ -164,6 +165,8 @@ class PolicySession:
                     if len(self._prediction_cache) >= self.max_cache_entries:
                         self._prediction_cache.pop(next(iter(self._prediction_cache)))
                     self._prediction_cache[cache_key] = result
+        except DenoisingAttestationError:
+            raise
         except TimeoutError as exc:
             return self._rejected("prediction_timeout", str(exc), latency_ns=clock_ns() - started)
         except Exception as exc:  # noqa: BLE001 - adapter must expose policy failure
