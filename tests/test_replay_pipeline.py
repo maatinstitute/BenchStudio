@@ -1,6 +1,7 @@
 import hashlib
 import io
 import json
+import platform
 import tarfile
 import unittest
 from pathlib import Path
@@ -9,6 +10,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from benchstudio.pipeline import ReplayPipeline
+from benchstudio.replay_manifest import ReplayEnvironmentError
 from benchstudio.robopad import RoboPADReplay, _FIELDS
 
 try:
@@ -126,3 +128,52 @@ class ReplayPipelineTests(unittest.TestCase):
             (post / "nominal_observations.json").write_text("[]", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "artifact hash mismatch"):
                 ReplayPipeline.from_archive(root).check()
+
+    @unittest.skipIf(np is None, "archive fixture requires NumPy")
+    def test_pinned_manifest_blocks_renderer_mismatch_before_replay(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            _campaign(root)
+            files = ("manifest.json", "prepared/fixture/record.json",
+                     "evaluations/fixture/base/record.json")
+            _json(root / "benchstudio-replay.json", {
+                "schema": "benchstudio.replay_manifest.v1",
+                "adapter": "robopad.validation_transfer_v1",
+                "episode": "fixture",
+                "runtime": {
+                    "python": platform.python_version(),
+                    "modules": {"mujoco": "3.3.0"},
+                    "renderer": {"vendor": "Mesa", "renderer": "llvmpipe"},
+                },
+                "evidence_sha256": {name: _digest(root / name) for name in files},
+            })
+            probe = {
+                "ready": True,
+                "loaded_modules": {"mujoco": {"version": "3.3.0"}},
+                "active_renderer": {"vendor": "Mesa", "renderer": "hardware"},
+            }
+            pipeline = ReplayPipeline.from_archive(root)
+            with (
+                patch.object(RoboPADReplay, "check", return_value=probe),
+                patch.object(RoboPADReplay, "replay") as replay,
+            ):
+                report = pipeline.check()
+                self.assertFalse(report["ready"])
+                self.assertEqual(report["mismatches"][0]["field"], "renderer.renderer")
+                self.assertEqual(report["mismatches"][0]["expected"], "llvmpipe")
+                self.assertEqual(report["mismatches"][0]["actual"], "hardware")
+                with self.assertRaises(ReplayEnvironmentError):
+                    pipeline.run()
+                replay.assert_not_called()
+                probe["active_renderer"]["renderer"] = "llvmpipe"
+                self.assertTrue(pipeline.check()["ready"])
+
+    @unittest.skipIf(np is None, "archive fixture requires NumPy")
+    def test_legacy_archive_reports_that_runtime_is_unpinned(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            _campaign(root)
+            with patch.object(RoboPADReplay, "check", return_value={"ready": True}):
+                report = ReplayPipeline.from_archive(root).check()
+            self.assertEqual(report["environment_profile"], "legacy_unpinned")
+            self.assertTrue(report["notes"])
