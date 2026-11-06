@@ -97,7 +97,17 @@ class RoboPADReplay:
         prepared_dir, result_dir = f"prepared/{episode}", f"evaluations/{episode}/base"
         prepared_path = _file(root, f"{prepared_dir}/record.json")
         prepared = _json(prepared_path)
-        result = _json(_file(root, f"{result_dir}/record.json"))
+        try:
+            result_path = _file(root, f"{result_dir}/record.json")
+        except ValueError as exc:
+            failure = (root / result_dir / "failure.json").resolve()
+            if failure.is_relative_to(root) and failure.is_file():
+                raise ValueError(
+                    f"archived evaluation {episode} failed. Select a completed nominal base "
+                    "attempt with an evaluation record.json."
+                ) from exc
+            raise
+        result = _json(result_path)
         for record, kind in ((prepared, "prepare"), (result, "evaluate")):
             if (
                 record.get("status") != "complete" or record.get("kind") != kind
