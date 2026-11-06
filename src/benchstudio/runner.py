@@ -50,6 +50,7 @@ class RunConfig:
     benchmark_validity: dict[str, Any] | None = None
     model_reference: dict[str, Any] | None = None
     resource_budget: ResourceBudget | None = None
+    success_at_any_step: bool = False
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -291,6 +292,7 @@ def _run_episode(
             error=exc,
         )
     termination_reason = "max_episode_steps"
+    goal_reached = False
     while not simulator.is_done() and steps < config.max_episode_steps:
         source_observation = observation
         inference_id = f"{episode_id}-inference-{policy_calls:04d}"
@@ -340,6 +342,11 @@ def _run_episode(
             step_start = time.monotonic_ns()
             try:
                 next_observation = simulator.step(action)
+                if config.success_at_any_step:
+                    step_success = simulator.is_success()
+                    if type(step_success) is not bool:
+                        raise ValueError("simulator success must be boolean")
+                    goal_reached = goal_reached or step_success
                 observation_issues = validate_observation(next_observation)
                 if observation_issues:
                     raise ValueError(
@@ -447,10 +454,12 @@ def _run_episode(
             if simulator.is_done():
                 termination_reason = "environment_done"
                 break
-    if simulator.is_success():
-        termination_reason = "success"
-    elif simulator.is_done() and termination_reason != "success":
-        termination_reason = "failure"
+    success = goal_reached if config.success_at_any_step else simulator.is_success()
+    if not config.success_at_any_step:
+        if success:
+            termination_reason = "success"
+        elif simulator.is_done() and termination_reason != "success":
+            termination_reason = "failure"
     session.stop()
     resource_after = sample_resources(resource_sampler)
     resource_metrics = delta_resources(resource_before, resource_after)
@@ -471,8 +480,8 @@ def _run_episode(
         episode_id=episode_id,
         pair_id=pair_id,
         condition_id=condition_id,
-        success=simulator.is_success(),
-        status="success" if simulator.is_success() else "failure",
+        success=success,
+        status="success" if success else "failure",
         termination_reason=termination_reason,
         steps=steps,
         policy_calls=policy_calls,
