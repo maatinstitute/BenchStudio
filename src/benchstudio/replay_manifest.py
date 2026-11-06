@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import platform
 import re
@@ -9,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .robopad import RoboPADReplay, _file, _json, _sha
+from .robopad import RoboPADReplay, _file, _sha
 
 _NAME = "benchstudio-replay.json"
 _SCHEMA = "benchstudio.replay_manifest.v1"
@@ -50,12 +52,25 @@ class ReplayManifest:
     pinned: bool = False
 
     @classmethod
-    def open(cls, root: Path, requested_episode: str | None) -> ReplayManifest:
+    def open(
+        cls, root: Path, requested_episode: str | None, *, trusted_sha256: str | None = None
+    ) -> ReplayManifest:
+        if trusted_sha256 is not None and (
+            not isinstance(trusted_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", trusted_sha256)
+        ):
+            raise ValueError("trusted replay requires a lowercase SHA-256 manifest digest")
         source = root / _NAME
         if not source.exists() and not source.is_symlink():
+            if trusted_sha256 is not None:
+                raise ValueError("trusted replay requires benchstudio-replay.json")
             return cls(_ADAPTER, requested_episode)
 
-        document = _json(_file(root, _NAME))
+        raw = _file(root, _NAME).read_bytes()
+        if trusted_sha256 is not None and hashlib.sha256(raw).hexdigest() != trusted_sha256:
+            raise ValueError("replay manifest differs from the independently trusted digest")
+        document = json.loads(raw)
+        if not isinstance(document, dict):
+            raise ValueError("replay manifest must be a JSON object")
         if document.get("schema") != _SCHEMA or document.get("adapter") != _ADAPTER:
             raise ValueError("unsupported BenchStudio replay manifest schema or adapter")
         episode = document.get("episode")
