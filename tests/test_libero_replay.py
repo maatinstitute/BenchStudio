@@ -95,11 +95,22 @@ class LiberoReplayTests(unittest.TestCase):
         )
         modules["libero.libero"].get_libero_path = lambda _: "/fixture/assets"
         modules["lerobot.envs.libero"].LiberoEnv = lambda *args, **kwargs: owner
-        modules["numpy"].asarray = lambda vector: vector
+        seen_dtypes = []
+        def asarray(vector, *, dtype):
+            seen_dtypes.append(dtype)
+            return vector
+
+        class Float32Actions(list):
+            dtype = SimpleNamespace(str="<f4")
+
+        modules["numpy"].asarray = asarray
         with patch.dict(sys.modules, modules):
             adapter = LiberoAdapter("libero_object", task_id=0, seed=42, backend="lerobot")
-            reference = adapter.capture([[0.0]])
+            reference = adapter.capture(Float32Actions([[0.0]]))
+            self.assertTrue(adapter.replay(reference)["passed"])
+        self.assertEqual(reference["action_dtype"], "<f4")
+        self.assertEqual(seen_dtypes, ["<f4", "<f4"])
         self.assertEqual(owner.init_state_id, 0)
-        self.assertEqual(native.calls, [("seed", 42), ("reset",)])
+        self.assertEqual(native.calls, [("seed", 42), ("reset",)] * 2)
         self.assertEqual(len(reference["frames"]), 2)
         self.assertTrue(native.closed)
