@@ -220,6 +220,8 @@ def run(args, EV, release, host=host_facts):
         except EV.EvaluatorIncident as incident:
             nc2_fired, nc2_detail = str(incident) == NC2_MESSAGE, str(incident)
         record["nc2"] = {"fired": nc2_fired, "detail": nc2_detail, "planted_sha256": planted}
+        if not nc2_fired:
+            raise EV.EvaluatorIncident("E0 collision control failed: {}".format(nc2_detail))
         results, nc4 = [], {}
         for fixture_id in sorted(EXPECTED):
             fixture = by_id[fixture_id]
