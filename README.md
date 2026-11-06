@@ -639,6 +639,28 @@ runtime before replay. The CLI accepts the same value with
 `--trusted-manifest-sha256`. The digest must come from the reviewer. Reading
 it from the same archive would only check self-consistency.
 
+### Run replay in a resource-limited worker
+
+On Linux, pass limits when opening an archive. Both readiness and replay
+then run in a separate process using the same installed Python environment:
+
+```python
+pipeline = bs.ReplayPipeline.from_archive(
+    "robopad_attempt.tar.gz",
+    trusted_manifest_sha256=reviewed_manifest_sha256,
+    limits=bs.ReplayLimits(wall_seconds=300, cpu_seconds=240),
+)
+result = pipeline.run()
+```
+
+The CLI enables the default limits with `--worker`. The worker has a
+wall-clock deadline and Linux limits for CPU time, virtual address space,
+open files, and individual file size. The supervisor kills the process
+group on timeout. The existing archive extraction and report size limits
+also apply. These limits do not isolate filesystem or network access and do
+not cap GPU memory. Use a separately configured container or job sandbox
+where those controls are required.
+
 ## Replay saved actions in LIBERO
 
 Run BenchStudio from the pinned LIBERO environment that owns the task assets
