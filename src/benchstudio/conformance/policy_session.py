@@ -4,6 +4,7 @@ import asyncio
 import inspect
 import time
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Literal
@@ -226,9 +227,11 @@ class PolicySession:
         timed_out = False
         try:
             return future.result(timeout=timeout_s)
-        except TimeoutError:
+        except FutureTimeoutError as exc:
+            # Before Python 3.11 this is not the builtin TimeoutError, so re-raise
+            # as the builtin for predict() to classify it as prediction_timeout.
             timed_out = True
-            raise
+            raise TimeoutError(*exc.args) from exc
         finally:
             pool.shutdown(wait=not timed_out, cancel_futures=timed_out)
 

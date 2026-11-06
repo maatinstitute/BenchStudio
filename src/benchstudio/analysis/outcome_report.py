@@ -208,9 +208,11 @@ def analyze_primary(
                 "interval": list(interval),
             }
         )
-    lower = sum(group["interval"][0] for group in group_results) / len(group_results)
-    upper = sum(group["interval"][1] for group in group_results) / len(group_results)
-    point = sum(group["difference"] for group in group_results) / len(group_results)
+    # math.fsum is correctly rounded on every Python version; built-in sum() of
+    # floats changed rounding in 3.12, which moved these bounds in the last ULPs.
+    lower = math.fsum(group["interval"][0] for group in group_results) / len(group_results)
+    upper = math.fsum(group["interval"][1] for group in group_results) / len(group_results)
+    point = math.fsum(group["difference"] for group in group_results) / len(group_results)
     result.update(
         status="complete", point_estimate=point, interval=[lower, upper], groups=group_results
     )
