@@ -345,6 +345,8 @@ def main() -> int:
         type=Path,
         help="PEM public key used to verify --manifest-signature.",
     )
+    parser.add_argument("--qualification-directory", type=Path)
+    parser.add_argument("--qualification-approval-sha256")
     args = parser.parse_args()
     if args.verify_archive is not None:
         result = verify_campaign_archive(
@@ -568,6 +570,8 @@ def main() -> int:
                 _mock_policy_factory,
                 _mock_simulator_factory,
                 adapter_registry=default_registry(),
+                qualification_directory=args.qualification_directory,
+                trusted_approval_sha256=args.qualification_approval_sha256,
             )
             summary = executor.run_parallel(args.workers) if args.workers > 1 else executor.run()
             campaign_status = (
@@ -882,6 +886,8 @@ def main() -> int:
                 simulator_factory,
                 adapter_registry=default_registry(),
                 model_registry=model_registry,
+                qualification_directory=args.qualification_directory,
+                trusted_approval_sha256=args.qualification_approval_sha256,
             )
             summary = executor.run_parallel(args.workers) if args.workers > 1 else executor.run()
             campaign_status = (
