@@ -13,10 +13,13 @@ from typing import Any, Literal
 from .integrations.native_evaluator_evidence import native_frame_signature, replay_native_fixture
 
 _SCHEMA = "benchstudio.libero_replay.v1"
+_ACTION_DTYPES = {f"{order}f{size}" for order in ("<", ">") for size in (2, 4, 8)}
 
 
 def _json_value(value: Any) -> Any:
     if hasattr(value, "shape") and hasattr(value, "dtype") and hasattr(value, "tobytes"):
+        if getattr(value.dtype, "hasobject", False):
+            raise ValueError("LIBERO replay cannot fingerprint arrays containing objects")
         return {
             "dtype": str(value.dtype),
             "shape": list(value.shape),
@@ -83,8 +86,10 @@ class LiberoAdapter:
 
     def capture(self, actions: Sequence[Sequence[float]]) -> dict[str, Any]:
         """Capture a serializable reference for a fixed action sequence."""
+        dtype = getattr(getattr(actions, "dtype", None), "str", None)
+        dtype = self._action_dtype(dtype if self.backend == "lerobot" else None)
         actions = _actions(actions)
-        runtime = _LiberoRuntime(self)
+        runtime = _LiberoRuntime(self, action_dtype=dtype)
         try:
             frame = runtime.restore()
             frames = [native_frame_signature(frame)]
@@ -95,7 +100,20 @@ class LiberoAdapter:
                 frames.append(native_frame_signature(frame))
         finally:
             runtime.close()
-        return {"schema": _SCHEMA, "task": asdict(self), "actions": actions, "frames": frames}
+        return {
+            "schema": _SCHEMA,
+            "task": asdict(self),
+            "actions": actions,
+            "action_dtype": dtype,
+            "frames": frames,
+        }
+
+    def _action_dtype(self, dtype: Any) -> str | None:
+        if dtype is None:
+            return None
+        if self.backend != "lerobot" or not isinstance(dtype, str) or dtype not in _ACTION_DTYPES:
+            raise ValueError("invalid LIBERO replay action dtype")
+        return dtype
 
     def replay(self, reference: Mapping[str, Any]) -> dict[str, Any]:
         """Restore in a fresh environment and report the first divergence."""
@@ -106,7 +124,8 @@ class LiberoAdapter:
         ):
             raise ValueError("LIBERO replay reference requires action and frame lists")
         actions = _actions(reference["actions"])
-        runtime = _LiberoRuntime(self)
+        dtype = self._action_dtype(reference.get("action_dtype"))
+        runtime = _LiberoRuntime(self, action_dtype=dtype)
         try:
             report = replay_native_fixture(
                 fixture={},
@@ -131,8 +150,9 @@ def replay_libero(reference: Mapping[str, Any]) -> dict[str, Any]:
 
 
 class _LiberoRuntime:
-    def __init__(self, config: LiberoAdapter) -> None:
+    def __init__(self, config: LiberoAdapter, *, action_dtype: str | None) -> None:
         self.config = config
+        self.action_dtype = action_dtype
         self.owner: Any = None
         self.env: Any = None
 
@@ -186,7 +206,7 @@ class _LiberoRuntime:
         if self.config.backend == "lerobot":
             import numpy as np
 
-            action = np.asarray(action)
+            action = np.asarray(action, dtype=self.action_dtype)
         result = self.env.step(action)
         if len(result) == 4:
             raw, _, done, info = result
