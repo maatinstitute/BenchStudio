@@ -22,6 +22,7 @@ signing = ["cryptography>=41"]
 
 [project.scripts]
 benchstudio-run = "benchstudio.cli:main"
+benchstudio-replay = "benchstudio.robopad:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
