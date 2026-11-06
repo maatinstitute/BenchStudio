@@ -9,6 +9,7 @@ from pathlib import Path, PurePosixPath
 from tempfile import TemporaryDirectory
 from typing import Any
 
+from .replay_manifest import ReplayEnvironmentError, ReplayManifest
 from .robopad import RoboPADReplay
 
 _MAX_ARCHIVE_BYTES = 16 * 1024**3
@@ -106,8 +107,11 @@ class ReplayPipeline:
     def _run_folder(
         self, root: Path, check_only: bool, verify_environment: bool
     ) -> ReplayResult | dict[str, Any]:
-        attempt = RoboPADReplay.open(root, episode=self.episode)
+        manifest = ReplayManifest.open(root, self.episode)
+        attempt = RoboPADReplay.open(root, episode=manifest.episode)
+        environment = manifest.check(attempt) if verify_environment else None
         if check_only:
-            return attempt.check()
-        environment = attempt.check() if verify_environment else None
+            return environment
+        if environment is not None and not environment["ready"]:
+            raise ReplayEnvironmentError(environment)
         return ReplayResult(attempt.replay(), environment)
