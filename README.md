@@ -551,3 +551,39 @@ See [docs/architecture.md](docs/architecture.md) for the integration boundary.
 See [docs/implementation-audit.md](docs/implementation-audit.md) for the
 verified current state and the external integrations that remain intentionally
 unclaimed.
+
+
+## Replay saved actions in LIBERO
+
+Run BenchStudio from the pinned LIBERO environment that owns the task assets
+and renderer. The public adapter imports LIBERO on demand. Select
+`backend="lerobot"` for the reset and raw observation path used by RoboPAD, or
+use the default `backend="native"` for direct LIBERO. Keep the backend, seed,
+task, initial-state slot, and renderer consistent between captures.
+
+```python
+import json
+from pathlib import Path
+
+import numpy as np
+
+from benchstudio.libero import LiberoAdapter, replay_libero
+
+# Use the suite, task, initial state and seed from the recorded RoboPAD attempt.
+adapter = LiberoAdapter("libero_spatial", task_id=0, initial_state_id=0, seed=42,
+                        backend="lerobot")
+actions = np.load("nominal_actions.npy", allow_pickle=False).tolist()
+reference = adapter.capture(actions)
+Path("libero-reference.json").write_text(json.dumps(reference), encoding="utf-8")
+
+report = replay_libero(json.loads(Path("libero-reference.json").read_text()))
+print(report["passed"], report["first_mismatch_step"], report["differences"])
+```
+
+Capture and retain the reference on the reviewed baseline stack before replay
+on a candidate environment. Tick zero is the restored initial state. The
+first later divergence identifies state, outcome signals, and observation
+fields that changed. For arrays, comparison includes dtype, shape, and exact
+bytes. A new capture from an archived action file is a new baseline, so
+retain any original RoboPAD trace separately. Independent evaluator
+qualification uses its own goal checker and outcome evidence.
