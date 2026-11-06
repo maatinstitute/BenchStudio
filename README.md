@@ -553,6 +553,35 @@ verified current state and the external integrations that remain intentionally
 unclaimed.
 
 
+## Replay a RoboPAD archive
+
+Install BenchStudio into the Python environment that owns the pinned RoboPAD
+LIBERO runtime and assets. From a BenchStudio checkout, use
+`python -m pip install -e .` in that environment.
+
+```python
+import benchstudio as bs
+
+pipeline = bs.ReplayPipeline.from_archive("./robopad_attempt.tar.gz")
+results = pipeline.run(verify_environment=True)
+print(results.summary())
+```
+
+The pipeline also accepts an extracted campaign folder. Pass
+`episode="your-episode-key"` (using a key from your manifest) when the campaign
+has multiple episodes. It verifies the archive records and consumed hashes,
+checks the installed BDDL task asset, renders a fresh reset, and replays the
+archived prefix and nominal base actions against the original saved states
+and observations. Use `pipeline.check()` for the readiness report alone.
+The full replay evidence is in `results.report`.
+
+The equivalent command is `benchstudio-replay ./robopad_attempt.tar.gz --check`
+for readiness or `benchstudio-replay ./robopad_attempt.tar.gz` for replay.
+This first pipeline supports completed nominal base attempts from RoboPAD's
+`validation_transfer_v1` format. It expects the native stack to be installed,
+and compares the archived observation hashes exactly. Renderer drift can
+appear as an image difference even when the recorded simulator state agrees.
+
 ## Replay saved actions in LIBERO
 
 Run BenchStudio from the pinned LIBERO environment that owns the task assets
