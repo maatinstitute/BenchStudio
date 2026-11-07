@@ -9,22 +9,45 @@ auditable run artifacts. Policy adapters and simulator adapters are deliberately
 small so RoboChallenge or another benchmark can retain authority over scoring,
 safety limits, and physical robot execution.
 
-## Python API: campaign audit
+## Python API: run a robotics evaluation
 
-Use the task-oriented factory to audit an existing campaign directory:
+A familiar task-first entry point runs a declared campaign. Start with the
+included mock campaign to check the API without installing a model or simulator:
 
 ```python
 import benchstudio as bs
 
-review = bs.pipeline("campaign-audit", claim_type="single_run_outcome")
-result = review("./runs/completed-campaign")
-print(result.summary())
+evaluation = bs.pipeline(
+    "robotics-evaluation",
+    campaign="examples/campaigns/mock-worldepisode.json",
+    output_dir="runs/first-evaluation",
+    execution="mock",
+)
+run = evaluation()
+print(run.summary())
 ```
 
-The result also provides `to_dict()` for machine-readable reporting. This task
-reads saved evidence only; it does not load a checkpoint, replay motion, or
-start a simulator. See [the API comparison](docs/transformers-comparison.md)
-for its scope and current limitations.
+Execution is explicit when you call the pipeline. The frozen campaign file
+records the task, model/environment declarations, seeds, and conditions. To
+ use installed model and environment adapters, set `execution="registry"`;
+those adapters and their external runtimes must be installed and declared in
+the campaign. The mock example is an API smoke check, not a result about model
+quality or simulator fidelity.
+
+Inspect the saved run separately:
+
+```python
+import benchstudio as bs
+
+audit = bs.pipeline(
+    "campaign-audit", claim_type=bs.ClaimType.SINGLE_RUN_OUTCOME
+)("runs/first-evaluation")
+print(audit.summary())
+```
+
+The returned run object exposes its output directory and plan digest through
+`run.to_dict()`. See [the API comparison](docs/transformers-comparison.md)
+for the supported tasks and execution boundary.
 
 ## Developer quick start
 
