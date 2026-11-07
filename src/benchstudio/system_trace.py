@@ -54,6 +54,8 @@ def audit_system_trace(system: SystemSpec, events: list[SystemEvent] | tuple[Sys
     timestamp ordering is inferred. Intra-domain ordering is checked.
     """
     nodes = {component.component_id: component for component in system.components}
+    connections = {(e.source, e.source_port, e.target, e.target_port): e
+                   for e in system.connections}
     ids: dict[str, SystemEvent] = {}
     issues: list[str] = []
     observed: set[Connection] = set()
@@ -85,9 +87,9 @@ def audit_system_trace(system: SystemSpec, events: list[SystemEvent] | tuple[Sys
             if parent.output_port is None or event.input_port is None:
                 issues.append(f"{event.event_id}: cross-component link needs explicit ports")
                 continue
-            edge = Connection(parent.component_id, parent.output_port,
-                              event.component_id, event.input_port)
-            if edge not in system.connections:
+            edge = connections.get((parent.component_id, parent.output_port,
+                                    event.component_id, event.input_port))
+            if edge is None:
                 issues.append(f"{event.event_id}: undeclared cross-component connection")
             else:
                 observed.add(edge)
