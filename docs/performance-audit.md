@@ -48,3 +48,33 @@ No Rust component or claimed Rust speedup is added by this change.
 For immutable identity lookup, see the separate reproducible microbenchmark in
 `scripts/benchmark_identity_overhead.py` and docs/vllm-backend.md. That test
 measures cached metadata hashing only.
+
+## Result export
+
+Reproduce with `python scripts/benchmark_result_export.py`. The fixture runs a
+plain Python identity function on 4,000 scalar examples, compares its run with
+itself, and exports each trial. No learned model or environment is involved.
+The timed export includes Trial.to_dict plus sorted, finite JSON encoding;
+fixture construction, evaluation and comparison are outside the timed export.
+The script separately profiles the full CPU path to expose other costs.
+
+Local Python 3.12, median of five export runs:
+
+| Implementation | 4,000-record export |
+| --- | ---: |
+| Recursive dataclass conversion | 41.1 ms |
+| Explicit scalar/schema conversion | 23.0 ms |
+
+Trial's schema contains validated scalars and two mappings (identity fields and
+numeric metrics). Recursive deep copying is unnecessary. The new conversion
+copies both mappings and retains the exact serialized fields and values. A
+regression compares sorted JSON bytes against the previous dataclass conversion
+for completed, unscored and failed records, checks round trips, and verifies that
+changing an exported mapping cannot mutate the source. Read-only metric mappings
+also export correctly. Constructor and import validation remain in place.
+
+The full-path profiler's function-call count fell from approximately 797,000 to
+513,000 on this fixture. This is a CPU metadata/export result, not an inference
+speedup or evidence of an end-to-end production acceleration. The remaining
+profile includes record construction/validation, pairing and JSON encoding;
+those require representative larger workloads before a native port is justified.
