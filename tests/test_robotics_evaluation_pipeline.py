@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -23,7 +24,7 @@ def _campaign():
 
 
 def test_robotics_pipeline_compiles_runs_and_returns_artifact_receipt(tmp_path):
-    plan = object()
+    plan = SimpleNamespace(protocol={"M": {"adapter": "fake"}, "S": {"environments": []}})
     summary = bs.CampaignExecutionSummary(
         run_id="quickstart",
         plan_digest_sha256="a" * 64,
@@ -35,10 +36,16 @@ def test_robotics_pipeline_compiles_runs_and_returns_artifact_receipt(tmp_path):
         cancelled_attempt_ids=(),
     )
     pipeline_module = __import__("benchstudio.pipeline", fromlist=["unused"])
+    adapters_module = __import__("benchstudio.adapters", fromlist=["unused"])
+    models_module = __import__("benchstudio.model_adapters", fromlist=["unused"])
+    adapters_module = __import__("benchstudio.adapters", fromlist=["unused"])
+    models_module = __import__("benchstudio.model_adapters", fromlist=["unused"])
+    adapters_module = __import__("benchstudio.adapters", fromlist=["unused"])
+    models_module = __import__("benchstudio.model_adapters", fromlist=["unused"])
     with (
         patch.object(pipeline_module, "compile_campaign_spec", return_value=plan),
-        patch.object(pipeline_module, "default_registry", create=True),
-        patch.object(pipeline_module, "default_model_registry", create=True),
+        patch.object(adapters_module, "default_registry"),
+        patch.object(models_module, "default_model_registry"),
         patch.object(pipeline_module, "CampaignExecutor") as executor_type,
     ):
         executor = executor_type.return_value
@@ -73,8 +80,8 @@ def test_robotics_pipeline_keeps_analysis_explicit(tmp_path):
     pipeline_module = __import__("benchstudio.pipeline", fromlist=["unused"])
     with (
         patch.object(pipeline_module, "compile_campaign_spec", return_value=object()),
-        patch.object(pipeline_module, "default_registry", create=True),
-        patch.object(pipeline_module, "default_model_registry", create=True),
+        patch.object(adapters_module, "default_registry"),
+        patch.object(models_module, "default_model_registry"),
         patch.object(pipeline_module, "CampaignExecutor") as executor_type,
         patch.object(pipeline_module, "audit_campaign_directory") as audit,
     ):
@@ -95,13 +102,13 @@ def test_pipeline_rejects_missing_model_or_environment_adapters(tmp_path):
     pipeline_module = __import__("benchstudio.pipeline", fromlist=["unused"])
     with (
         patch.object(pipeline_module, "compile_campaign_spec") as compile_spec,
-        patch.object(pipeline_module, "default_registry", create=True),
-        patch.object(pipeline_module, "default_model_registry", create=True),
+        patch.object(adapters_module, "default_registry"),
+        patch.object(models_module, "default_model_registry"),
     ):
-        compile_spec.return_value.protocol = {
+        compile_spec.return_value = SimpleNamespace(protocol={
             "M": {},
             "S": {"environments": [{"id": "local-sim", "kind": "simulator"}]},
-        }
+        })
         runner = bs.pipeline(
             "robotics-evaluation",
             campaign=_campaign(),
