@@ -313,18 +313,18 @@ class CampaignAuditPipeline:
         return audit_campaign_directory(path, claim_type=self.claim_type)
 
 
-def pipeline(task: str, **kwargs: Any) -> CampaignAuditPipeline | CampaignEvaluationPipeline:
+def pipeline(name: str, **kwargs: Any) -> CampaignAuditPipeline | CampaignEvaluationPipeline:
     """Create a task-oriented BenchStudio pipeline.
 
     Supported tasks are robotics-evaluation and campaign-audit. Evaluation
     accepts a campaign file or explicit task/model/environment inputs. It
     never infers a model, simulator, or scoring function.
     """
-    if task == "campaign-audit":
+    if name == "campaign-audit":
         return CampaignAuditPipeline(**kwargs)
-    if task == "robotics-evaluation":
+    if name == "robotics-evaluation":
         return CampaignEvaluationPipeline(**kwargs)
     raise ValueError(
-        f"unsupported BenchStudio pipeline task {task!r}; "
+        f"unsupported BenchStudio pipeline task {name!r}; "
         "supported tasks: 'robotics-evaluation', 'campaign-audit'"
     )
