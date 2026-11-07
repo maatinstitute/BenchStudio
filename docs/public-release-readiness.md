@@ -16,7 +16,7 @@ certification, or permission to change repository visibility.
 | Imported source | `docs/source-attribution.md` identifies direct ports from AlpaBridge, URDF Studio, and Refinement vs Refresh/RoboPAD. AlpaBridge's current license is BSD-3-Clause; URDF Studio's current license is proprietary/non-commercial; no root `LICENSE` or `COPYING` file was found in the RoboPAD default-branch tree. | Create a file-level provenance and rights inventory for all direct ports, including commit and source-file digests. Preserve BSD notices where applicable. Confirm which owner-controlled source can be relicensed and identify any third-party portions or contributions that cannot be included. |
 | Contributions | The default branch currently contains only contributions already merged there; unmerged PRs are not part of this audit's release contents. | Record contributor provenance and the applicable contribution terms for every merged contribution before selecting the outbound license. |
 | Package identity and metadata | `pyproject.toml` declares version `0.1.0`, Python `>=3.10`, no project URLs, no classifiers, and optional dependency ranges without upper bounds. | Decide the public package/repository identity, add accurate project URLs and classifiers, review supported Python versions and dependency constraints, then build and inspect wheel and sdist metadata. Do not publish to PyPI until the name and release metadata are verified. |
-| Installation verification | CI tests source checkout on Python 3.10–3.12; the workflow does not build and install a wheel or sdist. | Add clean-environment wheel and sdist build/install smoke checks and exercise the documented public CLI/API from the installed artifacts. |
+| Installation verification | Base-branch CI tests source checkout on Python 3.10–3.12 but does not build or install distributions. This PR adds wheel/sdist build and clean-environment CLI smoke steps; their CI result is pending. | Require the new distribution checks to pass on the release branch and exercise the documented API/examples from installed artifacts. |
 | User-facing API | The README is 24 KB and leads with numerous subsystem workflows. The package root re-exports a broad set of internal and research-facing primitives. | Define the supported public API surface and a short first-run path. Move specialist/reference material into focused guides; identify experimental integrations and their external runtime requirements. |
 | Release hygiene | The tracked tree has no `SECURITY.md`, release process, or dependency/license inventory. The tree scan found no obvious credential, checkpoint, or binary-asset filenames; that is not a content-level secret or rights scan. | Add a vulnerability-reporting route and release procedure. Run content-level secret scanning, a dependency/SBOM and license review, and inspect examples, source snapshots, generated artifacts, and histories before public visibility. |
 
@@ -28,7 +28,7 @@ certification, or permission to change repository visibility.
    matching package metadata.
 3. Narrow the supported public API and make the installation and example
    guides runnable from a clean install.
-4. Add wheel/sdist build-install checks and release CI; review security,
+4. Pass the wheel/sdist build-install checks and release CI; review security,
    dependency, and secret-scan results.
 5. Tag a versioned release candidate and inspect its exact archive contents.
 6. Change repository visibility or publish a package only as an explicit,
