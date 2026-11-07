@@ -28,6 +28,7 @@ Homepage = "https://github.com/amtellezfernandez/BenchStudio"
 Documentation = "https://github.com/amtellezfernandez/BenchStudio/tree/main/docs"
 Repository = "https://github.com/amtellezfernandez/BenchStudio"
 Issues = "https://github.com/amtellezfernandez/BenchStudio/issues"
+
 dependencies = []
 
 [project.optional-dependencies]
