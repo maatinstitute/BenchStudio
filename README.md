@@ -9,7 +9,24 @@ auditable run artifacts. Policy adapters and simulator adapters are deliberately
 small so RoboChallenge or another benchmark can retain authority over scoring,
 safety limits, and physical robot execution.
 
-## Quick start
+## Python API: campaign audit
+
+Use the task-oriented factory to audit an existing campaign directory:
+
+```python
+import benchstudio as bs
+
+review = bs.pipeline("campaign-audit", claim_type="single_run_outcome")
+result = review("./runs/completed-campaign")
+print(result.summary())
+```
+
+The result also provides `to_dict()` for machine-readable reporting. This task
+reads saved evidence only; it does not load a checkpoint, replay motion, or
+start a simulator. See [the API comparison](docs/transformers-comparison.md)
+for its scope and current limitations.
+
+## Developer quick start
 
 ```bash
 python -m pytest

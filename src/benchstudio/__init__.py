@@ -198,11 +198,14 @@ from .scenarios import (
 )
 from .trajectory import compare_trajectories, load_trajectory
 from .validity import BenchmarkValidityAudit, BenchmarkValidityRecord, audit_benchmark_validity
+from .pipeline import CampaignAuditPipeline, pipeline
 
 __all__ = [
     "ActionChunk",
     "ClaimDecision",
     "CampaignAudit",
+    "CampaignAuditPipeline",
+    "pipeline",
     "ClaimType",
     "CounterfactualOutcomeAudit",
     "CounterfactualBranchResult",

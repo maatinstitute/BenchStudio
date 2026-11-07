@@ -40,6 +40,18 @@ class CampaignAudit:
     source_gates_verified: bool | None = None
     source_gate_issues: tuple[str, ...] = ()
 
+    def summary(self) -> str:
+        """Return a concise human-readable accounting summary."""
+        completion = "complete" if self.attempts_complete else "incomplete"
+        evidence = "verified" if self.evidence_verified else "unverified"
+        return (
+            f"Campaign audit {completion}: {self.recorded_attempts}/{self.planned_attempts} "
+            f"attempts; {len(self.missing_attempt_ids)} missing, "
+            f"{len(self.duplicate_attempt_ids)} duplicates, "
+            f"{len(self.unknown_attempt_ids)} unknown; evidence {evidence}; "
+            f"claim {self.claim.status}."
+        )
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "planned_attempts": self.planned_attempts,
