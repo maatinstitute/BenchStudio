@@ -69,7 +69,7 @@ Every expected outcome is "false", and a harness that read nothing would also pr
 
 - `e0_record.json`: schema `protocol_e0_record_v1`, `non_counting: true`, scope, authorisation digest, ledger marker, input hashes for the whole gate chain, host record, NC2, NC4, results, verdict.
 - For each fixture, `*.e0trace.json` and `*.e0samples.json`, each wrapped and tagged non-counting.
-- The ledger marker `<authorisation sha256>.e0_started` is written in the ledger directory.
+- The ledger marker `<sha256(scope:single_use_id)>.e0_started` is written in the authorization-pinned ledger directory.
 - The NC1 transcripts are saved beside the output by the operator.
 
 ## Verdict (E0 only)
@@ -91,3 +91,30 @@ E0 PASS licenses only: "on this host and stack, the harness builds the env, step
 ## Offline checks
 
 `e0_offline_checks.py` exercises the gates and verdicts with the native driver and host checks stubbed (8 checks; 8/8 on Python 3.12 and 3.8.20 against PR #5 @ `3b4a78e`). No offline check can reach the real `run_fixture_pi05`, which imports LIBERO before its ISO check. The driver path is exercised only by a host run.
+
+
+
+## Offline audit correction: persistent consumption registry
+
+The implementation now requires two fields in the authorized record:
+`e0_ledger_root` (an absolute canonical path on the authorized host) and
+`single_use_id` (a unique permission identifier, letters/digits/underscore/hyphen).
+No authorization record is created or changed by this PR. Code and document
+hashes change, so older records cannot authorize this version unchanged.
+
+`--ledger` must resolve to the pinned directory. The marker is keyed by scope
+and single_use_id, not authorization file formatting or location. Exclusive
+creation permits only one concurrent consumer, before native host/fixture work.
+The marker file is flushed and fsynced; failure after consumption does not undo it.
+The authorization bytes are checked again before their registry fields are used.
+
+This is a trusted-host guard, not tamper-proof storage: the registry and markers
+must persist and must not be moved, removed or reset. This does not enforce a
+global cross-host permission. Before adapting any existing authorization to this
+schema, reconcile its consumption status; a previous attempt must remain consumed.
+A code fix never restores E0 permission, authorizes a second attempt or changes
+its exclusive assignment to Warren. No E0 execution is performed by this update.
+
+Offline regression tests cover changed ledger/output paths, relocated and
+reformatted authorization files, and concurrent consumption, with synthetic
+permissions and stubbed native calls only.

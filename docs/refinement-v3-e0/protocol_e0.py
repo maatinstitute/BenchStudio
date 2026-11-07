@@ -176,6 +176,43 @@ def write_tagged(EV, path, fixture_id, kind, data):
     )
 
 
+def consume_authorisation(args, auth):
+    """Consume one approved token at its approved persistent ledger location.
+
+    This is a trusted-host filesystem guard, not tamper-proof authorization.
+    The operator must retain the registry and never move or delete its markers.
+    """
+    raw = Path(args.authorisation).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != auth.get("authorisation_sha256"):
+        raise E0Refused("authorisation changed after verification")
+    record = json.loads(raw)
+    ledger_name = record.get("e0_ledger_root")
+    token = record.get("single_use_id")
+    if not isinstance(ledger_name, str) or not Path(ledger_name).is_absolute():
+        raise E0Refused("authorisation must pin an absolute e0_ledger_root")
+    ledger = Path(ledger_name)
+    if str(ledger.resolve()) != ledger_name:
+        raise E0Refused("e0_ledger_root must be canonical, without symlink aliases")
+    if Path(args.ledger).resolve() != ledger:
+        raise E0Refused("--ledger differs from the authorisation's e0_ledger_root")
+    if (not isinstance(token, str) or not token or len(token) > 128
+            or any(c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" for c in token)):
+        raise E0Refused("authorisation must pin a safe single_use_id")
+    # Token identity survives JSON reformatting and relocation of the auth file.
+    marker_name = hashlib.sha256((SCOPE + ":" + token).encode("utf-8")).hexdigest()
+    ledger.mkdir(parents=True, exist_ok=True)
+    marker = ledger / (marker_name + ".e0_started")
+    try:
+        with open(str(marker), "x") as stream:
+            json.dump({"scope": SCOPE, "output": str(args.output),
+                       "single_use_id": token, "authorisation": auth}, stream)
+            stream.flush()
+            os.fsync(stream.fileno())
+    except FileExistsError:
+        raise E0Refused("this E0 single_use_id was already consumed ({})".format(marker))
+    return marker
+
+
 def run(args, EV, release, host=host_facts):
     document = json.loads(Path(args.fixtures).read_text("utf-8"))
     root = Path(args.fixtures).resolve().parent
@@ -184,18 +221,7 @@ def run(args, EV, release, host=host_facts):
     # E-AUTH before any native import, ledger or output: the counted run's function,
     # with E0's own scope and document.
     auth = release.check_authorisation(args.authorisation, Path(args.document), bound, scope=SCOPE)
-    ledger = Path(args.ledger)
-    ledger.mkdir(parents=True, exist_ok=True)
-    marker = ledger / "{}.e0_started".format(auth["authorisation_sha256"])
-    try:
-        with open(
-            str(marker), "x"
-        ) as stream:  # single use: conservative burn, before any native work
-            json.dump({"scope": SCOPE, "output": str(args.output)}, stream)
-    except FileExistsError:
-        raise E0Refused(
-            "this E0 authorisation was already used ({}); a new one is required".format(marker)
-        )
+    marker = consume_authorisation(args, auth)
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=False)
     os.environ.setdefault("MUJOCO_GL", "osmesa")
@@ -286,3 +312,4 @@ def main(argv=None):
 
 if __name__ == "__main__":
     sys.exit(main())
+
