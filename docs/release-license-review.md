@@ -57,13 +57,17 @@ Public Python examples should consistently use the package alias:
 ```python
 import benchstudio as bs
 
-audit = bs.pipeline("campaign-audit")
-result = audit("./runs/completed-campaign")
-print(result.summary())
+result = bs.audit_campaign_directory(
+    "./runs/completed-campaign",
+    claim_type=bs.ClaimType.PAIRED_COMPARISON,
+)
+print(result.to_dict())
 ```
 
-This documents the intended concise import style. The audit is read-only and
-does not load a checkpoint, replay a policy, or start a simulator.
+This uses APIs currently exported by the package. The audit is read-only and
+does not load a checkpoint, replay a policy, or start a simulator. The task
+factory proposed separately in PR #8 is an additional ergonomic layer and must
+not be described as part of this licensing proposal until that PR is integrated.
 
 ## Comparison target
 
