@@ -198,15 +198,48 @@ from .scenarios import (
 )
 from .trajectory import compare_trajectories, load_trajectory
 from .validity import BenchmarkValidityAudit, BenchmarkValidityRecord, audit_benchmark_validity
-from .pipeline import CampaignAuditPipeline, CampaignEvaluationPipeline, CampaignRun, pipeline
+from .pipeline import CampaignAuditPipeline, pipeline
+from .industrial import AcceptanceContract
+from .industrial_api import IndustrialAssessment, assess
+
+from .system_spec import Component, Connection, SystemSpec
+from .system_evidence import Trial, TrialKey, SystemRun, open_run
+from .system_trace import SystemEvent, TraceAudit, audit_system_trace
+from .system_comparison import MetricDelta, SystemComparison, compare_system_runs
+from .system_ablations import (
+    AblationAudit, TrialCoverageAudit, EvidenceReadiness, audit_ablation,
+    audit_trial_coverage, review_ablation_evidence,
+)
+from .system_importers import import_inspect_robots
 
 __all__ = [
+    "Component",
+    "Connection",
+    "SystemSpec",
+    "Trial",
+    "TrialKey",
+    "SystemRun",
+    "open_run",
+    "SystemEvent",
+    "TraceAudit",
+    "audit_system_trace",
+    "MetricDelta",
+    "SystemComparison",
+    "compare_system_runs",
+    "AblationAudit",
+    "TrialCoverageAudit",
+    "EvidenceReadiness",
+    "audit_ablation",
+    "audit_trial_coverage",
+    "review_ablation_evidence",
+    "import_inspect_robots",
+    "AcceptanceContract",
+    "IndustrialAssessment",
+    "assess",
     "ActionChunk",
     "ClaimDecision",
     "CampaignAudit",
     "CampaignAuditPipeline",
-    "CampaignEvaluationPipeline",
-    "CampaignRun",
     "pipeline",
     "ClaimType",
     "CounterfactualOutcomeAudit",
