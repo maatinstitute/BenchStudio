@@ -11,6 +11,7 @@ from dataclasses import asdict, dataclass, field
 import hashlib
 import json
 import re
+from types import MappingProxyType
 from typing import Any, Mapping
 
 
@@ -25,6 +26,22 @@ def _canonical(value: Any) -> bytes:
         return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
     except (TypeError, ValueError) as exc:
         raise ValueError("system metadata must be canonical JSON") from exc
+
+
+def _freeze(value):
+    if isinstance(value, dict):
+        return MappingProxyType({key: _freeze(item) for key, item in value.items()})
+    if isinstance(value, list):
+        return tuple(_freeze(item) for item in value)
+    return value
+
+
+def _thaw(value):
+    if isinstance(value, Mapping):
+        return {key: _thaw(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return [_thaw(item) for item in value]
+    return value
 
 
 @dataclass(frozen=True)
@@ -94,7 +111,7 @@ class SystemSpec:
                 raise ValueError("connection references unknown input port")
         if not isinstance(self.metadata, Mapping):
             raise ValueError("metadata must be a JSON mapping")
-        _canonical(dict(self.metadata))
+        object.__setattr__(self, "metadata", _freeze(json.loads(_canonical(dict(self.metadata)))))
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -103,7 +120,7 @@ class SystemSpec:
             "revision": self.revision,
             "components": [asdict(c) for c in self.components],
             "connections": [asdict(e) for e in self.connections],
-            "metadata": dict(self.metadata),
+            "metadata": _thaw(self.metadata),
         }
 
     @property
@@ -127,3 +144,4 @@ class SystemSpec:
             connections=tuple(Connection(**item) for item in value.get("connections", [])),
             metadata=value.get("metadata", {}),
         )
+
