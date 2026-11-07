@@ -198,7 +198,7 @@ from .scenarios import (
 )
 from .trajectory import compare_trajectories, load_trajectory
 from .validity import BenchmarkValidityAudit, BenchmarkValidityRecord, audit_benchmark_validity
-from .pipeline import CampaignAuditPipeline, pipeline
+from .pipeline import CampaignAuditPipeline, CampaignRun, pipeline
 
 from .system_spec import Component, Connection, SystemSpec
 from .system_evidence import Trial, TrialKey, SystemRun, open_run
@@ -235,6 +235,7 @@ __all__ = [
     "ClaimDecision",
     "CampaignAudit",
     "CampaignAuditPipeline",
+    "CampaignRun",
     "pipeline",
     "ClaimType",
     "CounterfactualOutcomeAudit",
