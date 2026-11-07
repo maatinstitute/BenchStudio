@@ -17,9 +17,9 @@ easy to discover and call.
 The proposed public first path follows that shape:
 
 ```python
-from benchstudio import pipeline
+import benchstudio as bs
 
-review = pipeline("campaign-audit")
+review = bs.pipeline("campaign-audit")
 result = review("./runs/completed-campaign")
 print(result.summary())
 ```
