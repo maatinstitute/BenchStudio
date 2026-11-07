@@ -55,6 +55,7 @@ class ResourcePool:
             _positive(capacity, "capacity")
         self._slots = {name: asyncio.Semaphore(capacity) for name, capacity in capacities.items()}
         self._loop = None
+        self._holders = set()
 
     def validate(self, names):
         names = tuple(names)
@@ -71,6 +72,10 @@ class ResourcePool:
         if self._loop is not None and self._loop is not loop:
             raise RuntimeError("ResourcePool cannot be shared across event loops")
         self._loop = loop
+        task = asyncio.current_task()
+        if task in self._holders:
+            raise RuntimeError("nested ResourcePool leases are unsupported; request all resources together")
+        self._holders.add(task)
         acquired = []
         try:
             for name in names:
@@ -80,6 +85,7 @@ class ResourcePool:
         finally:
             for name in reversed(acquired):
                 self._slots[name].release()
+            self._holders.remove(task)
 
 
 class AgentGroup:
