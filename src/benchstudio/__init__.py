@@ -199,8 +199,6 @@ from .scenarios import (
 from .trajectory import compare_trajectories, load_trajectory
 from .validity import BenchmarkValidityAudit, BenchmarkValidityRecord, audit_benchmark_validity
 from .pipeline import CampaignAuditPipeline, pipeline
-from .industrial import AcceptanceContract
-from .industrial_api import IndustrialAssessment, assess
 
 from .system_spec import Component, Connection, SystemSpec
 from .system_evidence import Trial, TrialKey, SystemRun, open_run
@@ -233,9 +231,6 @@ __all__ = [
     "audit_trial_coverage",
     "review_ablation_evidence",
     "import_inspect_robots",
-    "AcceptanceContract",
-    "IndustrialAssessment",
-    "assess",
     "ActionChunk",
     "ClaimDecision",
     "CampaignAudit",
