@@ -640,6 +640,84 @@ verified current state and the external integrations that remain intentionally
 unclaimed.
 
 
+## Replay a RoboPAD archive
+
+Install BenchStudio into the Python environment that owns the pinned RoboPAD
+LIBERO runtime and assets. From a BenchStudio checkout, use
+`python -m pip install -e .` in that environment.
+
+```python
+import benchstudio as bs
+
+pipeline = bs.pipeline("replay", source="./robopad_attempt.tar.gz")
+results = pipeline()
+print(results.summary())
+```
+
+The pipeline also accepts an extracted campaign folder. Pass
+`episode="your-episode-key"` (using a key from your manifest) when the campaign
+has multiple episodes. It verifies the archive records and consumed hashes,
+checks the installed BDDL task asset, renders a fresh reset, and replays the
+archived prefix and nominal base actions against the original saved states
+and observations. Use `pipeline.check()` for the readiness report alone.
+The full replay evidence is in `results.report`.
+
+The equivalent command is `benchstudio-replay ./robopad_attempt.tar.gz --check`
+for readiness or `benchstudio-replay ./robopad_attempt.tar.gz` for replay.
+This first pipeline supports completed nominal base attempts from RoboPAD's
+`validation_transfer_v1` format. It expects the native stack to be installed,
+and compares the archived observation hashes exactly. Renderer drift can
+appear as an image difference even when the recorded simulator state agrees.
+
+### Archived environment requirements
+
+Replay discovers the environment requirements stored by the archive producer.
+Users do not write a JSON configuration or override those requirements. Runtime
+mismatches block verified replay. Legacy archives without requirements are
+reported as `legacy_unpinned`; reset success alone does not establish parity.
+The archive format is an internal interchange contract, not the Python API.
+
+### Replay with an independently trusted manifest
+
+For a reviewed handoff, obtain the SHA-256 of `benchstudio-replay.json`
+through a separate trusted channel and supply it to the pipeline:
+
+```python
+pipeline = bs.pipeline("replay", source=
+    "robopad_attempt.tar.gz", trusted_manifest_sha256=reviewed_manifest_sha256
+)
+result = pipeline.run()
+```
+
+This mode requires a compressed archive, stages it in a private temporary
+directory, checks the manifest against the supplied digest, and verifies the
+runtime before replay. The CLI accepts the same value with
+`--trusted-manifest-sha256`. The digest must come from the reviewer. Reading
+it from the same archive would only check self-consistency.
+
+### Run replay in a resource-limited worker
+
+On Linux, pass limits when opening an archive. Both readiness and replay
+then run in a separate process using the same installed Python environment:
+
+```python
+pipeline = bs.pipeline("replay", source=
+    "robopad_attempt.tar.gz",
+    trusted_manifest_sha256=reviewed_manifest_sha256,
+    limits=bs.ReplayLimits(wall_seconds=300, cpu_seconds=240),
+)
+result = pipeline.run()
+```
+
+The CLI enables the default limits with `--worker`. The worker has a
+wall-clock deadline and Linux limits for CPU time, virtual address space,
+open files, and individual file size. The supervisor kills the process
+group on timeout. The existing archive extraction and report size limits
+also apply. These limits do not isolate filesystem or network access and do
+not cap GPU memory. Use a separately configured container or job sandbox
+where those controls are required.
+
+
 ## Replay saved actions in LIBERO
 
 Run BenchStudio from the pinned LIBERO environment that owns the task assets
@@ -675,3 +753,4 @@ bytes. The LeRobot path preserves the dtype of a NumPy action array.
 A new capture from an archived action file is a new baseline, so
 retain any original RoboPAD trace separately. Independent evaluator
 qualification uses its own goal checker and outcome evidence.
+

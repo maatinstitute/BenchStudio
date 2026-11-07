@@ -200,6 +200,7 @@ class _LiberoRuntime:
             self.env.seed(cfg.seed)
             self.env.reset()
             raw = self.env.set_init_state(states[cfg.initial_state_id])
+        self.raw_observation = raw
         return _observation_frame(self.env, raw, None)
 
     def step(self, action: Sequence[float]) -> dict[str, Any]:
@@ -216,6 +217,7 @@ class _LiberoRuntime:
         else:
             raise ValueError("unexpected LIBERO step response")
         stop = "horizon" if truncated else "other" if done else None
+        self.raw_observation = raw
         frame = _observation_frame(self.env, raw, stop)
         if self.config.backend == "lerobot" and stop is None and frame["native_success"]:
             frame["stop_reason"] = "goal"
@@ -224,3 +226,4 @@ class _LiberoRuntime:
     def close(self) -> None:
         if self.owner is not None:
             self.owner.close()
+
