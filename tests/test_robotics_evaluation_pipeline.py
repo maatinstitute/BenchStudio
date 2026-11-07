@@ -84,10 +84,13 @@ def test_direct_transformers_style_inputs_compile_to_frozen_campaign(tmp_path):
     stack, pipeline_module, _ = _patched_executor()
     with stack:
         compiled = {}
-        pipeline_module.compile_campaign_spec = lambda value: (
-            compiled.update(value) or _plan()
-        )
-        result = bs.pipeline(
+
+        def compile_spec(value):
+            compiled.update(value)
+            return _plan()
+
+        with patch.object(pipeline_module, "compile_campaign_spec", side_effect=compile_spec):
+            result = bs.pipeline(
             "robotics-evaluation",
             task={"id": "libero/spatial/task-0", "revision": "dataset-sha256"},
             model={
