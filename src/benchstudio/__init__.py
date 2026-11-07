@@ -200,6 +200,7 @@ from .trajectory import compare_trajectories, load_trajectory
 from .validity import BenchmarkValidityAudit, BenchmarkValidityRecord, audit_benchmark_validity
 from .pipeline import CampaignAuditPipeline, CampaignRun, pipeline
 
+from .system_pipeline import System, Benchmark, Score, SystemEvaluationPipeline
 from .system_spec import Component, Connection, SystemSpec
 from .system_evidence import Trial, TrialKey, SystemRun, open_run
 from .system_trace import SystemEvent, TraceAudit, audit_system_trace
@@ -211,6 +212,7 @@ from .system_ablations import (
 from .system_importers import import_inspect_robots
 
 __all__ = [
+    "System", "Benchmark", "Score", "SystemEvaluationPipeline",
     "Component",
     "Connection",
     "SystemSpec",
@@ -417,3 +419,4 @@ __all__ = [
     "write_campaign_archive",
     "minimize_counterexample",
 ]
+
