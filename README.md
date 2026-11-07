@@ -1,8 +1,10 @@
 # BenchStudio
 
-BenchStudio is a proprietary evaluation layer for measuring whether embodied-AI
-results remain comparable across inference schedules, simulators, and physical
-execution paths.
+BenchStudio is being prepared as an open-source evaluation toolkit for measuring
+whether embodied-AI results remain comparable across inference schedules,
+simulators, and physical execution paths. The proposed Apache-2.0 licensing and
+public-release status are documented in `docs/release-license-review.md`; they
+are not effective until provenance review and maintainer approval are complete.
 
 The first implementation provides a simulator-neutral temporal scheduler and
 auditable run artifacts. Policy adapters and simulator adapters are deliberately
