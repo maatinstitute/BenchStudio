@@ -1,15 +1,33 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "benchstudio"
 version = "0.1.0"
-description = "Proprietary temporal-fidelity evaluation infrastructure for embodied AI"
+description = "Reproducible evaluation and evidence tools for embodied AI"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { file = "LICENSE" }
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "LICENSES/*.txt"]
 authors = [{ name = "Alba Maria Tellez Fernandez" }]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Scientific/Engineering :: Robotics",
+]
+
+[project.urls]
+Homepage = "https://github.com/amtellezfernandez/BenchStudio"
+Documentation = "https://github.com/amtellezfernandez/BenchStudio/tree/main/docs"
+Repository = "https://github.com/amtellezfernandez/BenchStudio"
+Issues = "https://github.com/amtellezfernandez/BenchStudio/issues"
 dependencies = []
 
 [project.optional-dependencies]
