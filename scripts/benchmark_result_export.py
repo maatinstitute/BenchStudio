@@ -63,6 +63,25 @@ def main():
     timings = {label: median(values) for label, values in samples.items()}
     print("Fresh full-path medians (30 alternating samples each):", timings)
     print("Identical complete output digest:", digests.pop())
+    # Adversarial cache-miss path: no digest is reused within the cache window.
+    unique = [f"{i:064x}" for i in range(4000)]
+    for label, function in variants:
+        def unique_validation():
+            validator.cache_clear()
+            for value in unique:
+                function(value)
+        print("4,000 unique digests", label,
+              median(repeat(unique_validation, number=1, repeat=15)))
+    import tracemalloc
+    validator.cache_clear()
+    tracemalloc.start()
+    before = tracemalloc.get_traced_memory()[0]
+    for i in range(4000):
+        validator(f"{i:064x}")
+    retained = tracemalloc.get_traced_memory()[0] - before
+    tracemalloc.stop()
+    print("Approximate retained cache bytes:", retained,
+          "entries:", validator.cache_info().currsize)
     print("No model, simulator or GPU. Timings do not measure inference or production throughput.")
 
 

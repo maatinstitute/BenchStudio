@@ -88,6 +88,11 @@ evaluation, paired comparison, export and a digest of the complete output. Thirt
 samples per variant alternate their execution order and clear the cache before
 each sample. Local Python 3.12 medians were 70.4 ms uncached and 64.3 ms cached
 (about 9% on this synthetic workflow). All 60 outputs had the same digest.
+The script also exposes the tradeoff: 4,000 all-unique digest checks took about
+1.77 ms uncached versus 2.47 ms cached in a separate format-only measurement.
+This cache helps repeated system/protocol identities, not all-unique inputs.
+A tracemalloc snapshot retained approximately 54 KB for 256 freshly allocated
+strings and cache bookkeeping on this interpreter (not an RSS memory bound).
 Timings vary; these are not inference or production throughput measurements.
 
 Only lowercase SHA-256 **format validation** is cached. File contents are still
