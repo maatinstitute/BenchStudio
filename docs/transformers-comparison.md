@@ -1,38 +1,48 @@
 # Public API comparison: BenchStudio and Transformers
 
-The API is designed for a Python user familiar with Transformers: import the
-package as `bs`, choose a task, call its pipeline, and inspect a structured
-result. BenchStudio cannot hide environment and checkpoint setup when those are
-owned by external robot-learning runtimes, so a campaign document supplies
-those explicit inputs.
+The public API follows the familiar Transformers pattern: import as `bs`,
+choose a task, configure a callable pipeline, and inspect a structured result.
+For a robot evaluation, the task, policy adapter, environment adapter,
+checkpoint identity, conditions, and seeds are explicit inputs.
 
-## Run a declared robotics evaluation
-
-The short path is to select the task pipeline, point it at a campaign, and call
-it:
+## Configure a task pipeline
 
 ```python
 import benchstudio as bs
 
 evaluation = bs.pipeline(
     "robotics-evaluation",
-    campaign="examples/campaigns/mock-worldepisode.json",
-    output_dir="runs/first-evaluation",
-    execution="mock",
+    task={"id": "libero/spatial/task-0", "revision": "<pinned-task-revision>"},
+    model={
+        "adapter": "smolvla",
+        "checkpoint": "sha256:<reviewed-checkpoint-digest>",
+        "config": {"command": ["python", "your_policy_service.py"]},
+    },
+    environment={
+        "adapter": "external_command",
+        "id": "libero-local",
+        "config": {"command": ["python", "your_environment_service.py"]},
+    },
+    seeds=[7, 8],
+    conditions=[{"id": "baseline", "denoising_steps": 10}],
+    run_id="smolvla-libero-baseline",
+    output_dir="runs/smolvla-libero-baseline",
 )
 run = evaluation()
 print(run.summary())
 ```
 
-The included mock campaign is a smoke check only. For actual evaluation, use
-`execution="registry"` and declare the policy adapter, environment adapter,
-checkpoint identity, task revision, seeds, and conditions in the campaign file.
-BenchStudio validates that frozen declaration, executes its registered
-adapters, and returns run accounting plus paths to the saved artifacts. It does
-not guess which checkpoint, environment, or success scorer to use.
+The adapter services must implement their declared protocols and own their
+runtime dependencies. BenchStudio checks registered adapter readiness, freezes
+the inputs into a campaign plan, and executes through its evidence ledger.
+Callers can supply the equivalent campaign as JSON/YAML when they need less
+common protocol fields.
 
-Analysis is separate, so the execution step does not silently turn run
-accounting into a scientific claim:
+The checked-in mock quickstart is also available and runs without model or
+simulator dependencies. It verifies the Python path only; it is not evidence
+about model quality or simulator fidelity.
+
+Analysis stays explicit:
 
 ```python
 import benchstudio as bs
@@ -40,7 +50,7 @@ import benchstudio as bs
 audit = bs.pipeline(
     "campaign-audit",
     claim_type=bs.ClaimType.SINGLE_RUN_OUTCOME,
-)("runs/first-evaluation")
+)("runs/smolvla-libero-baseline")
 print(audit.summary())
 ```
 
@@ -50,29 +60,30 @@ print(audit.summary())
 | --- | --- |
 | Task string | Pipeline task, such as `robotics-evaluation` or `campaign-audit` |
 | Pipeline object | Callable configured task |
-| Model/configuration inputs | Frozen campaign declaration with model and environment adapters |
+| Model and tokenizer arguments | Model adapter, pinned checkpoint, and adapter config |
+| Input text or media | Versioned robot task and environment adapter |
 | Inference output | Run receipt and persisted campaign evidence |
 | Task-specific post-processing | Explicit campaign audit and analysis functions |
 
-This is the same discovery pattern, adapted to experiments. A campaign is a
-scientific execution specification, not a model identifier. It keeps versions,
-conditions, and seeds visible and digest-bound.
+A campaign is an experiment specification, not a model identifier. Its task
+revision, seeds, conditions, environment, and model identity stay explicit and
+digest-bound for reproducibility.
 
-## What BenchStudio deliberately does not infer
+## Differences BenchStudio must preserve
 
 Transformers can often download a named model and its tokenizer because the
 library owns or understands those model interfaces. BenchStudio's policy and
-simulator runtimes are often installed and maintained separately. The API
-therefore does not pretend that a model name alone identifies the full robot
-stack.
+simulator runtimes are often installed and maintained separately. It does not
+pretend that a model name alone identifies the full robot stack.
 
-- Installing an optional runtime remains an explicit environment step.
-- Model and environment adapters must be declared and pass their capability
-  checks before execution.
-- Physical execution requires its separate protocol and authorization controls.
-- The mock quickstart is not evidence of model or simulator validity.
-- The campaign audit reads saved artifacts; it does not rerun an experiment or
+- Optional runtime installation remains an explicit environment step.
+- Model and environment adapters must pass readiness and capability checks.
+- Physical execution remains subject to its separate protocol and authorization
+  controls.
+- A run summary reports execution accounting; it is not itself a scientific
+  claim.
+- A campaign audit reads saved artifacts; it does not rerun an experiment or
   certify that the scientific design is valid.
 
-The intended result is familiar ergonomics with inspectable experimental
-inputs, rather than a one-line call with hidden defaults.
+The API makes common workflows discoverable without requiring readers to learn
+the internal campaign compiler or the research paper first.
