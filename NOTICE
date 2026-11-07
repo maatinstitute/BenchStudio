@@ -1,10 +1,17 @@
 BenchStudio
 
-Copyright (c) 2026 Alba Maria Tellez Fernandez
+Copyright (c) 2026 Alba Maria Tellez Fernandez.
 
-PROPRIETARY — ALL RIGHTS RESERVED. See LICENSE.
+Unless a file or notice states otherwise, BenchStudio source code and
+documentation are licensed under the Apache License, Version 2.0. See LICENSE.
 
-BenchStudio contains original implementation informed by the author's
-AlpaBridge and URDF Studio projects. No third-party datasets, checkpoints,
-robot drivers, simulator binaries, or AGPL-licensed urdf-os source are copied
-into this repository.
+BenchStudio contains source-backed components derived from AlpaBridge,
+URDF Studio, and the Refinement vs Refresh / RoboPAD research repository.
+Their provenance is documented in docs/source-attribution.md. AlpaBridge
+source-derived portions retain the BSD 3-Clause notices and are also available
+under the original BSD 3-Clause terms; the license text is in
+LICENSES/AlpaBridge-BSD-3-Clause.txt.
+
+BenchStudio does not include third-party datasets, checkpoints, robot drivers,
+simulator binaries, or AGPL-licensed urdf-os source. External policy and
+simulator runtimes remain separate dependencies and retain their own licenses.
