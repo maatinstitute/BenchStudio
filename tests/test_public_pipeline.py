@@ -17,7 +17,7 @@ def test_campaign_audit_pipeline_uses_offline_directory_audit(tmp_path):
         result = review(campaign)
 
     assert result is expected
-    audit.assert_called_once_with(campaign, claim_type=ClaimType.PAIRED_COMPARISON)
+    audit.assert_called_once_with(campaign, claim_type=bs.ClaimType.PAIRED_COMPARISON)
 
 
 def test_campaign_audit_pipeline_rejects_missing_and_non_directory_sources(tmp_path):
