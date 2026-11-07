@@ -109,8 +109,10 @@ def test_cancelled_partial_resource_lease_does_not_leak():
             task.cancel()
             with pytest.raises(asyncio.CancelledError):
                 await task
-            async with pool.lease(("a",)):
-                pass
+            async def check_released_slot():
+                async with pool.lease(("a",)):
+                    pass
+            await asyncio.wait_for(asyncio.create_task(check_released_slot()), 1)
     asyncio.run(check())
 
 
@@ -154,4 +156,16 @@ def test_async_scorer_and_security_controls():
         assert (await pipe.arun()).trials[0].success is True
         with pytest.raises(TypeError, match="async scorers"):
             pipe.run()
+    asyncio.run(check())
+
+
+def test_nested_resource_lease_refuses_instead_of_deadlocking():
+    async def check():
+        pool = bs.ResourcePool({"model": 1})
+        async with pool.lease(("model",)):
+            with pytest.raises(RuntimeError, match="nested"):
+                async with pool.lease(("model",)):
+                    pytest.fail("nested lease entered")
+        async with pool.lease(("model",)):
+            pass
     asyncio.run(check())
