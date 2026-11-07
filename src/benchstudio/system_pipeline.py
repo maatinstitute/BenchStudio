@@ -127,22 +127,24 @@ class SystemEvaluationPipeline:
         timeout is per trial including scoring. Cancellation is cooperative;
         this cannot stop blocking Python, remote jobs or native GPU kernels.
         """
-        from .async_execution import invoke, ordered_map
+        from .async_execution import ordered_map
 
         if timeout is not None and (type(timeout) not in (int, float) or
                                     not math.isfinite(timeout) or timeout <= 0):
             raise ValueError("timeout must be finite and positive")
         async def evaluate(index):
-            async def execute():
-                output = await invoke(self.system.runtime, self.benchmark.inputs[index])
-                score = await invoke(lambda value: self.benchmark.scorer(value, self.benchmark.targets[index]), output)
-                if not isinstance(score, Score):
-                    raise TypeError("benchmark scorer must return bs.Score")
-                return Trial(str(index), self.benchmark.key(index), self.system.spec.digest,
-                             "completed", score.success, "declared",
-                             self.benchmark.authoritative, score.metrics or {})
-            if timeout is None:
-                return await execute()
-            return await asyncio.wait_for(execute(), timeout)
+            work = self._evaluate_trial(index, self.benchmark.inputs[index],
+                                        self.benchmark.targets[index])
+            return await work if timeout is None else await asyncio.wait_for(work, timeout)
         trials = await ordered_map(evaluate, range(len(self.benchmark.inputs)), concurrency=concurrency)
         return SystemRun(self.run_id, self.system.spec, tuple(trials))
+
+    async def _evaluate_trial(self, index, inputs, target):
+        from .async_execution import invoke
+        output = await invoke(self.system.runtime, inputs)
+        score = await invoke(lambda value: self.benchmark.scorer(value, target), output)
+        if not isinstance(score, Score):
+            raise TypeError("benchmark scorer must return bs.Score")
+        return Trial(str(index), self.benchmark.key(index), self.system.spec.digest,
+                     "completed", score.success, "declared", self.benchmark.authoritative,
+                     dict(score.metrics or {}))
