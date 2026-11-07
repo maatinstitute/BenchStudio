@@ -1,13 +1,40 @@
 # BenchStudio
 
-BenchStudio is a proprietary evaluation layer for measuring whether embodied-AI
-results remain comparable across inference schedules, simulators, and physical
-execution paths.
+BenchStudio is a proprietary library for experimental evaluation of AI systems,
+especially interactive and embodied systems. The unit under evaluation is an
+executable system: a model, a composed predictor/planner/controller, a group of
+agents, or a complete robotics episode adapter.
 
-The first implementation provides a simulator-neutral temporal scheduler and
-auditable run artifacts. Policy adapters and simulator adapters are deliberately
-small so RoboChallenge or another benchmark can retain authority over scoring,
-safety limits, and physical robot execution.
+Python objects configure systems and benchmarks. Versioned evidence formats
+support storage and interoperability. Backends own execution semantics; the
+benchmark owns its scoring definition. Comparisons preserve that distinction.
+
+## Python API: evaluate a system
+
+```python
+import benchstudio as bs
+
+system = bs.System.from_callable(lambda x: 2*x, name="example", revision="r1")
+benchmark = bs.Benchmark(
+    "arithmetic", "fixtures-r1", inputs=[1, 2], targets=[2, 4],
+    scorer=lambda output, target: bs.Score(success=output == target),
+    evaluator_revision="exact-match-r1",
+)
+results = bs.pipeline("system-evaluation", system=system, benchmark=benchmark)()
+print([trial.success for trial in results.trials])
+```
+
+This executes arithmetic functions, not a learned model or simulator. Evaluator
+authority defaults to false. Native adapters, checkpoints, state reset and
+benchmark qualification still need explicit setup; checkpoint loading is not
+automatic.
+
+Use [paired system experiments](docs/paired-system-experiments.md) to construct
+an executable Workflow, replace a named component and compare variants through
+`bs.pipeline("ablation", ...)`. The complete synthetic example is
+`python examples/systems/paired_ablation.py`. Async execution and agent groups
+are described in [async system execution](docs/async-system-execution.md).
+Declared component isolation alone does not establish a causal effect.
 
 ## Python API: run a robotics evaluation
 

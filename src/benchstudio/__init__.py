@@ -213,6 +213,7 @@ from .system_ablations import (
 from .system_importers import import_inspect_robots
 
 __all__ = [
+    "Workflow", "AblationStudy", "AblationResult",
     "LiberoAdapter", "replay_libero",
     "ReplayPipeline", "ReplayResult", "ReplayLimits", "ReplayWorkerError",
     "AgentGroup", "ResourcePool",
@@ -429,3 +430,5 @@ from .replay_pipeline import ReplayPipeline, ReplayResult
 from .replay_worker import ReplayLimits, ReplayWorkerError
 
 from .libero import LiberoAdapter, replay_libero
+
+from .experimental import Workflow, AblationStudy, AblationResult

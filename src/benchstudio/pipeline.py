@@ -316,10 +316,13 @@ class CampaignAuditPipeline:
 def pipeline(name: str, **kwargs: Any) -> Any:
     """Create a task-oriented BenchStudio pipeline.
 
-    Supported tasks are replay, system-evaluation, robotics-evaluation and campaign-audit. Evaluation
+    Supported tasks are ablation, replay, system-evaluation, robotics-evaluation and campaign-audit. Evaluation
     accepts a campaign file or explicit task/model/environment inputs. It
     never infers a model, simulator, or scoring function.
     """
+    if name == "ablation":
+        from .experimental import AblationStudy
+        return AblationStudy(**kwargs)
     if name == "replay":
         from .replay_pipeline import ReplayPipeline
         if "source" not in kwargs:
@@ -335,6 +338,6 @@ def pipeline(name: str, **kwargs: Any) -> Any:
         return CampaignEvaluationPipeline(**kwargs)
     raise ValueError(
         f"unsupported BenchStudio pipeline task {name!r}; "
-        "supported tasks: 'replay', 'system-evaluation', 'robotics-evaluation', 'campaign-audit'"
+        "supported tasks: 'ablation', 'replay', 'system-evaluation', 'robotics-evaluation', 'campaign-audit'"
     )
 
