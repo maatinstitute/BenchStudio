@@ -251,7 +251,7 @@ def _adapter_input(value: str | Mapping[str, Any] | None, *, name: str) -> dict[
         declaration = dict(value)
     else:
         raise ValueError(f"{name} must be an adapter name or a mapping")
-    adapter = declaration.get("adapter")
+    adapter = declaration.pop("adapter", None)
     if not isinstance(adapter, str) or not adapter.strip():
         raise ValueError(f"{name}.adapter must be a non-empty string")
     if "config" in declaration and "adapter_config" in declaration:
