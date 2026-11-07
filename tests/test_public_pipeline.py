@@ -1,3 +1,4 @@
+from importlib import import_module
 from unittest.mock import patch
 
 import pytest
@@ -15,7 +16,8 @@ def test_campaign_audit_pipeline_uses_offline_directory_audit(tmp_path):
     campaign.mkdir()
     expected = object()
 
-    with patch("benchstudio.pipeline.audit_campaign_directory", return_value=expected) as audit:
+    pipeline_module = import_module("benchstudio.pipeline")
+    with patch.object(pipeline_module, "audit_campaign_directory", return_value=expected) as audit:
         review = pipeline("campaign-audit", claim_type=ClaimType.PAIRED_COMPARISON)
         result = review(campaign)
 
