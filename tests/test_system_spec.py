@@ -61,3 +61,17 @@ def test_zero_extra_framework_requirements_for_single_policy():
     spec = SystemSpec("single", "v1",
                       components=(Component("vla", "vla", "smolvla", "v2"),))
     assert spec.digest
+
+
+
+def test_nested_metadata_cannot_change_system_identity_after_construction():
+    metadata = {"nested": {"values": [1, 2]}}
+    spec = SystemSpec("s", "r1", (Component("a", "agent", "a", "r1"),), metadata=metadata)
+    digest = spec.digest
+    metadata["nested"]["values"].append(3)
+    exported = spec.to_dict()
+    exported["metadata"]["nested"]["values"].append(4)
+    with pytest.raises(TypeError):
+        spec.metadata["nested"]["values"] = ()
+    assert spec.digest == digest
+    assert SystemSpec.from_dict(spec.to_dict()).digest == digest
