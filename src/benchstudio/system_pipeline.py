@@ -27,6 +27,17 @@ class System:
             raise TypeError("system runtime must be callable")
 
     @classmethod
+    def from_pretrained(cls, model, *, revision, backend="vllm", generation=None, **options):
+        """Configure a supported model backend; loading begins at first execution."""
+        if backend != "vllm":
+            raise ValueError("supported pretrained backends: vllm")
+        from .vllm_backend import GenerationConfig, VLLMConfig, VLLMRuntime
+        if generation is not None and not isinstance(generation, GenerationConfig):
+            raise TypeError("generation must be bs.GenerationConfig")
+        runtime = VLLMRuntime(VLLMConfig(model, revision, **options), generation or GenerationConfig())
+        return cls(runtime, runtime.system_spec())
+
+    @classmethod
     def from_callable(cls, runtime, *, name: str, revision: str, kind: str = "system"):
         return cls(runtime, SystemSpec(name, revision, (
             Component("system", kind, name, revision),
@@ -97,10 +108,12 @@ class SystemEvaluationPipeline:
             raise ValueError("run_id must be nonempty")
         self.system, self.benchmark, self.run_id = system, benchmark, run_id
 
-    def __call__(self):
-        return self.run()
+    def __call__(self, *, batch_size=None):
+        return self.run(batch_size=batch_size)
 
-    def run(self):
+    def run(self, *, batch_size=None):
+        if batch_size is not None:
+            return self._run_batches(batch_size)
         trials = []
         for index, (inputs, target) in enumerate(zip(self.benchmark.inputs, self.benchmark.targets)):
             output = self.system.runtime(inputs)
@@ -113,11 +126,29 @@ class SystemEvaluationPipeline:
                 if inspect.iscoroutine(score):
                     score.close()
                 raise TypeError("async scorers require await pipeline.arun()")
-            if not isinstance(score, Score):
-                raise TypeError("benchmark scorer must return bs.Score")
-            trials.append(Trial(str(index), self.benchmark.key(index), self.system.spec.digest,
-                                "completed", score.success, "declared",
-                                self.benchmark.authoritative, score.metrics or {}))
+            trials.append(self._record_trial(index, score))
+        return SystemRun(self.run_id, self.system.spec, tuple(trials))
+
+    def _run_batches(self, batch_size):
+        if type(batch_size) is not int or batch_size < 1:
+            raise ValueError("batch_size must be a positive integer")
+        generate = getattr(self.system.runtime, "generate_batch", None)
+        if not callable(generate):
+            raise TypeError("system runtime does not support generate_batch")
+        trials = []
+        for start in range(0, len(self.benchmark.inputs), batch_size):
+            inputs = self.benchmark.inputs[start:start + batch_size]
+            outputs = list(generate(inputs))
+            if len(outputs) != len(inputs):
+                raise ValueError("batch output count differs from input count")
+            for offset, output in enumerate(outputs):
+                index = start + offset
+                score = self.benchmark.scorer(output, self.benchmark.targets[index])
+                if inspect.isawaitable(score):
+                    if inspect.iscoroutine(score):
+                        score.close()
+                    raise TypeError("batch scoring must be synchronous")
+                trials.append(self._record_trial(index, score))
         return SystemRun(self.run_id, self.system.spec, tuple(trials))
 
     async def arun(self, *, concurrency=1, timeout=None):
@@ -143,6 +174,9 @@ class SystemEvaluationPipeline:
         from .async_execution import invoke
         output = await invoke(self.system.runtime, inputs)
         score = await invoke(lambda value: self.benchmark.scorer(value, target), output)
+        return self._record_trial(index, score)
+
+    def _record_trial(self, index, score):
         if not isinstance(score, Score):
             raise TypeError("benchmark scorer must return bs.Score")
         return Trial(str(index), self.benchmark.key(index), self.system.spec.digest,
