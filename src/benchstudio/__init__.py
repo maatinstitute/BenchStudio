@@ -212,7 +212,10 @@ from .system_ablations import (
 )
 from .system_importers import import_inspect_robots
 
+from .refinement import RefinementWorkspace, RefinementPreparation
+
 __all__ = [
+    "RefinementWorkspace", "RefinementPreparation",
     "GenerationConfig", "VLLMConfig",
     "Workflow", "AblationStudy", "AblationResult",
     "LiberoAdapter", "replay_libero",
