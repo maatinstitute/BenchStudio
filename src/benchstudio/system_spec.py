@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 import hashlib
+from functools import cached_property
 import json
 import re
 from types import MappingProxyType
@@ -123,7 +124,7 @@ class SystemSpec:
             "metadata": _thaw(self.metadata),
         }
 
-    @property
+    @cached_property
     def digest(self) -> str:
         return hashlib.sha256(_canonical(self.to_dict())).hexdigest()
 

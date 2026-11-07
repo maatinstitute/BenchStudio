@@ -26,8 +26,10 @@ print([trial.success for trial in results.trials])
 
 This executes arithmetic functions, not a learned model or simulator. Evaluator
 authority defaults to false. Native adapters, checkpoints, state reset and
-benchmark qualification still need explicit setup; checkpoint loading is not
-automatic.
+benchmark qualification still need explicit setup. Supported text models can
+load through the optional [vLLM backend](docs/vllm-backend.md), with pinned model
+and tokenizer revisions and explicit batched inference. Other runtimes retain
+the callable-system integration path.
 
 Use [paired system experiments](docs/paired-system-experiments.md) to construct
 an executable Workflow, replace a named component and compare variants through
