@@ -6,7 +6,10 @@ It never generates states/identities, imports a native stack, creates an approva
 marks a qualification PASSED, or executes its suggested commands. No approval
 file or execution permission is supplied by this change.
 
-Keep one workspace outside frozen evidence. Under each `pi05/` and `smolvla/`
+Use the existing release gate's workspace at
+`REPOSITORY/experiments/runs/cross_policy_confirmation_v2/` (outside frozen
+evidence packages). The helper defaults to it; arbitrary external paths cannot
+pass the release gate. Under each `pi05/` and `smolvla/`
 folder place the existing `manifest.json`, `schedule.json`, `initial_states.npz`
 and `fixtures.json`. For pi05 also supply the attesting server's
 `startup_gate.json`; for SmolVLA put the pinned checkpoint in `checkpoint/`.
@@ -17,7 +20,7 @@ native harness schema. Neither model is pooled with the other.
 From the paper checkout, with the selected model's pinned native interpreter:
 
 ```sh
-/path/to/native/python experiments/tooling/cross_policy_v3/prepare_campaign.py --workspace /path/to/workspace --model pi05
+/path/to/native/python experiments/tooling/cross_policy_v3/prepare_campaign.py --model pi05
 ```
 
 The helper always returns its report even when inputs are missing. An exit code
@@ -42,7 +45,7 @@ import benchstudio as bs
 
 work = bs.RefinementWorkspace(
     repository="/path/to/refinement-refresh-robot-policies",
-    workspace="/path/to/workspace",
+    workspace="/path/to/refinement-refresh-robot-policies/experiments/runs/cross_policy_confirmation_v2",
     python="/path/to/pi05-native/python",
 )
 report = work.prepare(model="pi05")

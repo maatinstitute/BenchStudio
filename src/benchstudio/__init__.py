@@ -214,7 +214,10 @@ from .system_importers import import_inspect_robots
 
 from .refinement import RefinementWorkspace, RefinementPreparation
 
+from .processes import ProcessCommand, ProcessFailure
+
 __all__ = [
+    "ProcessCommand", "ProcessFailure",
     "RefinementWorkspace", "RefinementPreparation",
     "GenerationConfig", "VLLMConfig",
     "Workflow", "AblationStudy", "AblationResult",
