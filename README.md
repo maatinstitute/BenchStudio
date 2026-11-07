@@ -49,6 +49,40 @@ The returned run object exposes its output directory and plan digest through
 `run.to_dict()`. See [the API comparison](docs/transformers-comparison.md)
 for the supported tasks and execution boundary.
 
+For a model and environment already registered in BenchStudio (or installed
+through its adapter entry points), pass the familiar inputs directly instead of
+writing the campaign file yourself:
+
+```python
+import benchstudio as bs
+
+evaluation = bs.pipeline(
+    "robotics-evaluation",
+    task={"id": "libero/spatial/task-0", "revision": "<pinned-task-revision>"},
+    model={
+        "adapter": "smolvla",
+        "checkpoint": "sha256:<reviewed-checkpoint-digest>",
+        "config": {"command": ["python", "your_policy_service.py"]},
+    },
+    environment={
+        "adapter": "external_command",
+        "id": "libero-local",
+        "config": {"command": ["python", "your_environment_service.py"]},
+    },
+    seeds=[7, 8],
+    conditions=[{"id": "baseline", "denoising_steps": 10}],
+    run_id="smolvla-libero-baseline",
+    output_dir="runs/smolvla-libero-baseline",
+)
+run = evaluation()
+```
+
+The policy and environment commands must implement their declared adapters'
+protocols. Use stable task and checkpoint revisions, explicit seeds, and
+condition IDs; BenchStudio freezes those declarations into the plan digest.
+This direct form and the campaign-file form produce the same frozen campaign
+contract.
+
 ## Developer quick start
 
 ```bash
