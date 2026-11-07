@@ -200,6 +200,7 @@ from .trajectory import compare_trajectories, load_trajectory
 from .validity import BenchmarkValidityAudit, BenchmarkValidityRecord, audit_benchmark_validity
 from .pipeline import CampaignAuditPipeline, CampaignRun, pipeline
 
+from .async_execution import AgentGroup, ResourcePool
 from .system_pipeline import System, Benchmark, Score, SystemEvaluationPipeline
 from .system_spec import Component, Connection, SystemSpec
 from .system_evidence import Trial, TrialKey, SystemRun, open_run
@@ -212,6 +213,7 @@ from .system_ablations import (
 from .system_importers import import_inspect_robots
 
 __all__ = [
+    "AgentGroup", "ResourcePool",
     "System", "Benchmark", "Score", "SystemEvaluationPipeline",
     "Component",
     "Connection",
