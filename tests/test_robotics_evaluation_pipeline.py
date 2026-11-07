@@ -91,24 +91,24 @@ def test_direct_transformers_style_inputs_compile_to_frozen_campaign(tmp_path):
 
         with patch.object(pipeline_module, "compile_campaign_spec", side_effect=compile_spec):
             result = bs.pipeline(
-            "robotics-evaluation",
-            task={"id": "libero/spatial/task-0", "revision": "dataset-sha256"},
-            model={
-                "adapter": "smolvla",
-                "checkpoint": "sha256:" + "b" * 64,
-                "config": {"command": ["python", "policy.py"]},
-            },
-            environment={
-                "adapter": "external_command",
-                "id": "libero-local",
-                "config": {"command": ["python", "environment.py"]},
-            },
-            seeds=[7, 8],
-            conditions=[{"id": "baseline", "denoising_steps": 10}],
-            run_id="smolvla-libero-smoke",
-            benchmark="libero",
-            output_dir=tmp_path / "run",
-        )()
+                "robotics-evaluation",
+                task={"id": "libero/spatial/task-0", "revision": "dataset-sha256"},
+                model={
+                    "adapter": "smolvla",
+                    "checkpoint": "sha256:" + "b" * 64,
+                    "config": {"command": ["python", "policy.py"]},
+                },
+                environment={
+                    "adapter": "external_command",
+                    "id": "libero-local",
+                    "config": {"command": ["python", "environment.py"]},
+                },
+                seeds=[7, 8],
+                conditions=[{"id": "baseline", "denoising_steps": 10}],
+                run_id="smolvla-libero-smoke",
+                benchmark="libero",
+                output_dir=tmp_path / "run",
+            )()
 
     assert compiled["model"]["adapter"] == "smolvla"
     assert compiled["model"]["checkpoint"] == "sha256:" + "b" * 64
