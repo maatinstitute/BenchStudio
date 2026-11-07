@@ -3,12 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
-from benchstudio import (
-    CampaignPlanner,
-    ClaimType,
-    audit_campaign,
-    pipeline,
-)
+import benchstudio as bs
 
 
 def test_campaign_audit_pipeline_uses_offline_directory_audit(tmp_path):
@@ -18,7 +13,7 @@ def test_campaign_audit_pipeline_uses_offline_directory_audit(tmp_path):
 
     pipeline_module = import_module("benchstudio.pipeline")
     with patch.object(pipeline_module, "audit_campaign_directory", return_value=expected) as audit:
-        review = pipeline("campaign-audit", claim_type=ClaimType.PAIRED_COMPARISON)
+        review = bs.pipeline("campaign-audit", claim_type=bs.ClaimType.PAIRED_COMPARISON)
         result = review(campaign)
 
     assert result is expected
@@ -26,7 +21,7 @@ def test_campaign_audit_pipeline_uses_offline_directory_audit(tmp_path):
 
 
 def test_campaign_audit_pipeline_rejects_missing_and_non_directory_sources(tmp_path):
-    review = pipeline("campaign-audit")
+    review = bs.pipeline("campaign-audit")
     with pytest.raises(FileNotFoundError, match="does not exist"):
         review(tmp_path / "missing")
     archive = tmp_path / "campaign.zip"
@@ -37,18 +32,18 @@ def test_campaign_audit_pipeline_rejects_missing_and_non_directory_sources(tmp_p
 
 def test_pipeline_factory_lists_supported_task():
     with pytest.raises(ValueError, match="campaign-audit"):
-        pipeline("policy-loading")
+        bs.pipeline("policy-loading")
 
 
 def test_campaign_audit_has_a_concise_summary():
-    plan = CampaignPlanner(
+    plan = bs.CampaignPlanner(
         run_id="summary", scenario_id="task", conditions=[{"variant": "A"}], seeds=[7]
     ).freeze()
     attempt_id = plan.attempts[0].key.attempt_id
-    report = audit_campaign(
+    report = bs.audit_campaign(
         plan,
         [{"attempt_id": attempt_id, "status": "completed", "evidence_verified": True}],
-        claim_type=ClaimType.SINGLE_RUN_OUTCOME,
+        claim_type=bs.ClaimType.SINGLE_RUN_OUTCOME,
         evidence={"authoritative_scorer_declared": True},
     )
 
