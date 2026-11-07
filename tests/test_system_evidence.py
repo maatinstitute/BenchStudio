@@ -62,3 +62,29 @@ def test_offline_bundle_hash_verification(tmp_path):
 def test_empty_and_unscored_are_not_conjured_into_success(tmp_path):
     assert SystemRun("r", spec(), ()).trials == ()
     assert not trial(success=None, authoritative=False).valid_success
+
+
+
+def test_trial_export_matches_legacy_bytes_and_has_independent_mappings():
+    from dataclasses import asdict
+    import json
+    from types import MappingProxyType
+    for status, success, authoritative, metrics in (
+        ("completed", True, True, {"count": 7, "error": 0.125}),
+        ("completed", None, False, {}),
+        ("execution_failed", None, False, {"elapsed": 1.5}),
+    ):
+        source = trial(status=status, success=success, authoritative=authoritative)
+        row = Trial(source.trial_id, source.key, source.system_digest, status,
+                    success, source.outcome_source, authoritative, metrics)
+        expected = json.dumps(asdict(row), sort_keys=True, allow_nan=False)
+        assert json.dumps(row.to_dict(), sort_keys=True, allow_nan=False) == expected
+        assert Trial.from_dict(row.to_dict()) == row
+        exported = row.to_dict()
+        exported["metrics"]["injected"] = 999
+        exported["key"]["scenario"] = "different"
+        assert "injected" not in row.metrics
+        assert row.key.scenario != "different"
+    readonly = Trial(source.trial_id, source.key, source.system_digest, "completed",
+                     True, "declared", False, MappingProxyType({"error": 0.5}))
+    assert readonly.to_dict()["metrics"] == {"error": 0.5}

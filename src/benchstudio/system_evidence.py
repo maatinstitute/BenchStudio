@@ -5,7 +5,7 @@ invents a success criterion, downloads weights or executes a model.
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field, fields
 import hashlib
 import json
 import math
@@ -50,6 +50,9 @@ class TrialKey:
         _sha(self.protocol_digest)
 
 
+_KEY_FIELDS = tuple(f.name for f in fields(TrialKey))
+
+
 @dataclass(frozen=True)
 class Trial:
     trial_id: str
@@ -89,7 +92,18 @@ class Trial:
         return self.status == "completed" and self.authoritative and self.success is not None
 
     def to_dict(self) -> dict[str, Any]:
-        return {**asdict(self), "metrics": dict(self.metrics)}
+        # The schema contains validated scalars plus two mappings. Copy those
+        # mappings explicitly instead of recursively deep-copying every scalar.
+        return {
+            "trial_id": self.trial_id,
+            "key": {name: getattr(self.key, name) for name in _KEY_FIELDS},
+            "system_digest": self.system_digest,
+            "status": self.status,
+            "success": self.success,
+            "outcome_source": self.outcome_source,
+            "authoritative": self.authoritative,
+            "metrics": dict(self.metrics),
+        }
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> "Trial":
@@ -168,3 +182,4 @@ def open_run(root: str | Path) -> SystemRun:
         run_id=manifest["run_id"], system=system,
         trials=tuple(trials), source_digests=dict(manifest["files"]),
     )
+
