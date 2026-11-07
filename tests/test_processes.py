@@ -40,3 +40,14 @@ def test_timeout_and_dead_service(tmp_path):
     with pytest.raises(bs.ProcessFailure, match='before readiness'):
         with command.service(tmp_path, ready=lambda: False, startup_timeout=5):
             pytest.fail('client must not start')
+
+
+def test_command_timeout_still_applies_when_monitoring_service(tmp_path):
+    class Alive:
+        def poll(self):
+            return None
+    command = bs.ProcessCommand('dependent', (sys.executable, '-c', 'import time; time.sleep(60)'),
+                                tmp_path, timeout=0.1)
+    with pytest.raises(bs.ProcessFailure, match='timed out'):
+        command.run(tmp_path, required_service=Alive())
+    assert json.loads((tmp_path / 'dependent.receipt.json').read_text())['reason'] == 'ProcessFailure'

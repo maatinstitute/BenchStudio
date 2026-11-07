@@ -28,3 +28,9 @@ readiness, scoring, qualification and authorization. No automatic retry occurs.
 The paper's `experiments/run_r22r25.py` is a recipe using this generic engine.
 It must not move scientific rules into BenchStudio. It runs in BenchStudio's
 supported Python; children use the separately pinned SmolVLA/OpenPI interpreters.
+
+For a command that requires a service throughout execution, pass the owned
+process returned by the service context to `run(logs, required_service=process)`.
+If it exits while the command is still running, the command is stopped and a
+ProcessFailure receipt is retained. The normal command timeout still applies.
+This monitors local process liveness, not semantic correctness or remote health.

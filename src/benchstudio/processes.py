@@ -88,10 +88,27 @@ class ProcessCommand:
                             'finished_unix': time.time(), 'exit_code': None if process is None else process.returncode,
                             'reason': reason}, stream, indent=2)
 
-    def run(self, log_dir):
+    def run(self, log_dir, *, required_service=None):
         with self.started(log_dir) as process:
             try:
-                code = process.wait(timeout=self.timeout)
+                if required_service is None:
+                    code = process.wait(timeout=self.timeout)
+                else:
+                    deadline = None if self.timeout is None else time.monotonic() + self.timeout
+                    while True:
+                        code = process.poll()
+                        if code is not None:
+                            break
+                        if required_service.poll() is not None:
+                            raise ProcessFailure(f'{self.name}: required service exited; see {log_dir}')
+                        remaining = None if deadline is None else deadline - time.monotonic()
+                        if remaining is not None and remaining <= 0:
+                            raise subprocess.TimeoutExpired(self.argv, self.timeout)
+                        try:
+                            code = process.wait(timeout=0.1 if remaining is None else min(0.1, remaining))
+                            break
+                        except subprocess.TimeoutExpired:
+                            continue
             except subprocess.TimeoutExpired as error:
                 raise ProcessFailure(f'{self.name} timed out; see {log_dir}') from error
             if code:
