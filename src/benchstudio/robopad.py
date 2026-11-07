@@ -302,7 +302,7 @@ def main() -> int:
     parser.add_argument("--trusted-manifest-sha256", help="Digest obtained from the archive reviewer.")
     parser.add_argument("--worker", action="store_true", help="Use resource limits in a Linux worker.")
     args = parser.parse_args()
-    from .pipeline import ReplayPipeline
+    from .replay_pipeline import ReplayPipeline
     from .replay_worker import ReplayLimits
 
     try:
@@ -320,3 +320,4 @@ def main() -> int:
         parser.exit(2, f"BenchStudio replay: {exc}\n")
     print(json.dumps(report, indent=2, allow_nan=False))
     return 0 if report.get("passed", report.get("ready")) else 1
+

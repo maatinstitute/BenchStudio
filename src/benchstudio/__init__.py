@@ -196,22 +196,53 @@ from .scenarios import (
     scenario_archive_digest,
     validate_scenario_pack,
 )
-from .libero import LiberoAdapter, replay_libero
-from .pipeline import ReplayPipeline, ReplayResult
-from .replay_worker import ReplayLimits, ReplayWorkerError
 from .trajectory import compare_trajectories, load_trajectory
 from .validity import BenchmarkValidityAudit, BenchmarkValidityRecord, audit_benchmark_validity
+from .pipeline import CampaignAuditPipeline, CampaignRun, pipeline
+
+from .async_execution import AgentGroup, ResourcePool
+from .system_pipeline import System, Benchmark, Score, SystemEvaluationPipeline
+from .system_spec import Component, Connection, SystemSpec
+from .system_evidence import Trial, TrialKey, SystemRun, open_run
+from .system_trace import SystemEvent, TraceAudit, audit_system_trace
+from .system_comparison import MetricDelta, SystemComparison, compare_system_runs
+from .system_ablations import (
+    AblationAudit, TrialCoverageAudit, EvidenceReadiness, audit_ablation,
+    audit_trial_coverage, review_ablation_evidence,
+)
+from .system_importers import import_inspect_robots
 
 __all__ = [
-    "LiberoAdapter",
-    "ReplayLimits",
-    "ReplayWorkerError",
-    "ReplayPipeline",
-    "ReplayResult",
-    "replay_libero",
+    "LiberoAdapter", "replay_libero",
+    "ReplayPipeline", "ReplayResult", "ReplayLimits", "ReplayWorkerError",
+    "AgentGroup", "ResourcePool",
+    "System", "Benchmark", "Score", "SystemEvaluationPipeline",
+    "Component",
+    "Connection",
+    "SystemSpec",
+    "Trial",
+    "TrialKey",
+    "SystemRun",
+    "open_run",
+    "SystemEvent",
+    "TraceAudit",
+    "audit_system_trace",
+    "MetricDelta",
+    "SystemComparison",
+    "compare_system_runs",
+    "AblationAudit",
+    "TrialCoverageAudit",
+    "EvidenceReadiness",
+    "audit_ablation",
+    "audit_trial_coverage",
+    "review_ablation_evidence",
+    "import_inspect_robots",
     "ActionChunk",
     "ClaimDecision",
     "CampaignAudit",
+    "CampaignAuditPipeline",
+    "CampaignRun",
+    "pipeline",
     "ClaimType",
     "CounterfactualOutcomeAudit",
     "CounterfactualBranchResult",
@@ -392,3 +423,9 @@ __all__ = [
     "write_campaign_archive",
     "minimize_counterexample",
 ]
+
+
+from .replay_pipeline import ReplayPipeline, ReplayResult
+from .replay_worker import ReplayLimits, ReplayWorkerError
+
+from .libero import LiberoAdapter, replay_libero

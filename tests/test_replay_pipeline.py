@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from benchstudio.pipeline import ReplayPipeline
+from benchstudio.replay_pipeline import ReplayPipeline
 from benchstudio.replay_manifest import ReplayEnvironmentError
 from benchstudio.robopad import RoboPADReplay, _FIELDS
 
@@ -239,3 +239,30 @@ class ReplayPipelineTests(unittest.TestCase):
             pipeline = ReplayPipeline.from_archive(temporary, trusted_manifest_sha256="a" * 64)
             with self.assertRaisesRegex(ValueError, "privately staged"):
                 pipeline.check()
+
+
+
+def test_common_python_pipeline_keeps_replay_and_system_tasks_available(tmp_path):
+    import benchstudio as bs
+    archive = tmp_path / "bad.tar.gz"
+    with tarfile.open(archive, "w:gz"):
+        pass
+    replay = bs.pipeline("replay", source=archive)
+    assert isinstance(replay, bs.ReplayPipeline)
+    with patch.object(bs.ReplayPipeline, "run", return_value="receipt"):
+        assert replay() == "receipt"
+    system = bs.System.from_callable(lambda x: x, name="identity", revision="r1")
+    benchmark = bs.Benchmark("same", "r1", [1], [1],
+                             lambda a, b: bs.Score(a == b), "r1")
+    assert bs.pipeline("system-evaluation", system=system, benchmark=benchmark)().trials[0].success
+
+
+def test_replay_adapter_retains_each_raw_step_observation():
+    from benchstudio.libero import _LiberoRuntime
+    runtime = object.__new__(_LiberoRuntime)
+    runtime.config = SimpleNamespace(backend="native")
+    raw = {"frame": "new"}
+    runtime.env = SimpleNamespace(step=lambda action: (raw, 0, False, {}))
+    with patch("benchstudio.libero._observation_frame", return_value={"native_success": False}):
+        runtime.step([0])
+    assert runtime.raw_observation is raw

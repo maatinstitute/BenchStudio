@@ -13,7 +13,7 @@ authors = [{ name = "Alba Maria Tellez Fernandez" }]
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=7.4", "ruff>=0.6"]
+dev = ["pytest>=7.4", "ruff>=0.6", "numpy>=1.24", "cryptography>=41"]
 yaml = ["PyYAML>=6.0"]
 mujoco = ["mujoco>=3.0"]
 gymnasium = ["gymnasium>=0.29"]
@@ -39,3 +39,4 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
+

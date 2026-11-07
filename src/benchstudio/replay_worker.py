@@ -111,7 +111,7 @@ def _apply_limits(limits: ReplayLimits) -> None:
 
 
 def _child_main() -> None:
-    from .pipeline import ReplayPipeline
+    from .replay_pipeline import ReplayPipeline
     from .replay_manifest import ReplayEnvironmentError
 
     root = Path(sys.argv[1])
@@ -136,3 +136,4 @@ def _child_main() -> None:
         response = {"status": "worker_error", "message": f"{type(exc).__name__}: {exc}"}
     with (root / "result.json").open("w", encoding="utf-8") as stream:
         json.dump(response, stream, allow_nan=False)
+

@@ -42,3 +42,4 @@ class ReplayWorkerTests(unittest.TestCase):
             payload = execute_in_worker(request, limits)
             self.assertEqual(payload["status"], "invalid_input")
             self.assertIn("File too large", payload["message"])
+

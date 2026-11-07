@@ -9,7 +9,94 @@ auditable run artifacts. Policy adapters and simulator adapters are deliberately
 small so RoboChallenge or another benchmark can retain authority over scoring,
 safety limits, and physical robot execution.
 
-## Quick start
+## Python API: run a robotics evaluation
+
+The shortest way to use BenchStudio is to name the task, model, environment,
+seeds, and evaluation conditions directly. You do not need to write a campaign
+file for the common path:
+
+```python
+import benchstudio as bs
+
+run = bs.pipeline(
+    "robotics-evaluation",
+    task={"id": "pick-cube", "revision": "fixture-v1"},
+    model="mock",
+    environment={"adapter": "mock-simulator", "kind": "simulator"},
+    seeds=[7, 8],
+    conditions=[{"id": "baseline"}],
+    run_id="first-evaluation",
+    output_dir="runs/first-evaluation",
+    execution="mock",
+)()
+print(run.summary())
+print(run.analyze().summary())
+```
+
+This is a synthetic API check. It does not load a robot policy or establish
+simulator fidelity. Run the checked-in version with a fresh output directory:
+
+```bash
+python examples/direct_pipeline_mock.py runs/first-evaluation
+```
+
+The result separates execution accounting (`run.summary()`) from offline
+evidence review (`run.analyze()`). BenchStudio freezes the named inputs into a
+campaign plan and records its digest. Stable task revisions, checkpoint
+identities, seeds, conditions, and environment configuration remain explicit
+because they define what an evaluation means.
+
+## Connect a real policy and environment
+
+For a stack already supported through registered adapters, replace the mock
+declarations with those adapters and set `execution="registry"`:
+
+```python
+import benchstudio as bs
+
+evaluation = bs.pipeline(
+    "robotics-evaluation",
+    task={"id": "libero/spatial/task-0", "revision": "<pinned-task-revision>"},
+    model={
+        "adapter": "smolvla",
+        "checkpoint": "sha256:<reviewed-checkpoint-digest>",
+        "config": {"command": ["python", "your_policy_service.py"]},
+    },
+    environment={
+        "adapter": "external_command",
+        "id": "libero-local",
+        "config": {"command": ["python", "your_environment_service.py"]},
+    },
+    seeds=[7, 8],
+    conditions=[{"id": "baseline", "denoising_steps": 10}],
+    run_id="smolvla-libero-baseline",
+    output_dir="runs/smolvla-libero-baseline",
+    execution="registry",
+)
+run = evaluation()
+print(run.summary())
+```
+
+The named policy and environment adapters must already be installed and their
+services must implement the JSON-line protocols documented by those adapters.
+This is not an automatic Transformers-style checkpoint loader: the caller owns
+the robot observation/action mapping, preprocessing, environment assets, and
+runtime installation. See [the API comparison](docs/transformers-comparison.md)
+for the exact boundary and [the model bridge example](examples/external_runtime/lerobot_smolvla_policy.py)
+for a LeRobot-owned SmolVLA process.
+
+To inspect an existing run without executing it again:
+
+```python
+import benchstudio as bs
+
+audit = bs.pipeline(
+    "campaign-audit", claim_type=bs.ClaimType.SINGLE_RUN_OUTCOME
+)("runs/first-evaluation")
+print(audit.summary())
+```
+
+## Developer quick start
 
 ```bash
 python -m pytest
@@ -562,8 +649,8 @@ LIBERO runtime and assets. From a BenchStudio checkout, use
 ```python
 import benchstudio as bs
 
-pipeline = bs.ReplayPipeline.from_archive("./robopad_attempt.tar.gz")
-results = pipeline.run(verify_environment=True)
+pipeline = bs.pipeline("replay", source="./robopad_attempt.tar.gz")
+results = pipeline()
 print(results.summary())
 ```
 
@@ -582,44 +669,13 @@ This first pipeline supports completed nominal base attempts from RoboPAD's
 and compares the archived observation hashes exactly. Renderer drift can
 appear as an image difference even when the recorded simulator state agrees.
 
-### Pin an archive's replay environment
+### Archived environment requirements
 
-Add `benchstudio-replay.json` alongside the campaign's `manifest.json` for
-a reproducible handoff. Start from the producing environment and record the
-actual values. This example uses illustrative versions and digest values:
-
-```json
-{
-  "schema": "benchstudio.replay_manifest.v1",
-  "adapter": "robopad.validation_transfer_v1",
-  "episode": "example_key",
-  "runtime": {
-    "python": "3.12.3",
-    "modules": {"numpy": "1.26.4", "mujoco": "3.3.0"},
-    "renderer": {"vendor": "Mesa", "renderer": "llvmpipe (LLVM 20.1.2, 256 bits)"},
-    "variables": {"MUJOCO_GL": "osmesa", "PYOPENGL_PLATFORM": "osmesa"},
-    "requirements_file": "requirements.freeze.txt"
-  },
-  "evidence_sha256": {
-    "manifest.json": "<sha256 of exact file bytes>",
-    "prepared/example_key/record.json": "<sha256>",
-    "evaluations/example_key/base/record.json": "<sha256>",
-    "requirements.freeze.txt": "<sha256>"
-  }
-}
-```
-
-The lockfile is optional. If you include one, use the reviewed dependency
-lock from the producing stack, then install it in a fresh environment after
-inspection. `pipeline.check()` reports the observed versions, the requested
-renderer configuration, and mismatches with suggested corrections. A
-versioned archive also requires the **active** OpenGL renderer to match. If
-it cannot be read, the readiness check reports a mismatch. With
-`verify_environment=True`, mismatches block replay.
-
-Legacy RoboPAD archives are detected automatically. Their readiness report
-says `legacy_unpinned` because it can probe native reset and render but has
-no archived runtime pins to compare.
+Replay discovers the environment requirements stored by the archive producer.
+Users do not write a JSON configuration or override those requirements. Runtime
+mismatches block verified replay. Legacy archives without requirements are
+reported as `legacy_unpinned`; reset success alone does not establish parity.
+The archive format is an internal interchange contract, not the Python API.
 
 ### Replay with an independently trusted manifest
 
@@ -627,7 +683,7 @@ For a reviewed handoff, obtain the SHA-256 of `benchstudio-replay.json`
 through a separate trusted channel and supply it to the pipeline:
 
 ```python
-pipeline = bs.ReplayPipeline.from_archive(
+pipeline = bs.pipeline("replay", source=
     "robopad_attempt.tar.gz", trusted_manifest_sha256=reviewed_manifest_sha256
 )
 result = pipeline.run()
@@ -645,7 +701,7 @@ On Linux, pass limits when opening an archive. Both readiness and replay
 then run in a separate process using the same installed Python environment:
 
 ```python
-pipeline = bs.ReplayPipeline.from_archive(
+pipeline = bs.pipeline("replay", source=
     "robopad_attempt.tar.gz",
     trusted_manifest_sha256=reviewed_manifest_sha256,
     limits=bs.ReplayLimits(wall_seconds=300, cpu_seconds=240),
@@ -660,6 +716,7 @@ group on timeout. The existing archive extraction and report size limits
 also apply. These limits do not isolate filesystem or network access and do
 not cap GPU memory. Use a separately configured container or job sandbox
 where those controls are required.
+
 
 ## Replay saved actions in LIBERO
 
@@ -696,3 +753,4 @@ bytes. The LeRobot path preserves the dtype of a NumPy action array.
 A new capture from an archived action file is a new baseline, so
 retain any original RoboPAD trace separately. Independent evaluator
 qualification uses its own goal checker and outcome evidence.
+

@@ -1,157 +1,340 @@
-"""Public pipeline for replaying existing RoboPAD validation evidence."""
+"""Task-oriented public pipelines for campaign execution and audit."""
 
 from __future__ import annotations
 
-import shutil
-import tarfile
 from dataclasses import dataclass
-from pathlib import Path, PurePosixPath
-from tempfile import TemporaryDirectory
-from typing import Any
+from pathlib import Path
+from typing import Any, Mapping
 
-from .replay_manifest import ReplayEnvironmentError, ReplayManifest
-from .replay_worker import ReplayLimits, ReplayWorkerError, execute_in_worker
-from .robopad import RoboPADReplay
-
-_MAX_ARCHIVE_BYTES = 16 * 1024**3
-_MAX_ARCHIVE_MEMBERS = 100_000
-
-
-def _extract(source: Path, destination: Path) -> Path:
-    seen: set[PurePosixPath] = set()
-    size = 0
-    with tarfile.open(source, mode="r:gz") as archive:
-        for member in archive:
-            name = PurePosixPath(member.name)
-            if (
-                name.is_absolute() or ".." in name.parts or "\\" in member.name
-                or (not member.isdir() and not member.isfile())
-            ):
-                raise ValueError(f"unsafe archive entry: {member.name}")
-            if name == PurePosixPath(".") and member.isdir():
-                continue
-            if name in seen:
-                raise ValueError(f"duplicate archive entry: {member.name}")
-            seen.add(name)
-            if member.size < 0:
-                raise ValueError(f"invalid archive entry size: {member.name}")
-            size += member.size
-            if len(seen) > _MAX_ARCHIVE_MEMBERS or size > _MAX_ARCHIVE_BYTES:
-                raise ValueError("archive exceeds the replay extraction limits")
-            target = destination.joinpath(*name.parts)
-            if member.isdir():
-                target.mkdir(parents=True, exist_ok=True)
-            else:
-                target.parent.mkdir(parents=True, exist_ok=True)
-                stream = archive.extractfile(member)
-                if stream is None:
-                    raise ValueError(f"cannot read archive entry: {member.name}")
-                with stream, target.open("xb") as output:
-                    shutil.copyfileobj(stream, output)
-    if (destination / "manifest.json").is_file():
-        return destination
-    folders = list(destination.iterdir())
-    if len(folders) == 1 and (folders[0] / "manifest.json").is_file():
-        return folders[0]
-    raise ValueError("archive must contain one RoboPAD campaign manifest at its root")
+from .analysis import CampaignAudit, ClaimType, audit_campaign_directory
+from .campaigns import CampaignExecutionSummary, CampaignExecutor, compile_campaign_spec
+from .campaigns.io import load_campaign_document
 
 
 @dataclass(frozen=True)
-class ReplayResult:
-    """Detailed replay evidence with a compact user-facing summary."""
+class CampaignRun:
+    """Execution receipt paths and counts for one frozen campaign."""
 
-    report: dict[str, Any]
-    environment: dict[str, Any] | None = None
+    output_dir: Path
+    plan_path: Path
+    execution: CampaignExecutionSummary
 
-    def summary(self) -> dict[str, Any]:
+    def summary(self) -> str:
+        """Return a compact execution summary without making a scientific claim."""
+        return (
+            f"Campaign {self.execution.run_id}: "
+            f"{len(self.execution.committed_attempt_ids)} completed, "
+            f"{len(self.execution.failed_attempt_ids)} failed, "
+            f"{len(self.execution.missing_attempt_ids)} missing, "
+            f"{len(self.execution.skipped_attempt_ids)} already recorded."
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return JSON-compatible execution accounting and artifact locations."""
         return {
-            "episode": self.report["episode"],
-            "passed": self.report["passed"],
-            "first_difference": self.report["first_difference"],
-            "difference_count": len(self.report["differences"]),
-            "environment_checked": self.environment is not None,
+            "schema": "benchstudio_campaign_run_v1",
+            "run_id": self.execution.run_id,
+            "plan_digest_sha256": self.execution.plan_digest_sha256,
+            "output_dir": str(self.output_dir),
+            "plan_path": str(self.plan_path),
+            "committed_attempt_ids": list(self.execution.committed_attempt_ids),
+            "failed_attempt_ids": list(self.execution.failed_attempt_ids),
+            "skipped_attempt_ids": list(self.execution.skipped_attempt_ids),
+            "missing_attempt_ids": list(self.execution.missing_attempt_ids),
+            "leased_out_attempt_ids": list(self.execution.leased_out_attempt_ids),
+            "cancelled_attempt_ids": list(self.execution.cancelled_attempt_ids),
         }
 
-
-@dataclass(frozen=True)
-class ReplayPipeline:
-    """Replay a saved RoboPAD nominal validation attempt from its archive."""
-
-    archive: Path
-    episode: str | None = None
-    trusted_manifest_sha256: str | None = None
-    limits: ReplayLimits | None = None
-
-    @classmethod
-    def from_archive(
-        cls, path: str | Path, *, episode: str | None = None,
-        trusted_manifest_sha256: str | None = None,
-        limits: ReplayLimits | None = None,
-    ) -> ReplayPipeline:
-        source = Path(path).resolve()
-        if not source.is_dir() and not source.is_file():
-            raise FileNotFoundError(f"replay archive not found: {source}")
-        if limits is not None and not isinstance(limits, ReplayLimits):
-            raise TypeError("limits must be a ReplayLimits instance")
-        return cls(source, episode, trusted_manifest_sha256, limits)
-
-    def check(self) -> dict[str, Any]:
-        """Verify archive inputs and render the selected reset state."""
-        return self._execute(check_only=True, verify_environment=True)
-
-    def run(self, *, verify_environment: bool = True) -> ReplayResult:
-        """Replay against the original archive, optionally probing readiness first."""
-        if self.trusted_manifest_sha256 is not None and verify_environment is not True:
-            raise ValueError("trusted replay requires verify_environment=True")
-        return self._execute(check_only=False, verify_environment=verify_environment)
-
-    def _execute(self, *, check_only: bool, verify_environment: bool) -> Any:
-        if self.limits is not None:
-            return self._execute_worker(check_only, verify_environment)
-        if self.archive.is_dir():
-            if self.trusted_manifest_sha256 is not None:
-                raise ValueError("trusted replay requires a .tar.gz so evidence is privately staged")
-            return self._run_folder(self.archive, check_only, verify_environment)
-        try:
-            with TemporaryDirectory(prefix="benchstudio-replay-") as temporary:
-                root = _extract(self.archive, Path(temporary))
-                return self._run_folder(root, check_only, verify_environment)
-        except tarfile.TarError as exc:
-            raise ValueError("expected a RoboPAD .tar.gz archive or extracted campaign directory") from exc
-
-    def _execute_worker(self, check_only: bool, verify_environment: bool) -> Any:
-        payload = execute_in_worker({
-            "archive": str(self.archive),
-            "episode": self.episode,
-            "trusted_manifest_sha256": self.trusted_manifest_sha256,
-            "check_only": check_only,
-            "verify_environment": verify_environment,
-        }, self.limits)
-        status = payload["status"]
-        if status == "environment_error":
-            raise ReplayEnvironmentError(payload["report"])
-        if status == "invalid_input":
-            raise ValueError(payload["message"])
-        if status == "worker_error":
-            raise ReplayWorkerError(payload["message"])
-        result = payload["result"]
-        return result if check_only else ReplayResult(result["report"], result["environment"])
-
-    def _run_folder(
-        self, root: Path, check_only: bool, verify_environment: bool
-    ) -> ReplayResult | dict[str, Any]:
-        manifest = ReplayManifest.open(
-            root, self.episode, trusted_sha256=self.trusted_manifest_sha256
+    def analyze(
+        self,
+        *,
+        claim_type: ClaimType | str = ClaimType.SINGLE_RUN_OUTCOME,
+        evidence: dict[str, Any] | None = None,
+    ) -> CampaignAudit:
+        """Explicitly audit persisted evidence after execution."""
+        return audit_campaign_directory(
+            self.output_dir,
+            claim_type=ClaimType(claim_type),
+            evidence=evidence,
         )
-        attempt = RoboPADReplay.open(root, episode=manifest.episode)
-        environment = manifest.check(attempt) if verify_environment else None
-        if environment is not None:
-            environment["input_trust"] = (
-                "independent_manifest_digest" if self.trusted_manifest_sha256 is not None
-                else "archive_declared"
+
+
+class CampaignEvaluationPipeline:
+    """Execute a declared campaign through explicit mock or installed adapters.
+
+    A campaign can be supplied as JSON/YAML or as familiar task/model/
+    environment inputs. Calling run() is the explicit execution step;
+    construction does not load a model or contact an environment.
+    """
+
+    def __init__(
+        self,
+        campaign: str | Path | Mapping[str, Any] | None = None,
+        *,
+        output_dir: str | Path,
+        execution: str = "registry",
+        workers: int = 1,
+        task: str | Mapping[str, Any] | None = None,
+        task_revision: str | None = None,
+        model: str | Mapping[str, Any] | None = None,
+        environment: str | Mapping[str, Any] | None = None,
+        seeds: list[int] | tuple[int, ...] | None = None,
+        conditions: list[dict[str, Any]] | tuple[dict[str, Any], ...] | None = None,
+        run_id: str | None = None,
+        benchmark: str | None = None,
+    ) -> None:
+        if execution not in {"registry", "mock"}:
+            raise ValueError("execution must be 'registry' or 'mock'")
+        if isinstance(workers, bool) or not isinstance(workers, int) or workers < 1:
+            raise ValueError("workers must be a positive integer")
+        direct_values = (task, model, environment, seeds, conditions, run_id, benchmark)
+        if campaign is not None and any(value is not None for value in direct_values):
+            raise ValueError("campaign cannot be combined with direct task/model/environment inputs")
+        if campaign is None and not all(
+            value is not None for value in (task, model, environment, seeds, conditions, run_id)
+        ):
+            raise ValueError(
+                "provide campaign or all of task, model, environment, seeds, conditions, and run_id"
             )
-        if check_only:
-            return environment
-        if environment is not None and not environment["ready"]:
-            raise ReplayEnvironmentError(environment)
-        return ReplayResult(attempt.replay(), environment)
+        self.campaign = campaign
+        self.direct_values = {
+            "task": task,
+            "task_revision": task_revision,
+            "model": model,
+            "environment": environment,
+            "seeds": seeds,
+            "conditions": conditions,
+            "run_id": run_id,
+            "benchmark": benchmark,
+        }
+        self.output_dir = Path(output_dir)
+        self.execution = execution
+        self.workers = workers
+
+    def __call__(self) -> CampaignRun:
+        """Execute the configured frozen campaign."""
+        return self.run()
+
+    def run(self) -> CampaignRun:
+        """Compile, freeze, and execute the declared campaign."""
+        if self.campaign is not None:
+            spec = (
+                dict(self.campaign)
+                if isinstance(self.campaign, Mapping)
+                else load_campaign_document(Path(self.campaign))
+            )
+        else:
+            spec = _campaign_from_direct_inputs(**self.direct_values)
+        plan = compile_campaign_spec(spec)
+        if self.execution == "mock":
+            from .adapters import default_registry
+            from .mock import MockPolicy, MockSimulator
+
+            executor = CampaignExecutor(
+                plan,
+                self.output_dir,
+                policy_factory=lambda _attempt: MockPolicy(),
+                simulator_factory=lambda _attempt: MockSimulator(),
+                adapter_registry=default_registry(),
+            )
+        else:
+            model_declaration = plan.protocol.get("M", {})
+            environments = plan.protocol.get("S", {}).get("environments", [])
+            if not isinstance(model_declaration, dict) or not model_declaration.get("adapter"):
+                raise ValueError(
+                    "registry execution requires a declared model.adapter in the campaign"
+                )
+            missing = [
+                item.get("id", "<unknown>")
+                for item in environments
+                if isinstance(item, dict)
+                and item.get("enabled", item.get("kind") != "physical")
+                and not item.get("adapter")
+            ]
+            if missing:
+                raise ValueError(
+                    "registry execution requires adapters for enabled environments: "
+                    + ", ".join(missing)
+                )
+            from .adapters import default_registry
+            from .model_adapters import default_model_registry
+
+            executor = CampaignExecutor(
+                plan,
+                self.output_dir,
+                adapter_registry=default_registry(),
+                model_registry=default_model_registry(),
+            )
+        execution = (
+            executor.run_parallel(self.workers) if self.workers > 1 else executor.run()
+        )
+        return CampaignRun(
+            output_dir=self.output_dir,
+            plan_path=self.output_dir / "campaign-plan.json",
+            execution=execution,
+        )
+
+
+def _campaign_from_direct_inputs(
+    *,
+    task: str | Mapping[str, Any] | None,
+    task_revision: str | None,
+    model: str | Mapping[str, Any] | None,
+    environment: str | Mapping[str, Any] | None,
+    seeds: list[int] | tuple[int, ...] | None,
+    conditions: list[dict[str, Any]] | tuple[dict[str, Any], ...] | None,
+    run_id: str | None,
+    benchmark: str | None,
+) -> dict[str, Any]:
+    task_id, revision, task_benchmark = _task_identity(task, task_revision, benchmark)
+    model_record = _adapter_input(model, name="model")
+    environment_record = _adapter_input(environment, name="environment")
+    if not isinstance(seeds, (list, tuple)) or not seeds:
+        raise ValueError("seeds must be a non-empty sequence of integers")
+    if any(isinstance(seed, bool) or not isinstance(seed, int) for seed in seeds):
+        raise ValueError("seeds must contain only integers")
+    if not isinstance(conditions, (list, tuple)) or not conditions or any(
+        not isinstance(condition, Mapping) for condition in conditions
+    ):
+        raise ValueError("conditions must be a non-empty sequence of mappings")
+    if not isinstance(run_id, str) or not run_id.strip():
+        raise ValueError("run_id must be a non-empty string")
+    task_record: dict[str, Any] = {"task_id": task_id, "task_revision": revision}
+    if task_benchmark is not None:
+        task_record["benchmark"] = task_benchmark
+    return {
+        "schema": "benchstudio.campaign.v1",
+        "experiment": {"name": run_id, "protocol_revision": "1"},
+        "model": model_record,
+        "task": task_record,
+        "environments": [environment_record],
+        "evaluation": {
+            "seeds": list(seeds),
+            "conditions": [dict(condition) for condition in conditions],
+            "paired": True,
+            "missing_outcomes": "preserve",
+            "confirmation_plan": "frozen",
+        },
+    }
+
+
+def _task_identity(
+    task: str | Mapping[str, Any] | None,
+    task_revision: str | None,
+    benchmark: str | None,
+) -> tuple[str, str, str | None]:
+    if isinstance(task, str) and task.strip():
+        task_id = task.strip()
+        revision = task_revision
+        task_benchmark = benchmark
+    elif isinstance(task, Mapping):
+        task_id = task.get("id", task.get("task_id"))
+        revision = task.get("revision", task.get("task_revision", task_revision))
+        task_benchmark = task.get("benchmark", benchmark)
+    else:
+        raise ValueError("task must be a non-empty name or a mapping with id and revision")
+    if not isinstance(task_id, str) or not task_id.strip():
+        raise ValueError("task requires a non-empty id")
+    if not isinstance(revision, str) or not revision.strip():
+        raise ValueError("task_revision is required to pin the task")
+    if task_benchmark is not None and (
+        not isinstance(task_benchmark, str) or not task_benchmark.strip()
+    ):
+        raise ValueError("benchmark must be a non-empty string")
+    return task_id, revision, task_benchmark
+
+
+def _adapter_input(value: str | Mapping[str, Any] | None, *, name: str) -> dict[str, Any]:
+    if isinstance(value, str) and value.strip():
+        declaration: dict[str, Any] = {"adapter": value.strip()}
+    elif isinstance(value, Mapping):
+        declaration = dict(value)
+    else:
+        raise ValueError(f"{name} must be an adapter name or a mapping")
+    adapter = declaration.pop("adapter", None)
+    if not isinstance(adapter, str) or not adapter.strip():
+        raise ValueError(f"{name}.adapter must be a non-empty string")
+    if "config" in declaration and "adapter_config" in declaration:
+        raise ValueError(f"{name} accepts config or adapter_config, not both")
+    config = (
+        declaration.pop("config")
+        if "config" in declaration
+        else declaration.pop("adapter_config", {})
+    )
+    if not isinstance(config, Mapping):
+        raise ValueError(f"{name}.config must be a mapping")
+    if name == "model":
+        record = {"adapter": adapter.strip(), "architecture": declaration.pop("architecture", adapter)}
+        if "checkpoint" in declaration:
+            record["checkpoint"] = declaration.pop("checkpoint")
+        if "capabilities" in declaration:
+            record["capabilities"] = declaration.pop("capabilities")
+        record["adapter_config"] = dict(config)
+    else:
+        environment_id = declaration.pop("id", f"{adapter.strip()}-0")
+        kind = declaration.pop("kind", "simulator")
+        record = {
+            "id": environment_id,
+            "kind": kind,
+            "adapter": adapter.strip(),
+            "adapter_config": dict(config),
+        }
+        if "enabled" in declaration:
+            record["enabled"] = declaration.pop("enabled")
+        if "required_capabilities" in declaration:
+            record["required_capabilities"] = declaration.pop("required_capabilities")
+    if declaration:
+        raise ValueError(f"unsupported {name} fields: {', '.join(sorted(declaration))}")
+    return record
+
+
+class CampaignAuditPipeline:
+    """Audit an existing campaign directory without loading adapters or executing it."""
+
+    def __init__(
+        self, *, claim_type: ClaimType | str = ClaimType.SINGLE_RUN_OUTCOME
+    ) -> None:
+        self.claim_type = ClaimType(claim_type)
+
+    def __call__(self, source: str | Path) -> CampaignAudit:
+        """Audit a saved campaign directory and return its structured report."""
+        return self.run(source)
+
+    def run(self, source: str | Path) -> CampaignAudit:
+        """Run the offline audit. This does not construct a policy or simulator."""
+        path = Path(source)
+        if not path.exists():
+            raise FileNotFoundError(f"campaign directory does not exist: {path}")
+        if not path.is_dir():
+            raise ValueError(
+                "campaign-audit expects a campaign directory; "
+                "verify an archive with verify_campaign_archive instead"
+            )
+        return audit_campaign_directory(path, claim_type=self.claim_type)
+
+
+def pipeline(name: str, **kwargs: Any) -> Any:
+    """Create a task-oriented BenchStudio pipeline.
+
+    Supported tasks are replay, system-evaluation, robotics-evaluation and campaign-audit. Evaluation
+    accepts a campaign file or explicit task/model/environment inputs. It
+    never infers a model, simulator, or scoring function.
+    """
+    if name == "replay":
+        from .replay_pipeline import ReplayPipeline
+        if "source" not in kwargs:
+            raise ValueError("replay requires source=archive_path")
+        source = kwargs.pop("source")
+        return ReplayPipeline.from_archive(source, **kwargs)
+    if name == "system-evaluation":
+        from .system_pipeline import SystemEvaluationPipeline
+        return SystemEvaluationPipeline(**kwargs)
+    if name == "campaign-audit":
+        return CampaignAuditPipeline(**kwargs)
+    if name == "robotics-evaluation":
+        return CampaignEvaluationPipeline(**kwargs)
+    raise ValueError(
+        f"unsupported BenchStudio pipeline task {name!r}; "
+        "supported tasks: 'replay', 'system-evaluation', 'robotics-evaluation', 'campaign-audit'"
+    )
+
