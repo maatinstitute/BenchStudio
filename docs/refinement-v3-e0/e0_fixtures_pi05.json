@@ -1,0 +1,7 @@
+{"schema": "protocol_e_fixtures_v1", "stack": "pi05", "fixtures": [
+  {"fixture_id": "E0_pi05_spatial_t0_unmet", "suite": "libero_spatial", "task_id": 0,
+   "initial_state": {"source": "official", "index": 0},
+   "action_source": {"kind": "scripted_noop", "steps": 20}, "expected_case": "GOAL_UNMET"},
+  {"fixture_id": "E0_pi05_spatial_t0_horizon", "suite": "libero_spatial", "task_id": 0,
+   "initial_state": {"source": "official", "index": 0},
+   "action_source": {"kind": "scripted_noop", "steps": "horizon"}, "expected_case": "HORIZON"}]}
