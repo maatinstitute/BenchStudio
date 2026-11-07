@@ -11,47 +11,45 @@ safety limits, and physical robot execution.
 
 ## Python API: run a robotics evaluation
 
-A familiar task-first entry point runs a declared campaign. Start with the
-included mock campaign to check the API without installing a model or simulator:
+The shortest way to use BenchStudio is to name the task, model, environment,
+seeds, and evaluation conditions directly. You do not need to write a campaign
+file for the common path:
 
 ```python
 import benchstudio as bs
 
-evaluation = bs.pipeline(
+run = bs.pipeline(
     "robotics-evaluation",
-    campaign="examples/campaigns/mock-worldepisode.json",
+    task={"id": "pick-cube", "revision": "fixture-v1"},
+    model="mock",
+    environment={"adapter": "mock-simulator", "kind": "simulator"},
+    seeds=[7, 8],
+    conditions=[{"id": "baseline"}],
+    run_id="first-evaluation",
     output_dir="runs/first-evaluation",
     execution="mock",
-)
-run = evaluation()
+)()
 print(run.summary())
+print(run.analyze().summary())
 ```
 
-Execution is explicit when you call the pipeline. The frozen campaign file
-records the task, model/environment declarations, seeds, and conditions. To
-use installed model and environment adapters, set `execution="registry"`;
-those adapters and their external runtimes must be installed and declared in
-the campaign. The mock example is an API smoke check, not a result about model
-quality or simulator fidelity.
+This is a synthetic API check. It does not load a robot policy or establish
+simulator fidelity. Run the checked-in version with a fresh output directory:
 
-Inspect the saved run separately:
-
-```python
-import benchstudio as bs
-
-audit = bs.pipeline(
-    "campaign-audit", claim_type=bs.ClaimType.SINGLE_RUN_OUTCOME
-)("runs/first-evaluation")
-print(audit.summary())
+```bash
+python examples/direct_pipeline_mock.py runs/first-evaluation
 ```
 
-The returned run object exposes its output directory and plan digest through
-`run.to_dict()`. See [the API comparison](docs/transformers-comparison.md)
-for the supported tasks and execution boundary.
+The result separates execution accounting (`run.summary()`) from offline
+evidence review (`run.analyze()`). BenchStudio freezes the named inputs into a
+campaign plan and records its digest. Stable task revisions, checkpoint
+identities, seeds, conditions, and environment configuration remain explicit
+because they define what an evaluation means.
 
-For a model and environment already registered in BenchStudio (or installed
-through its adapter entry points), pass the familiar inputs directly instead of
-writing the campaign file yourself:
+## Connect a real policy and environment
+
+For a stack already supported through registered adapters, replace the mock
+declarations with those adapters and set `execution="registry"`:
 
 ```python
 import benchstudio as bs
@@ -73,15 +71,30 @@ evaluation = bs.pipeline(
     conditions=[{"id": "baseline", "denoising_steps": 10}],
     run_id="smolvla-libero-baseline",
     output_dir="runs/smolvla-libero-baseline",
+    execution="registry",
 )
 run = evaluation()
+print(run.summary())
 ```
 
-The policy and environment commands must implement their declared adapters'
-protocols. Use stable task and checkpoint revisions, explicit seeds, and
-condition IDs; BenchStudio freezes those declarations into the plan digest.
-This direct form and the campaign-file form produce the same frozen campaign
-contract.
+The named policy and environment adapters must already be installed and their
+services must implement the JSON-line protocols documented by those adapters.
+This is not an automatic Transformers-style checkpoint loader: the caller owns
+the robot observation/action mapping, preprocessing, environment assets, and
+runtime installation. See [the API comparison](docs/transformers-comparison.md)
+for the exact boundary and [the model bridge example](examples/external_runtime/lerobot_smolvla_policy.py)
+for a LeRobot-owned SmolVLA process.
+
+To inspect an existing run without executing it again:
+
+```python
+import benchstudio as bs
+
+audit = bs.pipeline(
+    "campaign-audit", claim_type=bs.ClaimType.SINGLE_RUN_OUTCOME
+)("runs/first-evaluation")
+print(audit.summary())
+```
 
 ## Developer quick start
 
