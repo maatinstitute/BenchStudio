@@ -6,6 +6,7 @@ import inspect
 import math
 from dataclasses import dataclass
 import hashlib
+from functools import cached_property
 from typing import Any, Callable, Sequence
 
 from .system_spec import Component, SystemSpec, _canonical
@@ -79,7 +80,7 @@ class Benchmark:
         # Validate all identity fields before any runtime call.
         self.key(0)
 
-    @property
+    @cached_property
     def protocol_digest(self):
         return hashlib.sha256(_canonical({
             "task": self.name, "revision": self.revision,

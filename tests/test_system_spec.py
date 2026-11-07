@@ -75,3 +75,17 @@ def test_nested_metadata_cannot_change_system_identity_after_construction():
         spec.metadata["nested"]["values"] = ()
     assert spec.digest == digest
     assert SystemSpec.from_dict(spec.to_dict()).digest == digest
+
+
+def test_immutable_identity_is_computed_once_and_export_is_independent():
+    from unittest.mock import patch
+    import benchstudio.system_spec as module
+    spec = system()
+    with patch.object(module, "_canonical", wraps=module._canonical) as encode:
+        first = spec.digest
+        assert spec.digest == first
+        assert encode.call_count == 1
+    exported = spec.to_dict()
+    exported["components"][0]["revision"] = "changed"
+    assert spec.digest == first
+    assert SystemSpec.from_dict(exported).digest != first

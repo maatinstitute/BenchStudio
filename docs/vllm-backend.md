@@ -49,7 +49,9 @@ This initial backend supports synchronous text generation only. Use run() or
 the callable evaluator, with explicit batch_size. It does not implement an
 async inference client, chat-template handling, multimodal preprocessing,
 tool execution or automatic batching inside Workflow/AgentGroup. It serializes
-engine calls; blocking it on an async event loop will block that loop. Native
+engine calls and refuses invocation on an active asyncio loop before model
+loading. Use the synchronous evaluation path; direct inclusion in an async
+Workflow/AgentGroup needs a separate async service adapter. Native
 engine teardown is owned by the producing process; no private upstream shutdown
 API is invoked. Retain the vLLM process for reuse or terminate the owning process
 at the job boundary. Token limits, sampling seeds and settings do not guarantee
@@ -75,3 +77,20 @@ References reviewed:
 - https://docs.vllm.ai/en/latest/serving/offline_inference/
 - https://docs.vllm.ai/en/stable/configuration/env_vars/
 - https://github.com/vllm-project/vllm/blob/main/vllm/entrypoints/llm.py
+
+
+## Audited CPU overhead
+
+SystemSpec and benchmark protocol digests are cached because their declarations
+are immutable. Records retain the same digest while avoiding repeated canonical
+serialization and SHA-256 work per trial. Runtime backend/generation config
+properties cannot be reassigned through the public interface after binding.
+
+Reproduce the narrow CPU measurement with:
+`python scripts/benchmark_identity_overhead.py`.
+A local Python 3.12 synthetic 10-component identity test measured approximately
+77 ms for 2,000 recomputations versus 0.07 ms for cached reads (five repetitions,
+median). Hashes matched. These figures measure identity lookup only; they are
+not a claim about inference speed, system throughput or native vLLM performance.
+Rust rewrites require a representative profile demonstrating remaining CPU
+bottlenecks. Inference optimizations remain delegated to upstream vLLM.

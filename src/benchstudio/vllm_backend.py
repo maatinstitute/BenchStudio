@@ -1,6 +1,7 @@
 """Optional upstream vLLM integration. No engine or model is loaded on import."""
 from __future__ import annotations
 
+import asyncio
 from dataclasses import asdict, dataclass
 from importlib.metadata import version
 import math
@@ -63,9 +64,17 @@ class VLLMRuntime:
     event-loop concurrency. Process exit owns native engine teardown.
     """
     def __init__(self, config: VLLMConfig, generation: GenerationConfig):
-        self.config, self.generation = config, generation
+        self._config, self._generation = config, generation
         self._engine = self._sampling = None
         self._lock = Lock()
+
+    @property
+    def config(self):
+        return self._config
+
+    @property
+    def generation(self):
+        return self._generation
 
     def _load(self):
         if self._engine is not None:
@@ -85,6 +94,12 @@ class VLLMRuntime:
         self._sampling, self._engine = sampling, engine
 
     def generate_batch(self, prompts):
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            pass
+        else:
+            raise RuntimeError("blocking vLLM inference requires run()/batch_size outside the event loop")
         prompts = list(prompts)
         if any(not isinstance(prompt, str) for prompt in prompts):
             raise TypeError("vLLM text backend requires string prompts")

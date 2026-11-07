@@ -84,3 +84,28 @@ def test_batching_is_explicit_and_unavailable_for_plain_callable():
     with pytest.raises(ValueError):
         pipeline(batch_size=0)
     assert pipeline().trials[0].success
+
+
+def test_async_misuse_and_public_config_reassignment_fail_before_loading():
+    import asyncio
+    module, calls = fake_vllm()
+    with patch.dict(sys.modules, {"vllm": module}), patch("benchstudio.vllm_backend.version", return_value="0.33.0"):
+        system = bs.System.from_pretrained("org/model", revision=SHA)
+        with pytest.raises(AttributeError):
+            system.runtime.config = bs.VLLMConfig("other/model", SHA)
+        with pytest.raises(AttributeError):
+            system.runtime.generation = bs.GenerationConfig(max_tokens=1)
+        async def check():
+            with pytest.raises(RuntimeError, match="event loop"):
+                system.runtime("x")
+        asyncio.run(check())
+        assert calls["loads"] == []
+
+
+def test_prompt_alignment_refused_even_with_correct_result_count():
+    module, _ = fake_vllm()
+    module.LLM.generate = lambda *a, **k: [types.SimpleNamespace(
+        prompt="wrong", outputs=[types.SimpleNamespace(text="response")])]
+    with patch.dict(sys.modules, {"vllm": module}), patch("benchstudio.vllm_backend.version", return_value="0.33.0"):
+        with pytest.raises(ValueError, match="order"):
+            bs.System.from_pretrained("org/model", revision=SHA).runtime("x")
