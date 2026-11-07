@@ -88,3 +88,29 @@ def test_trial_export_matches_legacy_bytes_and_has_independent_mappings():
     readonly = Trial(source.trial_id, source.key, source.system_digest, "completed",
                      True, "declared", False, MappingProxyType({"error": 0.5}))
     assert readonly.to_dict()["metrics"] == {"error": 0.5}
+
+
+def test_sha_cache_is_bounded_and_does_not_accept_bad_values():
+    from benchstudio.system_evidence import _sha, _validated_sha
+    _validated_sha.cache_clear()
+    value = "a" * 64
+    assert _sha(value) == _sha(value) == value
+    assert _validated_sha.cache_info().hits == 1
+    for invalid in (None, [], True, "A" * 64, "a" * 63, "z" * 64):
+        with pytest.raises(ValueError, match="SHA-256"):
+            _sha(invalid)
+    for i in range(300):
+        assert _sha(f"{i:064x}") == f"{i:064x}"
+    assert _validated_sha.cache_info().currsize <= 256
+
+
+def test_sha_subclasses_keep_regex_and_return_identity_without_hashing():
+    from benchstudio.system_evidence import _sha
+    class Digest(str):
+        __hash__ = None
+        def __str__(self):
+            return "a" * 64
+    valid = Digest("b" * 64)
+    assert _sha(valid) is valid
+    with pytest.raises(ValueError, match="SHA-256"):
+        _sha(Digest("invalid"))
