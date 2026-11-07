@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, fields
 import hashlib
+from functools import lru_cache
 import json
 import math
 from pathlib import Path
@@ -22,10 +23,20 @@ def _required(value: str, field: str) -> str:
     return value
 
 
-def _sha(value: str) -> str:
-    if not isinstance(value, str) or re.fullmatch("[0-9a-f]{64}", value) is None:
+@lru_cache(maxsize=256)
+def _validated_sha(value: str) -> str:
+    if re.fullmatch("[0-9a-f]{64}", value) is None:
         raise ValueError("expected lowercase SHA-256")
     return value
+
+
+def _sha(value: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError("expected lowercase SHA-256")
+    if type(value) is str:
+        return _validated_sha(value)
+    # Preserve subclass behavior without invoking custom hashing or __str__.
+    return _validated_sha.__wrapped__(value)
 
 
 @dataclass(frozen=True)

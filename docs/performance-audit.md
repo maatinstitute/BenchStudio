@@ -78,3 +78,30 @@ The full-path profiler's function-call count fell from approximately 797,000 to
 speedup or evidence of an end-to-end production acceleration. The remaining
 profile includes record construction/validation, pairing and JSON encoding;
 those require representative larger workloads before a native port is justified.
+
+
+## Repeated digest format validation
+
+The result-export script also compares the same regex validator with and without
+an LRU cache of 256 valid plain strings. It measures fresh benchmark construction,
+evaluation, paired comparison, export and a digest of the complete output. Thirty
+samples per variant alternate their execution order and clear the cache before
+each sample. Local Python 3.12 medians were 70.4 ms uncached and 64.3 ms cached
+(about 9% on this synthetic workflow). All 60 outputs had the same digest.
+Timings vary; these are not inference or production throughput measurements.
+
+Only lowercase SHA-256 **format validation** is cached. File contents are still
+hashed on every existing verification path; no file integrity check, authority
+flag, qualification or release decision is cached. Invalid values still raise,
+exceptions are not cached, and string subclasses follow the uncached validator
+without custom hashing or string conversion. Tests cover invalid types/content,
+subclass behavior and the 256-entry bound. Profiled full-path calls decreased
+from roughly 513,000 to 481,000.
+
+A separate candidate retained every benchmark TrialKey for later runs. It helped
+reuse but slightly regressed the first fresh workflow and retained memory
+proportional to benchmark size. That candidate was discarded. The remaining
+record validation, comparison and JSON encoding costs are visible in the script;
+being measurable alone does not justify removing validation or adding a second
+native implementation. Representative workloads and output/rejection parity
+are required before further optimization or a Rust port.
