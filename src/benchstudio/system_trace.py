@@ -91,6 +91,18 @@ def audit_system_trace(system: SystemSpec, events: list[SystemEvent] | tuple[Sys
                 issues.append(f"{event.event_id}: undeclared cross-component connection")
             else:
                 observed.add(edge)
+    # Event lineage is acyclic even when the component graph has feedback.
+    checked = set()
+    for event_id in ids:
+        chain = set()
+        current = event_id
+        while current in ids and current not in checked:
+            if current in chain:
+                issues.append(f"{current}: cyclic parent lineage")
+                break
+            chain.add(current)
+            current = ids[current].parent_event_id
+        checked.update(chain)
     return TraceAudit(
         valid=not issues, events=len(events),
         observed_connections=tuple(e for e in system.connections if e in observed),
@@ -98,3 +110,4 @@ def audit_system_trace(system: SystemSpec, events: list[SystemEvent] | tuple[Sys
         issues=tuple(issues),
         clock_domains=tuple(sorted({e.clock_domain for e in events})),
     )
+
