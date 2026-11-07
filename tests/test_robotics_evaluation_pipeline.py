@@ -48,76 +48,112 @@ def _modules():
     )
 
 
-def test_robotics_pipeline_compiles_runs_and_returns_artifact_receipt(tmp_path):
-    plan = _plan()
-    summary = _summary()
+def _patched_executor():
+    from contextlib import ExitStack
+
+    stack = ExitStack()
     pipeline_module, adapters_module, models_module = _modules()
-    with (
-        patch.object(pipeline_module, "compile_campaign_spec", return_value=plan),
-        patch.object(adapters_module, "default_registry"),
-        patch.object(models_module, "default_model_registry"),
-        patch.object(pipeline_module, "CampaignExecutor") as executor_type,
-    ):
-        executor = executor_type.return_value
-        executor.run.return_value = summary
-        runner = bs.pipeline(
-            "robotics-evaluation",
-            campaign=_campaign(),
-            output_dir=tmp_path / "run",
-            execution="registry",
-        )
-        result = runner()
+    stack.enter_context(patch.object(adapters_module, "default_registry"))
+    stack.enter_context(patch.object(models_module, "default_model_registry"))
+    executor_type = stack.enter_context(patch.object(pipeline_module, "CampaignExecutor"))
+    executor_type.return_value.run.return_value = _summary()
+    return stack, pipeline_module, executor_type
+
+
+def test_robotics_pipeline_compiles_runs_and_returns_artifact_receipt(tmp_path):
+    stack, pipeline_module, executor_type = _patched_executor()
+    with stack:
+        with patch.object(pipeline_module, "compile_campaign_spec", return_value=_plan()):
+            runner = bs.pipeline(
+                "robotics-evaluation",
+                campaign=_campaign(),
+                output_dir=tmp_path / "run",
+                execution="registry",
+            )
+            result = runner()
 
     assert isinstance(result, bs.CampaignRun)
-    assert result.execution is summary
+    assert result.execution.committed_attempt_ids == ("attempt-1",)
     assert result.to_dict()["plan_digest_sha256"] == "a" * 64
     assert "1 completed" in result.summary()
     executor_type.assert_called_once()
-    executor.run.assert_called_once_with()
+    executor_type.return_value.run.assert_called_once_with()
+
+
+def test_direct_transformers_style_inputs_compile_to_frozen_campaign(tmp_path):
+    stack, pipeline_module, _ = _patched_executor()
+    with stack:
+        compiled = {}
+
+        def compile_spec(value):
+            compiled.update(value)
+            return _plan()
+
+        with patch.object(pipeline_module, "compile_campaign_spec", side_effect=compile_spec):
+            result = bs.pipeline(
+                "robotics-evaluation",
+                task={"id": "libero/spatial/task-0", "revision": "dataset-sha256"},
+                model={
+                    "adapter": "smolvla",
+                    "checkpoint": "sha256:" + "b" * 64,
+                    "config": {"command": ["python", "policy.py"]},
+                },
+                environment={
+                    "adapter": "external_command",
+                    "id": "libero-local",
+                    "config": {"command": ["python", "environment.py"]},
+                },
+                seeds=[7, 8],
+                conditions=[{"id": "baseline", "denoising_steps": 10}],
+                run_id="smolvla-libero-smoke",
+                benchmark="libero",
+                output_dir=tmp_path / "run",
+            )()
+
+    assert compiled["model"]["adapter"] == "smolvla"
+    assert compiled["model"]["checkpoint"] == "sha256:" + "b" * 64
+    assert compiled["task"] == {
+        "task_id": "libero/spatial/task-0",
+        "task_revision": "dataset-sha256",
+        "benchmark": "libero",
+    }
+    assert compiled["environments"][0]["adapter"] == "external_command"
+    assert compiled["evaluation"]["seeds"] == [7, 8]
+    assert compiled["evaluation"]["paired"] is True
+    assert isinstance(result, bs.CampaignRun)
 
 
 def test_robotics_pipeline_keeps_analysis_explicit(tmp_path):
-    pipeline_module, adapters_module, models_module = _modules()
-    with (
-        patch.object(pipeline_module, "compile_campaign_spec", return_value=_plan()),
-        patch.object(adapters_module, "default_registry"),
-        patch.object(models_module, "default_model_registry"),
-        patch.object(pipeline_module, "CampaignExecutor") as executor_type,
-        patch.object(pipeline_module, "audit_campaign_directory") as audit,
-    ):
-        executor_type.return_value.run.return_value = _summary()
-        result = bs.pipeline(
+    stack, pipeline_module, _ = _patched_executor()
+    with stack:
+        with (
+            patch.object(pipeline_module, "compile_campaign_spec", return_value=_plan()),
+            patch.object(pipeline_module, "audit_campaign_directory") as audit,
+        ):
+            result = bs.pipeline(
+                "robotics-evaluation",
+                campaign=_campaign(),
+                output_dir=tmp_path / "run",
+            )()
+            audit.assert_not_called()
+            result.analyze(claim_type=bs.ClaimType.PAIRED_COMPARISON)
+            audit.assert_called_once_with(
+                tmp_path / "run", claim_type=bs.ClaimType.PAIRED_COMPARISON, evidence=None
+            )
+
+
+def test_direct_inputs_require_task_revision(tmp_path):
+    with pytest.raises(ValueError, match="task_revision is required"):
+        bs.pipeline(
             "robotics-evaluation",
-            campaign=_campaign(),
+            task="libero/task-0",
+            model="smolvla",
+            environment="external_command",
+            seeds=[7],
+            conditions=[{"id": "baseline"}],
+            run_id="smoke",
             output_dir=tmp_path / "run",
         )()
-        audit.assert_not_called()
-        result.analyze(claim_type=bs.ClaimType.PAIRED_COMPARISON)
-        audit.assert_called_once_with(
-            tmp_path / "run", claim_type=bs.ClaimType.PAIRED_COMPARISON, evidence=None
-        )
-
-
-def test_pipeline_rejects_missing_model_adapter_before_execution(tmp_path):
-    pipeline_module, adapters_module, models_module = _modules()
-    with (
-        patch.object(pipeline_module, "compile_campaign_spec") as compile_spec,
-        patch.object(adapters_module, "default_registry"),
-        patch.object(models_module, "default_model_registry"),
-    ):
-        compile_spec.return_value = SimpleNamespace(
-            protocol={
-                "M": {},
-                "S": {"environments": [{"id": "local-sim", "kind": "simulator"}]},
-            }
-        )
-        runner = bs.pipeline(
-            "robotics-evaluation",
-            campaign=_campaign(),
-            output_dir=tmp_path / "run",
-        )
-        with pytest.raises(ValueError, match="model.adapter"):
-            runner.run()
 
 
 def test_pipeline_rejects_implicit_execution_mode(tmp_path):
