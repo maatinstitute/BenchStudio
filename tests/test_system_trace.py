@@ -58,3 +58,13 @@ def test_different_clocks_not_assumed_synchronized():
         event("c", "agent", 1, "p", "world", clock="sim"),
     ])
     assert result.valid and result.clock_domains == ("host", "sim")
+
+
+
+def test_self_parent_and_equal_time_parent_cycles_are_invalid():
+    s = graph()
+    assert not audit_system_trace(s, [event("a", "world", 1, "a")]).valid
+    result = audit_system_trace(s, [event("a", "world", 1, "b"),
+                                   event("b", "world", 1, "a")])
+    assert not result.valid
+    assert any("cyclic" in issue for issue in result.issues)
