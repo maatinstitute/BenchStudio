@@ -23,9 +23,12 @@ def _campaign():
     }
 
 
-def test_robotics_pipeline_compiles_runs_and_returns_artifact_receipt(tmp_path):
-    plan = SimpleNamespace(protocol={"M": {"adapter": "fake"}, "S": {"environments": []}})
-    summary = bs.CampaignExecutionSummary(
+def _plan():
+    return SimpleNamespace(protocol={"M": {"adapter": "fake"}, "S": {"environments": []}})
+
+
+def _summary():
+    return bs.CampaignExecutionSummary(
         run_id="quickstart",
         plan_digest_sha256="a" * 64,
         committed_attempt_ids=("attempt-1",),
@@ -35,13 +38,20 @@ def test_robotics_pipeline_compiles_runs_and_returns_artifact_receipt(tmp_path):
         leased_out_attempt_ids=(),
         cancelled_attempt_ids=(),
     )
-    pipeline_module = __import__("benchstudio.pipeline", fromlist=["unused"])
-    adapters_module = __import__("benchstudio.adapters", fromlist=["unused"])
-    models_module = __import__("benchstudio.model_adapters", fromlist=["unused"])
-    adapters_module = __import__("benchstudio.adapters", fromlist=["unused"])
-    models_module = __import__("benchstudio.model_adapters", fromlist=["unused"])
-    adapters_module = __import__("benchstudio.adapters", fromlist=["unused"])
-    models_module = __import__("benchstudio.model_adapters", fromlist=["unused"])
+
+
+def _modules():
+    return (
+        __import__("benchstudio.pipeline", fromlist=["unused"]),
+        __import__("benchstudio.adapters", fromlist=["unused"]),
+        __import__("benchstudio.model_adapters", fromlist=["unused"]),
+    )
+
+
+def test_robotics_pipeline_compiles_runs_and_returns_artifact_receipt(tmp_path):
+    plan = _plan()
+    summary = _summary()
+    pipeline_module, adapters_module, models_module = _modules()
     with (
         patch.object(pipeline_module, "compile_campaign_spec", return_value=plan),
         patch.object(adapters_module, "default_registry"),
@@ -67,25 +77,15 @@ def test_robotics_pipeline_compiles_runs_and_returns_artifact_receipt(tmp_path):
 
 
 def test_robotics_pipeline_keeps_analysis_explicit(tmp_path):
-    summary = bs.CampaignExecutionSummary(
-        run_id="quickstart",
-        plan_digest_sha256="b" * 64,
-        committed_attempt_ids=(),
-        failed_attempt_ids=(),
-        skipped_attempt_ids=(),
-        missing_attempt_ids=(),
-        leased_out_attempt_ids=(),
-        cancelled_attempt_ids=(),
-    )
-    pipeline_module = __import__("benchstudio.pipeline", fromlist=["unused"])
+    pipeline_module, adapters_module, models_module = _modules()
     with (
-        patch.object(pipeline_module, "compile_campaign_spec", return_value=object()),
+        patch.object(pipeline_module, "compile_campaign_spec", return_value=_plan()),
         patch.object(adapters_module, "default_registry"),
         patch.object(models_module, "default_model_registry"),
         patch.object(pipeline_module, "CampaignExecutor") as executor_type,
         patch.object(pipeline_module, "audit_campaign_directory") as audit,
     ):
-        executor_type.return_value.run.return_value = summary
+        executor_type.return_value.run.return_value = _summary()
         result = bs.pipeline(
             "robotics-evaluation",
             campaign=_campaign(),
@@ -98,17 +98,19 @@ def test_robotics_pipeline_keeps_analysis_explicit(tmp_path):
         )
 
 
-def test_pipeline_rejects_missing_model_or_environment_adapters(tmp_path):
-    pipeline_module = __import__("benchstudio.pipeline", fromlist=["unused"])
+def test_pipeline_rejects_missing_model_adapter_before_execution(tmp_path):
+    pipeline_module, adapters_module, models_module = _modules()
     with (
         patch.object(pipeline_module, "compile_campaign_spec") as compile_spec,
         patch.object(adapters_module, "default_registry"),
         patch.object(models_module, "default_model_registry"),
     ):
-        compile_spec.return_value = SimpleNamespace(protocol={
-            "M": {},
-            "S": {"environments": [{"id": "local-sim", "kind": "simulator"}]},
-        })
+        compile_spec.return_value = SimpleNamespace(
+            protocol={
+                "M": {},
+                "S": {"environments": [{"id": "local-sim", "kind": "simulator"}]},
+            }
+        )
         runner = bs.pipeline(
             "robotics-evaluation",
             campaign=_campaign(),
@@ -118,7 +120,7 @@ def test_pipeline_rejects_missing_model_or_environment_adapters(tmp_path):
             runner.run()
 
 
-def test_mock_pipeline_requires_explicit_mode(tmp_path):
+def test_pipeline_rejects_implicit_execution_mode(tmp_path):
     with pytest.raises(ValueError, match="execution must be"):
         bs.pipeline(
             "robotics-evaluation",
