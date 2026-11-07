@@ -1,6 +1,9 @@
 """Python-first evaluation of callable models, agents and composed systems."""
 from __future__ import annotations
 
+import asyncio
+import inspect
+import math
 from dataclasses import dataclass
 import hashlib
 from typing import Any, Callable, Sequence
@@ -101,10 +104,45 @@ class SystemEvaluationPipeline:
         trials = []
         for index, (inputs, target) in enumerate(zip(self.benchmark.inputs, self.benchmark.targets)):
             output = self.system.runtime(inputs)
+            if inspect.isawaitable(output):
+                if inspect.iscoroutine(output):
+                    output.close()
+                raise TypeError("async runtimes require await pipeline.arun()")
             score = self.benchmark.scorer(output, target)
+            if inspect.isawaitable(score):
+                if inspect.iscoroutine(score):
+                    score.close()
+                raise TypeError("async scorers require await pipeline.arun()")
             if not isinstance(score, Score):
                 raise TypeError("benchmark scorer must return bs.Score")
             trials.append(Trial(str(index), self.benchmark.key(index), self.system.spec.digest,
                                 "completed", score.success, "declared",
                                 self.benchmark.authoritative, score.metrics or {}))
+        return SystemRun(self.run_id, self.system.spec, tuple(trials))
+
+    async def arun(self, *, concurrency=1, timeout=None):
+        """Evaluate with bounded cooperative workers and stable trial ordering.
+
+        concurrency > 1 requires independent runtime sessions/state per input.
+        timeout is per trial including scoring. Cancellation is cooperative;
+        this cannot stop blocking Python, remote jobs or native GPU kernels.
+        """
+        from .async_execution import invoke, ordered_map
+
+        if timeout is not None and (type(timeout) not in (int, float) or
+                                    not math.isfinite(timeout) or timeout <= 0):
+            raise ValueError("timeout must be finite and positive")
+        async def evaluate(index):
+            async def execute():
+                output = await invoke(self.system.runtime, self.benchmark.inputs[index])
+                score = await invoke(lambda value: self.benchmark.scorer(value, self.benchmark.targets[index]), output)
+                if not isinstance(score, Score):
+                    raise TypeError("benchmark scorer must return bs.Score")
+                return Trial(str(index), self.benchmark.key(index), self.system.spec.digest,
+                             "completed", score.success, "declared",
+                             self.benchmark.authoritative, score.metrics or {})
+            if timeout is None:
+                return await execute()
+            return await asyncio.wait_for(execute(), timeout)
+        trials = await ordered_map(evaluate, range(len(self.benchmark.inputs)), concurrency=concurrency)
         return SystemRun(self.run_id, self.system.spec, tuple(trials))
