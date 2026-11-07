@@ -60,27 +60,53 @@ class CampaignRun:
 
 
 class CampaignEvaluationPipeline:
-    """Execute a declared campaign using mock fixtures or installed adapters.
+    """Execute a declared campaign through explicit mock or installed adapters.
 
-    Constructing the pipeline only validates its options. Calling run() or the
-    pipeline itself is the explicit execution step. The campaign document
-    freezes task, model, environment, schedule, and runtime configuration.
-    Analysis is a separate call on the returned CampaignRun.
+    A campaign can be supplied as JSON/YAML or as familiar task/model/
+    environment inputs. Calling run() is the explicit execution step;
+    construction does not load a model or contact an environment.
     """
 
     def __init__(
         self,
-        campaign: str | Path | Mapping[str, Any],
-        output_dir: str | Path,
+        campaign: str | Path | Mapping[str, Any] | None = None,
         *,
+        output_dir: str | Path,
         execution: str = "registry",
         workers: int = 1,
+        task: str | Mapping[str, Any] | None = None,
+        task_revision: str | None = None,
+        model: str | Mapping[str, Any] | None = None,
+        environment: str | Mapping[str, Any] | None = None,
+        seeds: list[int] | tuple[int, ...] | None = None,
+        conditions: list[dict[str, Any]] | tuple[dict[str, Any], ...] | None = None,
+        run_id: str | None = None,
+        benchmark: str | None = None,
     ) -> None:
         if execution not in {"registry", "mock"}:
             raise ValueError("execution must be 'registry' or 'mock'")
         if isinstance(workers, bool) or not isinstance(workers, int) or workers < 1:
             raise ValueError("workers must be a positive integer")
+        direct_values = (task, model, environment, seeds, conditions, run_id, benchmark)
+        if campaign is not None and any(value is not None for value in direct_values):
+            raise ValueError("campaign cannot be combined with direct task/model/environment inputs")
+        if campaign is None and not all(
+            value is not None for value in (task, model, environment, seeds, conditions, run_id)
+        ):
+            raise ValueError(
+                "provide campaign or all of task, model, environment, seeds, conditions, and run_id"
+            )
         self.campaign = campaign
+        self.direct_values = {
+            "task": task,
+            "task_revision": task_revision,
+            "model": model,
+            "environment": environment,
+            "seeds": seeds,
+            "conditions": conditions,
+            "run_id": run_id,
+            "benchmark": benchmark,
+        }
         self.output_dir = Path(output_dir)
         self.execution = execution
         self.workers = workers
@@ -91,11 +117,14 @@ class CampaignEvaluationPipeline:
 
     def run(self) -> CampaignRun:
         """Compile, freeze, and execute the declared campaign."""
-        spec = (
-            dict(self.campaign)
-            if isinstance(self.campaign, Mapping)
-            else load_campaign_document(Path(self.campaign))
-        )
+        if self.campaign is not None:
+            spec = (
+                dict(self.campaign)
+                if isinstance(self.campaign, Mapping)
+                else load_campaign_document(Path(self.campaign))
+            )
+        else:
+            spec = _campaign_from_direct_inputs(**self.direct_values)
         plan = compile_campaign_spec(spec)
         if self.execution == "mock":
             from .adapters import default_registry
@@ -109,9 +138,9 @@ class CampaignEvaluationPipeline:
                 adapter_registry=default_registry(),
             )
         else:
-            model = plan.protocol.get("M", {})
+            model_declaration = plan.protocol.get("M", {})
             environments = plan.protocol.get("S", {}).get("environments", [])
-            if not isinstance(model, dict) or not model.get("adapter"):
+            if not isinstance(model_declaration, dict) or not model_declaration.get("adapter"):
                 raise ValueError(
                     "registry execution requires a declared model.adapter in the campaign"
                 )
@@ -146,6 +175,113 @@ class CampaignEvaluationPipeline:
         )
 
 
+def _campaign_from_direct_inputs(
+    *,
+    task: str | Mapping[str, Any] | None,
+    task_revision: str | None,
+    model: str | Mapping[str, Any] | None,
+    environment: str | Mapping[str, Any] | None,
+    seeds: list[int] | tuple[int, ...] | None,
+    conditions: list[dict[str, Any]] | tuple[dict[str, Any], ...] | None,
+    run_id: str | None,
+    benchmark: str | None,
+) -> dict[str, Any]:
+    task_id, revision, task_benchmark = _task_identity(task, task_revision, benchmark)
+    model_record = _adapter_input(model, name="model")
+    environment_record = _adapter_input(environment, name="environment")
+    if not isinstance(seeds, (list, tuple)) or not seeds:
+        raise ValueError("seeds must be a non-empty sequence of integers")
+    if any(isinstance(seed, bool) or not isinstance(seed, int) for seed in seeds):
+        raise ValueError("seeds must contain only integers")
+    if not isinstance(conditions, (list, tuple)) or not conditions or any(
+        not isinstance(condition, Mapping) for condition in conditions
+    ):
+        raise ValueError("conditions must be a non-empty sequence of mappings")
+    if not isinstance(run_id, str) or not run_id.strip():
+        raise ValueError("run_id must be a non-empty string")
+    task_record: dict[str, Any] = {"task_id": task_id, "task_revision": revision}
+    if task_benchmark is not None:
+        task_record["benchmark"] = task_benchmark
+    return {
+        "schema": "benchstudio.campaign.v1",
+        "experiment": {"name": run_id, "protocol_revision": "1"},
+        "model": model_record,
+        "task": task_record,
+        "environments": [environment_record],
+        "evaluation": {
+            "seeds": list(seeds),
+            "conditions": [dict(condition) for condition in conditions],
+            "paired": True,
+            "missing_outcomes": "preserve",
+            "confirmation_plan": "frozen",
+        },
+    }
+
+
+def _task_identity(
+    task: str | Mapping[str, Any] | None,
+    task_revision: str | None,
+    benchmark: str | None,
+) -> tuple[str, str, str | None]:
+    if isinstance(task, str) and task.strip():
+        task_id = task.strip()
+        revision = task_revision
+        task_benchmark = benchmark
+    elif isinstance(task, Mapping):
+        task_id = task.get("id", task.get("task_id"))
+        revision = task.get("revision", task.get("task_revision", task_revision))
+        task_benchmark = task.get("benchmark", benchmark)
+    else:
+        raise ValueError("task must be a non-empty name or a mapping with id and revision")
+    if not isinstance(task_id, str) or not task_id.strip():
+        raise ValueError("task requires a non-empty id")
+    if not isinstance(revision, str) or not revision.strip():
+        raise ValueError("task_revision is required to pin the task")
+    if task_benchmark is not None and (
+        not isinstance(task_benchmark, str) or not task_benchmark.strip()
+    ):
+        raise ValueError("benchmark must be a non-empty string")
+    return task_id, revision, task_benchmark
+
+
+def _adapter_input(value: str | Mapping[str, Any] | None, *, name: str) -> dict[str, Any]:
+    if isinstance(value, str) and value.strip():
+        declaration: dict[str, Any] = {"adapter": value.strip()}
+    elif isinstance(value, Mapping):
+        declaration = dict(value)
+    else:
+        raise ValueError(f"{name} must be an adapter name or a mapping")
+    adapter = declaration.get("adapter")
+    if not isinstance(adapter, str) or not adapter.strip():
+        raise ValueError(f"{name}.adapter must be a non-empty string")
+    config = declaration.pop("config", declaration.pop("adapter_config", {}))
+    if not isinstance(config, Mapping):
+        raise ValueError(f"{name}.config must be a mapping")
+    if name == "model":
+        record = {"adapter": adapter.strip(), "architecture": declaration.pop("architecture", adapter)}
+        if "checkpoint" in declaration:
+            record["checkpoint"] = declaration.pop("checkpoint")
+        if "capabilities" in declaration:
+            record["capabilities"] = declaration.pop("capabilities")
+        record["adapter_config"] = dict(config)
+    else:
+        environment_id = declaration.pop("id", f"{adapter.strip()}-0")
+        kind = declaration.pop("kind", "simulator")
+        record = {
+            "id": environment_id,
+            "kind": kind,
+            "adapter": adapter.strip(),
+            "adapter_config": dict(config),
+        }
+        if "enabled" in declaration:
+            record["enabled"] = declaration.pop("enabled")
+        if "required_capabilities" in declaration:
+            record["required_capabilities"] = declaration.pop("required_capabilities")
+    if declaration:
+        raise ValueError(f"unsupported {name} fields: {', '.join(sorted(declaration))}")
+    return record
+
+
 class CampaignAuditPipeline:
     """Audit an existing campaign directory without loading adapters or executing it."""
 
@@ -175,8 +311,8 @@ def pipeline(task: str, **kwargs: Any) -> CampaignAuditPipeline | CampaignEvalua
     """Create a task-oriented BenchStudio pipeline.
 
     Supported tasks are robotics-evaluation and campaign-audit. Evaluation
-    executes a campaign declared in a mapping or JSON/YAML file; it never
-    infers a model, simulator, or scoring function.
+    accepts a campaign file or explicit task/model/environment inputs. It
+    never infers a model, simulator, or scoring function.
     """
     if task == "campaign-audit":
         return CampaignAuditPipeline(**kwargs)
