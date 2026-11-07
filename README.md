@@ -29,7 +29,7 @@ print(run.summary())
 
 Execution is explicit when you call the pipeline. The frozen campaign file
 records the task, model/environment declarations, seeds, and conditions. To
- use installed model and environment adapters, set `execution="registry"`;
+use installed model and environment adapters, set `execution="registry"`;
 those adapters and their external runtimes must be installed and declared in
 the campaign. The mock example is an API smoke check, not a result about model
 quality or simulator fidelity.
