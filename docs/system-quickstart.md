@@ -1,7 +1,45 @@
-# System-level research quickstart
+# Evaluate Python systems
 
-BenchStudio can evaluate an **entire composed system** represented by a
-versioned graph of components (world models, agents, WAMs, policies, tools).
+Use callable models, world models or complete agent workflows with Python objects.
+This example uses arithmetic functions; it downloads no model and runs no simulator.
+
+```python
+import benchstudio as bs
+
+system = bs.System.from_callable(
+    lambda x: x * 2, name="example-system", revision="implementation-r1"
+)
+benchmark = bs.Benchmark(
+    name="arithmetic", revision="dataset-r1",
+    inputs=[1, 2], targets=[2, 4],
+    scorer=lambda prediction, target: bs.Score(success=prediction == target),
+    evaluator_revision="exact-match-r1",
+)
+evaluator = bs.pipeline("system-evaluation", system=system, benchmark=benchmark)
+results = evaluator()
+print([trial.success for trial in results.trials])
+```
+
+Construction is inert; calling the evaluator executes the supplied Python code.
+A world-model scorer can return `bs.Score(metrics={"mse": value})` without
+inventing a binary success criterion. An agent callable can own an entire
+multi-component workflow. Use a full `SystemSpec` with `bs.System(runtime, spec)`
+when component and connection identity matters.
+
+The runtime owns reset, state isolation and cleanup. This first execution path
+is sequential and propagates runtime/scoring exceptions. It does not yet provide
+automatic checkpoint loading, batching, distributed scheduling or resumable
+execution. Reuse the benchmark for comparisons and pin its revision to the
+dataset, ordering and scoring definition. Identities are caller declarations,
+not proof of dataset contents or runtime execution. Inputs should be treated
+as immutable; the same object instances are passed to the callable.
+
+Scores default to `authoritative=False`. Set authority explicitly only when
+the evaluator is qualified for the intended comparison. Successful execution
+does not establish task success. JSON is an interchange format; no JSON file
+is required to construct or run this API.
+
+## Analyze saved evidence
 
 ```python
 import benchstudio as bs
