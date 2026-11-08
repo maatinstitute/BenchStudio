@@ -20,11 +20,11 @@ implemented once by maintainers, then selected by installed name by researchers.
 | E0 proposed authorization | Eight bound hashes agree with manifest; scope is PROTOCOL_E0_PI05 | Alba's confirmation of that exact proposal remains separate from code preparation |
 | E0 execution | Warren reports not run; permission not consumed | Warren alone performs the existing authorized run after its existing prerequisites |
 | Import-only diagnostic | Earlier pi0.5 probe failed through a Windows profile.py shadow module | Separate import-only permission question remains with Alba; no expansion is inferred |
-| R22/R25 installed recipe | Implemented in paper [draft PR #16](https://github.com/amtellezfernandez/refinement-refresh-robot-policies/pull/16), unmerged | Maintainers integrate/review it; it is not on paper main or native-qualified |
+| R22/R25 installed recipe | Audited and merged through paper [PR #16](https://github.com/amtellezfernandez/refinement-refresh-robot-policies/pull/16) into implementation commit ab05b1368abf28df4926273dc36b4e0b4bbb5ce4 | Install from that implementation checkout; it is not on paper main or native-qualified |
 | Model-native state generator and manifests | Warren reports missing | Maintainer implementation can be developed offline; actual native state work retains its existing scope restrictions |
 | Native parity, evaluator and count qualification | Unverified | Host evidence is required; generic Python/CLI tests are not substitutes |
 
-The installed example names in the generic guide are illustrative. The installed pipeline name refinement-refresh is provided by draft PR #16;
+The installed example names in the generic guide are illustrative. The installed pipeline name refinement-refresh is provided by PR #16;
 it requires that integration package and remains unqualified natively.
 Do not give Warren fabricated per-model backend names or claim the campaign is
 ready through the generic engine. Do not wrap the whole 400-pair study
