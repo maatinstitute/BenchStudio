@@ -1,6 +1,6 @@
 # BenchStudio
 
-BenchStudio is a proprietary library for experimental evaluation of AI systems,
+BenchStudio is a research-use source-available library for experimental evaluation of AI systems,
 especially interactive and embodied systems. The unit under evaluation is an
 executable system: a model, a composed predictor/planner/controller, a group of
 agents, or a complete robotics episode adapter.
@@ -858,3 +858,31 @@ Python entry point and create reproducible source archives. Use `bs.check_import
 for an explicit import diagnostic in a separate native interpreter, with retained
 logs and genuine failure exits. See [native preparation](docs/native-preparation.md).
 These checks do not qualify a model or grant experimental execution permission.
+
+## License and contributions
+
+Non-commercial research use is permitted under the [Research Use License](LICENSE).
+Commercial use, sale, hosted services and incorporation into commercial products
+require a separate written license. Local integration with your research code
+is permitted solely for non-commercial research; it does not grant commercial
+redistribution rights. Dependencies and model weights retain their own terms.
+
+Issues and PRs do not require an individual collaboration agreement. Contributors
+keep ownership and grant the published contribution rights in LICENSE section 5,
+including commercial/relicensing rights to Alba Maria Tellez Fernandez, not to all
+users. Read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting code.
+
+This is source-available research software, not an OSI open-source license.
+
+### Modified versions and project identity
+
+Local research modifications are allowed, but changes put into use must be sent
+upstream within 30 days and before publishing dependent results, whichever comes
+first. The maintainer decides whether to merge them. Unrelated research code and
+unused exploratory edits are outside this return requirement.
+
+Sharing within the same research team and contribution-only PR forks are allowed.
+Publishing or distributing an independent version, package, service or rebranded
+fork requires prior written permission, including for universities and nonprofit
+research. Accurate citation and descriptions of research modifications remain
+allowed. See LICENSE sections 2 and 4 for the scope and exceptions.
