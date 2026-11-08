@@ -1,4 +1,4 @@
-RESEARCH USE LICENSE 1.0
+RESEARCH USE LICENSE 1.1 (PROPOSED)
 
 Copyright (c) 2026 Alba Maria Tellez Fernandez and the respective contributors.
 Licensor: Alba Maria Tellez Fernandez.
@@ -20,10 +20,17 @@ a commercial activity Research Use.
 2. Research permission
 Subject to these terms, you may access, run, study, copy and modify the Software
 for Research Use without payment or an individually signed agreement.
-You may share source copies and research modifications for Research Use only,
-provided that you preserve copyright and attribution notices, include this
-license, identify your changes and impose no terms that remove these restrictions.
-You may submit patches and pull requests as described in section 5.
+You may share copies and modifications within your own research team solely to
+perform the same Research Use, preserving this license and all attribution.
+Outside that team, you may not publish, distribute, package, host for others,
+or release the Software or a modified version without the Licensor's prior
+written permission, even without payment or for academic research.
+An exception permits patches, pull requests and contribution-only repository
+forks needed to submit changes to this project's official repository under
+section 5. This exception does not authorize independent releases, replacement
+packages, mirrors marketed as another project, or derivative services.
+These restrictions do not override rights independently granted by applicable
+law, an applicable hosting platform's terms, or a separate written license.
 This permission is non-exclusive, worldwide and royalty-free.
 
 3. Reserved commercial rights
@@ -37,11 +44,35 @@ commercial offering does not avoid this restriction.
 A separate commercial license may grant different rights; this research license
 does not require the Licensor to offer one.
 
-4. Results and ownership
+4. Modification return, attribution and project identity
+If you put a modification of the Software into research use, submit the complete
+corresponding modification to the official upstream project as a reproducible
+patch or pull request within 30 days of first use and before publishing results
+that depend on it, whichever occurs first. A link to an inaccessible private
+fork is not a submission. Unused exploratory edits need not be submitted.
+This duty covers changes to this Software, not independently written research
+code, data or other work merely used alongside it. Submissions are subject to
+section 5. The Licensor may accept, revise or reject a contribution; submission
+does not entitle you to a merge or authorize a separate derivative release.
+
+You must preserve origin, copyright and attribution notices. You may not
+rebrand or present the Software or a derivative as your own or your institution's
+independently originated product, platform or distribution, even for research.
+Changing a name, logo, interface or package identifier does not grant release
+rights. Academic or nonprofit status is not an exemption.
+No right to use project names, logos or other branding as your own source
+identifier, or to imply endorsement or official status, is granted. Accurate
+citation, identification of the upstream software, and clear descriptions of
+your research modifications are permitted. These terms govern use of this
+Software and do not prohibit independently developed software that does not
+copy it.
+
+4a. Results and ownership
 You retain ownership of your original code, modifications and research results.
 This license does not claim ownership of outputs, findings or publications.
 You may publish research findings and independently created results without
-releasing your own code. Distribution or use of the Software itself remains
+releasing independently written research code. The section 4 return requirement
+still applies to modifications of the Software used for those results. Distribution or use of the Software itself remains
 subject to this license. No trademark rights or endorsement are granted.
 
 5. Contributions

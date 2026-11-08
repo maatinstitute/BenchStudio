@@ -873,3 +873,16 @@ including commercial/relicensing rights to Alba Maria Tellez Fernandez, not to a
 users. Read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting code.
 
 This is source-available research software, not an OSI open-source license.
+
+### Modified versions and project identity
+
+Local research modifications are allowed, but changes put into use must be sent
+upstream within 30 days and before publishing dependent results, whichever comes
+first. The maintainer decides whether to merge them. Unrelated research code and
+unused exploratory edits are outside this return requirement.
+
+Sharing within the same research team and contribution-only PR forks are allowed.
+Publishing or distributing an independent version, package, service or rebranded
+fork requires prior written permission, including for universities and nonprofit
+research. Accurate citation and descriptions of research modifications remain
+allowed. See LICENSE sections 2 and 4 for the scope and exceptions.
