@@ -215,13 +215,13 @@ from .system_importers import import_inspect_robots
 from .refinement import RefinementWorkspace, RefinementPreparation
 
 from .evaluation_engine import EvaluationConfig, EvaluationEngine, EvaluationCheck
-from .processes import ProcessCommand, ProcessFailure
+from .processes import ProcessCommand, ProcessFailure, ProcessResult
 from .preparation import SourcePackage, SourceVerificationError, check_imports
 
 __all__ = [
     "EvaluationConfig", "EvaluationEngine", "EvaluationCheck",
     "SourcePackage", "SourceVerificationError", "check_imports",
-    "ProcessCommand", "ProcessFailure",
+    "ProcessCommand", "ProcessFailure", "ProcessResult",
     "RefinementWorkspace", "RefinementPreparation",
     "GenerationConfig", "VLLMConfig",
     "Workflow", "AblationStudy", "AblationResult",
