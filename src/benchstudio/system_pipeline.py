@@ -28,12 +28,25 @@ class System:
     def from_pretrained(cls, model, *, revision, backend="vllm", generation=None, **options):
         """Configure a supported model backend; loading begins at first execution."""
         if backend != "vllm":
-            raise ValueError("supported pretrained backends: vllm")
+            return cls.from_backend(backend, model=model, revision=revision, generation=generation, **options)
         from .vllm_backend import GenerationConfig, VLLMConfig, VLLMRuntime
         if generation is not None and not isinstance(generation, GenerationConfig):
             raise TypeError("generation must be bs.GenerationConfig")
         runtime = VLLMRuntime(VLLMConfig(model, revision, **options), generation or GenerationConfig())
         return cls(runtime, runtime.system_spec())
+
+    @classmethod
+    def from_backend(cls, name, **options):
+        """Resolve a trusted installed system factory, with no source-file arguments."""
+        if name == "vllm":
+            return cls.from_pretrained(**options)
+        from .backend_loading import load_backend
+        result = load_backend("benchstudio.systems", name)(**options)
+        if not isinstance(result, cls):
+            raise TypeError("system backend factory must return bs.System")
+        if "revision" in options and result.spec.revision != options["revision"]:
+            raise ValueError("system factory returned a different revision")
+        return result
 
     @classmethod
     def from_callable(cls, runtime, *, name: str, revision: str, kind: str = "system"):
@@ -76,6 +89,17 @@ class Benchmark:
             raise TypeError("authoritative must be boolean")
         # Validate all identity fields before any runtime call.
         self.key(0)
+
+    @classmethod
+    def from_pretrained(cls, name, *, revision, **options):
+        """Load a trusted installed benchmark recipe with pinned dataset/scorer identity."""
+        from .backend_loading import load_backend
+        result = load_backend("benchstudio.benchmarks", name)(revision=revision, **options)
+        if not isinstance(result, cls):
+            raise TypeError("benchmark factory must return bs.Benchmark")
+        if result.revision != revision:
+            raise ValueError("benchmark factory returned a different revision")
+        return result
 
     @cached_property
     def protocol_digest(self):

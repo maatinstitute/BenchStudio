@@ -63,6 +63,9 @@ class VLLMRuntime:
     Calls are serialized. This blocking backend is intended for run(), not
     event-loop concurrency. Process exit owns native engine teardown.
     """
+    requirements = {"vllm": "0.33.0"}
+    supports_async = False
+
     def __init__(self, config: VLLMConfig, generation: GenerationConfig):
         self._config, self._generation = config, generation
         self._engine = self._sampling = None

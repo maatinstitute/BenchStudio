@@ -20,16 +20,25 @@ benchmark = bs.Benchmark(
     scorer=lambda output, target: bs.Score(success=output == target),
     evaluator_revision="exact-match-r1",
 )
-results = bs.pipeline("system-evaluation", system=system, benchmark=benchmark)()
-print([trial.success for trial in results.trials])
+evaluation = bs.pipeline(
+    "system-evaluation", system=system, benchmark=benchmark,
+    config=bs.EvaluationConfig(run_id="example", output_dir="runs/example"),
+)
+print(evaluation.check())
+results = evaluation.run()
+print(results.summary())
+retained = bs.open_run("runs/example")
 ```
 
 This executes arithmetic functions, not a learned model or simulator. Evaluator
 authority defaults to false. Native adapters, checkpoints, state reset and
 benchmark qualification still need explicit setup. Supported text models can
 load through the optional [vLLM backend](docs/vllm-backend.md), with pinned model
-and tokenizer revisions and explicit batched inference. Other runtimes retain
-the callable-system integration path.
+and tokenizer revisions and explicit batched inference. Installed systems and benchmark recipes also resolve by name through
+`System.from_backend` and `Benchmark.from_pretrained`. The [system evaluation
+guide](docs/system-evaluation.md) covers the shared Python/CLI engine, dependency
+checks, result retention and backend packaging. Native qualification remains a
+separate requirement.
 
 Use [paired system experiments](docs/paired-system-experiments.md) to construct
 an executable Workflow, replace a named component and compare variants through
