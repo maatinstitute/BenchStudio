@@ -24,8 +24,8 @@ evaluation = bs.pipeline(
     system=system, benchmark=benchmark,
     config=bs.EvaluationConfig(run_id="example", output_dir="runs/example"),
 )
-print(evaluation.check())
-results = evaluation.run()
+print(evaluation.check().summary())
+results = evaluation()
 print(results.summary())
 retained = bs.open_run("runs/example")
 ```
@@ -47,11 +47,33 @@ an executable Workflow, replace a named component and compare variants through
 are described in [async system execution](docs/async-system-execution.md).
 Declared component isolation alone does not establish a causal effect.
 
-## Python API: run a robotics evaluation
+## Installed simulator integrations
 
-The shortest way to use BenchStudio is to name the task, model, environment,
-seeds, and evaluation conditions directly. You do not need to write a campaign
-file for the common path:
+Installed integrations use the same callable pipeline and shared configuration:
+
+```python
+import benchstudio as bs
+
+evaluation = bs.pipeline(
+    "alpasim", model="route_following", alpasim_root="/opt/alpasim",
+    scene_ids=("YOUR_INSTALLED_SCENE_ID",),
+    config=bs.EvaluationConfig(output_dir="runs/alpasim", timeout=900),
+)
+print(evaluation.check().summary())
+results = evaluation()
+print(results.summary())
+```
+
+This requires the optional AlpaBridge integration and a provisioned native stack;
+configuration checks do not qualify that stack. See [the integration guide](docs/alpabridge-migration.md).
+The researcher does not implement a backend, manage a worker or call per-case
+methods. Integration authors have a separate [extension contract](docs/execution-backends.md).
+
+## Compatibility API: robotics evaluation
+
+The existing robotics adapter API accepts task, model, environment, seeds and
+evaluation conditions directly. This compatibility path remains available for
+registered robotics adapters:
 
 ```python
 import benchstudio as bs

@@ -1,10 +1,11 @@
 # AlpaBridge integration status
 
 AlpaBridge now supplies an optional installed `alpasim` pipeline using the existing
-`bs.pipeline` extension point. Its batch executor delegates process ownership,
-stdout/stderr retention and structured receipts to BenchStudio. Scene selection,
-retry limits, native launcher/readiness, container cleanup, artifact audits and
-batch accounting remain in AlpaBridge. No second scene scheduler is introduced.
+`bs.pipeline` extension point. Its case adapter delegates the case loop, retry scheduling, process ownership,
+stdout/stderr retention and receipts to the existing EvaluationEngine. Scene
+selection, per-scene native launcher/readiness, container cleanup, artifact audits
+and native report formatting remain in AlpaBridge. There is no second BenchStudio
+scene scheduler. See [the execution backend contract](execution-backends.md).
 
 ```python
 import benchstudio as bs

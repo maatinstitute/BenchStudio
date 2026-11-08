@@ -1,4 +1,4 @@
-"""Shared evaluation configuration and execution for callable system backends."""
+"""Common evaluation engine for callable systems and persistent execution backends."""
 from __future__ import annotations
 
 import asyncio
@@ -24,6 +24,8 @@ class EvaluationConfig:
     concurrency: int = 1
     timeout: float | None = None
     output_dir: str | Path | None = None
+    max_retries: int = 0
+    continue_on_error: bool = False
 
     def __post_init__(self):
         if self.output_dir is not None:
@@ -36,6 +38,10 @@ class EvaluationConfig:
                 continue
             if type(value) is not int or value < 1:
                 raise ValueError(name + " must be a positive integer")
+        if type(self.max_retries) is not int or self.max_retries < 0:
+            raise ValueError("max_retries must be a nonnegative integer")
+        if type(self.continue_on_error) is not bool:
+            raise TypeError("continue_on_error must be boolean")
         if self.timeout is not None and (type(self.timeout) not in (int, float)
                 or not math.isfinite(self.timeout) or self.timeout <= 0):
             raise ValueError("timeout must be finite and positive")
@@ -64,13 +70,13 @@ class EvaluationCheck:
 
 class EvaluationEngine:
 
-    """Run a callable on a benchmark, then score its outputs separately.
+    """Coordinate callable evaluations or case requests to a persistent backend.
 
     Construction is inert. Calling the pipeline runs user-provided code.
     Exceptions propagate; failed execution is never converted into task failure.
     This sequential runtime does not promise batching or GPU acceleration.
     """
-    def __init__(self, *, system, benchmark, config=None, run_id=None):
+    def __init__(self, *, system=None, benchmark=None, backend=None, config=None, run_id=None):
         from .system_pipeline import System, Benchmark
         if config is not None and not isinstance(config, EvaluationConfig):
             raise TypeError("config must be bs.EvaluationConfig")
@@ -78,6 +84,19 @@ class EvaluationEngine:
             raise ValueError("run_id belongs in config when config is supplied")
         self.config = config or EvaluationConfig(run_id="evaluation" if run_id is None else run_id)
         run_id = self.config.run_id
+        self.backend = backend
+        if backend is not None:
+            if system is not None or benchmark is not None:
+                raise ValueError("provide an execution backend or System + Benchmark, not both")
+            for method in ("check", "start", "execute_case", "record", "close", "finish"):
+                if not callable(getattr(backend, method, None)):
+                    raise TypeError("execution backend requires " + method + "()")
+            self.cases = tuple(backend.cases)
+            if (not self.cases or any(type(case) is not str or not case for case in self.cases)
+                    or len(set(self.cases)) != len(self.cases)):
+                raise ValueError("backend cases must have unique nonempty string identities")
+            self.run_id = run_id
+            return
         if not isinstance(system, System) or not isinstance(benchmark, Benchmark):
             raise TypeError("provide a System and a Benchmark")
         if not isinstance(run_id, str) or not run_id.strip():
@@ -87,9 +106,22 @@ class EvaluationEngine:
     def check(self, *, mode="sync", batch_size=None):
         if mode not in ("sync", "async"):
             raise ValueError("mode must be sync or async")
+        if self.backend is not None:
+            issues = list(self.backend.check(self.config))
+            if mode != "sync" or self.config.concurrency != 1:
+                issues.append("execution backends currently require sequential run()")
+            if self.config.batch_size is not None or batch_size is not None:
+                issues.append("execution backends do not support model batching")
+            if self.config.timeout is not None and getattr(self.backend, "supports_timeout", False) is not True:
+                issues.append("backend cannot enforce a timeout safely")
+            if self.config.output_dir is not None and self.config.output_dir.exists():
+                issues.append("output directory already exists")
+            return EvaluationCheck(not issues, tuple(issues), len(self.cases), "backend")
         size = self.config.batch_size if batch_size is None else batch_size
         from .backend_loading import requirement_issues
         issues = requirement_issues(self.system.runtime)
+        if self.config.max_retries or self.config.continue_on_error:
+            issues.append("retry/continuation settings require an execution backend")
         if size is not None and (type(size) is not int or size < 1):
             issues.append("batch_size must be a positive integer")
         if mode == "sync":
@@ -114,6 +146,14 @@ class EvaluationEngine:
         return self.run(batch_size=batch_size)
 
     def run(self, *, batch_size=None):
+        if self.backend is not None:
+            check = self.check(batch_size=batch_size)
+            if not check.configuration_valid:
+                raise ValueError("; ".join(check.issues))
+            with self._session() as retain:
+                result = self._run_cases()
+                retain(result)
+                return result
         if self.config.concurrency != 1 or self.config.timeout is not None:
             raise ValueError("concurrency/timeout require arun()")
         size = self.config.batch_size if batch_size is None else batch_size
@@ -137,9 +177,13 @@ class EvaluationEngine:
         output.mkdir(parents=True, exist_ok=False)
         config = asdict(self.config)
         config["output_dir"] = str(output)
-        record = {"status": "running", "configuration": config,
-                  "system_digest": self.system.spec.digest,
-                  "benchmark_protocol_digest": self.benchmark.protocol_digest}
+        record = {"status": "running", "configuration": config}
+        if self.backend is None:
+            record.update(system_digest=self.system.spec.digest,
+                          benchmark_protocol_digest=self.benchmark.protocol_digest)
+        else:
+            record.update(backend=type(self.backend).__module__ + "." + type(self.backend).__qualname__,
+                          cases=list(self.cases))
         path = output / "execution.json"
         def write():
             path.write_text(json.dumps(record, sort_keys=True, indent=2), encoding="utf-8")
@@ -147,8 +191,9 @@ class EvaluationEngine:
         saved = False
         def retain(result):
             nonlocal saved
-            from .system_evidence import _write_run
-            _write_run(result, output)
+            if self.backend is None:
+                from .system_evidence import _write_run
+                _write_run(result, output)
             saved = True
         try:
             yield retain
@@ -157,8 +202,63 @@ class EvaluationEngine:
             raise
         else:
             record["status"] = "completed" if saved else "execution_failed"
+            if self.backend is not None and saved and not self._cases_complete:
+                record["status"] = "incomplete"
         finally:
             write()
+
+    def _case_receipt(self, case, attempt, completed, error=None):
+        if self.config.output_dir is None:
+            return
+        record = {"schema": "benchstudio.case_attempt.v1",
+                  "case": case, "attempt": attempt, "completed": completed}
+        if error is not None:
+            record.update(error_type=type(error).__name__, error=str(error))
+        with (self.config.output_dir / "cases.jsonl").open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps(record, sort_keys=True) + "\n")
+            stream.flush()
+
+    def _run_cases(self):
+        self._cases_complete = True
+        try:
+            # One reusable worker lifecycle per run, independent of request state.
+            self.backend.start(self.config)
+            self._execute_cases()
+        except BaseException as error:
+            try:
+                self.backend.close()
+            except BaseException as cleanup_error:
+                raise error from cleanup_error
+            raise
+        else:
+            self.backend.close()
+        return self.backend.finish()
+
+    def _execute_cases(self):
+        from .backends import CaseResult
+        for case in self.cases:
+            for attempt in range(1, self.config.max_retries + 2):
+                try:
+                    result = self.backend.execute_case(case, attempt=attempt, config=self.config)
+                    if not isinstance(result, CaseResult):
+                        if inspect.iscoroutine(result):
+                            result.close()
+                        raise TypeError("execute_case() must return benchstudio.backends.CaseResult")
+                except BaseException as error:
+                    self._case_receipt(case, attempt, False, error)
+                    try:
+                        self.backend.record(case, CaseResult(False), attempt=attempt)
+                    except BaseException as reporting_error:
+                        raise error from reporting_error
+                    raise
+                self._case_receipt(case, attempt, result.completed)
+                self.backend.record(case, result, attempt=attempt)
+                if result.completed:
+                    break
+            if not result.completed:
+                self._cases_complete = False
+                if not self.config.continue_on_error:
+                    break
 
     def _run(self, *, batch_size=None):
         if self.config.concurrency != 1 or self.config.timeout is not None:
