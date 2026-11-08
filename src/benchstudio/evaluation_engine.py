@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 import inspect
 import math
+import json
+from pathlib import Path
+from contextlib import contextmanager
 
 from .system_evidence import SystemRun, Trial
 
@@ -20,8 +23,11 @@ class EvaluationConfig:
     batch_size: int | None = None
     concurrency: int = 1
     timeout: float | None = None
+    output_dir: str | Path | None = None
 
     def __post_init__(self):
+        if self.output_dir is not None:
+            object.__setattr__(self, "output_dir", Path(self.output_dir).resolve())
         if not isinstance(self.run_id, str) or not self.run_id.strip():
             raise ValueError("run_id must be nonempty")
         for name in ("batch_size", "concurrency"):
@@ -71,7 +77,8 @@ class EvaluationEngine:
         if mode not in ("sync", "async"):
             raise ValueError("mode must be sync or async")
         size = self.config.batch_size if batch_size is None else batch_size
-        issues = []
+        from .backend_loading import requirement_issues
+        issues = requirement_issues(self.system.runtime)
         if size is not None and (type(size) is not int or size < 1):
             issues.append("batch_size must be a positive integer")
         if mode == "sync":
@@ -79,17 +86,70 @@ class EvaluationEngine:
                 issues.append("concurrency/timeout require arun(); synchronous calls cannot be interrupted safely")
             if size is not None and not callable(getattr(self.system.runtime, "generate_batch", None)):
                 issues.append("system runtime does not support generate_batch")
+            if inspect.iscoroutinefunction(self.benchmark.scorer) or inspect.iscoroutinefunction(
+                    getattr(self.benchmark.scorer, "__call__", None)):
+                issues.append("async scorers require arun()")
             if inspect.iscoroutinefunction(self.system.runtime) or inspect.iscoroutinefunction(
                     getattr(self.system.runtime, "__call__", None)):
                 issues.append("async runtimes require arun()")
-        elif size is not None:
-            issues.append("async batching is not supported; use run() or remove batch_size")
+        else:
+            if size is not None:
+                issues.append("async batching is not supported; use run() or remove batch_size")
+            if getattr(self.system.runtime, "supports_async", True) is False:
+                issues.append("this backend requires synchronous run()")
         return EvaluationCheck(not issues, tuple(issues), len(self.benchmark.inputs), mode)
 
     def __call__(self, *, batch_size=None):
         return self.run(batch_size=batch_size)
 
     def run(self, *, batch_size=None):
+        if self.config.concurrency != 1 or self.config.timeout is not None:
+            raise ValueError("concurrency/timeout require arun()")
+        size = self.config.batch_size if batch_size is None else batch_size
+        if size is not None and (type(size) is not int or size < 1):
+            raise ValueError("batch_size must be a positive integer")
+        check = self.check(batch_size=batch_size)
+        if not check.configuration_valid:
+            raise TypeError("; ".join(check.issues))
+        with self._session() as retain:
+            result = self._run(batch_size=batch_size)
+            retain(result)
+            return result
+
+    @contextmanager
+    def _session(self):
+        output = self.config.output_dir
+        if output is None:
+            yield lambda result: None
+            return
+        # Reserve output before calling any system, scorer or model loader.
+        output.mkdir(parents=True, exist_ok=False)
+        config = asdict(self.config)
+        config["output_dir"] = str(output)
+        record = {"status": "running", "configuration": config,
+                  "system_digest": self.system.spec.digest,
+                  "benchmark_protocol_digest": self.benchmark.protocol_digest}
+        path = output / "execution.json"
+        def write():
+            path.write_text(json.dumps(record, sort_keys=True, indent=2), encoding="utf-8")
+        write()
+        saved = False
+        def retain(result):
+            nonlocal saved
+            from .system_evidence import _write_run
+            _write_run(result, output)
+            saved = True
+        try:
+            yield retain
+        except BaseException as error:
+            record.update(status="execution_failed", error_type=type(error).__name__, error=str(error))
+            raise
+        else:
+            record["status"] = "completed" if saved else "execution_failed"
+        finally:
+            write()
+
+    def _run(self, *, batch_size=None):
         if self.config.concurrency != 1 or self.config.timeout is not None:
             raise ValueError("concurrency/timeout require arun()")
         batch_size = self.config.batch_size if batch_size is None else batch_size
@@ -133,6 +193,15 @@ class EvaluationEngine:
         return SystemRun(self.run_id, self.system.spec, tuple(trials))
 
     async def arun(self, *, concurrency=None, timeout=None):
+        check = self.check(mode="async")
+        if not check.configuration_valid:
+            raise ValueError("; ".join(check.issues))
+        with self._session() as retain:
+            result = await self._arun(concurrency=concurrency, timeout=timeout)
+            retain(result)
+            return result
+
+    async def _arun(self, *, concurrency=None, timeout=None):
         """Evaluate with bounded cooperative workers and stable trial ordering.
 
         concurrency > 1 requires independent runtime sessions/state per input.

@@ -77,7 +77,7 @@ def test_unified_help_and_evaluation_help_do_not_execute(tmp_path):
     assert result.returncode == 0
     assert all(name in result.stdout for name in ("run", "verify", "package", "doctor", "evaluate"))
     result = command("evaluate", "--help")
-    assert result.returncode == 0 and "--episodes" in result.stdout
+    assert result.returncode == 0 and "--system" in result.stdout
 
 
 def test_source_check_also_protects_services_and_direct_process_context(tmp_path, monkeypatch):

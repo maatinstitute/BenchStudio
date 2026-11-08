@@ -119,8 +119,9 @@ runner. The CLI calls these same APIs. Source verification reports are retained 
 ## One command line
 
 The installed command is `benchstudio`. Its subcommands are `run`, `verify`,
-`package`, `doctor` and `evaluate`. `benchstudio evaluate` uses the existing
-evaluation parser; the older `benchstudio-run` entry point stays compatible.
+`package`, `doctor` and `evaluate`. `benchstudio evaluate` uses the high-level System + Benchmark engine described in
+[system evaluation](system-evaluation.md); `benchstudio-run` retains the older
+campaign parser for compatibility.
 Calling `benchstudio` without arguments prints help and executes nothing.
 
 After installing this BenchStudio version in the controlling Python environment,

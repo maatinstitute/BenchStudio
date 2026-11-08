@@ -21,3 +21,7 @@ For a batching backend use EvaluationConfig(batch_size=8). For cooperative async
 check(mode="sync" or "async") returns configuration_valid and issues. Native validity is always explicitly unverified by this static check. It does not install dependencies, download/check checkpoints, qualify evaluators or authorize a campaign. Runtime/scorer exceptions propagate; they are never converted into task failure.
 
 System.from_pretrained continues to use the existing optional upstream vLLM backend. Callable systems can wrap agents, world models and composed architectures. No new universal VLA/WAM loader is claimed. Legacy campaign execution/CLI still uses CampaignExecutor; this change unifies the system-evaluation path, not those distinct scientific protocols.
+
+
+For installed backend resolution, dependency checks, retained results and the shared
+Python/CLI workflow, see [system evaluation](system-evaluation.md).

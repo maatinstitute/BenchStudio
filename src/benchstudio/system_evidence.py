@@ -148,6 +148,32 @@ class SystemRun:
             raise ValueError("trial is bound to a different system")
 
 
+    def summary(self) -> str:
+        completed = sum(t.status == "completed" for t in self.trials)
+        valid = sum(t.valid_success for t in self.trials)
+        return f"{self.run_id}: {completed}/{len(self.trials)} completed; {valid} authoritative binary outcomes"
+
+    def save(self, root: str | Path) -> Path:
+        """Retain the existing system-run evidence format; never overwrite a directory."""
+        root = Path(root)
+        root.mkdir(parents=True, exist_ok=False)
+        return _write_run(self, root)
+
+
+def _write_run(run: SystemRun, root: Path) -> Path:
+    with (root / "system.json").open("x", encoding="utf-8") as stream:
+        json.dump(run.system.to_dict(), stream, sort_keys=True)
+    with (root / "trials.jsonl").open("x", encoding="utf-8") as stream:
+        for trial in run.trials:
+            stream.write(json.dumps(trial.to_dict(), sort_keys=True) + "\n")
+    manifest = {"schema": "benchstudio.system_run.v1", "run_id": run.run_id,
+                "files": {name: _digest_file(root / name) for name in ("system.json", "trials.jsonl")}}
+    # Manifest is last: a partial write is not readable as a completed run.
+    with (root / "manifest.json").open("x", encoding="utf-8") as stream:
+        json.dump(manifest, stream, sort_keys=True)
+    return root
+
+
 def _file(root: Path, name: str) -> Path:
     if root.is_symlink():
         raise ValueError("symlinked evidence root")

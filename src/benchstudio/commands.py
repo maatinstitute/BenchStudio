@@ -13,8 +13,8 @@ def main(argv=None):
         parser.print_help()
         return 0
     if argv[0] == "evaluate":
-        from .cli import main as evaluate
-        return evaluate(argv[1:])
+        from .system_cli import main as evaluate_system
+        return evaluate_system(argv[1:])
     if argv[0] in ("run", "verify", "package", "doctor"):
         from .preparation_cli import main as prepare
         return prepare(argv)
