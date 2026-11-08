@@ -19,12 +19,13 @@ initialization must remain lightweight.
 
 ## Refinement versus Refresh
 
-The concrete native recipe is implemented in paper
-[PR #16](https://github.com/amtellezfernandez/refinement-refresh-robot-policies/pull/16),
-stacked on its three-interpreter frontend drafts. It remains draft and is not on
-paper main or scientifically qualified by this integration.
+The concrete native recipe and its prerequisite code corrections were audited and
+merged through paper [PR #16](https://github.com/amtellezfernandez/refinement-refresh-robot-policies/pull/16)
+into the implementation branch at
+[ab05b1368abf28df4926273dc36b4e0b4bbb5ce4](https://github.com/amtellezfernandez/refinement-refresh-robot-policies/tree/ab05b1368abf28df4926273dc36b4e0b4bbb5ce4).
+This is not paper main, native qualification or a scientific protocol release.
 
-After maintainers integrate/review the recipe, the operator installs its package
+Using that reviewed implementation checkout, the operator installs its package
 in the controlling BenchStudio Python >=3.10 environment and uses
 bs.pipeline("refinement-refresh", ...), or
 benchstudio evaluate --recipe refinement-refresh ... --check.
