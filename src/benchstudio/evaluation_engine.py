@@ -56,6 +56,7 @@ class EvaluationCheck:
     mode: str
     native_verified: bool = False
     executions: int | None = None
+    capabilities: dict | None = None
 
     @property
     def technical_ready(self):
@@ -87,6 +88,8 @@ class EvaluationEngine:
             raise ValueError("run_id belongs in config when config is supplied")
         self.config = config or EvaluationConfig(run_id="evaluation" if run_id is None else run_id)
         run_id = self.config.run_id
+        self._result = None
+        self._has_result = False
         self.episode_records = {}
         self.protocol_benchmark = None
         if isinstance(benchmark, Benchmark) and benchmark.protocol is not None:
@@ -118,6 +121,32 @@ class EvaluationEngine:
             raise ValueError("run_id must be nonempty")
         self.system, self.benchmark, self.run_id = system, benchmark, run_id
 
+    @property
+    def capabilities(self):
+        if self.backend is not None:
+            return {"sync": True, "async": False, "batching": False,
+                    "concurrency": False,
+                    "timeout": getattr(self.backend, "supports_timeout", False) is True}
+        runtime = inspect.unwrap(self.system.runtime)
+        asynchronous = inspect.iscoroutinefunction(runtime) or inspect.iscoroutinefunction(
+            getattr(runtime, "__call__", None))
+        async_supported = getattr(self.system.runtime, "supports_async", True) is not False
+        scorer_async = inspect.iscoroutinefunction(self.benchmark.scorer) or inspect.iscoroutinefunction(
+            getattr(self.benchmark.scorer, "__call__", None))
+        return {"sync": not asynchronous and not scorer_async, "async": async_supported,
+                "batching": callable(getattr(self.system.runtime, "generate_batch", None)),
+                "concurrency": async_supported, "timeout": async_supported}
+
+    def report(self):
+        """Uniform read-only report; run() still returns the original native result."""
+        if not self._has_result:
+            raise RuntimeError("no completed result; inspect retained partial evidence after failure")
+        from .results import inspect_result
+        if self.backend is None:
+            return inspect_result(self._result)
+        return inspect_result(self._result, planned=self.episode_coverage.planned,
+                              episodes=tuple(self.episode_records.values()))
+
     def check(self, *, mode="sync", batch_size=None):
         if mode not in ("sync", "async"):
             raise ValueError("mode must be sync or async")
@@ -135,8 +164,8 @@ class EvaluationEngine:
                 if self.config.max_retries and self.protocol_benchmark.supports_retries is not True:
                     issues.append("benchmark protocol does not permit execution retries")
                 return EvaluationCheck(not issues, tuple(issues), len(self.protocol_benchmark.cases),
-                                       "protocol", executions=len(self.cases))
-            return EvaluationCheck(not issues, tuple(issues), len(self.cases), "backend")
+                                       "protocol", executions=len(self.cases), capabilities=self.capabilities)
+            return EvaluationCheck(not issues, tuple(issues), len(self.cases), "backend", capabilities=self.capabilities)
         size = self.config.batch_size if batch_size is None else batch_size
         from .backend_loading import requirement_issues
         issues = requirement_issues(self.system.runtime)
@@ -167,7 +196,7 @@ class EvaluationEngine:
                 issues.append("async batching is not supported; use run() or remove batch_size")
             if getattr(self.system.runtime, "supports_async", True) is False:
                 issues.append("this backend requires synchronous run()")
-        return EvaluationCheck(not issues, tuple(issues), len(self.benchmark.inputs), mode)
+        return EvaluationCheck(not issues, tuple(issues), len(self.benchmark.inputs), mode, capabilities=self.capabilities)
 
     def __call__(self, *, batch_size=None):
         return self.run(batch_size=batch_size)
@@ -196,9 +225,13 @@ class EvaluationEngine:
 
     @contextmanager
     def _session(self):
+        self._has_result = False
+        self._result = None
         output = self.config.output_dir
         if output is None:
-            yield lambda result: None
+            def retain_memory(result):
+                self._result, self._has_result = result, True
+            yield retain_memory
             return
         # Reserve output before calling any system, scorer or model loader.
         output.mkdir(parents=True, exist_ok=False)
@@ -227,6 +260,7 @@ class EvaluationEngine:
             if self.backend is None:
                 from .system_evidence import _write_run
                 _write_run(result, output)
+            self._result, self._has_result = result, True
             saved = True
         try:
             yield retain
