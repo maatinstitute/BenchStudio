@@ -20,7 +20,8 @@ The checker builds wheel/sdist without build isolation, installers or network
 resolution; builds a second wheel from the extracted sdist; creates two fresh
 venvs; installs each wheel with --no-index --no-deps; executes the real arithmetic
 example from an empty directory; saves and reopens results; checks the supported
-root API and installed CLI. Optional Excalidraw checking builds/installs its wheel
+root API and the single installed `benchstudio` command, including its `campaign` and `replay`
+specialist subcommands. Optional Excalidraw checking builds/installs its wheel
 and discovers its actual metadata entry point; check() reads existing fixture
 tasks and never invokes the agent or constructs a gym. It does not qualify
 Excalidraw's full optional dependency stack.
@@ -32,11 +33,11 @@ builds across hosts are not claimed. The script publishes nothing and does not
 run simulators, GPUs, learned models or confirmation experiments.
 
 On 8 November 2026 the local candidate passed the package checks on Python
-3.12.14. The installed Excalidraw integration was not supplied to this run, so
+3.12.14. The wheel exposes one console script, `benchstudio`; campaign and replay
+are subcommands. The installed Excalidraw integration was not supplied to this run, so
 its factory discovery and inert preparation check were not executed here. The
-offline source suite passed 88 tests; the selected public API suite passed 86;
-the selected URDF/world-episode suite passed 100. Those selections overlap and
-are not the complete repository suite. Python 3.10/3.11 runtime verification is
-pending. Known native qualification gaps remain listed in research-preview.md.
-Public release still needs the final rights/security review and owner
-authorization.
+offline source suite passed 89 tests; the final selected API/system/integration
+suite passed 195. These selections overlap and are not the complete repository
+suite. Python 3.10/3.11 runtime verification is pending. Known native
+qualification gaps remain listed in research-preview.md. Public release still
+needs the final rights/security review and owner authorization.

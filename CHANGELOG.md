@@ -8,5 +8,6 @@
 - Use one EvaluationConfig for engine settings and one result inspector for offline and native records.
 - Require explicit dashboard study definitions; remove invented fallback studies.
 - Update current examples and docs to the canonical Python, module-import, and CLI entry points.
+- Route campaign preparation and archive replay through the single `benchstudio` executable.
 
 The package and repository remain private and unpublished. No simulator, GPU, learned model, native qualification, or scientific confirmation was run for this cleanup.

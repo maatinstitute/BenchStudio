@@ -52,7 +52,8 @@ No hidden environment, reset, checkpoint download or inference default is chosen
 root API, common result inspection, capability matrix and verified integration
 boundaries. Import infrastructure and optional integrations from their owning
 modules; package-root wildcard exports and dynamic integration re-exports are not
-provided. The installed CLI is `benchstudio --help`.
+provided. The only installed command is `benchstudio`; use `campaign` and `replay`
+for specialist workflows. See `benchstudio --help`.
 
 [Specialist workflows](docs/specialist-workflows.md) document task-specific
 recipes and their runtime requirements. Documentation does not establish native
