@@ -33,3 +33,26 @@ Excalidraw consumes these contracts in its existing executable benchmark. Roboti
 backends may adopt them without changing their success semantics, release gates,
 reserved identity handling or native process boundaries. No live robotics
 qualification has been performed by these synthetic contract tests.
+
+## Integration with the existing engine
+
+Return `benchstudio.backends.CaseResult(completed, native_output,
+episodes=(bs.EpisodeRecord(case_id, outcome, batches, isolation_mode), ...))`
+from the existing backend. `completed` describes the execution group; each record
+identifies an experimental unit in that group's frozen benchmark calendar.
+
+The engine rejects duplicate or wrong-group episode identities before accepting
+that batch. It owns common `episodes.jsonl` persistence and
+`episode_coverage.json`, including partial runs and failures. Inspect
+`pipeline.episode_records` and `pipeline.episode_coverage` in memory. Coverage
+counts returned evidence, not native success or independent verification.
+Backends that return no episode evidence remain supported and have no observed
+common episode records; the engine does not infer them from process completion.
+
+Native result objects and analyses are returned unchanged. Benchmarks retain
+native action journals; they no longer need their own serializer for these common
+records. Isolation stays at the native episode boundary: an execution group may
+contain many episodes, so resetting once per process would be incorrect.
+
+This file format is common evidence, not a second causal SystemEvent stream.
+No component clock or causal lineage is invented from the order of action batches.

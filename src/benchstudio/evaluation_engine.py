@@ -87,6 +87,7 @@ class EvaluationEngine:
             raise ValueError("run_id belongs in config when config is supplied")
         self.config = config or EvaluationConfig(run_id="evaluation" if run_id is None else run_id)
         run_id = self.config.run_id
+        self.episode_records = {}
         self.protocol_benchmark = None
         if isinstance(benchmark, Benchmark) and benchmark.protocol is not None:
             if backend is not None:
@@ -253,20 +254,69 @@ class EvaluationEngine:
             stream.write(json.dumps(record, sort_keys=True) + "\n")
             stream.flush()
 
+    @property
+    def episode_coverage(self):
+        from .episodes import EpisodeCoverage
+        planned = tuple(case.case_id for case in self.protocol_benchmark.cases) if (
+            self.protocol_benchmark is not None) else self.cases
+        return EpisodeCoverage(planned, tuple(self.episode_records))
+
+    def _retain_episodes(self, case, attempt, result):
+        # Validate the whole batch before publishing any of it. Native execution
+        # groups may report zero, one or several experimental units.
+        allowed = set(self.protocol_benchmark.execution_groups[case]) if (
+            self.protocol_benchmark is not None) else {case}
+        for episode in result.episodes:
+            if episode.case_id not in allowed:
+                raise ValueError("episode does not belong to this execution group")
+            if episode.case_id in self.episode_records:
+                raise ValueError("duplicate episode evidence across attempts")
+        self.episode_records.update((e.case_id, e) for e in result.episodes)
+        output = self.config.output_dir
+        if output is not None and result.episodes:
+            with (output / "episodes.jsonl").open("a", encoding="utf-8") as stream:
+                for episode in result.episodes:
+                    row = {"schema": "benchstudio.episode.v1", "execution_id": case,
+                           "attempt": attempt, **episode.to_dict()}
+                    stream.write(json.dumps(row, sort_keys=True) + "\n")
+
+    def _retain_episode_coverage(self):
+        output = self.config.output_dir
+        if output is not None:
+            coverage = self.episode_coverage
+            (output / "episode_coverage.json").write_text(json.dumps({
+                "schema": "benchstudio.episode_coverage.v1",
+                "planned": list(coverage.planned), "observed": list(coverage.observed),
+                "missing": list(coverage.missing),
+                "meaning": "coverage of returned episode evidence; not a native success verdict",
+            }, sort_keys=True), encoding="utf-8")
+
+    def _close_cases(self):
+        try:
+            self.backend.close()
+        except BaseException as error:
+            try:
+                self._retain_episode_coverage()
+            except BaseException as reporting_error:
+                raise error from reporting_error
+            raise
+        self._retain_episode_coverage()
+
     def _run_cases(self):
         self._cases_complete = True
+        self.episode_records = {}
         try:
             # One reusable worker lifecycle per run, independent of request state.
             self.backend.start(self.config)
             self._execute_cases()
         except BaseException as error:
             try:
-                self.backend.close()
+                self._close_cases()
             except BaseException as cleanup_error:
                 raise error from cleanup_error
             raise
         else:
-            self.backend.close()
+            self._close_cases()
         return self.backend.finish()
 
     def _execute_cases(self):
@@ -279,6 +329,7 @@ class EvaluationEngine:
                         if inspect.iscoroutine(result):
                             result.close()
                         raise TypeError("execute_case() must return benchstudio.backends.CaseResult")
+                    self._retain_episodes(case, attempt, result)
                 except BaseException as error:
                     self._case_receipt(case, attempt, False, error)
                     try:
