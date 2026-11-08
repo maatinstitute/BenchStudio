@@ -107,15 +107,10 @@ class SourcePackage:
         _relative(entrypoint)
         if entrypoint not in self.files or not entrypoint.endswith(".py"):
             raise ValueError("entrypoint must be a declared Python source file")
-        command = ProcessCommand("source-run", (str(python), str(self.root / entrypoint), *args),
-                                 self.root, env={} if env is None else env, timeout=timeout)
-        report = self._require_verified()
-        logs = Path(log_dir)
-        logs.mkdir(parents=True, exist_ok=True)
-        # This receipt never claims environment qualification or authorization.
-        with (logs / "source-verification.json").open("x", encoding="utf-8") as stream:
-            json.dump(report, stream, indent=2)
-        return command.run(logs)
+        return ProcessCommand(
+            "source-run", (str(python), str(self.root / entrypoint), *args), self.root,
+            env={} if env is None else env, timeout=timeout, sources=self,
+        ).run(log_dir)
 
     def archive(self, output: str | Path) -> str:
         """Write a deterministic source-only tar.gz and embedded v1 manifest.

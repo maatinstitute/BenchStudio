@@ -93,21 +93,49 @@ it does not require restaging that package, change the permission, or validate
 Warren's separate pre-launch verifier. The scientific driver still owns its
 specific authorization and consumption checks.
 
-## One command, no wrapper script
+## One execution API
+
+Source verification is part of `bs.ProcessCommand` and applies to commands,
+services and direct process contexts through the same pre-spawn path:
+
+```python
+import benchstudio as bs
+
+sources = bs.SourcePackage.from_manifest("STAGE_MANIFEST.json", root="./staged")
+command = bs.ProcessCommand(
+    "experiment",
+    ("/path/to/native/bin/python", "/absolute/path/to/staged/scripts/benchmark.py"),
+    cwd=sources.root,
+    sources=sources,
+)
+receipt = command.run("./logs/experiment")
+```
+
+`SourcePackage.run` remains a Python-entry-point convenience method that delegates
+to this execution API. Packaging and import diagnostics do not implement a second
+runner. The CLI calls these same APIs. Source verification reports are retained as
+`<command-name>.sources.json` beside the command logs.
+
+## One command line
+
+The installed command is `benchstudio`. Its subcommands are `run`, `verify`,
+`package`, `doctor` and `evaluate`. `benchstudio evaluate` uses the existing
+evaluation parser; the older `benchstudio-run` entry point stays compatible.
+Calling `benchstudio` without arguments prints help and executes nothing.
 
 After installing this BenchStudio version in the controlling Python environment,
-use `benchstudio-native` (or `python -m benchstudio.native_cli`). No user-written
+use `benchstudio` (or `python -m benchstudio`). No user-written
 Python or shell wrapper is needed.
 
 ```sh
-benchstudio-native verify --manifest /path/to/STAGE_MANIFEST.json --root /path/to/staged
-benchstudio-native imports --python /path/to/native/bin/python --log-dir /path/to/import-logs robosuite
+benchstudio verify --manifest /path/to/STAGE_MANIFEST.json --root /path/to/staged
+benchstudio doctor --python /path/to/native/bin/python --log-dir /path/to/import-logs robosuite
 ```
 
 A single launch can include an explicitly permitted import diagnostic:
 
 ```sh
-benchstudio-native run \
+benchstudio run \
   --manifest /path/to/STAGE_MANIFEST.json --root /path/to/staged \
   --python /path/to/native/bin/python --entrypoint scripts/benchmark.py \
   --log-dir /path/to/new-logs --check-import robosuite \
@@ -132,7 +160,7 @@ are complete, the operator command has this form (replace the stage/auth/output
 paths with their actual retained locations):
 
 ```sh
-MUJOCO_GL=osmesa benchstudio-native run \
+MUJOCO_GL=osmesa benchstudio run \
   --manifest /path/to/STAGE_MANIFEST.json --root /path/to/staged \
   --python /home/warren/alba-cross-policy-20261101/envs/client/bin/python \
   --entrypoint benchstudio/docs/refinement-v3-e0/protocol_e0.py \
@@ -153,4 +181,4 @@ checks are still the existing protocol's responsibility; this wrapper does not
 turn a plumbing result into evaluator qualification.
 
 The source-only archive can likewise be produced without a packaging script:
-`benchstudio-native archive --manifest STAGE_MANIFEST.json --root /path/to/staged --output sources.tar.gz`.
+`benchstudio package --manifest STAGE_MANIFEST.json --root /path/to/staged --output sources.tar.gz`.

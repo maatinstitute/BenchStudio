@@ -1,4 +1,5 @@
 """Trusted external commands and managed services, independent of any benchmark."""
+from __future__ import annotations
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 import json
@@ -9,7 +10,10 @@ import signal
 import subprocess
 import time
 from types import MappingProxyType
-from typing import Callable, Mapping
+from typing import TYPE_CHECKING, Callable, Mapping
+
+if TYPE_CHECKING:
+    from .preparation import SourcePackage
 
 
 class ProcessFailure(RuntimeError):
@@ -46,6 +50,7 @@ class ProcessCommand:
     cwd: str | Path
     env: Mapping[str, str] = field(default_factory=dict)
     timeout: float | None = None
+    sources: SourcePackage | None = None
 
     def __post_init__(self):
         if not re.fullmatch(r'[A-Za-z0-9_-]+', self.name):
@@ -61,8 +66,19 @@ class ProcessCommand:
     @contextmanager
     def started(self, log_dir):
         """Own the process and logs; terminate its group on every exit path."""
+        # Source verification belongs to the execution boundary: run(), service()
+        # and direct started() callers all use the same pre-spawn checks.
+        report = None
+        if self.sources is not None:
+            report = self.sources.verify()
+            if not report["valid"]:
+                from .preparation import SourceVerificationError
+                raise SourceVerificationError("source verification failed: " + repr(report["mismatches"]))
         root = Path(log_dir)
         root.mkdir(parents=True, exist_ok=True)
+        if report is not None:
+            with (root / (self.name + '.sources.json')).open('x') as stream:
+                json.dump(report, stream, indent=2)
         receipt = root / (self.name + '.receipt.json')
         # Each stage's logs are retained rather than overwritten on a rerun.
         with (root / (self.name + '.stdout.log')).open('x') as out:
