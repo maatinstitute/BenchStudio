@@ -783,3 +783,12 @@ A new capture from an archived action file is a new baseline, so
 retain any original RoboPAD trace separately. Independent evaluator
 qualification uses its own goal checker and outcome evidence.
 
+
+
+### Preparing native programs
+
+Use `bs.SourcePackage` to verify declared source files before launching an external
+Python entry point and create reproducible source archives. Use `bs.check_imports`
+for an explicit import diagnostic in a separate native interpreter, with retained
+logs and genuine failure exits. See [native preparation](docs/native-preparation.md).
+These checks do not qualify a model or grant experimental execution permission.

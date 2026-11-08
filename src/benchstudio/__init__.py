@@ -215,8 +215,10 @@ from .system_importers import import_inspect_robots
 from .refinement import RefinementWorkspace, RefinementPreparation
 
 from .processes import ProcessCommand, ProcessFailure
+from .preparation import SourcePackage, SourceVerificationError, check_imports
 
 __all__ = [
+    "SourcePackage", "SourceVerificationError", "check_imports",
     "ProcessCommand", "ProcessFailure",
     "RefinementWorkspace", "RefinementPreparation",
     "GenerationConfig", "VLLMConfig",
