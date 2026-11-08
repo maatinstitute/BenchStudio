@@ -120,6 +120,12 @@ class EvaluationEngine:
         size = self.config.batch_size if batch_size is None else batch_size
         from .backend_loading import requirement_issues
         issues = requirement_issues(self.system.runtime)
+        from .callables import DeclaredCallable
+        if isinstance(self.system.runtime, DeclaredCallable):
+            try:
+                self.system.runtime._verify_declaration()
+            except ValueError as error:
+                issues.append(str(error))
         if self.config.max_retries or self.config.continue_on_error:
             issues.append("retry/continuation settings require an execution backend")
         if size is not None and (type(size) is not int or size < 1):
@@ -132,8 +138,9 @@ class EvaluationEngine:
             if inspect.iscoroutinefunction(self.benchmark.scorer) or inspect.iscoroutinefunction(
                     getattr(self.benchmark.scorer, "__call__", None)):
                 issues.append("async scorers require arun()")
-            if inspect.iscoroutinefunction(self.system.runtime) or inspect.iscoroutinefunction(
-                    getattr(self.system.runtime, "__call__", None)):
+            runtime = inspect.unwrap(self.system.runtime)
+            if inspect.iscoroutinefunction(runtime) or inspect.iscoroutinefunction(
+                    getattr(runtime, "__call__", None)):
                 issues.append("async runtimes require arun()")
         else:
             if size is not None:

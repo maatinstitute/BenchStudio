@@ -1,4 +1,8 @@
-# Reuse vLLM through the Python system API
+# Pinned vLLM compatibility integration
+
+> Preferred for researcher-owned configuration: use the native vLLM objects or
+> endpoint callable described in [Native systems](native-systems.md). That route
+> does not mirror vLLM options or require this compatibility pin.
 
 Install the optional backend in a vLLM-compatible environment:
 
