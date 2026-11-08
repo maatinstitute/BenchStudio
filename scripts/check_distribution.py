@@ -68,8 +68,12 @@ def main():
         with zipfile.ZipFile(wheel) as archive:
             names = archive.namelist()
             metadata = BytesParser().parsebytes(archive.read(next(n for n in names if n.endswith(".dist-info/METADATA"))))
+            entry_points = archive.read(next(n for n in names if n.endswith(".dist-info/entry_points.txt"))).decode()
+            script_names = [line.split("=", 1)[0].strip() for line in entry_points.splitlines()
+                            if "=" in line]
             assert metadata["Version"] == "0.1.0rc2"
             assert metadata.get_all("License-File") and any(n.endswith("/LICENSE") for n in names)
+            assert script_names == ["benchstudio"]
             assert "benchstudio/results.py" in names
             assert "benchstudio/compat.py" not in names
             assert "benchstudio/vllm_backend.py" not in names
@@ -85,6 +89,8 @@ def main():
         smoke.write_text((root / "examples/research_preview.py").read_text())
         run([python, smoke, empty / "run"], empty)
         run([python, "-m", "benchstudio", "--help"], empty)
+        run([python, "-m", "benchstudio", "campaign", "--help"], empty)
+        run([python, "-m", "benchstudio", "replay", "--help"], empty)
         run([python, "-c", "import benchstudio as bs; "
              "assert len(bs.__all__)==15; "
              "assert all(hasattr(bs,n) for n in bs.__all__); "
@@ -122,6 +128,7 @@ print('Installed Excalidraw factory discovery and inert check passed; native exe
             run([python, plugin_check, args.excalidraw_root.resolve()], empty)
         verified.append({"origin": label, "artifact": wheel.name, "sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
                          "installed_example": "passed", "installed_cli": "passed",
+                         "installed_campaign_help": "passed", "installed_replay_help": "passed",
                          "installed_excalidraw_check": integration_wheel is not None})
     log.close()
     bound_files = list((root / "src/benchstudio").rglob("*.py"))

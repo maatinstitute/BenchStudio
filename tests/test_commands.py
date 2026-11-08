@@ -75,9 +75,24 @@ def test_import_only_command_reports_failure_without_native_run(tmp_path):
 def test_unified_help_and_evaluation_help_do_not_execute(tmp_path):
     result = command()
     assert result.returncode == 0
-    assert all(name in result.stdout for name in ("run", "verify", "package", "doctor", "evaluate"))
+    assert all(name in result.stdout for name in (
+        "run", "verify", "package", "doctor", "evaluate", "campaign", "replay"
+    ))
     result = command("evaluate", "--help")
     assert result.returncode == 0 and "--system" in result.stdout
+    result = command("campaign", "--help")
+    assert result.returncode == 0 and "benchstudio campaign" in result.stdout
+    result = command("replay", "--help")
+    assert result.returncode == 0 and "benchstudio replay" in result.stdout
+
+
+def test_specialist_module_is_not_a_second_cli_entrypoint():
+    result = subprocess.run(
+        [sys.executable, "-m", "benchstudio.cli", "--help"],
+        capture_output=True, text=True, timeout=20,
+    )
+    assert result.returncode != 0
+    assert "Use `benchstudio campaign ...`" in result.stderr
 
 
 def test_source_check_also_protects_services_and_direct_process_context(tmp_path, monkeypatch):
