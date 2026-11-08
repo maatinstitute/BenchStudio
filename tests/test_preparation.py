@@ -35,7 +35,7 @@ class PreparationTests(unittest.TestCase):
         receipt = source.run("main.py", log_dir=tmp_path / "logs")
         assert (source.root / "executed").exists()
         assert json.loads(receipt.read_text())["exit_code"] == 0
-        report = json.loads((tmp_path / "logs/source-verification.json").read_text())
+        report = json.loads((tmp_path / "logs/source-run.sources.json").read_text())
         assert report["valid"] and report["checked_files"] == 2
         with self.assertRaises(FileExistsError):
             source.run("main.py", log_dir=tmp_path / "logs")

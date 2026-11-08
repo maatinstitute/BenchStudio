@@ -1,4 +1,4 @@
-"""Command-line access to native preparation; no benchmark-specific rules."""
+"""Command-line access to source preparation; no benchmark-specific rules."""
 from __future__ import annotations
 
 import argparse
@@ -11,13 +11,13 @@ from .processes import ProcessFailure
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(prog="benchstudio", description=__doc__)
     sub = parser.add_subparsers(dest="operation", required=True)
-    for operation in ("verify", "archive", "run"):
+    for operation in ("verify", "package", "run"):
         command = sub.add_parser(operation)
         command.add_argument("--manifest", type=Path, required=True)
         command.add_argument("--root", type=Path, required=True)
-        if operation == "archive":
+        if operation == "package":
             command.add_argument("--output", type=Path, required=True)
         if operation == "run":
             command.add_argument("--python", required=True)
@@ -28,14 +28,14 @@ def main(argv=None):
             command.add_argument("--import-timeout", type=float, default=60)
             command.add_argument("args", nargs=argparse.REMAINDER,
                                  help="Native entry-point arguments after --")
-    imports = sub.add_parser("imports")
+    imports = sub.add_parser("doctor")
     imports.add_argument("--python", required=True)
     imports.add_argument("--log-dir", type=Path, required=True)
     imports.add_argument("--timeout", type=float, default=60)
     imports.add_argument("modules", nargs="+")
     args = parser.parse_args(argv)
     try:
-        if args.operation == "imports":
+        if args.operation == "doctor":
             report = check_imports(*args.modules, python=args.python,
                                    log_dir=args.log_dir, timeout=args.timeout)
         else:
@@ -46,7 +46,7 @@ def main(argv=None):
                 return 0 if report["valid"] else 1
             if not report["valid"]:
                 raise SourceVerificationError(repr(report["mismatches"]))
-            if args.operation == "archive":
+            if args.operation == "package":
                 report = {"archive": str(args.output), "sha256": sources.archive(args.output)}
             else:
                 # Neither verification nor diagnostic imports consume task permissions.
@@ -62,7 +62,7 @@ def main(argv=None):
         print(json.dumps(report, indent=2))
         return 0
     except (OSError, ValueError, ProcessFailure) as error:
-        print("REFUSED_OR_FAILED: {}".format(error), file=sys.stderr)
+        print("error: {}".format(error), file=sys.stderr)
         return 1
 
 

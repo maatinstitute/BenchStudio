@@ -58,7 +58,7 @@ def _mock_simulator_factory(_attempt):
     return MockSimulator()
 
 
-def main() -> int:
+def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Run a BenchStudio temporal-fidelity evaluation.")
     parser.add_argument("--episodes", type=int, default=1)
     parser.add_argument("--output", type=Path, default=Path("runs/smoke"))
@@ -347,7 +347,7 @@ def main() -> int:
     )
     parser.add_argument("--qualification-directory", type=Path)
     parser.add_argument("--qualification-approval-sha256")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if args.verify_archive is not None:
         result = verify_campaign_archive(
             args.verify_archive.read_bytes(), expected_sha256=args.trusted_archive_sha256
