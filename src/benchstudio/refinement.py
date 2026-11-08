@@ -11,6 +11,17 @@ from typing import Mapping
 class RefinementPreparation:
     models: Mapping[str, dict]
 
+    @property
+    def technical_ready(self) -> bool:
+        return bool(self.models) and all(
+            report.get("offline_inputs_complete") is True and not report["issues"]
+            for report in self.models.values())
+
+    @property
+    def execution_authorized(self) -> bool:
+        return bool(self.models) and all(
+            report["execution_authorized"] is True for report in self.models.values())
+
     def summary(self) -> str:
         lines = []
         for model, report in self.models.items():

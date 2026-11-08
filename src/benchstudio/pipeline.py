@@ -336,8 +336,12 @@ def pipeline(name: str = "evaluate", **kwargs: Any) -> Any:
         return CampaignAuditPipeline(**kwargs)
     if name == "robotics-evaluation":
         return CampaignEvaluationPipeline(**kwargs)
-    raise ValueError(
-        f"unsupported BenchStudio pipeline task {name!r}; "
-        "supported tasks: 'evaluate', 'ablation', 'replay', 'system-evaluation', 'robotics-evaluation', 'campaign-audit'"
-    )
-
+    from .backend_loading import load_backend
+    try:
+        factory = load_backend("benchstudio.pipelines", name)
+    except ValueError as error:
+        raise ValueError(f"unsupported BenchStudio pipeline task {name!r}: {error}") from error
+    result = factory(**kwargs)
+    if not callable(getattr(result, "check", None)) or not callable(getattr(result, "run", None)):
+        raise TypeError("installed pipeline must expose check() and run()")
+    return result

@@ -20,13 +20,14 @@ implemented once by maintainers, then selected by installed name by researchers.
 | E0 proposed authorization | Eight bound hashes agree with manifest; scope is PROTOCOL_E0_PI05 | Alba's confirmation of that exact proposal remains separate from code preparation |
 | E0 execution | Warren reports not run; permission not consumed | Warren alone performs the existing authorized run after its existing prerequisites |
 | Import-only diagnostic | Earlier pi0.5 probe failed through a Windows profile.py shadow module | Separate import-only permission question remains with Alba; no expansion is inferred |
-| R22/R25 installed recipe | Not shipped as a named high-level System/Benchmark backend | Integration belongs to paper maintainers, not to Warren's operator instructions |
+| R22/R25 installed recipe | Implemented in paper [draft PR #16](https://github.com/amtellezfernandez/refinement-refresh-robot-policies/pull/16), unmerged | Maintainers integrate/review it; it is not on paper main or native-qualified |
 | Model-native state generator and manifests | Warren reports missing | Maintainer implementation can be developed offline; actual native state work retains its existing scope restrictions |
 | Native parity, evaluator and count qualification | Unverified | Host evidence is required; generic Python/CLI tests are not substitutes |
 
-The installed example names in the generic guide are illustrative. Do not give
-Warren a fabricated backend name such as refinement.pi05 or claim the campaign is
-one-command ready through the generic engine. Do not wrap the whole 400-pair study
+The installed example names in the generic guide are illustrative. The installed pipeline name refinement-refresh is provided by draft PR #16;
+it requires that integration package and remains unqualified natively.
+Do not give Warren fabricated per-model backend names or claim the campaign is
+ready through the generic engine. Do not wrap the whole 400-pair study
 as one generic trial: that would lose its experimental identity/accounting rules.
 Keep its scientific runner as the authority for those rules.
 
