@@ -4,9 +4,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 from functools import cached_property
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Sequence, Mapping
 
-from .system_spec import Component, SystemSpec, _canonical
+from .system_spec import Component, SystemSpec, _canonical, _thaw
 from .system_evidence import TrialKey
 
 
@@ -26,7 +26,7 @@ class System:
 
     @classmethod
     def from_pretrained(cls, model, *, revision, backend="vllm", generation=None, **options):
-        """Configure a supported model backend; loading begins at first execution."""
+        """Compatibility loader for supported backends; native configured callables are preferred."""
         if backend != "vllm":
             return cls.from_backend(backend, model=model, revision=revision, generation=generation, **options)
         from .vllm_backend import GenerationConfig, VLLMConfig, VLLMRuntime
@@ -49,10 +49,57 @@ class System:
         return result
 
     @classmethod
-    def from_callable(cls, runtime, *, name: str, revision: str, kind: str = "system"):
+    def from_callable(cls, runtime, *, name: str, revision: str, kind: str = "system",
+                      batched: bool = False, configuration: Mapping[str, Any] | None = None,
+                      dependencies: Sequence[str] = ()):
+        """Bind an already configured native function without choosing model settings.
+
+        batched=True accepts one native output per input. configuration is a
+        user-declared provenance snapshot, not an inference-parameter schema.
+        Native objects stay in the callable/partial, never in a mirrored config.
+        """
+        import inspect
+        from importlib import metadata
+        if not callable(runtime):
+            raise TypeError("system runtime must be callable")
+        if type(batched) is not bool:
+            raise TypeError("batched must be boolean")
+        if configuration is not None and not isinstance(configuration, Mapping):
+            raise TypeError("configuration must be an explicit provenance mapping")
+        if isinstance(dependencies, str):
+            raise TypeError("dependencies must be a sequence of distribution names")
+        dependencies = tuple(dependencies)
+        if any(type(value) is not str or not value.strip() for value in dependencies):
+            raise ValueError("dependency distribution names must be nonempty")
+        versions = {distribution: metadata.version(distribution) for distribution in dependencies}
+        details = {}
+        if batched or configuration is not None or dependencies:
+            from .callables import DeclaredCallable, BatchedCallable
+            target = inspect.unwrap(runtime)
+            if batched and (inspect.iscoroutinefunction(target) or inspect.iscoroutinefunction(
+                    getattr(target, "__call__", None))):
+                raise TypeError("batched callables must be synchronous")
+            details = {
+                "callable": {"batched": batched},
+                "configuration": {"status": "opaque"} if configuration is None else {
+                    "status": "declared", "values": _thaw(configuration)},
+                "distributions": versions,
+            }
+            runtime = (BatchedCallable if batched else DeclaredCallable)(runtime, configuration)
         return cls(runtime, SystemSpec(name, revision, (
             Component("system", kind, name, revision),
-        )))
+        ), metadata=details))
+
+    def describe(self):
+        """Inspect declared identity/configuration without executing the runtime."""
+        details = self.spec.to_dict()["metadata"]
+        return {
+            "name": self.spec.system_id, "revision": self.spec.revision,
+            "configuration": details.get("configuration", {"status": "opaque"}),
+            "distributions": details.get("distributions", {}),
+            "batched": details.get("callable", {}).get("batched", False),
+            "system_digest": self.spec.digest, "metadata": details,
+        }
 
 
 @dataclass(frozen=True)

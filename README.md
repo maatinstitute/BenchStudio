@@ -32,9 +32,10 @@ retained = bs.open_run("runs/example")
 
 This executes arithmetic functions, not a learned model or simulator. Evaluator
 authority defaults to false. Native adapters, checkpoints, state reset and
-benchmark qualification still need explicit setup. Supported text models can
-load through the optional [vLLM backend](docs/vllm-backend.md), with pinned model
-and tokenizer revisions and explicit batched inference. Installed systems and benchmark recipes also resolve by name through
+benchmark qualification still need explicit setup. For researcher-owned inference, configure native objects or endpoints and bind
+their callables as described in [Native systems](docs/native-systems.md). The
+optional [vLLM compatibility loader](docs/vllm-backend.md) remains available with
+its pinned version and smaller option surface. Installed systems and benchmark recipes also resolve by name through
 `System.from_backend` and `Benchmark.load`. The [system evaluation
 guide](docs/system-evaluation.md) covers the shared Python/CLI engine, dependency
 checks, result retention and backend packaging. Native qualification remains a
@@ -46,6 +47,31 @@ an executable Workflow, replace a named component and compare variants through
 `python examples/systems/paired_ablation.py`. Async execution and agent groups
 are described in [async system execution](docs/async-system-execution.md).
 Declared component isolation alone does not establish a causal effect.
+
+## Your model and endpoint configuration
+
+Configure a VLA policy, world model, agent workflow, inference engine or service
+client directly using its own API.
+BenchStudio does not insert inference defaults or maintain a mirror of its options:
+
+```python
+import benchstudio as bs
+
+system = bs.System.from_callable(
+    configured_system_function, name="candidate", revision="full-setup-r1",
+    configuration=declared_setup,
+)
+print(system.describe())
+evaluation = bs.pipeline(system=system, benchmark=benchmark, config=config)
+results = evaluation()
+```
+
+The native function and its parameters remain under the researcher's control.
+The optional declaration is visible and retained with results; omitted settings
+are labeled opaque. It does not configure or certify the actual system. Model
+frameworks, including vLLM, are optional; native observations/actions and predictions
+are preserved. See
+[working native-object and endpoint patterns](docs/native-systems.md).
 
 ## Installed simulator integrations
 
