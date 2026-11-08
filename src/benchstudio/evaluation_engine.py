@@ -55,6 +55,7 @@ class EvaluationCheck:
     cases: int
     mode: str
     native_verified: bool = False
+    executions: int | None = None
 
     @property
     def technical_ready(self):
@@ -64,7 +65,9 @@ class EvaluationCheck:
     def summary(self):
         if self.issues:
             return "\n".join(self.issues)
-        return (f"Configuration ready: {self.cases} cases ({self.mode}). "
+        grouping = "" if self.executions is None else (
+            f" in {self.executions} execution " + ("group" if self.executions == 1 else "groups"))
+        return (f"Configuration ready: {self.cases} cases{grouping} ({self.mode}). "
                 "Native execution and scientific qualification remain unverified.")
 
 
@@ -84,9 +87,18 @@ class EvaluationEngine:
             raise ValueError("run_id belongs in config when config is supplied")
         self.config = config or EvaluationConfig(run_id="evaluation" if run_id is None else run_id)
         run_id = self.config.run_id
+        self.protocol_benchmark = None
+        if isinstance(benchmark, Benchmark) and benchmark.protocol is not None:
+            if backend is not None:
+                raise ValueError("an executable benchmark binds its own backend")
+            self.protocol_benchmark = benchmark
+            self.system, self.benchmark = system, benchmark
+            backend = benchmark.protocol.bind(system, benchmark=benchmark, config=self.config)
+            if backend is None:
+                raise TypeError("protocol.bind() must return an execution backend")
         self.backend = backend
         if backend is not None:
-            if system is not None or benchmark is not None:
+            if self.protocol_benchmark is None and (system is not None or benchmark is not None):
                 raise ValueError("provide an execution backend or System + Benchmark, not both")
             for method in ("check", "start", "execute_case", "record", "close", "finish"):
                 if not callable(getattr(backend, method, None)):
@@ -95,6 +107,8 @@ class EvaluationEngine:
             if (not self.cases or any(type(case) is not str or not case for case in self.cases)
                     or len(set(self.cases)) != len(self.cases)):
                 raise ValueError("backend cases must have unique nonempty string identities")
+            if self.protocol_benchmark is not None and self.cases != self.protocol_benchmark.execution_ids:
+                raise ValueError("backend execution groups differ from the frozen benchmark calendar")
             self.run_id = run_id
             return
         if not isinstance(system, System) or not isinstance(benchmark, Benchmark):
@@ -116,6 +130,11 @@ class EvaluationEngine:
                 issues.append("backend cannot enforce a timeout safely")
             if self.config.output_dir is not None and self.config.output_dir.exists():
                 issues.append("output directory already exists")
+            if self.protocol_benchmark is not None:
+                if self.config.max_retries and self.protocol_benchmark.supports_retries is not True:
+                    issues.append("benchmark protocol does not permit execution retries")
+                return EvaluationCheck(not issues, tuple(issues), len(self.protocol_benchmark.cases),
+                                       "protocol", executions=len(self.cases))
             return EvaluationCheck(not issues, tuple(issues), len(self.cases), "backend")
         size = self.config.batch_size if batch_size is None else batch_size
         from .backend_loading import requirement_issues
@@ -191,6 +210,12 @@ class EvaluationEngine:
         else:
             record.update(backend=type(self.backend).__module__ + "." + type(self.backend).__qualname__,
                           cases=list(self.cases))
+        if self.protocol_benchmark is not None:
+            plan = self.protocol_benchmark.describe()
+            with (output / "benchmark.json").open("x", encoding="utf-8") as stream:
+                json.dump(plan, stream, sort_keys=True, indent=2)
+            record.update(benchmark_protocol_digest=plan["protocol_digest"],
+                          planned_benchmark_cases=plan["case_count"], execution_groups=len(self.cases))
         path = output / "execution.json"
         def write():
             path.write_text(json.dumps(record, sort_keys=True, indent=2), encoding="utf-8")
@@ -219,6 +244,9 @@ class EvaluationEngine:
             return
         record = {"schema": "benchstudio.case_attempt.v1",
                   "case": case, "attempt": attempt, "completed": completed}
+        if self.protocol_benchmark is not None:
+            record["execution_id"] = case
+            record["planned_benchmark_case_ids"] = list(self.protocol_benchmark.execution_groups[case])
         if error is not None:
             record.update(error_type=type(error).__name__, error=str(error))
         with (self.config.output_dir / "cases.jsonl").open("a", encoding="utf-8") as stream:

@@ -93,3 +93,16 @@ AlpaBridge still launches a complete native process per scene; this change does
 not yet establish warm-model execution there. It uses separate per-attempt output
 directories and strict retained process cleanup. Native parity/performance needs
 separate validation. No simulator, learned model or scientific campaign was run.
+
+## Complete benchmark calendars
+
+The researcher-facing route can now supply an executable `Benchmark` rather than
+constructing a backend directly. Its protocol binds the configured system to this
+same engine. See [benchmark protocols](benchmark-protocols.md).
+
+Backend case IDs identify operational execution groups. They need not be individual
+experimental episodes: one native program may cover many frozen BenchmarkCase
+units. Engine receipts bind each execution to its planned unit IDs, while the
+native result owns actual coverage and missingness. Completing a job does not
+fabricate complete scientific outcomes. Protocol retry policy is captured with
+its calendar and defaults to disallowing generic automatic retries.

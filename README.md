@@ -9,7 +9,7 @@ Python objects configure systems and benchmarks. Versioned evidence formats
 support storage and interoperability. Backends own execution semantics; the
 benchmark owns its scoring definition. Comparisons preserve that distinction.
 
-## Python API: evaluate a system
+## Offline evaluation: predictions and components
 
 ```python
 import benchstudio as bs
@@ -48,7 +48,7 @@ an executable Workflow, replace a named component and compare variants through
 are described in [async system execution](docs/async-system-execution.md).
 Declared component isolation alone does not establish a causal effect.
 
-## Your model and endpoint configuration
+## Configure components using their native APIs
 
 Configure a VLA policy, world model, agent workflow, inference engine or service
 client directly using its own API.
@@ -73,6 +73,14 @@ frameworks, including vLLM, are optional; native observations/actions and predic
 are preserved. See
 [working native-object and endpoint patterns](docs/native-systems.md).
 
+## Complete interactive evaluations
+
+An evaluation of LIBERO or AlpaSim is a calendar of episodes/scenes, conditions and
+repetitions, not one policy prediction. Executable benchmarks bind that calendar
+to native execution, outcomes and aggregation using the same engine. See
+[benchmark protocols](docs/benchmark-protocols.md) for experimental units versus
+native execution groups, coverage, retention and the current LIBERO boundary.
+
 ## Installed simulator integrations
 
 Installed integrations use the same callable pipeline and shared configuration:
@@ -85,6 +93,7 @@ evaluation = bs.pipeline(
     scene_ids=("YOUR_INSTALLED_SCENE_ID",),
     config=bs.EvaluationConfig(output_dir="runs/alpasim", timeout=900),
 )
+print(evaluation.benchmark.describe())
 print(evaluation.check().summary())
 results = evaluation()
 print(results.summary())
