@@ -22,6 +22,7 @@ genesis = ["genesis-world>=1.4,<2"]
 signing = ["cryptography>=41"]
 
 [project.scripts]
+benchstudio-native = "benchstudio.native_cli:main"
 benchstudio-run = "benchstudio.cli:main"
 benchstudio-replay = "benchstudio.robopad:main"
 

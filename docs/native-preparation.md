@@ -92,3 +92,65 @@ single-use permission. This API is for subsequent reviewed workflows; introducin
 it does not require restaging that package, change the permission, or validate
 Warren's separate pre-launch verifier. The scientific driver still owns its
 specific authorization and consumption checks.
+
+## One command, no wrapper script
+
+After installing this BenchStudio version in the controlling Python environment,
+use `benchstudio-native` (or `python -m benchstudio.native_cli`). No user-written
+Python or shell wrapper is needed.
+
+```sh
+benchstudio-native verify --manifest /path/to/STAGE_MANIFEST.json --root /path/to/staged
+benchstudio-native imports --python /path/to/native/bin/python --log-dir /path/to/import-logs robosuite
+```
+
+A single launch can include an explicitly permitted import diagnostic:
+
+```sh
+benchstudio-native run \
+  --manifest /path/to/STAGE_MANIFEST.json --root /path/to/staged \
+  --python /path/to/native/bin/python --entrypoint scripts/benchmark.py \
+  --log-dir /path/to/new-logs --check-import robosuite \
+  -- --config /path/to/config
+```
+
+All declared source hashes are checked before the import diagnostic; failure stops
+the sequence. The native entry point is launched only after the diagnostic passes
+and all hashes are checked again. Arguments after `--` are passed literally to
+the existing entry point. Its task-specific guards remain in force.
+
+### Existing Warren E0 package
+
+This wrapper can verify the unchanged 48-file package before its existing
+`protocol_e0.py` loads the harness. A separate external pre-launch verifier is not
+required when using this route. Install BenchStudio in a **separate controlling
+Python >=3.10 environment**, leaving the staged BenchStudio/harness files and
+Python 3.8 client intact.
+
+Only once the existing E0 authorization artifact and required host-side checks
+are complete, the operator command has this form (replace the stage/auth/output
+paths with their actual retained locations):
+
+```sh
+MUJOCO_GL=osmesa benchstudio-native run \
+  --manifest /path/to/STAGE_MANIFEST.json --root /path/to/staged \
+  --python /home/warren/alba-cross-policy-20261101/envs/client/bin/python \
+  --entrypoint benchstudio/docs/refinement-v3-e0/protocol_e0.py \
+  --log-dir /path/to/new-e0-launch-logs \
+  -- \
+  --harness-dir experiments/tooling/cross_policy_v3 \
+  --fixtures benchstudio/docs/refinement-v3-e0/e0_fixtures_pi05.json \
+  --document benchstudio/docs/refinement-v3-e0/README.md \
+  --authorisation /path/to/existing/E0_AUTH.json \
+  --ledger /home/warren/e0-registry --output /path/to/new-e0-output
+```
+
+This invokes the existing E0 driver, including its original consumption checks,
+without editing the staged files or authorization. No new E0 permission, retry,
+import-diagnostic permission or campaign release is created by this command.
+If the ledger shows prior consumption, retain it and stop. Separate NC1 refusal
+checks are still the existing protocol's responsibility; this wrapper does not
+turn a plumbing result into evaluator qualification.
+
+The source-only archive can likewise be produced without a packaging script:
+`benchstudio-native archive --manifest STAGE_MANIFEST.json --root /path/to/staged --output sources.tar.gz`.
