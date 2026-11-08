@@ -6,9 +6,9 @@ APIs apply to robotics, models and agent systems. Neither API creates scientific
 qualification, grants execution permission or accesses a consumption registry.
 
 ```python
-import benchstudio as bs
+from benchstudio.preparation import SourcePackage
 
-sources = bs.SourcePackage.from_directory(
+sources = SourcePackage.from_directory(
     "./experiment", files=["scripts/benchmark.py", "scripts/helpers.py"]
 )
 report = sources.verify()       # reads and hashes sources; does not import them
@@ -25,11 +25,11 @@ source timestamps and the archive filename. Existing outputs are refused.
 For an existing reviewed manifest:
 
 ```python
-sources = bs.SourcePackage.from_manifest("./SOURCE_MANIFEST.json", root="./experiment")
+sources = SourcePackage.from_manifest("./SOURCE_MANIFEST.json", root="./experiment")
 print(sources.verify())
 
 # Only when this particular execution is appropriate/authorized:
-receipt = sources.run(
+receipt = sources.execute(
     "scripts/benchmark.py",
     python="/path/to/native/bin/python",
     args=("--config", "/path/to/config"),
@@ -39,10 +39,10 @@ receipt = sources.run(
 ```
 
 `run` verifies every declared file again, then starts the declared Python entry
-point through `bs.ProcessCommand`. On a missing or mismatched file it raises
-`bs.SourceVerificationError` before spawning the child. On success it retains the
+point through `ProcessCommand`. On a missing or mismatched file it raises
+`SourceVerificationError` before spawning the child. On success it retains the
 source verification report, stdout/stderr and exit receipt. A failed process or
-timeout raises `bs.ProcessFailure`; no automatic retry is introduced. Every run
+timeout raises `ProcessFailure`; no automatic retry is introduced. Every run
 needs a new log directory. The child's working directory is the source root.
 
 These are trusted-host integrity checks, not a sandbox or protection from a
@@ -55,8 +55,10 @@ for you. Protocol-specific validators remain responsible for those checks.
 
 ```python
 import benchstudio as bs
+from benchstudio.preparation import SourcePackage, SourceVerificationError, check_imports
+from benchstudio.processes import ProcessCommand, ProcessFailure
 
-report = bs.check_imports(
+report = check_imports(
     "robosuite",                    # explicitly requested native import
     python="/path/to/client/bin/python",
     log_dir="./logs/import-check",
@@ -71,7 +73,7 @@ packages installed in the selected interpreter's environment remain available.
 The probe supports Python 3.8+ even though the controlling BenchStudio process
 requires Python 3.10+. A missing module, import exception or `SystemExit(0)` raised
 inside an imported module is a failed check with a nonzero exit. The report and
-process logs are retained on failure. The API raises `bs.ProcessFailure` and does
+process logs are retained on failure. The API raises `ProcessFailure` and does
 not certify native readiness from the process exit alone.
 
 An import executes the installed module's top-level code; there is no guarantee
@@ -80,12 +82,13 @@ environment, load a checkpoint or launch an episode itself. This is an explicit
 diagnostic and not a substitute for native protocol qualification. Isolated
 import success also does not certify a different command's import paths.
 
-## Existing staging manifests
+## Existing external manifest
 
-`SourcePackage.from_manifest` also reads the legacy `all_files_sha256` mapping in
-`STAGE_MANIFEST.json`, so operators can verify an existing staged directory without
-rewriting its manifest or rehashing an authorization artifact. The generic verifier
-does not interpret `bound`, `approved_by`, or protocol-specific scope fields.
+`SourcePackage.from_manifest` reads BenchStudio's source-snapshot format and the
+read-only `all_files_sha256` schema used by the already staged E0 package. This
+single import boundary verifies that directory without rewriting its manifest or
+re-hashing an authorization artifact. The generic verifier does not interpret
+`bound`, `approved_by`, or protocol-specific scope fields.
 
 For the already staged Refinement/Refresh E0 package, retain its existing pins and
 single-use permission. This API is for subsequent reviewed workflows; introducing
@@ -95,14 +98,14 @@ specific authorization and consumption checks.
 
 ## One execution API
 
-Source verification is part of `bs.ProcessCommand` and applies to commands,
+Source verification is part of `ProcessCommand` and applies to commands,
 services and direct process contexts through the same pre-spawn path:
 
 ```python
 import benchstudio as bs
 
-sources = bs.SourcePackage.from_manifest("STAGE_MANIFEST.json", root="./staged")
-command = bs.ProcessCommand(
+sources = SourcePackage.from_manifest("STAGE_MANIFEST.json", root="./staged")
+command = ProcessCommand(
     "experiment",
     ("/path/to/native/bin/python", "/absolute/path/to/staged/scripts/benchmark.py"),
     cwd=sources.root,
@@ -120,8 +123,7 @@ runner. The CLI calls these same APIs. Source verification reports are retained 
 
 The installed command is `benchstudio`. Its subcommands are `run`, `verify`,
 `package`, `doctor` and `evaluate`. `benchstudio evaluate` uses the high-level System + Benchmark engine described in
-[system evaluation](system-evaluation.md); `benchstudio-run` retains the older
-campaign parser for compatibility.
+[system evaluation](system-evaluation.md); `python -m benchstudio.cli` is the specialist campaign interface.
 Calling `benchstudio` without arguments prints help and executes nothing.
 
 After installing this BenchStudio version in the controlling Python environment,

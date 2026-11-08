@@ -29,8 +29,9 @@ async def main():
         evaluator_revision="allowlist-r1", environment_revision="fake-tools-r1",
     )
     system = bs.System.from_callable(defender, name="synthetic-defender", revision="r1", kind="agent")
-    evaluator = bs.pipeline("system-evaluation", system=system, benchmark=benchmark)
-    results = await evaluator.arun(concurrency=2, timeout=1)
+    evaluator = bs.pipeline(system=system, benchmark=benchmark,
+        config=bs.EvaluationConfig(concurrency=2, timeout=1))
+    results = await evaluator.arun()
     print("Synthetic contract demonstration; no agent security claim")
     print([trial.metrics for trial in results.trials])
 

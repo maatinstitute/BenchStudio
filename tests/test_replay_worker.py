@@ -4,7 +4,8 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from benchstudio import ReplayLimits, ReplayPipeline, ReplayWorkerError
+from benchstudio.replay_worker import ReplayLimits, ReplayWorkerError
+from benchstudio.replay_pipeline import ReplayPipeline
 from benchstudio.replay_worker import _supervise, execute_in_worker
 
 

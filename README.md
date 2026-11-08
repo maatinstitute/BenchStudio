@@ -3,7 +3,7 @@
 Evaluate AI components and interactive systems with explicit benchmarks,
 retained evidence and controlled experimental identities.
 
-**0.1.0rc1 research preview — not publicly released.** Native robotics integrations
+**0.1.0rc2 research preview — not publicly released.** Native robotics integrations
 remain experimental; see the [support matrix](docs/research-preview.md).
 
 ## Start with an existing Python system
@@ -49,14 +49,14 @@ No hidden environment, reset, checkpoint download or inference default is chosen
 ## API and support
 
 [Research preview guide](docs/research-preview.md) documents the 15-name supported
-root API, common result inspection, compatibility imports, capability matrix and
-verified integration boundaries. Existing explicit root imports remain available
-through compatibility exports; infrastructure/extensions belong in their owning
-modules. The installed CLI is `benchstudio --help`.
+root API, common result inspection, capability matrix and verified integration
+boundaries. Import infrastructure and optional integrations from their owning
+modules; package-root wildcard exports and dynamic integration re-exports are not
+provided. The installed CLI is `benchstudio --help`.
 
-The [previous workflow reference](docs/legacy-workflows.md) preserves specialist
-recipes. Those recipes may require their own installed runtime and authorization;
-being documented does not establish native qualification.
+[Specialist workflows](docs/specialist-workflows.md) document task-specific
+recipes and their runtime requirements. Documentation does not establish native
+qualification.
 
 ## Contributing and licensing
 

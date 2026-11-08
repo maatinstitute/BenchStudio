@@ -49,7 +49,7 @@ class EvaluationConfig:
 
 @dataclass(frozen=True)
 class EvaluationCheck:
-    """Static compatibility only; no model load, runtime call or qualification."""
+    """Static configuration check; no model load, runtime call or qualification."""
     configuration_valid: bool
     issues: tuple[str, ...]
     cases: int
@@ -57,11 +57,6 @@ class EvaluationCheck:
     native_verified: bool = False
     executions: int | None = None
     capabilities: dict | None = None
-
-    @property
-    def technical_ready(self):
-        """Compatibility for installed recipes; configuration is not qualification."""
-        return self.configuration_valid
 
     def summary(self):
         if self.issues:
@@ -80,13 +75,11 @@ class EvaluationEngine:
     Exceptions propagate; failed execution is never converted into task failure.
     This sequential runtime does not promise batching or GPU acceleration.
     """
-    def __init__(self, *, system=None, benchmark=None, backend=None, config=None, run_id=None):
+    def __init__(self, *, system=None, benchmark=None, backend=None, config=None):
         from .system_pipeline import System, Benchmark
         if config is not None and not isinstance(config, EvaluationConfig):
-            raise TypeError("config must be bs.EvaluationConfig")
-        if config is not None and run_id is not None:
-            raise ValueError("run_id belongs in config when config is supplied")
-        self.config = config or EvaluationConfig(run_id="evaluation" if run_id is None else run_id)
+            raise TypeError("config must be EvaluationConfig")
+        self.config = EvaluationConfig() if config is None else config
         run_id = self.config.run_id
         self._result = None
         self._has_result = False
@@ -147,14 +140,14 @@ class EvaluationEngine:
         return inspect_result(self._result, planned=self.episode_coverage.planned,
                               episodes=tuple(self.episode_records.values()))
 
-    def check(self, *, mode="sync", batch_size=None):
+    def check(self, *, mode="sync"):
         if mode not in ("sync", "async"):
             raise ValueError("mode must be sync or async")
         if self.backend is not None:
             issues = list(self.backend.check(self.config))
             if mode != "sync" or self.config.concurrency != 1:
                 issues.append("execution backends currently require sequential run()")
-            if self.config.batch_size is not None or batch_size is not None:
+            if self.config.batch_size is not None:
                 issues.append("execution backends do not support model batching")
             if self.config.timeout is not None and getattr(self.backend, "supports_timeout", False) is not True:
                 issues.append("backend cannot enforce a timeout safely")
@@ -166,7 +159,7 @@ class EvaluationEngine:
                 return EvaluationCheck(not issues, tuple(issues), len(self.protocol_benchmark.cases),
                                        "protocol", executions=len(self.cases), capabilities=self.capabilities)
             return EvaluationCheck(not issues, tuple(issues), len(self.cases), "backend", capabilities=self.capabilities)
-        size = self.config.batch_size if batch_size is None else batch_size
+        size = self.config.batch_size
         from .backend_loading import requirement_issues
         issues = requirement_issues(self.system.runtime)
         from .callables import DeclaredCallable
@@ -198,12 +191,12 @@ class EvaluationEngine:
                 issues.append("this backend requires synchronous run()")
         return EvaluationCheck(not issues, tuple(issues), len(self.benchmark.inputs), mode, capabilities=self.capabilities)
 
-    def __call__(self, *, batch_size=None):
-        return self.run(batch_size=batch_size)
+    def __call__(self):
+        return self.run()
 
-    def run(self, *, batch_size=None):
+    def run(self):
         if self.backend is not None:
-            check = self.check(batch_size=batch_size)
+            check = self.check()
             if not check.configuration_valid:
                 raise ValueError("; ".join(check.issues))
             with self._session() as retain:
@@ -212,14 +205,14 @@ class EvaluationEngine:
                 return result
         if self.config.concurrency != 1 or self.config.timeout is not None:
             raise ValueError("concurrency/timeout require arun()")
-        size = self.config.batch_size if batch_size is None else batch_size
+        size = self.config.batch_size
         if size is not None and (type(size) is not int or size < 1):
             raise ValueError("batch_size must be a positive integer")
-        check = self.check(batch_size=batch_size)
+        check = self.check()
         if not check.configuration_valid:
             raise TypeError("; ".join(check.issues))
         with self._session() as retain:
-            result = self._run(batch_size=batch_size)
+            result = self._run(batch_size=size)
             retain(result)
             return result
 
@@ -423,16 +416,16 @@ class EvaluationEngine:
                 trials.append(self._record_trial(index, score))
         return SystemRun(self.run_id, self.system.spec, tuple(trials))
 
-    async def arun(self, *, concurrency=None, timeout=None):
+    async def arun(self):
         check = self.check(mode="async")
         if not check.configuration_valid:
             raise ValueError("; ".join(check.issues))
         with self._session() as retain:
-            result = await self._arun(concurrency=concurrency, timeout=timeout)
+            result = await self._arun()
             retain(result)
             return result
 
-    async def _arun(self, *, concurrency=None, timeout=None):
+    async def _arun(self):
         """Evaluate with bounded cooperative workers and stable trial ordering.
 
         concurrency > 1 requires independent runtime sessions/state per input.
@@ -443,8 +436,8 @@ class EvaluationEngine:
 
         if self.config.batch_size is not None:
             raise ValueError("async batching is not supported; use run() or remove batch_size")
-        concurrency = self.config.concurrency if concurrency is None else concurrency
-        timeout = self.config.timeout if timeout is None else timeout
+        concurrency = self.config.concurrency
+        timeout = self.config.timeout
 
         if timeout is not None and (type(timeout) not in (int, float) or
                                     not math.isfinite(timeout) or timeout <= 0):

@@ -42,8 +42,9 @@ After both companion PRs are installed, the same route from BenchStudio is:
 
 ```python
 import benchstudio as bs
+from benchstudio.refinement import RefinementWorkspace
 
-work = bs.RefinementWorkspace(
+work = RefinementWorkspace(
     repository="/path/to/refinement-refresh-robot-policies",
     workspace="/path/to/refinement-refresh-robot-policies/experiments/runs/cross_policy_confirmation_v2",
     python="/path/to/pi05-native/python",

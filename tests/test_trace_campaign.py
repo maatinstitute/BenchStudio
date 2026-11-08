@@ -5,7 +5,7 @@ import json
 
 from benchstudio.adapters import default_registry
 from benchstudio.campaigns import CampaignExecutor, compile_campaign_spec
-from benchstudio.integrations import observation_digest_sha256
+from benchstudio.integrations.policy_trace import observation_digest_sha256
 from benchstudio.mock import MockSimulator
 from benchstudio.model_adapters import default_model_registry
 

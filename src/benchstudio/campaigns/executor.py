@@ -685,6 +685,12 @@ def _validate_worldepisode_protocol(plan: FrozenCampaignPlan) -> None:
         return
     if not isinstance(binding, dict):
         raise ValueError("frozen plan worldepisode binding must be a mapping")
+    unsupported = set(binding) - {"record", "expected_episode_id", "expected_revision_id"}
+    if unsupported:
+        raise ValueError(
+            "unsupported frozen plan worldepisode binding fields: "
+            + ", ".join(sorted(unsupported))
+        )
     record = binding.get("record")
     if not isinstance(record, dict):
         raise ValueError("frozen plan worldepisode binding requires a record mapping")
@@ -692,8 +698,6 @@ def _validate_worldepisode_protocol(plan: FrozenCampaignPlan) -> None:
 
     result = preflight_worldepisode(
         record,
-        require_reference=binding.get("require_reference", False) is True,
-        strict=binding.get("strict", False) is True,
         expected_episode_id=binding.get("expected_episode_id"),
         expected_revision_id=binding.get("expected_revision_id"),
     )

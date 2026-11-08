@@ -1,4 +1,4 @@
-"""Build a self-contained BenchStudio study control room."""
+"""Build a study control room from an explicit study and retained evidence."""
 
 from __future__ import annotations
 
@@ -20,32 +20,6 @@ def _load_json(path: Path) -> dict[str, Any]:
 def _optional_json(path: Path) -> dict[str, Any]:
     return _load_json(path) if path.is_file() else {}
 
-
-def _fallback_study() -> dict[str, Any]:
-    return {
-        "schema": "benchstudio.study_definition.v1",
-        "study_id": "so101-cube-grasp-cross-sim-v1",
-        "title": "SO-101 cube grasp",
-        "episodes_per_simulator": 100,
-        "simulators": [
-            {"id": "mujoco", "label": "MuJoCo", "adapter": "native", "contact_source": "constraint solver"},
-            {"id": "genesis", "label": "Genesis", "adapter": "native", "contact_source": "native rigid contact"},
-            {"id": "isaac", "label": "Isaac Sim", "adapter": "connector required", "contact_source": "PhysX contact reports"},
-        ],
-        "pairing": {"unit": "episode_index", "seed_count": 100, "seed_derivation": "sha256(study_id, episode_index)", "manifest_reused_across_simulators": True, "retry_preserves_manifest": True, "pilot_seeds": [17, 29, 43, 61]},
-        "randomization": {"cube_position_jitter_m": [0.012, 0.012, 0.0], "cube_yaw_jitter_rad": 0.2, "robot_initial_state": "frozen", "policy": "frozen per condition"},
-        "shared_runtime": {"physics_timestep_s": 0.0002, "control_hz": 50.0, "checker_interval_steps": 5, "max_episode_steps": 400, "grasp_attach": "none"},
-        "criteria": {
-            "task": [
-                {"id": "lift_height", "operator": ">=", "value": 0.1, "unit": "m"},
-                {"id": "stable_duration", "operator": ">=", "value": 0.5, "unit": "s"},
-                {"id": "stable_drift", "operator": "<=", "value": 0.015, "unit": "m"},
-                {"id": "above_plane", "operator": ">=", "value": 0.0, "unit": "m"},
-            ],
-            "shared": ["terminal outcome for every scheduled episode", "same manifest and policy condition across simulators", "no kinematic attach or weld", "hashed report, trace, decisions, video, and telemetry", "retry lineage preserves episode identity"],
-            "simulator_specific": {"mujoco": ["constraint force", "normal impulse", "contact penetration"], "genesis": ["native contact force", "contact count", "penetration"], "isaac": ["PhysX contact impulse", "pair contacts", "penetration"]},
-        },
-    }
 
 
 def _format_value(value: Any) -> str:
@@ -210,7 +184,7 @@ def _build_workbench_document(
 
 
 def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
-    """Render a standalone cross-simulator study dashboard."""
+    """Render a dashboard; reject missing study definitions instead of inventing one."""
     root = Path(input_dir)
     robot_root = root / "urdf-studio"
     run = _optional_json(robot_root / "run.json")
@@ -221,7 +195,10 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     study_manifest = _optional_json(robot_root / "study-manifest.json")
     policy_path = robot_root / "scenario" / "waypoints.json"
     policy = _optional_json(policy_path)
-    study = _optional_json(robot_root / "scenario" / "study-definition.json") or _fallback_study()
+    study_path = robot_root / "scenario" / "study-definition.json"
+    if not study_path.is_file():
+        raise FileNotFoundError(f"study definition is required: {study_path}")
+    study = _load_json(study_path)
 
     simulators = study.get("simulators", [])
     simulators = simulators if isinstance(simulators, list) else []

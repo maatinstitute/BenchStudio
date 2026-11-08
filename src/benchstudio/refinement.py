@@ -12,7 +12,7 @@ class RefinementPreparation:
     models: Mapping[str, dict]
 
     @property
-    def technical_ready(self) -> bool:
+    def configuration_valid(self) -> bool:
         return bool(self.models) and all(
             report.get("offline_inputs_complete") is True and not report["issues"]
             for report in self.models.values())

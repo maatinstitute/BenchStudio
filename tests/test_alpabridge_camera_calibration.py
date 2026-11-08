@@ -4,11 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from benchstudio.integrations import (
-    CameraCalibration,
-    calibration_from_available_camera,
-    calibrations_from_session_request,
-)
+from benchstudio.integrations.alpabridge_camera_calibration import CameraCalibration, calibration_from_available_camera, calibrations_from_session_request
 
 
 def _pinhole_camera(

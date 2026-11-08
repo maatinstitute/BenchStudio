@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 import benchstudio as bs
-from benchstudio import backend_loading
+import benchstudio.backend_loading as backend_loading
 from benchstudio.system_cli import main
 
 
@@ -29,8 +29,8 @@ def test_named_backend_pipeline_retains_reopenable_evidence(tmp_path, monkeypatc
     install(monkeypatch, lambda revision: bs.System.from_callable(
         lambda x: calls.append(x) or x * 2, name="agent+world", revision=revision))
     system = bs.System.from_backend("demo", revision="system-r1")
-    benchmark = bs.Benchmark.from_pretrained("demo", revision="data-r1")
-    pipe = bs.pipeline("system-evaluation", system=system, benchmark=benchmark,
+    benchmark = bs.Benchmark.load("demo", revision="data-r1")
+    pipe = bs.pipeline("evaluate", system=system, benchmark=benchmark,
                        config=bs.EvaluationConfig(output_dir=tmp_path / "run"))
     assert pipe.check().configuration_valid and calls == []
     result = pipe.run()
@@ -60,7 +60,7 @@ def test_missing_dependency_refuses_without_execution_or_output(tmp_path):
         requirements = {"missing_backend_distribution_synthetic": None}
         def __call__(self, x):
             pytest.fail("backend executed")
-    pipe = bs.pipeline("system-evaluation", system=bs.System.from_callable(
+    pipe = bs.pipeline("evaluate", system=bs.System.from_callable(
         Runtime(), name="test", revision="r1"), benchmark=recipe(),
         config=bs.EvaluationConfig(output_dir=tmp_path / "run"))
     assert "missing dependency" in pipe.check().issues[0]
@@ -72,7 +72,7 @@ def test_missing_dependency_refuses_without_execution_or_output(tmp_path):
 def test_failure_is_retained_without_inventing_scientific_outcomes(tmp_path):
     def broken(x):
         raise RuntimeError("backend failed")
-    pipe = bs.pipeline("system-evaluation", system=bs.System.from_callable(
+    pipe = bs.pipeline("evaluate", system=bs.System.from_callable(
         broken, name="test", revision="r1"), benchmark=recipe(),
         config=bs.EvaluationConfig(output_dir=tmp_path / "run"))
     with pytest.raises(RuntimeError, match="backend failed"):
@@ -85,7 +85,7 @@ def test_failure_is_retained_without_inventing_scientific_outcomes(tmp_path):
 def test_async_results_are_retained_by_same_engine(tmp_path):
     async def runtime(x):
         return x * 2
-    pipe = bs.pipeline("system-evaluation", system=bs.System.from_callable(
+    pipe = bs.pipeline("evaluate", system=bs.System.from_callable(
         runtime, name="agents", revision="r1"), benchmark=recipe(),
         config=bs.EvaluationConfig(concurrency=2, output_dir=tmp_path / "run"))
     result = asyncio.run(pipe.arun())
@@ -100,8 +100,7 @@ def test_named_backend_errors_are_actionable(monkeypatch, tmp_path):
         SimpleNamespace(load=lambda: lambda **kw: None)])
     with pytest.raises(TypeError, match="bs.System"):
         bs.System.from_backend("bad")
-    with pytest.raises(TypeError, match="bs.Benchmark"):
-        bs.Benchmark.from_pretrained("bad", revision="r1")
+    assert not hasattr(bs.Benchmark, "from_pretrained")
 
 
 def test_duplicate_backend_is_rejected_before_factory_execution(monkeypatch):
@@ -150,7 +149,7 @@ def test_async_scorer_refused_before_runtime_call():
     async def score(output, target):
         return bs.Score(True)
     data = bs.Benchmark("t", "r", [1], [1], score, "r")
-    pipe = bs.pipeline("system-evaluation", system=bs.System.from_callable(
+    pipe = bs.pipeline("evaluate", system=bs.System.from_callable(
         lambda x: calls.append(x), name="t", revision="r"), benchmark=data)
     assert not pipe.check().configuration_valid
     with pytest.raises(TypeError, match="async scorers"):
@@ -165,7 +164,7 @@ def test_exact_dependency_version_mismatch_and_blocking_async_backend(monkeypatc
         def __call__(self, x):
             pytest.fail("runtime executed")
     monkeypatch.setattr(backend_loading.metadata, "version", lambda name: "1")
-    pipe = bs.pipeline("system-evaluation", system=bs.System.from_callable(
+    pipe = bs.pipeline("evaluate", system=bs.System.from_callable(
         Runtime(), name="t", revision="r"), benchmark=recipe())
     assert any("installed 1, required 2" in item for item in pipe.check().issues)
     assert any("synchronous" in item for item in pipe.check(mode="async").issues)
@@ -181,7 +180,7 @@ def test_factory_cannot_silently_change_requested_revision(monkeypatch):
 
 def test_in_memory_result_can_be_saved_without_rerunning(tmp_path):
     calls = []
-    pipe = bs.pipeline("system-evaluation", system=bs.System.from_callable(
+    pipe = bs.pipeline("evaluate", system=bs.System.from_callable(
         lambda x: calls.append(x) or x * 2, name="t", revision="r"), benchmark=recipe())
     result = pipe.run()
     result.save(tmp_path / "saved")

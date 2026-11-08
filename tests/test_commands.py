@@ -81,16 +81,17 @@ def test_unified_help_and_evaluation_help_do_not_execute(tmp_path):
 
 
 def test_source_check_also_protects_services_and_direct_process_context(tmp_path, monkeypatch):
-    import benchstudio as bs
+    from benchstudio.preparation import SourcePackage, SourceVerificationError
+    from benchstudio.processes import ProcessCommand
     root, script, manifest = fixture(tmp_path)
-    sources = bs.SourcePackage.from_manifest(manifest, root=root)
-    process = bs.ProcessCommand("example", (sys.executable, str(script)), root, sources=sources)
+    sources = SourcePackage.from_manifest(manifest, root=root)
+    process = ProcessCommand("example", (sys.executable, str(script)), root, sources=sources)
     script.write_text("changed")
     def forbidden_spawn(*args, **kwargs):
         pytest.fail("a process was started before source verification")
     monkeypatch.setattr("benchstudio.processes.subprocess.Popen", forbidden_spawn)
     for direct in (False, True):
-        with pytest.raises(bs.SourceVerificationError):
+        with pytest.raises(SourceVerificationError):
             manager = process.started(tmp_path / "logs") if direct else process.service(
                 tmp_path / "logs", ready=lambda: True)
             with manager:

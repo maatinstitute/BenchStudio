@@ -4,13 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from benchstudio.integrations import (
-    DriverPolicy,
-    PolicyRegistry,
-    load_external_policy_modules,
-    read_finite_float_tuple,
-    read_positive_finite_float,
-)
+from benchstudio.integrations.alpabridge_policy_registry import DriverPolicy, PolicyRegistry, load_external_policy_modules, read_finite_float_tuple, read_positive_finite_float
 
 
 def context(checkpoint=None, tokenizer=None):

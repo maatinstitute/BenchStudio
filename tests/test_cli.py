@@ -31,7 +31,7 @@ def test_cli_compiles_campaign_spec(monkeypatch, tmp_path, capsys):
     )
     monkeypatch.setattr(
         "sys.argv",
-        ["benchstudio-run", "--campaign-spec", str(spec_path), "--plan-output", str(plan_path)],
+        ["benchstudio", "--campaign-spec", str(spec_path), "--plan-output", str(plan_path)],
     )
     assert main() == 0
     assert json.loads(plan_path.read_text(encoding="utf-8"))["run_id"] == "cli-run"
@@ -49,7 +49,7 @@ def test_cli_verifies_robopad_outcome_plan(monkeypatch, tmp_path, capsys):
         ),
         encoding="utf-8",
     )
-    monkeypatch.setattr("sys.argv", ["benchstudio-run", "--outcome-plan", str(plan_path)])
+    monkeypatch.setattr("sys.argv", ["benchstudio", "--outcome-plan", str(plan_path)])
     assert main() == 0
     output = json.loads(capsys.readouterr().out)
     assert output["schema"] == "benchstudio.robopad_outcome_plan_import.v1"
@@ -67,7 +67,7 @@ def test_cli_executes_imported_refinement_plan_through_standard_executor(
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--refinement-plan",
             str(source_path),
             "--refinement-run-id",
@@ -103,7 +103,7 @@ def test_cli_binds_imported_refinement_execution_protocol(monkeypatch, tmp_path,
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--refinement-plan",
             str(source_path),
             "--refinement-execution-protocol",
@@ -140,7 +140,7 @@ def test_cli_verifies_source_snapshot(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--verify-source-snapshot",
             str(manifest),
             "--source-root",
@@ -191,7 +191,7 @@ def test_cli_audits_robochallenge_wire_records(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--robochallenge-records",
             str(records_path),
             "--robochallenge-output",
@@ -222,7 +222,7 @@ def test_cli_verifies_smolvla_evidence_against_trusted_digests(monkeypatch, tmp_
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--smolvla-manifest",
             str(manifest),
             "--smolvla-summary",
@@ -255,7 +255,7 @@ def test_cli_executes_independently_loaded_frozen_plan(monkeypatch, tmp_path, ca
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--frozen-plan",
             str(plan_path),
             "--execute-mock",
@@ -283,7 +283,7 @@ def test_cli_validates_serialized_search_plan(monkeypatch, tmp_path, capsys):
         dimensions=(PerturbationDimension("x", (0, 1)),),
         seeds=[1],
     ).write(path)
-    monkeypatch.setattr("sys.argv", ["benchstudio-run", "--validate-search-plan", str(path)])
+    monkeypatch.setattr("sys.argv", ["benchstudio", "--validate-search-plan", str(path)])
     assert main() == 0
     report = json.loads(capsys.readouterr().out)
     assert report["valid"] is True
@@ -300,7 +300,7 @@ def test_cli_validates_serialized_confirmation_plan(monkeypatch, tmp_path, capsy
         candidates=[SearchCandidate("candidate", "task", "state", "search", 1, "b" * 64)],
         confirmation_seeds=[2],
     ).write(path)
-    monkeypatch.setattr("sys.argv", ["benchstudio-run", "--validate-confirmation-plan", str(path)])
+    monkeypatch.setattr("sys.argv", ["benchstudio", "--validate-confirmation-plan", str(path)])
     assert main() == 0
     report = json.loads(capsys.readouterr().out)
     assert report["valid"] is True
@@ -329,7 +329,7 @@ def test_cli_audits_search_results_against_frozen_plan(monkeypatch, tmp_path, ca
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--search-results",
             str(evidence / "search-results.jsonl"),
             "--search-plan",
@@ -371,7 +371,7 @@ def test_cli_audits_confirmation_results_and_fails_closed(monkeypatch, tmp_path,
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--confirmation-results",
             str(result_path),
             "--confirmation-plan",
@@ -394,7 +394,7 @@ def test_campaign_document_loader_rejects_non_mapping_json(tmp_path):
 
 
 def test_cli_reports_adapter_readiness(monkeypatch, capsys):
-    monkeypatch.setattr("sys.argv", ["benchstudio-run", "--readiness"])
+    monkeypatch.setattr("sys.argv", ["benchstudio", "--readiness"])
     assert main() == 0
     report = json.loads(capsys.readouterr().out)
     assert {item["simulator_id"] for item in report["simulators"]} >= {"mock", "mujoco"}
@@ -442,7 +442,7 @@ def test_cli_executes_registry_gymnasium_campaign(monkeypatch, tmp_path, capsys)
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--campaign-spec",
             str(spec_path),
             "--plan-output",
@@ -516,7 +516,7 @@ def test_cli_executes_registry_mujoco_campaign(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--campaign-spec",
             str(spec_path),
             "--plan-output",
@@ -536,7 +536,7 @@ def test_cli_executes_registry_mujoco_campaign(monkeypatch, tmp_path, capsys):
 def test_cli_executes_digest_bound_trace_campaign(monkeypatch, tmp_path, capsys):
     from hashlib import sha256
 
-    from benchstudio.integrations import observation_digest_sha256
+    from benchstudio.integrations.policy_trace import observation_digest_sha256
     from benchstudio.mock import MockSimulator
 
     simulator = MockSimulator()
@@ -588,7 +588,7 @@ def test_cli_executes_digest_bound_trace_campaign(monkeypatch, tmp_path, capsys)
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--campaign-spec",
             str(spec_path),
             "--plan-output",
@@ -676,7 +676,7 @@ for line in sys.stdin:
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--campaign-spec",
             str(spec_path),
             "--plan-output",
@@ -708,7 +708,7 @@ def test_cli_compares_frozen_campaign_directories(monkeypatch, tmp_path, capsys)
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--compare-campaign",
             f"left={left}",
             "--compare-campaign",
@@ -743,7 +743,7 @@ def test_cli_writes_transfer_fidelity_report(monkeypatch, tmp_path):
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--transfer-records",
             str(records),
             "--transfer-output",
@@ -784,7 +784,7 @@ def test_cli_compiles_counterfactual_plan_from_frozen_plan(monkeypatch, tmp_path
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--frozen-plan",
             str(frozen_plan),
             "--counterfactual-interventions",
@@ -823,7 +823,7 @@ def test_cli_writes_recovery_report(monkeypatch, tmp_path):
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--recovery-records",
             str(records),
             "--recovery-output",
@@ -897,7 +897,7 @@ def test_cli_validates_recovery_report_against_frozen_counterfactual_plan(monkey
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--recovery-records",
             str(evidence_dir / "counterfactual-results.jsonl"),
             "--recovery-plan",
@@ -913,7 +913,7 @@ def test_cli_validates_recovery_report_against_frozen_counterfactual_plan(monkey
 
 
 def test_cli_compares_frozen_policy_traces(monkeypatch, tmp_path, capsys):
-    from benchstudio.integrations import POLICY_TRACE_SCHEMA
+    from benchstudio.integrations.policy_trace import POLICY_TRACE_SCHEMA
 
     reference = tmp_path / "reference.jsonl"
     instrumented = tmp_path / "instrumented.jsonl"
@@ -924,7 +924,7 @@ def test_cli_compares_frozen_policy_traces(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--compare-policy-traces",
             str(reference),
             str(instrumented),
@@ -949,7 +949,7 @@ def test_cli_verifies_existing_artifact_without_execution(monkeypatch, tmp_path,
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--verify-artifact",
             str(run_dir),
             "--trusted-manifest-sha256",
@@ -973,7 +973,7 @@ def test_cli_verifies_campaign_archive_without_extraction(monkeypatch, tmp_path,
     CampaignExecutor(plan, campaign, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
     archive = tmp_path / "campaign.zip"
     archive.write_bytes(build_campaign_archive(campaign))
-    monkeypatch.setattr("sys.argv", ["benchstudio-run", "--verify-archive", str(archive)])
+    monkeypatch.setattr("sys.argv", ["benchstudio", "--verify-archive", str(archive)])
     assert main() == 0
     result = json.loads(capsys.readouterr().out)
     assert result["schema"] == "benchstudio_campaign_archive_verification_v1"
@@ -992,7 +992,7 @@ def test_cli_verifies_scenario_archive_without_extraction(monkeypatch, tmp_path,
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--verify-scenario-archive",
             str(archive),
             "--trusted-scenario-archive-sha256",
@@ -1025,7 +1025,7 @@ def test_cli_fetches_and_extracts_local_artifact(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--fetch-artifact",
             reference.digest_sha256,
             "--artifact-store",
@@ -1042,7 +1042,7 @@ def test_cli_fetches_and_extracts_local_artifact(monkeypatch, tmp_path, capsys):
 
 def test_cli_returns_nonzero_for_invalid_artifact(monkeypatch, tmp_path, capsys):
     run_dir = tmp_path / "missing"
-    monkeypatch.setattr("sys.argv", ["benchstudio-run", "--verify-artifact", str(run_dir)])
+    monkeypatch.setattr("sys.argv", ["benchstudio", "--verify-artifact", str(run_dir)])
     assert main() == 2
     result = json.loads(capsys.readouterr().out)
     assert result["valid"] is False
@@ -1057,7 +1057,7 @@ def test_cli_audits_existing_campaign_without_execution(monkeypatch, tmp_path, c
     ).freeze()
     output = tmp_path / "campaign"
     CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()).run()
-    monkeypatch.setattr("sys.argv", ["benchstudio-run", "--audit-output", str(output)])
+    monkeypatch.setattr("sys.argv", ["benchstudio", "--audit-output", str(output)])
     assert main() == 0
     audit = json.loads(capsys.readouterr().out)
     assert audit["attempts_complete"] is True
@@ -1089,7 +1089,7 @@ def test_cli_writes_fail_closed_acceptance_report(monkeypatch, tmp_path, capsys)
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--audit-output",
             str(campaign),
             "--acceptance-output",
@@ -1126,7 +1126,7 @@ def test_cli_campaign_audit_reopens_persisted_outcomes(monkeypatch, tmp_path, ca
             authoritative=True,
         )
     )
-    monkeypatch.setattr("sys.argv", ["benchstudio-run", "--audit-output", str(output)])
+    monkeypatch.setattr("sys.argv", ["benchstudio", "--audit-output", str(output)])
     assert main() == 0
     audit = json.loads(capsys.readouterr().out)
     assert audit["outcome_provenance"]["authoritative_records"] == 1
@@ -1148,7 +1148,7 @@ def test_cli_verifies_detached_manifest_signature(monkeypatch, tmp_path, capsys)
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--verify-artifact",
             str(run_dir),
             "--manifest-signature",
@@ -1185,7 +1185,7 @@ def test_cli_executes_declared_registry_adapters(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--campaign-spec",
             str(spec_path),
             "--output",
@@ -1220,7 +1220,7 @@ def test_cli_executes_a_frozen_campaign_with_multiple_workers(monkeypatch, tmp_p
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--campaign-spec",
             str(spec_path),
             "--output",
@@ -1255,7 +1255,7 @@ def test_cli_rejects_non_positive_worker_count(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(
         "sys.argv",
-        ["benchstudio-run", "--campaign-spec", str(spec_path), "--workers", "0"],
+        ["benchstudio", "--campaign-spec", str(spec_path), "--workers", "0"],
     )
     with __import__("pytest").raises(SystemExit):
         main()
@@ -1286,7 +1286,7 @@ def test_cli_can_execute_compiled_campaign_with_mock_backend(monkeypatch, tmp_pa
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--campaign-spec",
             str(spec_path),
             "--plan-output",
@@ -1344,7 +1344,7 @@ def test_cli_can_select_http_artifact_publication(monkeypatch, tmp_path, capsys)
     monkeypatch.setattr(
         "sys.argv",
         [
-            "benchstudio-run",
+            "benchstudio",
             "--campaign-spec",
             str(spec_path),
             "--output",

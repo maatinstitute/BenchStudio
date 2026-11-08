@@ -4,6 +4,9 @@ from unittest.mock import patch
 import pytest
 
 import benchstudio as bs
+from benchstudio.analysis.claims import ClaimType
+from benchstudio.campaigns.executor import CampaignExecutionSummary
+from benchstudio.pipeline import CampaignRun
 
 
 def _campaign():
@@ -28,7 +31,7 @@ def _plan():
 
 
 def _summary():
-    return bs.CampaignExecutionSummary(
+    return CampaignExecutionSummary(
         run_id="quickstart",
         plan_digest_sha256="a" * 64,
         committed_attempt_ids=("attempt-1",),
@@ -72,7 +75,7 @@ def test_robotics_pipeline_compiles_runs_and_returns_artifact_receipt(tmp_path):
             )
             result = runner()
 
-    assert isinstance(result, bs.CampaignRun)
+    assert isinstance(result, CampaignRun)
     assert result.execution.committed_attempt_ids == ("attempt-1",)
     assert result.to_dict()["plan_digest_sha256"] == "a" * 64
     assert "1 completed" in result.summary()
@@ -120,7 +123,7 @@ def test_direct_transformers_style_inputs_compile_to_frozen_campaign(tmp_path):
     assert compiled["environments"][0]["adapter"] == "external_command"
     assert compiled["evaluation"]["seeds"] == [7, 8]
     assert compiled["evaluation"]["paired"] is True
-    assert isinstance(result, bs.CampaignRun)
+    assert isinstance(result, CampaignRun)
 
 
 def test_robotics_pipeline_keeps_analysis_explicit(tmp_path):
@@ -136,9 +139,9 @@ def test_robotics_pipeline_keeps_analysis_explicit(tmp_path):
                 output_dir=tmp_path / "run",
             )()
             audit.assert_not_called()
-            result.analyze(claim_type=bs.ClaimType.PAIRED_COMPARISON)
+            result.analyze(claim_type=ClaimType.PAIRED_COMPARISON)
             audit.assert_called_once_with(
-                tmp_path / "run", claim_type=bs.ClaimType.PAIRED_COMPARISON, evidence=None
+                tmp_path / "run", claim_type=ClaimType.PAIRED_COMPARISON, evidence=None
             )
 
 

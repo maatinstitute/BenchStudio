@@ -3,6 +3,7 @@ import subprocess
 from unittest.mock import patch
 import pytest
 import benchstudio as bs
+from benchstudio.refinement import RefinementWorkspace, RefinementPreparation
 
 
 def test_public_workspace_preserves_arguments_and_never_runs_suggestions(tmp_path):
@@ -14,7 +15,7 @@ def test_public_workspace_preserves_arguments_and_never_runs_suggestions(tmp_pat
               'issues': [], 'execution_authorized': False, 'commands': {'later': ['never-execute']}}
     with patch('benchstudio.refinement.subprocess.run', return_value=subprocess.CompletedProcess(
             [], 0, json.dumps(report), '')) as run:
-        result = bs.RefinementWorkspace(repo, tmp_path / 'workspace', python='/native/python').prepare(model='pi05')
+        result = RefinementWorkspace(repo, tmp_path / 'workspace', python='/native/python').prepare(model='pi05')
     assert run.call_count == 1
     assert run.call_args.args[0] == ['/native/python', str(script), '--workspace',
                                     str(tmp_path / 'workspace'), '--model', 'pi05']
@@ -25,7 +26,7 @@ def test_public_workspace_preserves_arguments_and_never_runs_suggestions(tmp_pat
 def test_missing_helper_and_invalid_models_fail_before_subprocess(tmp_path):
     with patch('benchstudio.refinement.subprocess.run') as run:
         with pytest.raises(FileNotFoundError, match='preparation helper'):
-            bs.RefinementWorkspace(tmp_path, tmp_path).prepare()
+            RefinementWorkspace(tmp_path, tmp_path).prepare()
         with pytest.raises(ValueError, match='model'):
-            bs.RefinementWorkspace(tmp_path, tmp_path).prepare(model='other')
+            RefinementWorkspace(tmp_path, tmp_path).prepare(model='other')
     run.assert_not_called()

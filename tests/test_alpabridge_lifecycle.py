@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-from benchstudio.integrations import (
-    SyntheticLifecycleService,
-    run_synthetic_lifecycle_cycle,
-)
+from benchstudio.integrations.alpabridge_lifecycle import SyntheticLifecycleService, run_synthetic_lifecycle_cycle
 
 
 def test_duplicate_close_is_idempotent_and_structured():

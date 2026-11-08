@@ -67,10 +67,10 @@ class SourcePackage:
 
     @classmethod
     def from_manifest(cls, path: str | Path, *, root: str | Path) -> SourcePackage:
-        """Read a source-snapshot v1 manifest or Warren's all_files_sha256 manifest.
+        """Read a BenchStudio source snapshot or the frozen E0 manifest format.
 
-        The latter is an import compatibility format; bound/authorization fields
-        are deliberately not interpreted by this generic source verifier.
+        The external E0 schema is read-only here. Bound/authorization fields are
+        deliberately not interpreted by this generic source verifier.
         """
         document = json.loads(Path(path).read_text(encoding="utf-8"))
         if not isinstance(document, dict):
@@ -110,7 +110,7 @@ class SourcePackage:
         return ProcessCommand(
             "source-run", (str(python), str(self.root / entrypoint), *args), self.root,
             env={} if env is None else env, timeout=timeout, sources=self,
-        ).run(log_dir)
+        ).execute(log_dir).receipt_path
 
     def archive(self, output: str | Path) -> str:
         """Write a deterministic source-only tar.gz and embedded v1 manifest.
@@ -184,7 +184,7 @@ def check_imports(*modules: str, python: str = sys.executable,
         command = ProcessCommand("imports", (str(python), "-I", "-c", _IMPORT_PROBE,
                                              str(result_path), *modules), clean, timeout=timeout)
         # Propagate failure even if an imported module attempts sys.exit(0).
-        command.run(logs)
+        command.execute(logs)
     result = json.loads(result_path.read_text(encoding="utf-8"))
     if result.get("ok") is not True:
         raise ProcessFailure("import diagnostic failed; see " + str(result_path))

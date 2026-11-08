@@ -9,6 +9,7 @@ checkpoint identity, conditions, and seeds are explicit inputs.
 
 ```python
 import benchstudio as bs
+from benchstudio.analysis.claims import ClaimType
 
 evaluation = bs.pipeline(
     "robotics-evaluation",
@@ -49,7 +50,7 @@ import benchstudio as bs
 
 audit = bs.pipeline(
     "campaign-audit",
-    claim_type=bs.ClaimType.SINGLE_RUN_OUTCOME,
+    claim_type=ClaimType.SINGLE_RUN_OUTCOME,
 )("runs/smolvla-libero-baseline")
 print(audit.summary())
 ```

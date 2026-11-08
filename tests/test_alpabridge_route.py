@@ -1,16 +1,7 @@
 import numpy as np
 import pytest
 
-from benchstudio.integrations import (
-    distance_to_polyline,
-    effective_ramp_target_mps,
-    ramp_scale,
-    ramp_settings,
-    ramp_up_only,
-    ramped_distances,
-    sample_route,
-    segment_point_distance,
-)
+from benchstudio.integrations.alpabridge_route import distance_to_polyline, effective_ramp_target_mps, ramp_scale, ramp_settings, ramp_up_only, ramped_distances, sample_route, segment_point_distance
 
 TIMES = np.linspace(0.25, 5.0, 20)
 ROUTE = [(float(x), 0.0) for x in range(0, 120, 4)]

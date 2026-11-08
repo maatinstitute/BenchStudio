@@ -2,6 +2,7 @@ import asyncio
 from dataclasses import FrozenInstanceError
 import pytest
 import benchstudio as bs
+from benchstudio.experimental import Workflow
 
 
 def system(fn, name="component", revision="r1"):
@@ -9,7 +10,7 @@ def system(fn, name="component", revision="r1"):
 
 
 def workflows(reference=lambda x: x, candidate=lambda x: x*2):
-    base = bs.Workflow("forecast-agent", "r1", {
+    base = Workflow("forecast-agent", "r1", {
         "predictor": system(reference, "predictor"),
         "planner": system(lambda x: x, "planner"),
     })

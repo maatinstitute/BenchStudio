@@ -4,6 +4,9 @@ from unittest.mock import patch
 import pytest
 
 import benchstudio as bs
+from benchstudio.analysis.campaign_audit import audit_campaign
+from benchstudio.analysis.claims import ClaimType
+from benchstudio.campaigns.frozen_plan import CampaignPlanner
 
 
 def test_campaign_audit_pipeline_uses_offline_directory_audit(tmp_path):
@@ -13,11 +16,11 @@ def test_campaign_audit_pipeline_uses_offline_directory_audit(tmp_path):
 
     pipeline_module = import_module("benchstudio.pipeline")
     with patch.object(pipeline_module, "audit_campaign_directory", return_value=expected) as audit:
-        review = bs.pipeline("campaign-audit", claim_type=bs.ClaimType.PAIRED_COMPARISON)
+        review = bs.pipeline("campaign-audit", claim_type=ClaimType.PAIRED_COMPARISON)
         result = review(campaign)
 
     assert result is expected
-    audit.assert_called_once_with(campaign, claim_type=bs.ClaimType.PAIRED_COMPARISON)
+    audit.assert_called_once_with(campaign, claim_type=ClaimType.PAIRED_COMPARISON)
 
 
 def test_campaign_audit_pipeline_rejects_missing_and_non_directory_sources(tmp_path):
@@ -36,14 +39,14 @@ def test_pipeline_factory_lists_supported_task():
 
 
 def test_campaign_audit_has_a_concise_summary():
-    plan = bs.CampaignPlanner(
+    plan = CampaignPlanner(
         run_id="summary", scenario_id="task", conditions=[{"variant": "A"}], seeds=[7]
     ).freeze()
     attempt_id = plan.attempts[0].key.attempt_id
-    report = bs.audit_campaign(
+    report = audit_campaign(
         plan,
         [{"attempt_id": attempt_id, "status": "completed", "evidence_verified": True}],
-        claim_type=bs.ClaimType.SINGLE_RUN_OUTCOME,
+        claim_type=ClaimType.SINGLE_RUN_OUTCOME,
         evidence={"authoritative_scorer_declared": True},
     )
 

@@ -42,7 +42,7 @@ binding neither replaces them nor launches anything automatically.
 ## Native vLLM objects, with all upstream options
 
 Install the provider version you intend to evaluate separately from the BenchStudio
-core. You do not need the version-pinned compatibility extra for this route.
+core. No BenchStudio provider-specific extra or model loader is needed for this route.
 The following is a native-inference example; constructing LLM may load/download
 weights and initialize GPUs. It is not an offline readiness command.
 
@@ -156,7 +156,7 @@ Backend-native logging can retain additional outputs where appropriate. BenchStu
 remains responsible for its scheduling, accounting and scoring implementation;
 user-owned inference settings do not excuse evaluation defects.
 
-## Execution contract and compatibility
+## Execution contract
 
 With `batched=True`, the callable accepts a list and returns one ordered output per
 input. A scalar call is a one-item batch. Count mismatches and accidental string/
@@ -173,7 +173,4 @@ BenchStudio option update; breaking signatures or output semantics can still req
 caller/benchmark changes. Freeze versions within a campaign and upgrade deliberately
 between evaluations.
 
-`System.from_pretrained(..., backend="vllm")`, `VLLMConfig` and `GenerationConfig`
-remain available as a tested, version-pinned compatibility path. Their restricted
-configuration is not the preferred route for arbitrary native options. Nothing here
-qualifies a simulator, policy, checkpoint, native parity or scientific campaign.
+BenchStudio provides no provider-specific checkpoint loader or inference-settings mirror. Create the configured model, agent, world model, or endpoint with its native library or service and bind the callable using `System.from_callable`. The owner chooses and records deployment settings; BenchStudio neither supplies nor silently changes defaults. Nothing here qualifies a simulator, policy, checkpoint, native parity or scientific campaign.

@@ -316,7 +316,8 @@ class CampaignAuditPipeline:
 def pipeline(name: str = "evaluate", **kwargs: Any) -> Any:
     """Create a task-oriented BenchStudio pipeline.
 
-    The default task is evaluate. system-evaluation is a compatibility alias.\n    Other tasks are ablation, replay, robotics-evaluation and campaign-audit. Evaluation
+    The default task is evaluate. Other tasks are ablation, replay,
+    robotics-evaluation and campaign-audit. Evaluation
     accepts a campaign file or explicit task/model/environment inputs. It
     never infers a model, simulator, or scoring function.
     """
@@ -329,7 +330,7 @@ def pipeline(name: str = "evaluate", **kwargs: Any) -> Any:
             raise ValueError("replay requires source=archive_path")
         source = kwargs.pop("source")
         return ReplayPipeline.from_archive(source, **kwargs)
-    if name in ("evaluate", "system-evaluation"):
+    if name == "evaluate":
         from .system_pipeline import SystemEvaluationPipeline
         return SystemEvaluationPipeline(**kwargs)
     if name == "campaign-audit":

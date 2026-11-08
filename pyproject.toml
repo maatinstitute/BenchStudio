@@ -1,14 +1,15 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "benchstudio"
-version = "0.1.0rc1"
+version = "0.1.0rc2"
 description = "Research-use experimental evaluation infrastructure for AI systems"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { file = "LICENSE" }
+license = "LicenseRef-Research-Use-1.1"
+license-files = ["LICENSE"]
 authors = [{ name = "Alba Maria Tellez Fernandez" }]
 dependencies = []
 classifiers = [
@@ -23,7 +24,6 @@ Documentation = "https://github.com/amtellezfernandez/BenchStudio/blob/main/docs
 Issues = "https://github.com/amtellezfernandez/BenchStudio/issues"
 
 [project.optional-dependencies]
-vllm = ["vllm==0.33.0"]
 dev = ["pytest>=7.4", "ruff>=0.6", "numpy>=1.24", "cryptography>=41"]
 yaml = ["PyYAML>=6.0"]
 mujoco = ["mujoco>=3.0"]
@@ -33,7 +33,6 @@ signing = ["cryptography>=41"]
 
 [project.scripts]
 benchstudio = "benchstudio.commands:main"
-benchstudio-run = "benchstudio.cli:main"
 benchstudio-replay = "benchstudio.robopad:main"
 
 [tool.setuptools]

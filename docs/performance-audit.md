@@ -1,7 +1,7 @@
 # CPU performance audit
 
-The first measured targets are BenchStudio's own metadata/trace paths. vLLM
-inference stays delegated to its upstream engine. No real models, simulator,
+The first measured targets are BenchStudio's own metadata/trace paths. Provider
+inference stays with its native implementation. No real models, simulator,
 GPU, physical agents or scientific confirmation identities are used here.
 
 ## Interaction traces
@@ -46,8 +46,8 @@ ordering, event lineage and canonical identities against the Python reference.
 No Rust component or claimed Rust speedup is added by this change.
 
 For immutable identity lookup, see the separate reproducible microbenchmark in
-`scripts/benchmark_identity_overhead.py` and docs/vllm-backend.md. That test
-measures cached metadata hashing only.
+`scripts/benchmark_identity_overhead.py`. That test measures cached metadata
+hashing only.
 
 ## Result export
 
