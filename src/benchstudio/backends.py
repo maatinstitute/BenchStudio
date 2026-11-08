@@ -52,10 +52,18 @@ class CaseResult:
     """Operational completion and backend-owned output, not task success."""
     completed: bool
     output: Any = None
+    episodes: tuple = ()
 
     def __post_init__(self):
         if type(self.completed) is not bool:
             raise TypeError("completed must be boolean")
+        from .episodes import EpisodeRecord
+        episodes = tuple(self.episodes)
+        if any(not isinstance(episode, EpisodeRecord) for episode in episodes):
+            raise TypeError("episodes must contain EpisodeRecord")
+        if len({episode.case_id for episode in episodes}) != len(episodes):
+            raise ValueError("duplicate episode in execution result")
+        object.__setattr__(self, "episodes", episodes)
 
 
 class ExecutionBackend(Protocol):

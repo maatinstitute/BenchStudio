@@ -104,3 +104,30 @@ class EpisodeCoverage:
     def missing(self):
         observed = set(self.observed)
         return tuple(case for case in self.planned if case not in observed)
+
+
+@dataclass(frozen=True)
+class EpisodeRecord:
+    """Native episode evidence returned through an existing CaseResult."""
+    case_id: str
+    outcome: EpisodeOutcome
+    batches: tuple[ActionBatch, ...] = ()
+    isolation_mode: str | None = None
+
+    def __post_init__(self):
+        if type(self.case_id) is not str or not self.case_id:
+            raise ValueError("episode case_id must be nonempty")
+        if not isinstance(self.outcome, EpisodeOutcome):
+            raise TypeError("episode requires EpisodeOutcome")
+        batches = tuple(self.batches)
+        if any(not isinstance(batch, ActionBatch) for batch in batches):
+            raise TypeError("episode batches must be ActionBatch")
+        if self.isolation_mode not in (None, "factory", "reset", "declared_stateless"):
+            raise ValueError("unknown isolation mode")
+        object.__setattr__(self, "batches", batches)
+
+    def to_dict(self):
+        from dataclasses import asdict
+        return {"case_id": self.case_id, "outcome": asdict(self.outcome),
+                "batches": [batch.to_dict() for batch in self.batches],
+                "isolation_mode": self.isolation_mode, "isolation_verified": False}

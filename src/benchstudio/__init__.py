@@ -446,4 +446,4 @@ from .experimental import Workflow, AblationStudy, AblationResult
 
 from .vllm_backend import GenerationConfig, VLLMConfig
 
-from .episodes import ActionBatch, EpisodeCoverage, EpisodeIsolation, EpisodeOutcome
+from .episodes import ActionBatch, EpisodeCoverage, EpisodeIsolation, EpisodeOutcome, EpisodeRecord
