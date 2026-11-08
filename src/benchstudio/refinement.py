@@ -34,7 +34,7 @@ class RefinementWorkspace:
     prepare() invokes only prepare_campaign.py; it never invokes returned commands.
     """
     repository: str | Path
-    workspace: str | Path
+    workspace: str | Path | None = None
     python: str = sys.executable
 
     def prepare(self, *, model: str | None = None) -> RefinementPreparation:
@@ -45,10 +45,12 @@ class RefinementWorkspace:
         script = repo / 'experiments/tooling/cross_policy_v3/prepare_campaign.py'
         if not script.is_file():
             raise FileNotFoundError(f'Integrate the paper preparation helper first: {script}')
+        workspace = (repo / "experiments/runs/cross_policy_confirmation_v2"
+                     if self.workspace is None else Path(self.workspace).resolve())
         reports = {}
         for name in models:
             command = [str(self.python), str(script), '--workspace',
-                       str(Path(self.workspace).resolve()), '--model', name]
+                       str(workspace), '--model', name]
             result = subprocess.run(command, cwd=repo, capture_output=True, text=True,
                                     timeout=60, check=False)
             if result.returncode:

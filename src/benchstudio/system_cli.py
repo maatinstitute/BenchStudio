@@ -37,8 +37,8 @@ def _main(argv=None):
     config = EvaluationConfig(args.run_id, args.batch_size, args.concurrency, args.timeout, args.output)
     system = (System.from_pretrained(args.system, revision=args.system_revision, backend=args.backend)
               if args.backend else System.from_backend(args.system, revision=args.system_revision))
-    benchmark = Benchmark.from_pretrained(args.benchmark, revision=args.benchmark_revision)
-    evaluation = pipeline("system-evaluation", system=system, benchmark=benchmark, config=config)
+    benchmark = Benchmark.load(args.benchmark, revision=args.benchmark_revision)
+    evaluation = pipeline("evaluate", system=system, benchmark=benchmark, config=config)
     check = evaluation.check(mode="async" if args.asynchronous else "sync")
     if args.check:
         print(json.dumps(asdict(check), indent=2))
