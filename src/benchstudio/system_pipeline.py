@@ -25,21 +25,8 @@ class System:
             raise TypeError("system runtime must be callable")
 
     @classmethod
-    def from_pretrained(cls, model, *, revision, backend="vllm", generation=None, **options):
-        """Compatibility loader for supported backends; native configured callables are preferred."""
-        if backend != "vllm":
-            return cls.from_backend(backend, model=model, revision=revision, generation=generation, **options)
-        from .vllm_backend import GenerationConfig, VLLMConfig, VLLMRuntime
-        if generation is not None and not isinstance(generation, GenerationConfig):
-            raise TypeError("generation must be bs.GenerationConfig")
-        runtime = VLLMRuntime(VLLMConfig(model, revision, **options), generation or GenerationConfig())
-        return cls(runtime, runtime.system_spec())
-
-    @classmethod
     def from_backend(cls, name, **options):
         """Resolve a trusted installed system factory, with no source-file arguments."""
-        if name == "vllm":
-            return cls.from_pretrained(**options)
         from .backend_loading import load_backend
         result = load_backend("benchstudio.systems", name)(**options)
         if not isinstance(result, cls):
@@ -114,7 +101,7 @@ class Benchmark:
     """An offline dataset/scorer or a complete executable native protocol.
 
     Protocol mode owns its experimental calendar, native execution and outcome
-    semantics. Offline identities remain compatible. Declared revisions and
+    semantics. Offline identities retain their declared format. Revisions and
     calendar hashes are not native qualification or execution authorization.
     """
     name: str
@@ -177,11 +164,6 @@ class Benchmark:
         if result.revision != revision:
             raise ValueError("benchmark factory returned a different revision")
         return result
-
-    @classmethod
-    def from_pretrained(cls, name, *, revision, **options):
-        """Compatibility alias for Benchmark.load()."""
-        return cls.load(name, revision=revision, **options)
 
     @property
     def cases(self):

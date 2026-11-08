@@ -4,9 +4,11 @@ The public interface uses Python objects:
 
 ```python
 import benchstudio as bs
+from benchstudio.async_execution import AgentGroup, ResourcePool
 
-evaluator = bs.pipeline("system-evaluation", system=my_system, benchmark=my_benchmark)
-results = await evaluator.arun(concurrency=4, timeout=30)
+evaluator = bs.pipeline(system=my_system, benchmark=my_benchmark,
+    config=bs.EvaluationConfig(concurrency=4, timeout=30))
+results = await evaluator.arun()
 ```
 
 `my_system` is a `bs.System` wrapping a callable. It can wrap a model, a
@@ -29,8 +31,8 @@ loop; use native async adapters for overlap. No threads or processes are started
 ## Groups and shared resources
 
 ```python
-pool = bs.ResourcePool({"model-server": 1})
-group = bs.AgentGroup(
+pool = ResourcePool({"model-server": 1})
+group = AgentGroup(
     {"planner": planner_system, "critic": critic_system},
     reducer=lambda outputs: outputs["planner"],
     concurrency=2, pool=pool,

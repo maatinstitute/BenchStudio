@@ -10,8 +10,10 @@ import unittest
 import tempfile
 import os
 from unittest.mock import patch
-import benchstudio as bs
-from benchstudio.preparation import _IMPORT_PROBE
+from benchstudio.preparation import (
+    ProcessFailure, SourcePackage, SourceVerificationError, _IMPORT_PROBE, check_imports,
+)
+from benchstudio.processes import ProcessCommand
 from benchstudio.source_snapshot import verify_source_snapshot
 
 
@@ -20,7 +22,7 @@ def package(tmp_path):
     root.mkdir()
     (root / "main.py").write_text('from pathlib import Path; Path("executed").touch()')
     (root / "helper.py").write_text('VALUE = 1')
-    return bs.SourcePackage.from_directory(root, files=["main.py", "helper.py"])
+    return SourcePackage.from_directory(root, files=["main.py", "helper.py"])
 
 
 class PreparationTests(unittest.TestCase):
@@ -50,7 +52,7 @@ class PreparationTests(unittest.TestCase):
             helper.unlink()
         else:
             helper.write_text('raise RuntimeError("must not import")')
-        with self.assertRaises(bs.SourceVerificationError):
+        with self.assertRaises(SourceVerificationError):
             source.run("main.py", log_dir=tmp_path / "logs")
         assert not (source.root / "executed").exists()
         assert not (tmp_path / "logs").exists()
@@ -59,7 +61,7 @@ class PreparationTests(unittest.TestCase):
     def test_missing_dependency_refuses_before_spawning(self):
         source = package(self.root)
         (source.root / "helper.py").unlink()
-        with self.assertRaises(bs.SourceVerificationError):
+        with self.assertRaises(SourceVerificationError):
             source.run("main.py", log_dir=self.root / "logs")
         assert not (source.root / "executed").exists()
 
@@ -67,8 +69,8 @@ class PreparationTests(unittest.TestCase):
         root = self.root / "sources"
         root.mkdir()
         (root / "main.py").write_text("import time; time.sleep(60)")
-        source = bs.SourcePackage.from_directory(root, files=["main.py"])
-        with self.assertRaises(bs.ProcessFailure):
+        source = SourcePackage.from_directory(root, files=["main.py"])
+        with self.assertRaises(ProcessFailure):
             source.run("main.py", log_dir=self.root / "logs", timeout=0.05)
         receipt = json.loads((self.root / "logs/source-run.receipt.json").read_text())
         assert receipt["exit_code"] != 0
@@ -81,12 +83,12 @@ class PreparationTests(unittest.TestCase):
             source.run("other.py", log_dir=tmp_path / "logs")
         for bad in ("../main.py", "/main.py", "a/../main.py", "./main.py", "a\\main.py"):
             with self.assertRaises(ValueError):
-                bs.SourcePackage(source.root, {bad: "a" * 64})
+                SourcePackage(source.root, {bad: "a" * 64})
         outside = tmp_path / "outside.py"
         outside.write_text("raise RuntimeError")
         (source.root / "linked.py").symlink_to(outside)
         with self.assertRaises(ValueError):
-            bs.SourcePackage.from_directory(source.root, files=["linked.py"])
+            SourcePackage.from_directory(source.root, files=["linked.py"])
 
 
     def test_manifest_compatibility_and_existing_snapshot_verifier(self):
@@ -96,14 +98,14 @@ class PreparationTests(unittest.TestCase):
         for document in ({"schema": "benchstudio_source_snapshot_v1", "files": dict(source.files)},
                          {"all_files_sha256": dict(source.files), "bound": {"ignored": "x"}}):
             manifest.write_text(json.dumps(document))
-            imported = bs.SourcePackage.from_manifest(manifest, root=source.root)
+            imported = SourcePackage.from_manifest(manifest, root=source.root)
             assert imported.verify()["valid"]
         manifest.write_text(json.dumps({"schema": "benchstudio_source_snapshot_v1",
                                         "files": dict(source.files), "commit": "pinned"}))
         assert verify_source_snapshot(manifest, source.root)["commit"] == "pinned"
         manifest.write_text('{"schema": "unexpected", "files": {}}')
         with self.assertRaises(ValueError):
-            bs.SourcePackage.from_manifest(manifest, root=source.root)
+            SourcePackage.from_manifest(manifest, root=source.root)
 
 
     def test_deterministic_source_archive_roundtrip(self):
@@ -130,7 +132,7 @@ class PreparationTests(unittest.TestCase):
         with self.assertRaises(TypeError):
             source.files["helper.py"] = "a" * 64
         (source.root / "helper.py").write_text("changed")
-        with self.assertRaises(bs.SourceVerificationError):
+        with self.assertRaises(SourceVerificationError):
             source.archive(tmp_path / "bad.tar.gz")
         assert not (tmp_path / "bad.tar.gz").exists()
 
@@ -143,7 +145,7 @@ class PreparationTests(unittest.TestCase):
         env_patch = patch.dict(os.environ, {"PYTHONPATH": str(tmp_path)})
         env_patch.start()
         self.addCleanup(env_patch.stop)
-        result = bs.check_imports("cProfile", "json", log_dir=tmp_path / "logs")
+        result = check_imports("cProfile", "json", log_dir=tmp_path / "logs")
         assert result["ok"]
         assert result["executable"] == sys.executable
         assert all(str(tmp_path) not in item["origin"] for item in result["imports"])
@@ -152,8 +154,8 @@ class PreparationTests(unittest.TestCase):
 
     def test_missing_import_is_failure_with_report_and_nonzero_exit(self):
         tmp_path = self.root
-        with self.assertRaises(bs.ProcessFailure):
-            bs.check_imports("benchstudio_nonexistent_native_dependency", log_dir=tmp_path / "logs")
+        with self.assertRaises(ProcessFailure):
+            check_imports("benchstudio_nonexistent_native_dependency", log_dir=tmp_path / "logs")
         report = json.loads((tmp_path / "logs/imports.json").read_text())
         assert report["ok"] is False
         assert "ModuleNotFoundError" in report["imports"][0]["error"]
@@ -167,8 +169,8 @@ class PreparationTests(unittest.TestCase):
         python = native / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
         site = next(native.glob("Lib/site-packages"), None) or next(native.glob("lib/python*/site-packages"))
         (site / "synthetic_exit.py").write_text('raise SystemExit(0)')
-        with self.assertRaises(bs.ProcessFailure):
-            bs.check_imports("synthetic_exit", python=str(python), log_dir=tmp_path / "logs")
+        with self.assertRaises(ProcessFailure):
+            check_imports("synthetic_exit", python=str(python), log_dir=tmp_path / "logs")
         report = json.loads((tmp_path / "logs/imports.json").read_text())
         assert report["ok"] is False and "SystemExit" in report["imports"][0]["error"]
 
@@ -177,7 +179,7 @@ class PreparationTests(unittest.TestCase):
         tmp_path = self.root
         ast.parse(_IMPORT_PROBE, feature_version=(3, 8))
         with self.assertRaises(ValueError):
-            bs.check_imports("import os; os.system('bad')", log_dir=tmp_path / "logs")
+            check_imports("import os; os.system('bad')", log_dir=tmp_path / "logs")
         assert not (tmp_path / "logs").exists()
 
 if __name__ == "__main__":

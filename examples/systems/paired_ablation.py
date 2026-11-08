@@ -1,6 +1,7 @@
 """End-to-end synthetic component ablation; no learned model or environment."""
 import asyncio
 import benchstudio as bs
+from benchstudio.experimental import Workflow
 
 
 def component(fn, name, revision):
@@ -9,7 +10,7 @@ def component(fn, name, revision):
 
 async def main():
     # Pure arithmetic fixtures illustrate plumbing, not forecasting capability.
-    reference = bs.Workflow("predictor-and-planner", "r1", stages={
+    reference = Workflow("predictor-and-planner", "r1", stages={
         "predictor": component(lambda x: x, "predictor", "identity-r1"),
         "planner": component(lambda prediction: prediction, "planner", "fixed-r1"),
     })

@@ -5,6 +5,8 @@ This example uses arithmetic functions; it downloads no model and runs no simula
 
 ```python
 import benchstudio as bs
+from benchstudio.system_comparison import compare_system_runs
+from benchstudio.system_importers import import_inspect_robots
 
 system = bs.System.from_callable(
     lambda x: x * 2, name="example-system", revision="implementation-r1"
@@ -15,7 +17,7 @@ benchmark = bs.Benchmark(
     scorer=lambda prediction, target: bs.Score(success=prediction == target),
     evaluator_revision="exact-match-r1",
 )
-evaluator = bs.pipeline("system-evaluation", system=system, benchmark=benchmark)
+evaluator = bs.pipeline("evaluate", system=system, benchmark=benchmark)
 results = evaluator()
 print([trial.success for trial in results.trials])
 ```
@@ -46,7 +48,7 @@ import benchstudio as bs
 
 reference = bs.open_run("runs/reference-system")
 candidate = bs.open_run("runs/candidate-system")
-comparison = bs.compare_system_runs(reference, candidate)
+comparison = compare_system_runs(reference, candidate)
 print(comparison.paired_success.to_dict())
 ```
 
@@ -67,7 +69,7 @@ than replace that execution stack, BenchStudio can import its `EvalLog`
 v3 data when the experimenter provides *missing scientific identity*:
 
 ```python
-run = bs.import_inspect_robots(
+run = import_inspect_robots(
     "inspect-log.json", system=my_system,
     task_revision="v1", protocol_digest="a"*64,
     evaluator_revision="r1", environment_revision="isaac-v1",

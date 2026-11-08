@@ -116,10 +116,6 @@ class ProcessCommand:
                             'finished_unix': time.time(), 'exit_code': None if process is None else process.returncode,
                             'reason': reason}, stream, indent=2)
 
-    def run(self, log_dir, *, required_service=None):
-        """Compatibility API returning the receipt path; nonzero exits raise."""
-        return self.execute(log_dir, required_service=required_service).receipt_path
-
     def _result(self, log_dir):
         root = Path(log_dir)
         receipt = root / (self.name + '.receipt.json')

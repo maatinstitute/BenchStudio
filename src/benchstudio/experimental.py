@@ -12,6 +12,7 @@ from .async_execution import invoke, ordered_map
 from .system_ablations import AblationAudit, audit_ablation
 from .system_comparison import SystemComparison, compare_system_runs
 from .system_evidence import SystemRun
+from .evaluation_engine import EvaluationConfig
 from .system_pipeline import Benchmark, System, SystemEvaluationPipeline
 from .system_spec import Component, Connection, SystemSpec
 
@@ -84,8 +85,10 @@ class AblationStudy:
     """
     def __init__(self, *, reference: System, candidate: System, benchmark: Benchmark,
                  changed_components: tuple[str, ...], metrics=(), clone_input=copy.deepcopy):
-        self.reference = SystemEvaluationPipeline(system=reference, benchmark=benchmark, run_id="reference")
-        self.candidate = SystemEvaluationPipeline(system=candidate, benchmark=benchmark, run_id="candidate")
+        self.reference = SystemEvaluationPipeline(system=reference, benchmark=benchmark,
+            config=EvaluationConfig(run_id="reference"))
+        self.candidate = SystemEvaluationPipeline(system=candidate, benchmark=benchmark,
+            config=EvaluationConfig(run_id="candidate"))
         self.isolation = audit_ablation(reference.spec, candidate.spec,
                                         allowed_components=changed_components)
         if not self.isolation.structurally_isolated:

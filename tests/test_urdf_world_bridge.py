@@ -4,15 +4,7 @@ import math
 
 import pytest
 
-from benchstudio.integrations import (
-    WorldBridgeEventType,
-    WorldBridgeRolloutMode,
-    parse_worldd_ack_payload,
-    parse_worldd_session_payload,
-    parse_worldd_status_payload,
-    validate_joint_command_payload,
-    worldd_event_type_from_world_bridge,
-)
+from benchstudio.integrations.urdf_world_bridge import WorldBridgeEventType, WorldBridgeRolloutMode, parse_worldd_ack_payload, parse_worldd_session_payload, parse_worldd_status_payload, validate_joint_command_payload, worldd_event_type_from_world_bridge
 
 
 def test_worldd_event_mapping_preserves_source_wire_names():
@@ -30,8 +22,7 @@ def test_status_parser_preserves_strict_source_fields():
             "max_events_per_session": 100,
             "default_scenario_duration_ms": 5000,
             "transition_contract_version": "v1",
-        },
-        strict=True,
+        }
     )
     assert status.active_sessions == 2
     assert status.transition_contract_version == "v1"
@@ -45,8 +36,7 @@ def test_ack_parser_does_not_infer_execution_timestamp():
             "applied_joint_count": 2,
             "scenario_time_ms": 10,
             "command_sequence": 4,
-        },
-        strict=True,
+        }
     )
     assert ack.accepted is True
     assert ack.command_sequence == 4
@@ -88,8 +78,7 @@ def test_session_parser_converts_wire_timestamps_and_preserves_transition_mode()
                     "joint_state_after_rad": {"shoulder": 0.25},
                 }
             ],
-        },
-        strict=True,
+        }
     )
     assert snapshot.created_at_ms == 1
     assert snapshot.recent_events[0].type is WorldBridgeEventType.SESSION_CREATED
@@ -109,6 +98,15 @@ def test_joint_command_validation_rejects_nonfinite_and_coerced_values():
         {"session_id": "s", "accepted": True, "command_sequence": -1},
     ],
 )
-def test_strict_ack_parser_rejects_invalid_wire_types(payload):
+def test_ack_parser_rejects_invalid_wire_types(payload):
     with pytest.raises(ValueError):
-        parse_worldd_ack_payload(payload, strict=True)
+        parse_worldd_ack_payload(payload)
+
+
+def test_parsers_reject_missing_fields_instead_of_filling_defaults():
+    with pytest.raises(ValueError, match="service"):
+        parse_worldd_status_payload({})
+    with pytest.raises(ValueError, match="accepted"):
+        parse_worldd_ack_payload({"session_id": "s"})
+    with pytest.raises(ValueError, match="recent_events"):
+        parse_worldd_session_payload({})

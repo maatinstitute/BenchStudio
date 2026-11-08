@@ -1,11 +1,6 @@
 from __future__ import annotations
 
-from benchstudio import (
-    build_audited_evaluation_report,
-    build_evaluation_report,
-    render_html_report,
-    write_html_report,
-)
+from benchstudio.reporting.report import build_audited_evaluation_report, build_evaluation_report, render_html_report, write_html_report
 from benchstudio.analysis import (
     ClaimType,
     OutcomeRecord,

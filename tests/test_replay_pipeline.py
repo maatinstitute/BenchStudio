@@ -12,6 +12,7 @@ from unittest.mock import patch
 from benchstudio.replay_pipeline import ReplayPipeline
 from benchstudio.replay_manifest import ReplayEnvironmentError
 from benchstudio.robopad import RoboPADReplay, _FIELDS
+from benchstudio.replay_pipeline import ReplayPipeline
 
 try:
     import numpy as np
@@ -248,13 +249,13 @@ def test_common_python_pipeline_keeps_replay_and_system_tasks_available(tmp_path
     with tarfile.open(archive, "w:gz"):
         pass
     replay = bs.pipeline("replay", source=archive)
-    assert isinstance(replay, bs.ReplayPipeline)
-    with patch.object(bs.ReplayPipeline, "run", return_value="receipt"):
+    assert isinstance(replay, ReplayPipeline)
+    with patch.object(ReplayPipeline, "run", return_value="receipt"):
         assert replay() == "receipt"
     system = bs.System.from_callable(lambda x: x, name="identity", revision="r1")
     benchmark = bs.Benchmark("same", "r1", [1], [1],
                              lambda a, b: bs.Score(a == b), "r1")
-    assert bs.pipeline("system-evaluation", system=system, benchmark=benchmark)().trials[0].success
+    assert bs.pipeline("evaluate", system=system, benchmark=benchmark)().trials[0].success
 
 
 def test_replay_adapter_retains_each_raw_step_observation():

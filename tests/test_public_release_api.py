@@ -5,13 +5,31 @@ import benchstudio as bs
 from benchstudio.backends import BenchmarkCase, CaseResult
 
 
-def test_supported_surface_is_small_complete_and_legacy_is_explicit():
+def test_supported_surface_is_small_and_has_no_dynamic_reexports():
     assert len(bs.__all__) == 15
     assert all(hasattr(bs, name) for name in bs.__all__)
     assert "EpisodeRecord" in bs.__all__ and "ProcessCommand" not in bs.__all__
+    assert "__getattr__" not in vars(bs)
+    assert not hasattr(bs, "ProcessCommand")
     from benchstudio.processes import ProcessCommand
-    assert bs.ProcessCommand is ProcessCommand
-    assert bs.__version__ == "0.1.0rc1"
+    assert ProcessCommand.__module__ == "benchstudio.processes"
+    assert bs.__version__ == "0.1.0rc2"
+
+
+def test_integrations_require_an_explicit_module_import():
+    import benchstudio.integrations as integrations
+    assert "__getattr__" not in vars(integrations)
+    assert not hasattr(integrations, "FixedReference")
+    from benchstudio.integrations.robopad_reference import FixedReference
+    assert FixedReference.__module__ == "benchstudio.integrations.robopad_reference"
+
+
+def test_old_loader_and_task_aliases_are_absent():
+    assert not hasattr(bs.System, "from_pretrained")
+    assert not hasattr(bs.Benchmark, "from_pretrained")
+    assert not hasattr(bs.System, "from_vllm")
+    with pytest.raises(ValueError, match="unsupported BenchStudio pipeline task"):
+        bs.pipeline("system-evaluation")
 
 
 def test_offline_report_preserves_metrics_units_and_native_result(tmp_path):
@@ -68,3 +86,11 @@ def test_async_scorer_capabilities_refuse_sync_before_execution():
     assert not evaluation.capabilities["sync"]
     assert not evaluation.check().configuration_valid
     assert evaluation.check(mode="async").configuration_valid
+
+
+def test_dashboard_requires_an_explicit_study_definition(tmp_path):
+    from benchstudio.demo_dashboard import build_demo_dashboard
+
+    with pytest.raises(FileNotFoundError, match="study definition is required"):
+        build_demo_dashboard(tmp_path, tmp_path / "dashboard.html")
+    assert not (tmp_path / "dashboard.html").exists()

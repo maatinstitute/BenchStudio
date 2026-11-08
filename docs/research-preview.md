@@ -1,11 +1,10 @@
 # Research preview: supported API and capabilities
 
-Version 0.1.0rc1 is an unpublished release candidate. The supported convenience
-surface is `benchstudio.__all__` (15 names). Use `import benchstudio as bs`.
-Older explicit root imports still resolve through `benchstudio.compat`; prefer
-owning modules such as `benchstudio.processes` or `benchstudio.backends` for
-extension/infrastructure work. Compatibility does not make every historical API
-part of the preview's stability promise. No removal is introduced here.
+Version 0.1.0rc2 is an unpublished release candidate. The supported convenience
+surface is `benchstudio.__all__` (15 names). Use `import benchstudio as bs` for
+the high-level API and import specialist utilities from their owning modules.
+There is one supported import path for each public capability; removed names are
+not re-exported through compatibility modules.
 
 Configure inference with its own provider/native API, then bind a System or pass
 that native object to an installed executable Benchmark. BenchStudio does not

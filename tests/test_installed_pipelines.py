@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import pytest
 import benchstudio as bs
 from benchstudio.commands import main
+from benchstudio.refinement import RefinementPreparation
 
 
 def test_installed_pipeline_is_constructed_without_execution(monkeypatch):
@@ -39,7 +40,7 @@ def test_invalid_installed_pipeline_contract_fails(monkeypatch):
 @pytest.mark.parametrize("authorized", [False, True])
 def test_recipe_cli_check_never_calls_run(monkeypatch, authorized):
     calls = []
-    report = bs.RefinementPreparation({"model": {"offline_inputs_complete": True, "issues": [],
+    report = RefinementPreparation({"model": {"offline_inputs_complete": True, "issues": [],
         "execution_authorized": authorized}})
     class Factory:
         def add_cli_args(self, parser):
@@ -53,3 +54,10 @@ def test_recipe_cli_check_never_calls_run(monkeypatch, authorized):
         SimpleNamespace(load=lambda: Factory())])
     assert main(["evaluate", "--recipe", "study", "--revision", "pinned", "--check"]) == (0 if authorized else 1)
     assert calls == []
+
+
+def test_preparation_reports_the_same_configuration_check_contract():
+    report = RefinementPreparation({"model": {"offline_inputs_complete": True, "issues": [],
+        "execution_authorized": False, "commands": {}}})
+    assert report.configuration_valid is True
+    assert not hasattr(report, "technical_ready")

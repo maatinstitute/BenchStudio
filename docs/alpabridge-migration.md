@@ -5,7 +5,9 @@ AlpaBridge now supplies an optional installed `alpasim` pipeline using the exist
 stdout/stderr retention and receipts to the existing EvaluationEngine. Scene
 selection, per-scene native launcher/readiness, container cleanup, artifact audits
 and native report formatting remain in AlpaBridge. There is no second BenchStudio
-scene scheduler. See [the execution backend contract](execution-backends.md).
+scene scheduler. See [specialist workflows](specialist-workflows.md) for the
+integration boundary and [system evaluation](system-evaluation.md) for the
+shared engine contract.
 
 ```python
 import benchstudio as bs
@@ -36,7 +38,7 @@ This implementation does not justify retiring those AlpaBridge adapters.
 
 ## Structured process results
 
-`ProcessCommand.run(log_dir)` remains compatible and returns a receipt path.
+`ProcessCommand.execute(log_dir)` returns the typed process result and receipt path.
 `ProcessCommand.execute(log_dir, check=False)` additionally returns a `ProcessResult`
 with `returncode`, `receipt_path`, `stdout_path`, `stderr_path` and `duration` (seconds).
 Nonzero status can therefore feed the native retry/accounting rules without parsing
@@ -52,11 +54,10 @@ CLI exit so a partial native batch cannot be reported as a successful CLI run.
 ## Shared configuration and retained native results
 
 The AlpaSim integration now consumes `EvaluationConfig` and returns the common
-`EvaluationCheck`. `configuration_valid` is static only; `technical_ready` is a
-compatibility alias for installed recipes. `summary()` explains pending native
+`EvaluationCheck`. `configuration_valid` is the shared static check result.
+`summary()` explains pending native
 verification. AlpaSim rejects unsupported batching/concurrency instead of ignoring
-those options. The system and AlpaSim CLIs accept `--output-dir` and the existing
-`--output` alias.
+those options. The CLI accepts only `--output`.
 
 Native metrics, their coverage counts, failure taxonomy and claim boundaries are
 available directly on the returned AlpaBridge result. They are computed by its

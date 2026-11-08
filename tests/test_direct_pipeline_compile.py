@@ -1,5 +1,6 @@
 import benchstudio as bs
 from benchstudio.pipeline import _campaign_from_direct_inputs
+from benchstudio.campaigns.spec import compile_campaign_spec
 
 
 def test_transformers_style_inputs_compile_without_executing_runtime():
@@ -22,7 +23,7 @@ def test_transformers_style_inputs_compile_without_executing_runtime():
         benchmark="libero",
     )
 
-    plan = bs.compile_campaign_spec(spec)
+    plan = compile_campaign_spec(spec)
 
     assert len(plan.attempts) == 2
     assert plan.protocol["M"]["checkpoint"] == "sha256:" + "b" * 64

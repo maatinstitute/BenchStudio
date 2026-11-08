@@ -15,18 +15,10 @@ from benchstudio.analysis import (
 )
 from benchstudio.campaigns import WorkerLeaseManager
 from benchstudio.contracts import Observation
-from benchstudio.integrations import (
-    POLICY_TRACE_SCHEMA,
-    RoboChallengeAction,
-    RoboChallengeObservation,
-    RoboChallengeObserveOnlyAdapter,
-    audit_robochallenge_wire_records,
-    TracePolicy,
-    observation_digest_sha256,
-    preflight_worldepisode,
-    run_replay_conformance,
-    validate_robochallenge_message,
-)
+from benchstudio.integrations.policy_trace import POLICY_TRACE_SCHEMA, TracePolicy, observation_digest_sha256
+from benchstudio.integrations.robochallenge import RoboChallengeAction, RoboChallengeObservation, RoboChallengeObserveOnlyAdapter, audit_robochallenge_wire_records, validate_robochallenge_message
+from benchstudio.integrations.worldepisode import preflight_worldepisode
+from benchstudio.integrations.replay_conformance import run_replay_conformance
 from benchstudio.integrations.policy_trace import PolicyTraceRow
 from benchstudio.mock import MockPolicy
 
@@ -399,108 +391,59 @@ def test_robochallenge_validation_rejects_malformed_runtime_types():
         adapter.action_acknowledged(action, execution_timestamp_ns=True)  # type: ignore[arg-type]
 
 
-def test_worldepisode_binding_is_explicit_about_fallback_profile():
-    result = preflight_worldepisode({"episode_id": "episode-1", "schema": "worldepisode"})
+def _canonical_worldepisode_record():
+    return {
+        "schema": "worldepisode.v1",
+        "episode": {"episode_id": "episode-1"},
+        "clock_graph": {"clocks": [{"clock_id": "sim"}], "mappings": []},
+        "action_space": {"channels": []},
+        "world_revision": {"world_revision_id": "sha256:" + "a" * 64},
+        "world_deltas": [],
+        "provenance": {"source": "synthetic-test"},
+        "quality": {},
+    }
+
+
+def test_worldepisode_preflight_uses_one_local_contract():
+    result = preflight_worldepisode(
+        _canonical_worldepisode_record(),
+        expected_episode_id="episode-1",
+        expected_revision_id="sha256:" + "a" * 64,
+    )
     assert result.valid
-    assert result.profile in {
-        "benchstudio_minimal_worldepisode_profile",
-        "worldepisode_reference_validator",
-    }
+    assert result.profile == "benchstudio_worldepisode_contract_v1"
+    assert result.diagnostics == ()
 
 
-def test_worldepisode_strict_fallback_requires_semantic_contract():
-    result = preflight_worldepisode(
-        {"episode_id": "episode-1", "schema": "worldepisode"}, strict=True
-    )
-    assert result.valid is False
-    assert result.profile == "benchstudio_strict_worldepisode_profile"
+def test_worldepisode_preflight_rejects_legacy_flat_id_fields():
+    record = _canonical_worldepisode_record()
+    record["episode_id"] = record["episode"]["episode_id"]
+    record["revision_id"] = record["world_revision"]["world_revision_id"]
+    del record["episode"]
+    del record["world_revision"]
+    result = preflight_worldepisode(record)
+    assert not result.valid
+    assert result.profile == "benchstudio_worldepisode_contract_v1"
     assert {item["code"] for item in result.diagnostics} >= {
-        "missing_clock_graph",
-        "unbound_world_revision",
-        "missing_world_trace",
+        "missing_field", "unbound_world_revision", "missing_world_trace",
     }
 
 
-def test_worldepisode_strict_fallback_reports_malformed_nested_contracts():
-    result = preflight_worldepisode(
-        {
-            "episode_id": "episode-1",
-            "schema": "worldepisode",
-            "clock_graph": {
-                "clocks": [{"clock_id": "sim"}],
-                "mappings": [
-                    {
-                        "source_clock_id": "unknown",
-                        "target_clock_id": "sim",
-                        "drift_model": "linear",
-                        "estimated_error": -1,
-                    }
-                ],
-            },
-            "action_space": {"channels": [{"control_mode": "position"}]},
-            "world_revision": {"world_revision_id": "sha256:" + "a" * 64},
-            "world_deltas": {},
-            "provenance": {"source": "test"},
-            "quality": {},
-        },
-        strict=True,
-    )
-    assert result.valid is False
-    assert {item["code"] for item in result.diagnostics} >= {
-        "unknown_clock_reference",
-        "invalid_clock_uncertainty",
-        "incomplete_action_channel",
-        "invalid_world_trace",
-    }
-
-    malformed = preflight_worldepisode(
-        {
-            "episode_id": "episode-2",
-            "schema": "worldepisode",
-            "clock_graph": "not-a-mapping",
-            "action_space": [],
-            "world_deltas": [],
-            "provenance": [],
-            "quality": {},
-        },
-        strict=True,
-    )
-    assert malformed.valid is False
-    assert {item["code"] for item in malformed.diagnostics} >= {
-        "invalid_clock_graph",
-        "invalid_action_space",
-        "missing_provenance",
-    }
-
-
-def test_worldepisode_preflight_binds_frozen_identity_and_fails_closed_on_bad_payload():
+def test_worldepisode_preflight_fails_closed_on_bad_payload_and_identity_mismatch():
     mismatch = preflight_worldepisode(
-        {"episode_id": "episode-1", "schema": "worldepisode", "revision_id": "rev-1"},
+        _canonical_worldepisode_record(),
         expected_episode_id="episode-2",
-        expected_revision_id="rev-2",
+        expected_revision_id="sha256:" + "b" * 64,
     )
-    assert mismatch.valid is False
+    assert not mismatch.valid
     assert {item["code"] for item in mismatch.diagnostics} >= {
-        "episode_identity_mismatch",
-        "revision_identity_mismatch",
+        "episode_identity_mismatch", "revision_identity_mismatch",
     }
     invalid = preflight_worldepisode([], expected_episode_id="episode-1")
-    assert invalid.valid is False
-    assert invalid.profile == "benchstudio_invalid_worldepisode_profile"
-
-
-def test_worldepisode_preflight_accepts_canonical_nested_identity():
-    result = preflight_worldepisode(
-        {
-            "schema": "worldepisode",
-            "episode": {"episode_id": "episode-1"},
-            "world_revision": {"world_revision_id": "rev-1"},
-        },
-        expected_episode_id="episode-1",
-        expected_revision_id="rev-1",
-    )
-    assert result.valid is True
-    assert result.diagnostics == ()
+    assert not invalid.valid
+    assert invalid.profile == "benchstudio_worldepisode_contract_v1"
+    with pytest.raises(TypeError):
+        preflight_worldepisode(_canonical_worldepisode_record(), strict=True)
 
 
 def test_replay_conformance_reports_no_physics_coverage():

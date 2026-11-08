@@ -12,7 +12,7 @@ fail explicitly.
 
 For CLI integration, the factory provides add_cli_args(parser) and
 options_from_args(namespace). The unified CLI builds the same pipeline as Python.
-check() returns a preparation report with summary(), technical_ready and
+check() returns a preparation report with summary(), configuration_valid and
 execution_authorized kept separate. --check never calls run(). Scientific guards
 remain in the recipe. Factory imports execute trusted installed package code;
 initialization must remain lightweight.

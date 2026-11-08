@@ -4,13 +4,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from benchstudio.integrations import (
-    build_rectifier,
-    default_target_config,
-    rectification_disabled,
-    rectify_image,
-    resize_and_center_crop,
-)
+from benchstudio.integrations.alpabridge_image import build_rectifier, default_target_config, rectification_disabled, rectify_image, resize_and_center_crop
 
 
 @pytest.mark.parametrize("shape", [(320, 568), (300, 800), (1000, 1600)])

@@ -1,6 +1,6 @@
-# Specialist and compatibility workflow reference
+# Specialist workflows
 
-For the supported preview API, start with [the preview guide](research-preview.md).
+For the supported API, start with [the API guide](research-preview.md). These workflows are specialized and require their documented inputs and runtime dependencies.
 
 # BenchStudio
 
@@ -17,6 +17,9 @@ benchmark owns its scoring definition. Comparisons preserve that distinction.
 
 ```python
 import benchstudio as bs
+from benchstudio.analysis.claims import ClaimType
+from benchstudio.replay_worker import ReplayLimits
+from benchstudio.preparation import SourcePackage, check_imports
 
 system = bs.System.from_callable(lambda x: 2*x, name="example", revision="r1")
 benchmark = bs.Benchmark(
@@ -37,9 +40,9 @@ retained = bs.open_run("runs/example")
 This executes arithmetic functions, not a learned model or simulator. Evaluator
 authority defaults to false. Native adapters, checkpoints, state reset and
 benchmark qualification still need explicit setup. For researcher-owned inference, configure native objects or endpoints and bind
-their callables as described in [Native systems](https://github.com/amtellezfernandez/BenchStudio/blob/main/docs/native-systems.md). The
-optional [vLLM compatibility loader](https://github.com/amtellezfernandez/BenchStudio/blob/main/docs/vllm-backend.md) remains available with
-its pinned version and smaller option surface. Installed systems and benchmark recipes also resolve by name through
+their callables as described in [Native systems](https://github.com/amtellezfernandez/BenchStudio/blob/main/docs/native-systems.md). No
+provider-specific model loader is maintained in the core package. Installed
+systems and benchmark recipes resolve by name through
 `System.from_backend` and `Benchmark.load`. The [system evaluation
 guide](https://github.com/amtellezfernandez/BenchStudio/blob/main/docs/system-evaluation.md) covers the shared Python/CLI engine, dependency
 checks, result retention and backend packaging. Native qualification remains a
@@ -72,9 +75,9 @@ results = evaluation()
 
 The native function and its parameters remain under the researcher's control.
 The optional declaration is visible and retained with results; omitted settings
-are labeled opaque. It does not configure or certify the actual system. Model
-frameworks, including vLLM, are optional; native observations/actions and predictions
-are preserved. See
+are labeled opaque. It does not configure or certify the actual system. Any model
+framework can be configured by its owner; native observations, actions and
+predictions are preserved. See
 [working native-object and endpoint patterns](https://github.com/amtellezfernandez/BenchStudio/blob/main/docs/native-systems.md).
 
 ## Complete interactive evaluations
@@ -108,11 +111,10 @@ configuration checks do not qualify that stack. See [the integration guide](http
 The researcher does not implement a backend, manage a worker or call per-case
 methods. Integration authors have a separate [extension contract](https://github.com/amtellezfernandez/BenchStudio/blob/main/docs/execution-backends.md).
 
-## Compatibility API: robotics evaluation
+## Robotics evaluation pipeline
 
-The existing robotics adapter API accepts task, model, environment, seeds and
-evaluation conditions directly. This compatibility path remains available for
-registered robotics adapters:
+The robotics evaluation pipeline accepts task, model, environment, seeds and
+evaluation conditions directly for registered robotics adapters:
 
 ```python
 import benchstudio as bs
@@ -190,7 +192,7 @@ To inspect an existing run without executing it again:
 import benchstudio as bs
 
 audit = bs.pipeline(
-    "campaign-audit", claim_type=bs.ClaimType.SINGLE_RUN_OUTCOME
+    "campaign-audit", claim_type=ClaimType.SINGLE_RUN_OUTCOME
 )("runs/first-evaluation")
 print(audit.summary())
 ```
@@ -803,7 +805,7 @@ then run in a separate process using the same installed Python environment:
 pipeline = bs.pipeline("replay", source=
     "robopad_attempt.tar.gz",
     trusted_manifest_sha256=reviewed_manifest_sha256,
-    limits=bs.ReplayLimits(wall_seconds=300, cpu_seconds=240),
+    limits=ReplayLimits(wall_seconds=300, cpu_seconds=240),
 )
 result = pipeline.run()
 ```
@@ -857,8 +859,8 @@ qualification uses its own goal checker and outcome evidence.
 
 ### Preparing native programs
 
-Use `bs.SourcePackage` to verify declared source files before launching an external
-Python entry point and create reproducible source archives. Use `bs.check_imports`
+Use `SourcePackage` to verify declared source files before launching an external
+Python entry point and create reproducible source archives. Use `check_imports`
 for an explicit import diagnostic in a separate native interpreter, with retained
 logs and genuine failure exits. See [native preparation](https://github.com/amtellezfernandez/BenchStudio/blob/main/docs/native-preparation.md).
 These checks do not qualify a model or grant experimental execution permission.

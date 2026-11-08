@@ -25,13 +25,18 @@ and discovers its actual metadata entry point; check() reads existing fixture
 tasks and never invokes the agent or constructs a gym. It does not qualify
 Excalidraw's full optional dependency stack.
 
-verification.json records Python version, artifact hashes and outcomes; build.log
-retains command output. Wheel timestamps can differ; bit-for-bit reproducible
+The committed [0.1.0rc2 verification record](release-verification-0.1.0rc2.json)
+records Python version, artifact hashes, source hashes and outcomes. A local
+`build.log` retains the full command output. Wheel timestamps can differ; bit-for-bit reproducible
 builds across hosts are not claimed. The script publishes nothing and does not
 run simulators, GPUs, learned models or confirmation experiments.
 
-On 8 November 2026 the local candidate passed on Python 3.12.14. The selected
-source/integration suite passed 126 tests. This is not the complete repository
-suite or runtime verification on Python 3.10/3.11. Known external native
-qualification gaps remain listed in research-preview.md. Public release still
-needs the final rights/security review and owner authorization.
+On 8 November 2026 the local candidate passed the package checks on Python
+3.12.14. The installed Excalidraw integration was not supplied to this run, so
+its factory discovery and inert preparation check were not executed here. The
+offline source suite passed 88 tests; the selected public API suite passed 86;
+the selected URDF/world-episode suite passed 100. Those selections overlap and
+are not the complete repository suite. Python 3.10/3.11 runtime verification is
+pending. Known native qualification gaps remain listed in research-preview.md.
+Public release still needs the final rights/security review and owner
+authorization.

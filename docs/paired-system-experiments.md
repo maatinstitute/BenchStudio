@@ -8,8 +8,9 @@ synchronous stages must not block the event loop.
 
 ```python
 import benchstudio as bs
+from benchstudio.experimental import Workflow
 
-reference = bs.Workflow("agent-stack", "r1", stages={
+reference = Workflow("agent-stack", "r1", stages={
     "predictor": predictor_system,
     "planner": planner_system,
     "controller": controller_system,

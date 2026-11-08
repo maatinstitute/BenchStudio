@@ -4,9 +4,12 @@ BenchStudio owns trusted command execution and service lifetime management:
 
 ```python
 import benchstudio as bs
+from benchstudio.processes import ProcessCommand
+from benchstudio.processes import ProcessCommand
 
-check = bs.ProcessCommand("check", ("/env/bin/python", "check_inputs.py"), cwd="/project")
-check.run("/results/operator-logs")
+check = ProcessCommand("check", ("/env/bin/python", "check_inputs.py"), cwd="/project")
+receipt = check.execute("/results/operator-logs")
+print(receipt.receipt_path)
 ```
 
 `ProcessCommand` uses argv without a shell, streams stdout/stderr to files,
@@ -23,14 +26,14 @@ readiness, scoring, qualification and authorization. No automatic retry occurs.
 | Model-native interpreters and adapters | Native stack / RoboPAD recipe |
 | R22/R25, 400 pairs, 800 attempts, within-model analysis | RoboPAD |
 | Protocols A/E, parity, units, compiled counting, manifests, release hashes | RoboPAD |
-| `bs.RefinementWorkspace` | Optional compatibility adapter to the RoboPAD offline helper |
+| `benchstudio.refinement.RefinementWorkspace` | Optional module-level entry point to the RoboPAD offline helper |
 
 The paper's `experiments/run_r22r25.py` is a recipe using this generic engine.
 It must not move scientific rules into BenchStudio. It runs in BenchStudio's
 supported Python; children use the separately pinned SmolVLA/OpenPI interpreters.
 
 For a command that requires a service throughout execution, pass the owned
-process returned by the service context to `run(logs, required_service=process)`.
+process returned by the service context to `execute(logs, required_service=process)`.
 If it exits while the command is still running, the command is stopped and a
 ProcessFailure receipt is retained. The normal command timeout still applies.
 This monitors local process liveness, not semantic correctness or remote health.

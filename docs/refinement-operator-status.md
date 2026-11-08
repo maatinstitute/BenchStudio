@@ -50,8 +50,9 @@ from GitHub or manufacture host-native qualification evidence offline.
 
 ```python
 import benchstudio as bs
+from benchstudio.refinement import RefinementWorkspace
 
-status = bs.RefinementWorkspace("/path/to/paper-checkout").prepare()
+status = RefinementWorkspace("/path/to/paper-checkout").prepare()
 print(status.summary())
 ```
 

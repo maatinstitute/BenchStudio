@@ -1,6 +1,8 @@
 import asyncio
 import pytest
 import benchstudio as bs
+from benchstudio.async_execution import AgentGroup, ResourcePool
+from benchstudio.system_pipeline import SystemEvaluationPipeline
 
 
 def system(runtime, name="system"):
@@ -26,8 +28,9 @@ def test_bounded_overlap_and_stable_output_order():
             await asyncio.sleep(0)
             active -= 1
             return value
-        pipe = bs.SystemEvaluationPipeline(system=system(runtime), benchmark=benchmark())
-        run = await pipe.arun(concurrency=2)
+        pipe = bs.pipeline(system=system(runtime), benchmark=benchmark(),
+            config=bs.EvaluationConfig(concurrency=2))
+        run = await pipe.arun()
         assert peak == 2
         assert [t.trial_id for t in run.trials] == ["0", "1", "2", "3"]
         assert all(t.success for t in run.trials)
@@ -44,8 +47,8 @@ def test_resource_pool_serializes_agents_and_reducer_gets_named_outputs():
             await asyncio.sleep(0)
             active -= 1
             return value + 1
-        pool = bs.ResourcePool({"model": 1})
-        group = bs.AgentGroup({"a": system(agent), "b": system(agent)},
+        pool = ResourcePool({"model": 1})
+        group = AgentGroup({"a": system(agent), "b": system(agent)},
                               reducer=lambda results: sum(results.values()), concurrency=2,
                               pool=pool, resources={"a": ("model",), "b": ("model",)})
         assert await group(2) == 6
@@ -65,7 +68,7 @@ def test_failure_cancels_and_drains_siblings_before_returning():
                 await asyncio.Event().wait()
             finally:
                 cleaned.set()
-        group = bs.AgentGroup({"fail": system(fail), "block": system(block)},
+        group = AgentGroup({"fail": system(fail), "block": system(block)},
                               reducer=lambda x: x, concurrency=2)
         with pytest.raises(RuntimeError, match="agent failed"):
             await group(None)
@@ -75,15 +78,16 @@ def test_failure_cancels_and_drains_siblings_before_returning():
 
 def test_timeout_and_external_cancellation_release_resources():
     async def check():
-        pool = bs.ResourcePool({"slot": 1})
+        pool = ResourcePool({"slot": 1})
         entered = asyncio.Event()
         async def runtime(_):
             async with pool.lease(("slot",)):
                 entered.set()
                 await asyncio.Event().wait()
-        pipe = bs.SystemEvaluationPipeline(system=system(runtime), benchmark=benchmark(1))
+        pipe = bs.pipeline(system=system(runtime), benchmark=benchmark(1),
+            config=bs.EvaluationConfig(timeout=.01))
         with pytest.raises(asyncio.TimeoutError):
-            await pipe.arun(timeout=.01)
+            await pipe.arun()
         async with pool.lease(("slot",)):
             pass
         entered.clear()
@@ -99,7 +103,7 @@ def test_timeout_and_external_cancellation_release_resources():
 
 def test_cancelled_partial_resource_lease_does_not_leak():
     async def check():
-        pool = bs.ResourcePool({"a": 1, "b": 1})
+        pool = ResourcePool({"a": 1, "b": 1})
         async with pool.lease(("b",)):
             async def wait():
                 async with pool.lease(("a", "b")):
@@ -119,22 +123,22 @@ def test_cancelled_partial_resource_lease_does_not_leak():
 def test_async_runtime_requires_async_entrypoint():
     async def runtime(value):
         return value
-    pipe = bs.SystemEvaluationPipeline(system=system(runtime), benchmark=benchmark())
+    pipe = bs.pipeline(system=system(runtime), benchmark=benchmark())
     with pytest.raises(TypeError, match="arun"):
         pipe.run()
 
 
 def test_bad_limits_refused_before_runtime_calls():
     async def check():
-        pipe = bs.SystemEvaluationPipeline(system=system(lambda x: pytest.fail("called")),
+        pipe = bs.pipeline(system=system(lambda x: pytest.fail("called")),
                                            benchmark=benchmark())
         with pytest.raises(ValueError):
-            await pipe.arun(concurrency=0)
+            bs.EvaluationConfig(concurrency=0)
         for timeout in (0, float("nan"), True):
             with pytest.raises(ValueError):
-                await pipe.arun(timeout=timeout)
+                bs.EvaluationConfig(timeout=timeout)
         with pytest.raises(ValueError, match="unknown resource"):
-            async with bs.ResourcePool({"x": 1}).lease(("missing",)):
+            async with ResourcePool({"x": 1}).lease(("missing",)):
                 pass
     asyncio.run(check())
 
@@ -152,7 +156,7 @@ def test_async_scorer_and_security_controls():
             await asyncio.sleep(0)
             return bs.Score(value == target)
         data = bs.Benchmark("async-score", "r1", [1], [1], scorer, "r1")
-        pipe = bs.SystemEvaluationPipeline(system=system(lambda x: x), benchmark=data)
+        pipe = bs.pipeline(system=system(lambda x: x), benchmark=data)
         assert (await pipe.arun()).trials[0].success is True
         with pytest.raises(TypeError, match="async scorers"):
             pipe.run()
@@ -161,7 +165,7 @@ def test_async_scorer_and_security_controls():
 
 def test_nested_resource_lease_refuses_instead_of_deadlocking():
     async def check():
-        pool = bs.ResourcePool({"model": 1})
+        pool = ResourcePool({"model": 1})
         async with pool.lease(("model",)):
             with pytest.raises(RuntimeError, match="nested"):
                 async with pool.lease(("model",)):

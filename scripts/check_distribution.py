@@ -4,10 +4,10 @@ from email.parser import BytesParser
 import hashlib
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tarfile
-import tempfile
 import venv
 import zipfile
 
@@ -36,11 +36,22 @@ def main():
     extracted.mkdir()
     with tarfile.open(sdist) as archive:
         # Only extract regular files/directories from our own freshly built artifact.
-        for member in archive.getmembers():
+        members = archive.getmembers()
+        for member in members:
             target = (extracted / member.name).resolve()
             if not target.is_relative_to(extracted) or not (member.isfile() or member.isdir()):
                 raise ValueError("unsafe distribution member")
-        archive.extractall(extracted)
+        for member in members:
+            target = extracted / member.name
+            if member.isdir():
+                target.mkdir(parents=True, exist_ok=True)
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            source_file = archive.extractfile(member)
+            if source_file is None:
+                raise ValueError("distribution member has no file data")
+            with source_file, target.open("wb") as destination:
+                shutil.copyfileobj(source_file, destination)
     source = next(extracted.iterdir())
     for required in ("LICENSE", "CONTRIBUTING.md", "docs/research-preview.md",
                      "docs/distribution-verification.md", "examples/research_preview.py"):
@@ -57,9 +68,11 @@ def main():
         with zipfile.ZipFile(wheel) as archive:
             names = archive.namelist()
             metadata = BytesParser().parsebytes(archive.read(next(n for n in names if n.endswith(".dist-info/METADATA"))))
-            assert metadata["Version"] == "0.1.0rc1"
+            assert metadata["Version"] == "0.1.0rc2"
             assert metadata.get_all("License-File") and any(n.endswith("/LICENSE") for n in names)
-            assert "benchstudio/results.py" in names and "benchstudio/compat.py" in names
+            assert "benchstudio/results.py" in names
+            assert "benchstudio/compat.py" not in names
+            assert "benchstudio/vllm_backend.py" not in names
             assert not any(n.startswith(("tests/", "experiments/")) for n in names)
         environment = output / (label + "-env")
         venv.EnvBuilder(with_pip=True).create(environment)
@@ -76,7 +89,15 @@ def main():
              "assert len(bs.__all__)==15; "
              "assert all(hasattr(bs,n) for n in bs.__all__); "
              "assert 'site-packages' in bs.__file__; "
-             "assert bs.__version__=='0.1.0rc1'"], empty)
+             "import benchstudio.integrations as integrations; "
+             "assert bs.__version__=='0.1.0rc2'; "
+             "assert 'ProcessCommand' not in bs.__all__; assert not hasattr(bs,'ProcessCommand'); "
+             "assert not hasattr(bs,'__getattr__'); "
+             "assert not hasattr(integrations,'__getattr__'); "
+             "assert not hasattr(integrations,'FixedReference'); "
+             "assert not hasattr(bs.System,'from_pretrained'); "
+             "assert not hasattr(bs.Benchmark,'from_pretrained'); "
+             "assert 'benchstudio.vllm_backend' not in __import__('sys').modules"], empty)
         if integration_wheel is not None:
             run([python, "-m", "pip", "install", "--no-index", "--no-deps", integration_wheel], output)
             plugin_check = empty / "plugin_check.py"
@@ -108,7 +129,7 @@ print('Installed Excalidraw factory discovery and inert check passed; native exe
         "CONTRIBUTING.md", "MANIFEST.in", "CHANGELOG.md", "scripts/check_distribution.py",
         "examples/research_preview.py", "docs/research-preview.md",
         "docs/distribution-verification.md", "docs/public-release-readiness.md",
-        "docs/legacy-workflows.md", "docs/source-attribution.md")]
+        "docs/specialist-workflows.md", "docs/source-attribution.md")]
     source_hashes = {p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                      for p in sorted(bound_files)}
     report = {"python": sys.version, "artifacts": verified, "source_sha256": source_hashes,

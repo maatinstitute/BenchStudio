@@ -7,7 +7,7 @@ def build(runtime, config=None):
     system = bs.System.from_callable(runtime, name="composed-agent", revision="r1")
     benchmark = bs.Benchmark("task", "data-r1", [1, 2], [2, 4],
                              lambda output, target: bs.Score(output == target), "scorer-r1")
-    return bs.pipeline("system-evaluation", system=system, benchmark=benchmark, config=config)
+    return bs.pipeline("evaluate", system=system, benchmark=benchmark, config=config)
 
 
 def test_shared_engine_is_inert_and_preserves_trial_identity():

@@ -229,6 +229,9 @@ def _validate_worldepisode_binding(spec: dict[str, Any]) -> None:
         return
     if not isinstance(binding, dict):
         raise ValueError("worldepisode must be a mapping")
+    unsupported = set(binding) - {"record", "expected_episode_id", "expected_revision_id"}
+    if unsupported:
+        raise ValueError("unsupported worldepisode fields: " + ", ".join(sorted(unsupported)))
     record = binding.get("record")
     if not isinstance(record, dict):
         raise ValueError("worldepisode.record must be a mapping")
@@ -238,10 +241,6 @@ def _validate_worldepisode_binding(spec: dict[str, Any]) -> None:
         value = binding.get(field)
         if value is not None and (not isinstance(value, str) or not value):
             raise ValueError(f"worldepisode.{field} must be a non-empty string")
-    for field in ("require_reference", "strict"):
-        value = binding.get(field, False)
-        if not isinstance(value, bool):
-            raise ValueError(f"worldepisode.{field} must be boolean")
 
 
 def _validate_resource_budget(evaluation: dict[str, Any]) -> None:

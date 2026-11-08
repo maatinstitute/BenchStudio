@@ -1,8 +1,8 @@
 # Evaluate a system
 
 The canonical task is `evaluate`, shared by `bs.pipeline()` and `benchstudio evaluate`.
-`system-evaluation` and `Benchmark.from_pretrained` remain compatibility aliases;
-new code uses `bs.pipeline(system=..., benchmark=...)` and `Benchmark.load(...)`.
+Use the single `evaluate` task through `bs.pipeline(system=..., benchmark=...)` and
+`Benchmark.load(...)`. There are no task-name or loader aliases.
 
 The researcher supplies a System, a Benchmark and an EvaluationConfig. The same
 EvaluationEngine performs requirement checks, scalar/batched/async execution,
@@ -54,11 +54,9 @@ results = evaluation.run()
 team.swarm and team.task are illustrative installed plugin names, not bundled
 benchmarks. No arbitrary repository code is downloaded or guessed. Missing or
 ambiguous entry points and returned identity mismatches fail explicitly.
-System.from_pretrained(model_id, revision=full_commit, backend="vllm") retains the
-existing lazy upstream vLLM integration. Other pretrained backend names resolve
-through the installed system entry-point group with model/revision/generation
-options forwarded to their factory. There is no universal VLA/WAM checkpoint
-loader: those backends must implement their own native input/action contract.
+There is no universal checkpoint loader. Configure a model or composed system
+with its own native API, then bind its callable with `System.from_callable`, or
+install a named system backend that implements its own input/action contract.
 
 Backend authors register trusted factories in their package's pyproject.toml:
 
@@ -72,15 +70,14 @@ Backend authors register trusted factories in their package's pyproject.toml:
 
 The system factory returns bs.System; the benchmark factory returns bs.Benchmark.
 Both receive revision and must preserve the requested identity. Factories should
-be lightweight; defer heavy runtime/model construction to execution, as the
-built-in vLLM backend does. Loading an installed factory executes trusted package
+be lightweight; defer heavy runtime/model construction to execution. Loading an installed factory executes trusted package
 code, so BenchStudio cannot guarantee third-party factories are side-effect-free.
 No extra script is required from the researcher using an installed recipe.
 
 A runtime may declare requirements={"distribution-name": "exact-version"} (or
-None for any installed version). check() inspects distribution metadata without
-importing those dependencies. vLLM declares its supported exact version. Missing
-or mismatched requirements stop execution before the runtime/model loader. This
+None for any installed version). `check()` inspects distribution metadata without
+importing those dependencies. Missing or mismatched requirements stop execution
+before the runtime/model loader. This
 checks the controlling Python environment; an external-process backend owns its
 native-interpreter, assets, renderer and checkpoint verification. BenchStudio does
 not silently install packages or rewrite existing environments.
@@ -102,13 +99,10 @@ benchstudio evaluate --system team.swarm --system-revision system-commit \
   --run-id comparison --output runs/comparison
 ```
 
-Use --backend vllm with --system model_id for the built-in pretrained text path.
-Use --batch-size for batched runtimes, or --async --concurrency N --timeout S for
-cooperative async systems. The CLI constructs the same System, Benchmark and
-EvaluationConfig and calls the same pipeline as Python. It has no parallel runner.
-The existing benchstudio-run command retains the legacy campaign CLI. Existing
-robotics-evaluation/campaign APIs remain compatibility paths with their own
-scientific accounting; they are not reinterpreted as generic system trials.
+Use `--batch-size` for batched runtimes, or `--async --concurrency N --timeout S`
+for cooperative async systems. The CLI constructs the same System, Benchmark and
+EvaluationConfig as Python. Specialized robotics and campaign interfaces retain
+their own scientific accounting; they are separate from generic system trials.
 
 ## Retained results and interpretation
 
@@ -119,7 +113,7 @@ exception propagates and records execution_failed; no scientific outcome is
 invented. A missing manifest makes partial output unreadable as a completed run.
 open_run verifies evidence file hashes before returning results.
 
-check().configuration_valid is static compatibility, not native qualification;
+`check().configuration_valid` is static configuration validation, not native qualification;
 check().native_verified stays false. Installed dependency metadata and declared
 revisions do not prove checkpoint integrity, simulator determinism, correct action
 units, evaluator validity or scientific release. Those remain properties of the

@@ -1,12 +1,18 @@
 import json
 import pytest
 import benchstudio as bs
+from benchstudio.system_ablations import audit_ablation
+from benchstudio.system_comparison import compare_system_runs
+from benchstudio.system_evidence import SystemRun, Trial, TrialKey
+from benchstudio.system_importers import import_inspect_robots
+from benchstudio.system_spec import Component, SystemSpec
+from benchstudio.system_trace import audit_system_trace
 
 
 def spec(revision="r1"):
-    return bs.SystemSpec("composite", revision, (
-        bs.Component("world", "world_model", "latent-wm", revision),
-        bs.Component("agent", "agent", "planner", "stable"),
+    return SystemSpec("composite", revision, (
+        Component("world", "world_model", "latent-wm", revision),
+        Component("agent", "agent", "planner", "stable"),
     ))
 
 
@@ -33,20 +39,20 @@ def import_run(path, system, **override):
         score_key="progress", trust_grader=True,
     )
     kwargs.update(override)
-    return bs.import_inspect_robots(path, **kwargs)
+    return import_inspect_robots(path, **kwargs)
 
 
 def test_public_api_compares_composed_world_model_systems():
     a, b = spec(), spec("r2")
-    assert bs.audit_ablation(a, b, allowed_components=("world",)).structurally_isolated
-    assert bs.audit_system_trace(a, []).unobserved_connections == ()
-    k = bs.TrialKey("task", "v1", "scene", "nominal", 42, 0,
+    assert audit_ablation(a, b, allowed_components=("world",)).structurally_isolated
+    assert audit_system_trace(a, []).unobserved_connections == ()
+    k = TrialKey("task", "v1", "scene", "nominal", 42, 0,
                     "rig-v1", "a"*64, "grader", "v3")
-    ar = bs.SystemRun("a", a, (bs.Trial("t1", k, a.digest, "completed", True,
+    ar = SystemRun("a", a, (Trial("t1", k, a.digest, "completed", True,
                                       "declared", True),))
-    br = bs.SystemRun("b", b, (bs.Trial("t1", k, b.digest, "completed", False,
+    br = SystemRun("b", b, (Trial("t1", k, b.digest, "completed", False,
                                       "declared", True),))
-    result = bs.compare_system_runs(ar, br)
+    result = compare_system_runs(ar, br)
     assert result.valid_binary_pairs == 1
     assert result.paired_success.success_gap_b_minus_a == -1
 

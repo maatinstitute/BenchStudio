@@ -32,5 +32,8 @@ def _main(argv=None):
     result = evaluation.check() if args.check else evaluation.run()
     print(result.summary())
     if args.check:
-        return 0 if result.technical_ready and getattr(result, "execution_authorized", None) is not False else 1
+        configuration_valid = getattr(result, "configuration_valid", None)
+        if type(configuration_valid) is not bool:
+            raise TypeError("recipe check must expose configuration_valid")
+        return 0 if configuration_valid and getattr(result, "execution_authorized", None) is not False else 1
     return 0 if getattr(result, "successful", None) is not False else 1

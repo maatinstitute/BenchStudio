@@ -2,11 +2,7 @@ import json
 
 import pytest
 
-from benchstudio.integrations import (
-    AlpaBridgeTelemetryWriter,
-    load_alpabridge_telemetry,
-    route_arc_length_m,
-)
+from benchstudio.integrations.alpabridge import AlpaBridgeTelemetryWriter, load_alpabridge_telemetry, route_arc_length_m
 
 
 def _row(event: str, **fields):

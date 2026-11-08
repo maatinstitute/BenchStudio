@@ -72,12 +72,17 @@ def test_campaign_executor_preflights_frozen_nested_worldepisode_binding(tmp_pat
         protocol={
             "worldepisode": {
                 "record": {
-                    "schema": "worldepisode",
+                    "schema": "worldepisode.v1",
                     "episode": {"episode_id": "episode-1"},
-                    "world_revision": {"world_revision_id": "rev-1"},
+                    "clock_graph": {"clocks": [{"clock_id": "sim"}], "mappings": []},
+                    "action_space": {"channels": []},
+                    "world_revision": {"world_revision_id": "sha256:" + "a" * 64},
+                    "world_deltas": [],
+                    "provenance": {"source": "test"},
+                    "quality": {},
                 },
                 "expected_episode_id": "episode-1",
-                "expected_revision_id": "rev-1",
+                "expected_revision_id": "sha256:" + "a" * 64,
             }
         },
     ).freeze()
@@ -96,12 +101,17 @@ def test_campaign_executor_rejects_invalid_frozen_worldepisode_binding(tmp_path)
         protocol={
             "worldepisode": {
                 "record": {
-                    "schema": "worldepisode",
+                    "schema": "worldepisode.v1",
                     "episode": {"episode_id": "episode-1"},
-                    "world_revision": {"world_revision_id": "rev-1"},
+                    "clock_graph": {"clocks": [{"clock_id": "sim"}], "mappings": []},
+                    "action_space": {"channels": []},
+                    "world_revision": {"world_revision_id": "sha256:" + "a" * 64},
+                    "world_deltas": [],
+                    "provenance": {"source": "test"},
+                    "quality": {},
                 },
                 "expected_episode_id": "episode-2",
-                "expected_revision_id": "rev-1",
+                "expected_revision_id": "sha256:" + "a" * 64,
             }
         },
     ).freeze()

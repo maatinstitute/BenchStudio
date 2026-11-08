@@ -1,5 +1,7 @@
 import pytest
 import benchstudio as bs
+from benchstudio.system_comparison import compare_system_runs
+from benchstudio.system_pipeline import SystemEvaluationPipeline
 
 
 def benchmark(**kwargs):
@@ -17,12 +19,12 @@ def test_callable_agent_pipeline_is_inert_until_called_and_pairs_revisions():
     a = bs.System.from_callable(composed, name="agent-with-world-model", revision="a")
     b = bs.System.from_callable(lambda x: x, name="agent-with-world-model", revision="b")
     data = benchmark(authoritative=True)
-    pipe = bs.pipeline("system-evaluation", system=a, benchmark=data)
+    pipe = bs.pipeline("evaluate", system=a, benchmark=data)
     assert calls == []
     baseline = pipe()
-    candidate = bs.pipeline("system-evaluation", system=b, benchmark=data)()
+    candidate = bs.pipeline("evaluate", system=b, benchmark=data)()
     assert calls == [1, 2]
-    comparison = bs.compare_system_runs(baseline, candidate)
+    comparison = compare_system_runs(baseline, candidate)
     assert comparison.valid_binary_pairs == 2
     assert comparison.paired_success.success_gap_b_minus_a == -1
 
@@ -32,7 +34,7 @@ def test_world_model_numeric_metrics_do_not_become_binary_outcomes():
                         lambda output, target: bs.Score(metrics={"error": abs(output-target)}),
                         evaluator_revision="absolute-error-r1")
     system = bs.System.from_callable(lambda x: x+1, name="forecast-model", revision="r1")
-    trial = bs.SystemEvaluationPipeline(system=system, benchmark=data)().trials[0]
+    trial = bs.pipeline(system=system, benchmark=data)().trials[0]
     assert trial.metrics == {"error": 1}
     assert trial.success is None
     assert not trial.valid_success
@@ -43,13 +45,13 @@ def test_execution_error_propagates_instead_of_becoming_task_failure():
         raise RuntimeError("runtime failed")
     system = bs.System.from_callable(broken, name="agent", revision="r1")
     with pytest.raises(RuntimeError, match="runtime failed"):
-        bs.SystemEvaluationPipeline(system=system, benchmark=benchmark())()
+        bs.pipeline(system=system, benchmark=benchmark())()
 
 
 def test_benchmark_validated_before_execution_and_authority_is_explicit():
     with pytest.raises(ValueError, match="equal nonempty"):
         bs.Benchmark("t", "r", [], [], lambda a,b: bs.Score(), "r")
     system = bs.System.from_callable(lambda x: x*2, name="model", revision="r1")
-    run = bs.SystemEvaluationPipeline(system=system, benchmark=benchmark())()
+    run = bs.pipeline(system=system, benchmark=benchmark())()
     assert run.trials[0].success is True
     assert not run.trials[0].valid_success
