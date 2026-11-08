@@ -1,7 +1,7 @@
 """Python-first evaluation of callable models, agents and composed systems."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import hashlib
 from functools import cached_property
 from typing import Any, Callable, Sequence, Mapping
@@ -111,23 +111,53 @@ class Score:
 
 @dataclass(frozen=True)
 class Benchmark:
-    """An in-memory dataset and independent scorer, with pinned identities.
+    """An offline dataset/scorer or a complete executable native protocol.
 
-    Reuse this object for paired comparisons. Revision must identify the
-    dataset and scoring definition; these declarations are not attestations.
+    Protocol mode owns its experimental calendar, native execution and outcome
+    semantics. Offline identities remain compatible. Declared revisions and
+    calendar hashes are not native qualification or execution authorization.
     """
     name: str
     revision: str
-    inputs: Sequence[Any]
-    targets: Sequence[Any]
-    scorer: Callable[[Any, Any], Score]
-    evaluator_revision: str
+    inputs: Sequence[Any] = ()
+    targets: Sequence[Any] = ()
+    scorer: Callable[[Any, Any], Score] | None = None
+    evaluator_revision: str | None = None
     environment_revision: str = "offline"
     authoritative: bool = False
+    protocol: Any = field(default=None, repr=False, compare=False)
+    _cases: tuple = field(default=(), init=False, repr=False)
+    _supports_retries: bool = field(default=False, init=False, repr=False)
 
     def __post_init__(self):
         object.__setattr__(self, "inputs", tuple(self.inputs))
         object.__setattr__(self, "targets", tuple(self.targets))
+        if self.protocol is not None:
+            from .backends import BenchmarkCase
+            if self.inputs or self.targets or self.scorer is not None:
+                raise ValueError("provide an executable protocol or offline inputs/targets/scorer, not both")
+            if not callable(getattr(self.protocol, "bind", None)):
+                raise TypeError("benchmark protocol requires bind()")
+            cases = tuple(self.protocol.cases)
+            if not cases or any(not isinstance(case, BenchmarkCase) for case in cases):
+                raise ValueError("protocol cases must be a nonempty sequence of BenchmarkCase")
+            if len({case.case_id for case in cases}) != len(cases):
+                raise ValueError("duplicate benchmark case identity")
+            for label in ("name", "revision", "evaluator_revision", "environment_revision"):
+                if not isinstance(getattr(self, label), str) or not getattr(self, label).strip():
+                    raise ValueError(label + " must be nonempty")
+            if self.environment_revision == "offline":
+                raise ValueError("an executable protocol must declare its execution environment revision")
+            if type(self.authoritative) is not bool:
+                raise TypeError("authoritative must be boolean")
+            if self.authoritative:
+                raise ValueError("protocol outcome authority belongs to the native evaluator")
+            retryable = getattr(self.protocol, "supports_retries", False)
+            if type(retryable) is not bool:
+                raise TypeError("protocol supports_retries must be boolean")
+            object.__setattr__(self, "_cases", cases)
+            object.__setattr__(self, "_supports_retries", retryable)
+            return
         if not self.inputs or len(self.inputs) != len(self.targets):
             raise ValueError("benchmark requires equal nonempty inputs and targets")
         if not callable(self.scorer):
@@ -153,8 +183,44 @@ class Benchmark:
         """Compatibility alias for Benchmark.load()."""
         return cls.load(name, revision=revision, **options)
 
+    @property
+    def cases(self):
+        """Frozen experimental units, supplied by an executable protocol."""
+        return self._cases
+
+    @property
+    def supports_retries(self):
+        return self._supports_retries
+
+    @cached_property
+    def execution_groups(self):
+        from types import MappingProxyType
+        groups = {}
+        for case in self._cases:
+            groups.setdefault(case.execution_id, []).append(case.case_id)
+        return MappingProxyType({execution: tuple(units) for execution, units in groups.items()})
+
+    @property
+    def execution_ids(self):
+        return tuple(self.execution_groups)
+
+    def describe(self):
+        return {"schema": "benchstudio.benchmark.v1", "name": self.name, "revision": self.revision,
+                "mode": "protocol" if self.protocol is not None else "offline",
+                "evaluator_revision": self.evaluator_revision, "environment_revision": self.environment_revision,
+                "protocol_digest": self.protocol_digest,
+                "case_count": len(self._cases) if self.protocol is not None else len(self.inputs),
+                "execution_ids": list(self.execution_ids), "supports_retries": self._supports_retries,
+                "cases": [case.to_dict() for case in self._cases]}
+
     @cached_property
     def protocol_digest(self):
+        if self.protocol is not None:
+            return hashlib.sha256(_canonical({
+                "task": self.name, "revision": self.revision,
+                "evaluator_revision": self.evaluator_revision, "environment_revision": self.environment_revision,
+                "design": "native-protocol-v1", "supports_retries": self._supports_retries, "cases": [case.to_dict() for case in self._cases],
+            })).hexdigest()
         return hashlib.sha256(_canonical({
             "task": self.name, "revision": self.revision,
             "evaluator_revision": self.evaluator_revision,
@@ -163,6 +229,8 @@ class Benchmark:
         })).hexdigest()
 
     def key(self, index):
+        if self.protocol is not None:
+            raise TypeError("protocol outcomes retain their native identities; they are not offline scorer rows")
         return TrialKey(self.name, self.revision, str(index), "nominal", 0, 0,
                         self.environment_revision, self.protocol_digest,
                         self.name + "/scorer", self.evaluator_revision)
@@ -174,6 +242,7 @@ from .evaluation_engine import EvaluationEngine
 class SystemEvaluationPipeline(EvaluationEngine):
     """Task-oriented facade of the shared evaluation engine.
 
-    Construction and check() are inert. run()/arun() execute the declared system
-    and independent scorer. Backend loading is owned by the System runtime.
+    Construction and check() are inert. Offline mode executes the declared
+    callable/scorer; executable benchmarks bind their native protocol instead.
+    Both paths use the existing engine and retain their own outcome semantics.
     """
