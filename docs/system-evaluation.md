@@ -1,5 +1,9 @@
 # Evaluate a system
 
+The canonical task is `evaluate`, shared by `bs.pipeline()` and `benchstudio evaluate`.
+`system-evaluation` and `Benchmark.from_pretrained` remain compatibility aliases;
+new code uses `bs.pipeline(system=..., benchmark=...)` and `Benchmark.load(...)`.
+
 The researcher supplies a System, a Benchmark and an EvaluationConfig. The same
 EvaluationEngine performs requirement checks, scalar/batched/async execution,
 independent scoring and evidence retention for both Python and the CLI.
@@ -14,7 +18,7 @@ benchmark = bs.Benchmark(
     evaluator_revision="exact-r1",
 )
 evaluation = bs.pipeline(
-    "system-evaluation", system=system, benchmark=benchmark,
+    system=system, benchmark=benchmark,
     config=bs.EvaluationConfig(run_id="example", output_dir="runs/example"),
 )
 check = evaluation.check()  # configuration + installed dependency metadata only
@@ -38,9 +42,9 @@ adapter. Researchers select it by installed name, not by Python source filename:
 import benchstudio as bs
 
 system = bs.System.from_backend("team.swarm", revision="system-commit")
-benchmark = bs.Benchmark.from_pretrained("team.task", revision="dataset-and-scorer-commit")
+benchmark = bs.Benchmark.load("team.task", revision="dataset-and-scorer-commit")
 evaluation = bs.pipeline(
-    "system-evaluation", system=system, benchmark=benchmark,
+    system=system, benchmark=benchmark,
     config=bs.EvaluationConfig(run_id="comparison", output_dir="runs/comparison"),
 )
 print(evaluation.check())
@@ -121,3 +125,8 @@ revisions do not prove checkpoint integrity, simulator determinism, correct acti
 units, evaluator validity or scientific release. Those remain properties of the
 native backend and experimental protocol. This change does not authorize or run
 Warren's E0, parity checks or R22/R25 confirmation campaign.
+
+
+For the actual Refinement/Refresh operator status and division of work, see
+[the Warren handoff](refinement-operator-status.md). Generic installed-backend
+examples do not imply that SmolVLA or pi0.5 recipes are already installed.

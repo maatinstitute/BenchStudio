@@ -91,7 +91,7 @@ class Benchmark:
         self.key(0)
 
     @classmethod
-    def from_pretrained(cls, name, *, revision, **options):
+    def load(cls, name, *, revision, **options):
         """Load a trusted installed benchmark recipe with pinned dataset/scorer identity."""
         from .backend_loading import load_backend
         result = load_backend("benchstudio.benchmarks", name)(revision=revision, **options)
@@ -100,6 +100,11 @@ class Benchmark:
         if result.revision != revision:
             raise ValueError("benchmark factory returned a different revision")
         return result
+
+    @classmethod
+    def from_pretrained(cls, name, *, revision, **options):
+        """Compatibility alias for Benchmark.load()."""
+        return cls.load(name, revision=revision, **options)
 
     @cached_property
     def protocol_digest(self):

@@ -21,7 +21,7 @@ benchmark = bs.Benchmark(
     evaluator_revision="exact-match-r1",
 )
 evaluation = bs.pipeline(
-    "system-evaluation", system=system, benchmark=benchmark,
+    system=system, benchmark=benchmark,
     config=bs.EvaluationConfig(run_id="example", output_dir="runs/example"),
 )
 print(evaluation.check())
@@ -35,7 +35,7 @@ authority defaults to false. Native adapters, checkpoints, state reset and
 benchmark qualification still need explicit setup. Supported text models can
 load through the optional [vLLM backend](docs/vllm-backend.md), with pinned model
 and tokenizer revisions and explicit batched inference. Installed systems and benchmark recipes also resolve by name through
-`System.from_backend` and `Benchmark.from_pretrained`. The [system evaluation
+`System.from_backend` and `Benchmark.load`. The [system evaluation
 guide](docs/system-evaluation.md) covers the shared Python/CLI engine, dependency
 checks, result retention and backend packaging. Native qualification remains a
 separate requirement.
