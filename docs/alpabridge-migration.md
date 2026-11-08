@@ -11,7 +11,8 @@ import benchstudio as bs
 
 evaluation = bs.pipeline(
     "alpasim", model="route_following", alpasim_root="/opt/alpasim",
-    output_dir="runs/alpasim-batch", scene_ids=("YOUR_INSTALLED_SCENE_ID",),
+    config=bs.EvaluationConfig(run_id="driving", output_dir="runs/alpasim-batch"),
+    scene_ids=("YOUR_INSTALLED_SCENE_ID",),
 )
 print(evaluation.check().summary())
 results = evaluation.run()  # explicit native execution
@@ -46,3 +47,32 @@ Installed pipeline CLI reports may omit `execution_authorized` when that concept
 does not apply. An explicit `False` still blocks a check; paper recipes retain their
 own explicit permission gates. A result with `successful=False` produces a nonzero
 CLI exit so a partial native batch cannot be reported as a successful CLI run.
+
+## Shared configuration and retained native results
+
+The AlpaSim integration now consumes `EvaluationConfig` and returns the common
+`EvaluationCheck`. `configuration_valid` is static only; `technical_ready` is a
+compatibility alias for installed recipes. `summary()` explains pending native
+verification. AlpaSim rejects unsupported batching/concurrency instead of ignoring
+those options. The system and AlpaSim CLIs accept `--output-dir` and the existing
+`--output` alias.
+
+Native metrics, their coverage counts, failure taxonomy and claim boundaries are
+available directly on the returned AlpaBridge result. They are computed by its
+existing batch summary, not a BenchStudio substitute scoring function:
+
+```python
+print(results.metrics)
+print(results.audit["failure_taxonomy"])
+results = bs.open_run("runs/alpasim-batch", backend="alpasim")
+print(results.summary())
+```
+
+`open_run` resolves the explicitly selected installed pipeline's `open_run` reader.
+It does not create a pipeline instance or execute its `run()` method. Without a
+backend it still verifies the original system-run manifest and digests. Native
+readers own their native evidence checks; selecting one does not add system-run
+signature or digest guarantees. AlpaBridge reconstructs its existing offline
+summary and does not rewrite evidence. Full scene completion is exposed separately
+from acceptance by the native sensor/route/provenance audit; neither establishes
+scientific qualification or task success.

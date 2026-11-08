@@ -50,6 +50,17 @@ class EvaluationCheck:
     mode: str
     native_verified: bool = False
 
+    @property
+    def technical_ready(self):
+        """Compatibility for installed recipes; configuration is not qualification."""
+        return self.configuration_valid
+
+    def summary(self):
+        if self.issues:
+            return "\n".join(self.issues)
+        return (f"Configuration ready: {self.cases} cases ({self.mode}). "
+                "Native execution and scientific qualification remain unverified.")
+
 
 class EvaluationEngine:
 

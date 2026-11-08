@@ -27,7 +27,7 @@ def _main(argv=None):
     parser.add_argument("--benchmark", required=True, help="Installed benchmark recipe name")
     parser.add_argument("--benchmark-revision", required=True)
     parser.add_argument("--run-id", default="evaluation")
-    parser.add_argument("--output", type=Path, default=Path("runs/evaluation"))
+    parser.add_argument("--output-dir", "--output", dest="output", type=Path, default=Path("runs/evaluation"))
     parser.add_argument("--batch-size", type=int)
     parser.add_argument("--concurrency", type=int, default=1)
     parser.add_argument("--timeout", type=float)

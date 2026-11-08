@@ -191,8 +191,22 @@ def _digest_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def open_run(root: str | Path) -> SystemRun:
-    """Read trusted-format evidence without rerunning or re-scoring the system."""
+def open_run(root: str | Path, *, backend: str | None = None):
+    """Read retained results without executing a system.
+
+    Explicit backend selection delegates native result interpretation to the
+    installed pipeline. Default system-run digest verification is unchanged.
+    """
+    if backend is not None:
+        from .backend_loading import load_backend
+        factory = load_backend("benchstudio.pipelines", backend)
+        reader = getattr(factory, "open_run", None)
+        if not callable(reader):
+            raise TypeError(f"pipeline {backend!r} does not support reading retained results")
+        result = reader(Path(root))
+        if not callable(getattr(result, "summary", None)):
+            raise TypeError("native result reader must return a result with summary()")
+        return result
     root = Path(root)
     manifest = json.loads(_file(root, "manifest.json").read_text(encoding="utf-8"))
     if manifest.get("schema") != "benchstudio.system_run.v1" or set(manifest) != {
