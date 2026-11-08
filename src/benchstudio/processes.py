@@ -16,8 +16,20 @@ if TYPE_CHECKING:
     from .preparation import SourcePackage
 
 
+@dataclass(frozen=True)
+class ProcessResult:
+    """Structured execution receipt; exit status is not a scientific outcome."""
+    returncode: int | None
+    receipt_path: Path
+    stdout_path: Path
+    stderr_path: Path
+    duration: float
+
+
 class ProcessFailure(RuntimeError):
-    pass
+    def __init__(self, *args, result=None):
+        super().__init__(*args)
+        self.result = result
 
 
 def _stop(process):
@@ -105,6 +117,33 @@ class ProcessCommand:
                             'reason': reason}, stream, indent=2)
 
     def run(self, log_dir, *, required_service=None):
+        """Compatibility API returning the receipt path; nonzero exits raise."""
+        return self.execute(log_dir, required_service=required_service).receipt_path
+
+    def _result(self, log_dir):
+        root = Path(log_dir)
+        receipt = root / (self.name + '.receipt.json')
+        record = json.loads(receipt.read_text())
+        return ProcessResult(record['exit_code'], receipt,
+            root / (self.name + '.stdout.log'), root / (self.name + '.stderr.log'),
+            record['finished_unix'] - record['started_unix'])
+
+    def execute(self, log_dir, *, check=True, required_service=None):
+        """Return typed results, optionally leaving nonzero-exit handling to the caller.
+
+        Timeouts and required-service loss always raise; no retries are added.
+        ProcessFailure.result retains the terminated process's receipt.
+        """
+        if type(check) is not bool:
+            raise TypeError('check must be boolean')
+        try:
+            self._execute(log_dir, check=check, required_service=required_service)
+        except ProcessFailure as error:
+            error.result = self._result(log_dir)
+            raise
+        return self._result(log_dir)
+
+    def _execute(self, log_dir, *, check, required_service=None):
         with self.started(log_dir) as process:
             try:
                 if required_service is None:
@@ -127,7 +166,7 @@ class ProcessCommand:
                             continue
             except subprocess.TimeoutExpired as error:
                 raise ProcessFailure(f'{self.name} timed out; see {log_dir}') from error
-            if code:
+            if check and code:
                 raise ProcessFailure(f'{self.name} exited {code}; see {log_dir}')
         return Path(log_dir) / (self.name + '.receipt.json')
 

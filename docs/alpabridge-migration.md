@@ -1,46 +1,48 @@
-# AlpaBridge capability migration
+# AlpaBridge integration status
 
-Source reviewed: [AlpaBridge main at abf547b](https://github.com/amtellezfernandez/AlpaBridge/tree/abf547bbeef860d9c05e038a9cc6b84eae7e62a1),
-including its README, pyproject entry points and native scene-batch runner.
-This is a migration assessment, not an implemented AlpaSim backend or native test.
+AlpaBridge now supplies an optional installed `alpasim` pipeline using the existing
+`bs.pipeline` extension point. Its batch executor delegates process ownership,
+stdout/stderr retention and structured receipts to BenchStudio. Scene selection,
+retry limits, native launcher/readiness, container cleanup, artifact audits and
+batch accounting remain in AlpaBridge. No second scene scheduler is introduced.
 
-BenchStudio should own the common evaluation experience. AlpaBridge can become
-the AlpaSim backend package rather than duplicate that experience.
+```python
+import benchstudio as bs
 
-| Capability | Proposed owner | Current boundary |
-| --- | --- | --- |
-| Python/CLI evaluation configuration, named backend discovery | BenchStudio | Implemented with offline tests |
-| Bounded async execution, batch-capable runtime dispatch | BenchStudio | Implemented; independent session state remains a backend responsibility |
-| Run status, retained evidence, paired comparisons and ablations | BenchStudio | Implemented generic path; native metric identity must be mapped faithfully |
-| Native driver/gRPC session, AlpaSim plugins and Docker services | AlpaBridge | Preserve the existing successful path and lifecycle |
-| Camera calibration/freshness, route frames and trajectory contracts | AlpaBridge backend, using shared helpers where qualified | Preserve native guards and conformance fixtures |
-| Seven policies and their checkpoints/tokenizers | AlpaBridge backends | Reuse adapters; no evidence that every backend is portable to a different runtime |
-| Retry/resume and per-scene accounting | Existing AlpaBridge runner until mapped and tested | Generic async failure persistence is not durable per-trial recovery or equivalent native retry semantics |
-| Official scoring and source telemetry | Native evaluator/backend | Never infer success from process exit alone |
+evaluation = bs.pipeline(
+    "alpasim", model="route_following", alpasim_root="/opt/alpasim",
+    output_dir="runs/alpasim-batch", scene_ids=("YOUR_INSTALLED_SCENE_ID",),
+)
+print(evaluation.check().summary())
+results = evaluation.run()  # explicit native execution
+print(results.summary())
+```
 
-## First integration
+Install AlpaBridge to register the pipeline and install the reviewed BenchStudio
+distribution separately. AlpaBridge's public package has no mandatory dependency
+on private BenchStudio. Its original batch executor remains the default.
+See [AlpaBridge integration documentation](https://github.com/amtellezfernandez/AlpaBridge/blob/main/docs/benchstudio.md)
+for the matching CLI, five supported batch presets and native prerequisites.
 
-Register an optional installed pipeline in the AlpaBridge package using
-benchstudio.pipelines, following the native recipe contract. Its check() should
-delegate to AlpaBridge's existing readiness controls and its run() should delegate
-to the native scene-batch runner, retaining per-scene identities, telemetry,
-official metric provenance and failure/retry records. Use the same BenchStudio API
-and CLI; do not introduce an AlpaSim-specific launcher in BenchStudio.
+`check()` checks configuration without launching Docker, simulators or models;
+it explicitly leaves native verification pending. Synthetic tests cover retained
+process logs, exit status, missing artifacts, interrupted cleanup, retry accounting,
+CLI checks and pipeline discovery. They do not establish native parity or speed.
+Driver transport, calibration/freshness, trajectory semantics, installed scenes,
+learned model dependencies and scientific outcome scoring remain backend concerns.
+This implementation does not justify retiring those AlpaBridge adapters.
 
-The current AlpaBridge batch runner treats scenes as statistical units, checks
-artifact completion, and owns Docker cleanup and retries. Preserve those semantics
-until equivalent tests and authorized native traces establish replacement parity.
+## Structured process results
 
-BenchStudio's generic engine currently retains failed-run status, not durable
-per-trial partial results/recovery. That is not enough to retire AlpaBridge's batch
-runner. Likewise, existing telemetry/contract helpers are not a live AlpaSim
-service adapter.
+`ProcessCommand.run(log_dir)` remains compatible and returns a receipt path.
+`ProcessCommand.execute(log_dir, check=False)` additionally returns a `ProcessResult`
+with `returncode`, `receipt_path`, `stdout_path`, `stderr_path` and `duration` (seconds).
+Nonzero status can therefore feed the native retry/accounting rules without parsing
+error messages. Timeout and required-service loss always raise `ProcessFailure`;
+its `result` retains the receipt after termination. No automatic retry is added.
+Process exit status is never interpreted as scientific success by this primitive.
 
-Keep integration optional while BenchStudio is distributed through a private
-repository. Public AlpaBridge installation must not suddenly require access to an
-unavailable private package. No license or dependency change is made by this
-assessment.
-
-Native session and scoring parity, representative throughput, and lifecycle
-failure tests are required before replacing the existing native control path.
-No simulator, GPU or driving-policy execution was performed for this review.
+Installed pipeline CLI reports may omit `execution_authorized` when that concept
+does not apply. An explicit `False` still blocks a check; paper recipes retain their
+own explicit permission gates. A result with `successful=False` produces a nonzero
+CLI exit so a partial native batch cannot be reported as a successful CLI run.

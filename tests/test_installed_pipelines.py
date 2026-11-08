@@ -14,6 +14,21 @@ def test_installed_pipeline_is_constructed_without_execution(monkeypatch):
     assert calls == []
 
 
+@pytest.mark.parametrize("successful", [False, True])
+def test_recipe_cli_preserves_batch_failure(monkeypatch, successful):
+    class Factory:
+        def add_cli_args(self, parser):
+            pass
+        def options_from_args(self, args):
+            return {}
+        def __call__(self):
+            return SimpleNamespace(check=lambda: None, run=lambda: SimpleNamespace(
+                successful=successful, summary=lambda: "native batch"))
+    monkeypatch.setattr("benchstudio.backend_loading.metadata.entry_points", lambda **kw: [
+        SimpleNamespace(load=lambda: Factory())])
+    assert main(["evaluate", "--recipe", "batch"]) == (0 if successful else 1)
+
+
 def test_invalid_installed_pipeline_contract_fails(monkeypatch):
     monkeypatch.setattr("benchstudio.backend_loading.metadata.entry_points", lambda **kw: [
         SimpleNamespace(load=lambda: lambda **options: object())])

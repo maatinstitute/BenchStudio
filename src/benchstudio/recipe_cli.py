@@ -32,5 +32,5 @@ def _main(argv=None):
     result = evaluation.check() if args.check else evaluation.run()
     print(result.summary())
     if args.check:
-        return 0 if result.technical_ready and result.execution_authorized else 1
-    return 0
+        return 0 if result.technical_ready and getattr(result, "execution_authorized", None) is not False else 1
+    return 0 if getattr(result, "successful", None) is not False else 1
