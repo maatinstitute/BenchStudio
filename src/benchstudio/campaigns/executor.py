@@ -9,6 +9,13 @@ from typing import TYPE_CHECKING, Any, Callable, Iterable
 from ..analysis.resources import ResourceBudget
 from ..contracts import Policy, Simulator
 from ..evidence import verify_artifact_manifest
+from ..hardware import (
+    HardwareSnapshot,
+    ResourcePlan,
+    ResourceRequest,
+    plan_execution_resources,
+    probe_hardware,
+)
 from ..measurement import ResourceSampler
 from ..runner import RunConfig, run_episodes
 from ..runtime_receipts import load_runtime_receipt, verify_runtime_receipt
@@ -84,6 +91,7 @@ class CampaignExecutor:
         simulator_kwargs_factory: SimulatorKwargsFactory | None = None,
         model_registry: "ModelAdapterRegistry | None" = None,
         policy_kwargs_factory: PolicyKwargsFactory | None = None,
+        hardware_snapshot: HardwareSnapshot | None = None,
     ) -> None:
         self.plan = plan
         self.output = output
@@ -115,6 +123,13 @@ class CampaignExecutor:
                 )
         _validate_execution_safety(plan)
         _validate_worldepisode_protocol(plan)
+        execution = (plan.protocol or {}).get("X", {})
+        self.hardware_snapshot = hardware_snapshot
+        self.resource_plan: ResourcePlan | None = None
+        if isinstance(execution, dict) and "resource_request" in execution:
+            request = ResourceRequest.from_mapping(execution["resource_request"])
+            self.hardware_snapshot = hardware_snapshot if hardware_snapshot is not None else probe_hardware()
+            self.resource_plan = plan_execution_resources(request, self.hardware_snapshot)
         planned_ids = {attempt.key.attempt_id for attempt in plan.attempts}
         unknown = self.cancelled_attempts - planned_ids
         if unknown:
@@ -231,6 +246,9 @@ class CampaignExecutor:
                         model_reference=_model_reference(self.plan),
                         initial_condition_id=attempt.key.pair_id,
                         resource_budget=_resource_budget(self.plan),
+                        resource_preflight=(
+                            self.resource_plan.to_dict() if self.resource_plan is not None else None
+                        ),
                     )
                     summary = run_episodes(
                         self._policy_for_attempt(attempt),
@@ -335,6 +353,15 @@ class CampaignExecutor:
         """
         if workers < 1:
             raise ValueError("workers must be positive")
+        if (
+            self.resource_plan is not None
+            and self.resource_plan.max_parallel_workers is not None
+            and workers > self.resource_plan.max_parallel_workers
+        ):
+            raise ValueError(
+                f"workers={workers} exceeds resource preflight capacity "
+                f"{self.resource_plan.max_parallel_workers}"
+            )
         if workers == 1:
             return self.run()
         lease_root = (
@@ -359,6 +386,7 @@ class CampaignExecutor:
                 simulator_kwargs_factory=self.simulator_kwargs_factory,
                 model_registry=self.model_registry,
                 policy_kwargs_factory=self.policy_kwargs_factory,
+                hardware_snapshot=self.hardware_snapshot,
             )
             return worker.run()
 

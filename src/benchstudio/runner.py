@@ -49,6 +49,7 @@ class RunConfig:
     benchmark_validity: dict[str, Any] | None = None
     model_reference: dict[str, Any] | None = None
     resource_budget: ResourceBudget | None = None
+    resource_preflight: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -93,6 +94,8 @@ class RunConfig:
             raise ValueError("benchmark_validity must be a mapping")
         if self.model_reference is not None and not isinstance(self.model_reference, dict):
             raise ValueError("model_reference must be a mapping")
+        if self.resource_preflight is not None and not isinstance(self.resource_preflight, dict):
+            raise ValueError("resource_preflight must be a mapping")
         if not isinstance(self.environment_id, str) or not self.environment_id:
             raise ValueError("environment_id must be a non-empty string")
 

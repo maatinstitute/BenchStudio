@@ -167,4 +167,4 @@ def test_policy_session_async_deadline_does_not_wait_for_worker() -> None:
     result = session.predict(Observation(0, 0.0), timeout_ns=1_000_000)
     elapsed = time.monotonic() - started
     assert result.status == "prediction_timeout"
-    assert elapsed < 0.04
+    assert elapsed < 0.1

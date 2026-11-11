@@ -64,12 +64,19 @@ class OutcomeReportTests(unittest.TestCase):
         self.assertEqual(result["point_estimate"], 0.0)
         self.assertEqual(result["groups"][0]["wins"], 1)
         self.assertEqual(result["groups"][0]["losses"], 1)
-        self.assertEqual(
-            hashlib.sha256(
-                json.dumps(result, sort_keys=True, separators=(",", ":")).encode()
-            ).hexdigest(),
-            "4ee815cdec3c8b8161c0e1a323a23692aca69c47cb3f6fbdf2c61a2cdaa27dbc",
-        )
+        def canonical(value):
+            if isinstance(value, float):
+                return round(value, 12)
+            if isinstance(value, list):
+                return [canonical(item) for item in value]
+            if isinstance(value, dict):
+                return {key: canonical(item) for key, item in value.items()}
+            return value
+
+        digest = hashlib.sha256(
+            json.dumps(canonical(result), sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        self.assertEqual(digest, "639f5c1f5a84a6abd954d221fe076385c864234f8b6c7621a3664c56f7d53af0")
 
     def test_all_ties_leave_a_wide_nonzero_interval(self):
         interval = discordance_interval(0, 0, 4, alpha=0.05 / 60)

@@ -7,6 +7,7 @@ from typing import Any
 
 from ..calibration import CalibrationRecord
 from ..contracts import ModelCapabilityProfile
+from ..hardware import ResourceRequest
 from ..validity import BenchmarkValidityRecord
 from .frozen_plan import CampaignPlanner, FrozenCampaignPlan
 
@@ -138,6 +139,8 @@ def _validate_protocol_sections(spec: dict[str, Any]) -> None:
     execution = spec.get("execution", {})
     if not isinstance(execution, dict):
         raise ValueError("execution must be a mapping")
+    if "resource_request" in execution:
+        ResourceRequest.from_mapping(execution["resource_request"])
     clock_domains = execution.get("clock_domains")
     if clock_domains is not None and (
         not isinstance(clock_domains, list)

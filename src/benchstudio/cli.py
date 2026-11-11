@@ -35,6 +35,7 @@ from .campaigns import (
 )
 from .compare import build_campaign_comparison_report
 from .evidence import verify_artifact_manifest
+from .hardware import probe_hardware
 from .integrations import audit_robochallenge_wire_records
 from .mock import MockPolicy, MockSimulator
 from .model_adapters import default_model_registry
@@ -828,6 +829,7 @@ def main() -> int:
                 {
                     "simulators": simulators,
                     "models": models,
+                    "hardware": probe_hardware().to_dict(),
                     "simulator_discovery": list(simulator_registry.discovery_diagnostics),
                     "model_discovery": list(model_registry.discovery_diagnostics),
                 },
