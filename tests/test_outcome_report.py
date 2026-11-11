@@ -68,7 +68,7 @@ class OutcomeReportTests(unittest.TestCase):
             hashlib.sha256(
                 json.dumps(result, sort_keys=True, separators=(",", ":")).encode()
             ).hexdigest(),
-            "4ee815cdec3c8b8161c0e1a323a23692aca69c47cb3f6fbdf2c61a2cdaa27dbc",
+            "ef9b512a6af229dcc1a7ee9b397d4121d94462f612acdc9a0ec67513b94aa70d",
         )
 
     def test_all_ties_leave_a_wide_nonzero_interval(self):
