@@ -18,6 +18,7 @@ Required environment variable:
 from __future__ import annotations
 
 import json
+from contextlib import nullcontext
 import os
 import re
 import sys
@@ -74,7 +75,35 @@ except Exception as exc:  # pragma: no cover - depends on external checkpoint/ru
     )
 
 
+
+selected_device = os.environ.get("BENCHSTUDIO_LEROBOT_DEVICE")
+if selected_device is not None:
+    if re.fullmatch(r"(?:cpu|mps|cuda:[0-9]+)", selected_device) is None:
+        _error("invalid explicit LeRobot device", code="device_invalid")
+    if selected_device.startswith("cuda:"):
+        index = int(selected_device.split(":")[1])
+        if not torch.cuda.is_available() or index >= torch.cuda.device_count():
+            _error("requested CUDA device is unavailable", code="device_unavailable")
+    if selected_device == "mps" and not (
+        hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
+    ):
+        _error("requested MPS device is unavailable", code="device_unavailable")
+    try:
+        policy.to(torch.device(selected_device))
+        model_device = next(policy.parameters()).device
+        if model_device != torch.device(selected_device):
+            raise RuntimeError("model parameters do not match requested device")
+    except Exception as exc:
+        _error(
+            f"could not bind SmolVLA to requested device: {type(exc).__name__}: {exc}",
+            code="device_binding_failed",
+        )
+
 def _tensorize(value: Any) -> Any:
+    import numpy as np
+
+    if isinstance(value, np.ndarray):
+        return torch.from_numpy(value)
     if isinstance(value, dict):
         return {key: _tensorize(item) for key, item in value.items()}
     if isinstance(value, list):
@@ -84,6 +113,14 @@ def _tensorize(value: Any) -> Any:
     raise ValueError("policy_batch values must be nested mappings, numeric arrays, or scalars")
 
 
+def _to_device(value: Any, device: str) -> Any:
+    if isinstance(value, dict):
+        return {key: _to_device(item, device) for key, item in value.items()}
+    if isinstance(value, torch.Tensor):
+        return value.to(device)
+    return value
+
+
 def _predict(request: dict[str, Any]) -> dict[str, Any]:
     observation = request.get("observation")
     if not isinstance(observation, dict):
@@ -91,12 +128,25 @@ def _predict(request: dict[str, Any]) -> dict[str, Any]:
     payload = observation.get("payload")
     if not isinstance(payload, dict) or not isinstance(payload.get("policy_batch"), dict):
         raise ValueError("observation.payload.policy_batch is required")
-    batch = _tensorize(payload["policy_batch"])
-    with torch.inference_mode():
-        action = policy.select_action(batch)
-    if not isinstance(action, torch.Tensor):
-        raise ValueError("LeRobot policy returned a non-tensor action")
-    values = action.detach().cpu().tolist()
+    tensor_root = os.environ.get("BENCHSTUDIO_LOCAL_TENSOR_ROOT")
+    if tensor_root:
+        # Only the trusted local BenchStudio process may publish descriptors.
+        from benchstudio.local_tensors import open_local_tensors
+
+        input_context = open_local_tensors(payload["policy_batch"], root=tensor_root)
+    else:
+        input_context = nullcontext(payload["policy_batch"])
+    with input_context as policy_batch:
+        batch = _tensorize(policy_batch)
+        if selected_device is not None:
+            batch = _to_device(batch, selected_device)
+        with torch.inference_mode():
+            action = policy.select_action(batch)
+        if not isinstance(action, torch.Tensor):
+            raise ValueError("LeRobot policy returned a non-tensor action")
+        values = action.detach().cpu().tolist()
+        del batch
+        del action
     # LeRobot normally returns [batch, action_dim]; BenchStudio consumes a
     # sequence of actions and applies its frozen action-prefix policy.
     if isinstance(values, list) and len(values) == 1 and isinstance(values[0], list):
@@ -112,6 +162,8 @@ def _predict(request: dict[str, Any]) -> dict[str, Any]:
             "policy": "smolvla",
             "observation_sequence": observation.get("sequence"),
             "checkpoint_sha256": checkpoint_sha256,
+            "device": selected_device or "checkpoint_default",
+            "tensor_transport": "mmap" if tensor_root else "json",
         },
     }
 

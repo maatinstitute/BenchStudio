@@ -5,12 +5,14 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 import selectors
 import subprocess
 from collections.abc import Mapping, Sequence
 from typing import Any
 
 from .contracts import ActionChunk, ModelCapabilityProfile, Observation
+from .local_tensors import MappedTensorPublisher
 
 
 class ExternalCommandPolicy:
@@ -108,10 +110,32 @@ class PersistentExternalCommandPolicy:
         timeout_s: float = 30.0,
         cwd: str | None = None,
         environment: Mapping[str, str] | None = None,
+        tensor_transport: str = "json",
+        tensor_directory: str | None = None,
+        max_tensor_bytes: int = 256 * 1024 * 1024,
+        device: str | None = None,
     ) -> None:
         if not command or any(not isinstance(part, str) or not part for part in command):
             raise ValueError("command must contain non-empty strings")
         _validate_command_options(policy_id, timeout_s, environment)
+        if tensor_transport not in {"json", "mmap"}:
+            raise ValueError("tensor_transport must be json or mmap")
+        if device is not None and re.fullmatch(r"(?:cpu|mps|cuda:[0-9]+)", device) is None:
+            raise ValueError("device must be cpu, mps, or cuda:N")
+        if (
+            device is not None
+            and environment is not None
+            and "BENCHSTUDIO_LEROBOT_DEVICE" in environment
+            and environment["BENCHSTUDIO_LEROBOT_DEVICE"] != device
+        ):
+            raise ValueError("device conflicts with BENCHSTUDIO_LEROBOT_DEVICE")
+        self.tensor_transport = tensor_transport
+        self.device = device
+        self._local_tensors = (
+            MappedTensorPublisher(directory=tensor_directory, max_bytes=max_tensor_bytes)
+            if tensor_transport == "mmap"
+            else None
+        )
         self.command = tuple(command)
         self.policy_id = policy_id
         self.timeout_s = timeout_s
@@ -135,33 +159,43 @@ class PersistentExternalCommandPolicy:
         self._seed = seed
 
     def predict(self, observation: Observation, *, denoising_steps: int | None) -> ActionChunk:
-        response = self._request(
-            {
-                "schema": "benchstudio.policy_request.v1",
-                "operation": "predict",
-                "seed": self._seed,
-                "observation": _jsonable_observation(observation),
-                "denoising_steps": denoising_steps,
-            }
-        )
+        request = {
+            "schema": "benchstudio.policy_request.v1",
+            "operation": "predict",
+            "seed": self._seed,
+            "observation": _jsonable_observation(observation),
+            "denoising_steps": denoising_steps,
+        }
+        if self._local_tensors is None:
+            return _action_chunk(self._request(request))
+        # Files remain present only until the synchronous child response arrives.
+        with self._local_tensors.publish(observation.payload) as payload:
+            request["observation"]["payload"] = payload
+            response = self._request(request)
         return _action_chunk(response)
 
     def close(self) -> None:
         process = self._process
-        if process is None:
-            return
         try:
-            self._request({"schema": "benchstudio.policy_request.v1", "operation": "close"})
-        except (BrokenPipeError, TimeoutError, RuntimeError, ValueError):
-            pass
+            if process is not None and process.poll() is None:
+                try:
+                    self._request({"schema": "benchstudio.policy_request.v1", "operation": "close"})
+                except (BrokenPipeError, TimeoutError, RuntimeError, ValueError):
+                    pass
         finally:
             self._terminate_process()
+            if self._local_tensors is not None:
+                self._local_tensors.close()
 
     def _ensure_started(self) -> None:
         if self._process is not None and self._process.poll() is None:
             return
         environment = os.environ.copy()
         environment.update(self.environment)
+        if self.device is not None:
+            environment["BENCHSTUDIO_LEROBOT_DEVICE"] = self.device
+        if self._local_tensors is not None:
+            environment["BENCHSTUDIO_LOCAL_TENSOR_ROOT"] = str(self._local_tensors.root)
         self._process = subprocess.Popen(
             self.command,
             stdin=subprocess.PIPE,
@@ -251,7 +285,10 @@ def persistent_external_command_capabilities() -> ModelCapabilityProfile:
         **{
             **capabilities.to_dict(),
             "model_id": "persistent_external_command_policy",
-            "runtime_controls": tuple(capabilities.runtime_controls) + ("persistent_process",),
+            "runtime_controls": tuple(capabilities.runtime_controls) + (
+                "persistent_process", "tensor_transport", "tensor_directory",
+                "max_tensor_bytes", "device",
+            ),
         }
     )
 
@@ -275,7 +312,10 @@ def external_vla_capabilities(model_id: str) -> ModelCapabilityProfile:
         supports_closed_loop=True,
         supports_action_chunks=True,
         supported_metrics=("success", "latency", "resource_use", "observation_age"),
-        runtime_controls=("timeout_s", "command", "environment", "persistent_process"),
+        runtime_controls=(
+            "timeout_s", "command", "environment", "persistent_process",
+            "tensor_transport", "tensor_directory", "max_tensor_bytes", "device",
+        ),
         timing_signals=("host_monotonic",),
         supports_variable_action_horizon=True,
     )
