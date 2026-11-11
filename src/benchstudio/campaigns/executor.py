@@ -9,14 +9,11 @@ from typing import TYPE_CHECKING, Any, Callable, Iterable
 from ..analysis.resources import ResourceBudget
 from ..contracts import Policy, Simulator
 from ..evidence import verify_artifact_manifest
-from ..external_policy import DenoisingAttestationError, PersistentExternalCommandPolicy
-from ..external_simulator import ExternalCommandSimulator
 from ..measurement import ResourceSampler
 from ..runner import RunConfig, run_episodes
 from ..runtime_receipts import load_runtime_receipt, verify_runtime_receipt
 from .frozen_plan import FrozenCampaignPlan, PlannedAttempt, load_frozen_campaign_plan
 from .ledger import AttemptLedger
-from .qualification import refinement_attempt_horizon, verify_refinement_qualification
 from .worker import LeaseHeartbeat, WorkerLeaseManager
 
 if TYPE_CHECKING:
@@ -87,13 +84,9 @@ class CampaignExecutor:
         simulator_kwargs_factory: SimulatorKwargsFactory | None = None,
         model_registry: "ModelAdapterRegistry | None" = None,
         policy_kwargs_factory: PolicyKwargsFactory | None = None,
-        qualification_directory: Path | None = None,
-        trusted_approval_sha256: str | None = None,
     ) -> None:
         self.plan = plan
         self.output = output
-        self.qualification_directory = qualification_directory
-        self.trusted_approval_sha256 = trusted_approval_sha256
         self.policy_factory = policy_factory
         self.model_registry = model_registry
         self.policy_kwargs_factory = policy_kwargs_factory
@@ -146,18 +139,6 @@ class CampaignExecutor:
         container or GPU workers. The subset is still checked against the
         frozen plan, and the shared ledger remains the authority for recovery.
         """
-        qualified_model = verify_refinement_qualification(
-            self.plan, self.qualification_directory, self.trusted_approval_sha256
-        )
-        if qualified_model and any(
-            record.get("reason") == "denoising_attestation_failed" for record in self.ledger.records()
-        ):
-            raise DenoisingAttestationError("campaign stopped on a recorded instrument incident")
-        horizons = (
-            self.plan.protocol["P"]["experiment"]["refinement_v3"]["evaluator_horizons"]
-            if qualified_model
-            else None
-        )
         selected_ids = (
             {attempt.key.attempt_id for attempt in self.plan.attempts}
             if attempt_ids is None
@@ -238,11 +219,7 @@ class CampaignExecutor:
                         denoising_steps=condition.get("denoising_steps", 2),
                         action_prefix=condition.get("action_prefix", 2),
                         observation_refresh_ticks=condition.get("observation_refresh_ticks", 1),
-                        max_episode_steps=(
-                            refinement_attempt_horizon(attempt, horizons)
-                            if horizons is not None
-                            else condition.get("max_episode_steps", 100)
-                        ),
+                        max_episode_steps=condition.get("max_episode_steps", 100),
                         execution_strategy=condition.get(
                             "execution_strategy", _execution_strategy(self.plan)
                         ),
@@ -254,21 +231,10 @@ class CampaignExecutor:
                         model_reference=_model_reference(self.plan),
                         initial_condition_id=attempt.key.pair_id,
                         resource_budget=_resource_budget(self.plan),
-                        success_at_any_step=qualified_model is not None,
                     )
-                    policy = self._policy_for_attempt(attempt)
-                    if qualified_model == "pi0.5":
-                        if not isinstance(policy, PersistentExternalCommandPolicy):
-                            raise DenoisingAttestationError("pi0.5 requires the attesting native policy bridge")
-                        if config.execution_strategy != "sync":
-                            raise DenoisingAttestationError("attested pi0.5 execution requires sync strategy")
-                        policy.require_denoising_attestation = True
-                    simulator = self._simulator_for_attempt(attempt)
-                    if qualified_model and isinstance(simulator, ExternalCommandSimulator):
-                        simulator.require_outcome_signals = True
                     summary = run_episodes(
-                        policy,
-                        simulator,
+                        self._policy_for_attempt(attempt),
+                        self._simulator_for_attempt(attempt),
                         config,
                         attempt_dir,
                         resource_sampler=(
@@ -277,8 +243,6 @@ class CampaignExecutor:
                             else None
                         ),
                     )
-                if summary.get("campaign_status") == "instrument_failure":
-                    raise DenoisingAttestationError(f"attempt {attempt_id} stopped on a denoising attestation failure")
                 verification = verify_artifact_manifest(attempt_dir)
                 if not verification["valid"]:
                     raise RuntimeError(
@@ -306,17 +270,6 @@ class CampaignExecutor:
                     committed.append(attempt_id)
                 else:
                     failed.append(attempt_id)
-            except DenoisingAttestationError as exc:
-                self.ledger.append_idempotent(
-                    attempt.key,
-                    {
-                        "status": "infrastructure_failure",
-                        "reason": "denoising_attestation_failed",
-                        "error": str(exc),
-                        "evidence_verified": False,
-                    },
-                )
-                raise
             except Exception as exc:
                 committed_failure = self.ledger.append_idempotent(
                     attempt.key,
@@ -384,10 +337,6 @@ class CampaignExecutor:
             raise ValueError("workers must be positive")
         if workers == 1:
             return self.run()
-        if verify_refinement_qualification(
-            self.plan, self.qualification_directory, self.trusted_approval_sha256
-        ):
-            raise ValueError("Refinement v3 confirmation requires a single worker for campaign stop")
         lease_root = (
             self.lease_manager.root if self.lease_manager is not None else self.output / "leases"
         )
@@ -685,12 +634,6 @@ def _validate_worldepisode_protocol(plan: FrozenCampaignPlan) -> None:
         return
     if not isinstance(binding, dict):
         raise ValueError("frozen plan worldepisode binding must be a mapping")
-    unsupported = set(binding) - {"record", "expected_episode_id", "expected_revision_id"}
-    if unsupported:
-        raise ValueError(
-            "unsupported frozen plan worldepisode binding fields: "
-            + ", ".join(sorted(unsupported))
-        )
     record = binding.get("record")
     if not isinstance(record, dict):
         raise ValueError("frozen plan worldepisode binding requires a record mapping")
@@ -698,6 +641,8 @@ def _validate_worldepisode_protocol(plan: FrozenCampaignPlan) -> None:
 
     result = preflight_worldepisode(
         record,
+        require_reference=binding.get("require_reference", False) is True,
+        strict=binding.get("strict", False) is True,
         expected_episode_id=binding.get("expected_episode_id"),
         expected_revision_id=binding.get("expected_revision_id"),
     )

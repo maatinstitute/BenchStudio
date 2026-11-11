@@ -22,28 +22,16 @@
   ],
   "worldepisode": {
     "record": {
-      "schema": "worldepisode.v1",
+      "schema": "worldepisode",
       "episode": {
         "episode_id": "mock-episode-1"
       },
-      "clock_graph": {
-        "clocks": [],
-        "mappings": []
-      },
-      "action_space": {
-        "channels": []
-      },
-      "world_deltas": [],
-      "provenance": {
-        "source": "synthetic-mock-worldepisode"
-      },
-      "quality": {},
       "world_revision": {
-        "world_revision_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "world_revision_id": "mock-revision-1"
       }
     },
     "expected_episode_id": "mock-episode-1",
-    "expected_revision_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    "expected_revision_id": "mock-revision-1"
   },
   "evaluation": {
     "initial_conditions": "frozen",

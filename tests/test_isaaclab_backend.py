@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from benchstudio.integrations.isaaclab import IsaacLabSimulator
+from benchstudio.integrations import IsaacLabSimulator
 
 
 class _FakeIsaacEnv:

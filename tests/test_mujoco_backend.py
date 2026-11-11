@@ -5,7 +5,7 @@ import pytest
 mujoco = pytest.importorskip("mujoco")
 
 from benchstudio.contracts import ActionChunk  # noqa: E402
-from benchstudio.integrations.mujoco import MujocoSimulatorE402
+from benchstudio.integrations import MujocoSimulator  # noqa: E402
 from benchstudio.runner import RunConfig, run_episodes  # noqa: E402
 
 

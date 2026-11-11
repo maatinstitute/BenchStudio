@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from benchstudio.contracts import ModelCapabilityProfile
+from benchstudio import ModelCapabilityProfile
 from benchstudio.analysis import (
     ClaimType,
     ResourceBudget,

@@ -240,18 +240,3 @@ def test_invalid_simulator_observation_is_recorded_as_conformance_failure(tmp_pa
     summary = run_episodes(MockPolicy(), InvalidSimulator(), RunConfig(), tmp_path / "invalid")
     assert summary["episodes"][0]["status"] == "simulator_reset_error"
     assert "invalid_sim_time" in summary["episodes"][0]["error"]
-
-
-def test_first_attainment_counts_even_when_terminal_state_loses_goal(tmp_path):
-    class TransientGoalSimulator(MockSimulator):
-        def is_success(self):
-            return self._step == 1
-
-    summary = run_episodes(
-        MockPolicy(), TransientGoalSimulator(),
-        RunConfig(success_at_any_step=True, max_episode_steps=2),
-        tmp_path / "transient",
-    )
-    assert summary["success_count"] == 1
-    assert summary["episodes"][0]["steps"] == 2
-    assert summary["episodes"][0]["termination_reason"] == "max_episode_steps"

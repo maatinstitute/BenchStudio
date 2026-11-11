@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from benchstudio.integrations.gymnasium import GymnasiumSimulator
+from benchstudio.integrations import GymnasiumSimulator
 
 
 class FakeEnv:

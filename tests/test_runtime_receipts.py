@@ -3,8 +3,14 @@ from __future__ import annotations
 import hashlib
 import json
 
-from benchstudio.runtime_receipts import build_runtime_receipt, sign_runtime_receipt, verify_runtime_receipt, verify_runtime_receipt_signature, write_runtime_receipt
-from benchstudio.evidence_signing import generate_ed25519_keypair
+from benchstudio import (
+    build_runtime_receipt,
+    generate_ed25519_keypair,
+    sign_runtime_receipt,
+    verify_runtime_receipt,
+    verify_runtime_receipt_signature,
+    write_runtime_receipt,
+)
 
 
 def test_runtime_receipt_is_digest_verifiable_and_persisted(tmp_path):
@@ -83,7 +89,7 @@ def test_runtime_receipt_rejects_invalid_build_types():
 
 
 def test_runtime_receipt_signature_verifier_rejects_non_mapping_record(tmp_path):
-    from benchstudio.runtime_receipts import verify_runtime_receipt_signature
+    from benchstudio import verify_runtime_receipt_signature
 
     receipt = build_runtime_receipt(
         run_id="run",

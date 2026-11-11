@@ -51,6 +51,10 @@ def validate_worldepisode_record(record: dict[str, Any]) -> list[ValidationIssue
         issues.append(ValidationIssue("missing_field", "episode_id is required", "episode.episode_id"))
     if not isinstance(record.get("schema"), str) or not record["schema"]:
         issues.append(ValidationIssue("missing_field", "schema is required", "schema"))
+    if "revision_id" in record and not isinstance(record["revision_id"], str):
+        issues.append(
+            ValidationIssue("invalid_revision", "revision_id must be a string", "revision_id")
+        )
     nested_revision = _revision_id(record)
     if nested_revision is not None and not isinstance(nested_revision, str):
         issues.append(
@@ -64,12 +68,16 @@ def validate_worldepisode_record(record: dict[str, Any]) -> list[ValidationIssue
 
 def _episode_id(record: dict[str, Any]) -> Any:
     nested = record.get("episode")
-    return nested.get("episode_id") if isinstance(nested, dict) else None
+    if isinstance(nested, dict) and "episode_id" in nested:
+        return nested.get("episode_id")
+    return record.get("episode_id")
 
 
 def _revision_id(record: dict[str, Any]) -> Any:
     nested = record.get("world_revision")
-    return nested.get("world_revision_id") if isinstance(nested, dict) else None
+    if isinstance(nested, dict) and "world_revision_id" in nested:
+        return nested.get("world_revision_id")
+    return record.get("revision_id")
 
 
 def validate_worldepisode_contract(record: dict[str, Any]) -> list[ValidationIssue]:

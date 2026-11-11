@@ -1,13 +1,16 @@
 # Changelog
 
-## 0.1.0rc2 — unpublished cleanup candidate
+## 0.1.0 — 2026-11-11
 
-- Define one 15-name supported root API and require direct module imports for specialist utilities.
-- Remove dynamic root and integration re-exports, provider-specific checkpoint loading, task/CLI aliases, and the legacy process wrapper.
-- Keep native inference configuration with the system owner; BenchStudio adds no provider defaults.
-- Use one EvaluationConfig for engine settings and one result inspector for offline and native records.
-- Require explicit dashboard study definitions; remove invented fallback studies.
-- Update current examples and docs to the canonical Python, module-import, and CLI entry points.
-- Route campaign preparation and archive replay through the single `benchstudio` executable.
+First public tagged research release.
 
-The package and repository remain private and unpublished. No simulator, GPU, learned model, native qualification, or scientific confirmation was run for this cleanup.
+- Provides deterministic campaign planning, paired evaluation, evidence ledgers,
+  replay, and artifact verification for embodied-AI studies.
+- Includes explicit refinement/refresh and RoboPAD analysis boundaries.
+- Preserves simulator, policy, benchmark, and official scoring authority with
+  their native owners.
+- Verified locally with 765 tests and 27 subtests on Python 3.13.
+
+This source-available release uses the Research Use License 1.1. It does not
+claim native model qualification, physical-robot validation, or official
+benchmark scoring.

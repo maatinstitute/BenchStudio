@@ -9,7 +9,6 @@ import selectors
 import subprocess
 from collections.abc import Mapping, Sequence
 from typing import Any
-from uuid import uuid4
 
 from .contracts import ActionChunk, ModelCapabilityProfile, Observation
 
@@ -90,10 +89,6 @@ class ExternalCommandPolicy:
         return ActionChunk(tuple(response["actions"]), dict(metadata))
 
 
-class DenoisingAttestationError(RuntimeError):
-    """The native runtime did not attest the executed count for this request."""
-
-
 class PersistentExternalCommandPolicy:
     """Keep an independent policy runtime alive across inference requests.
 
@@ -124,7 +119,6 @@ class PersistentExternalCommandPolicy:
         self.environment = dict(environment or {})
         self._process: subprocess.Popen[str] | None = None
         self._seed: int | None = None
-        self.require_denoising_attestation = False
 
     def reset(self, *, seed: int) -> None:
         if isinstance(seed, bool) or not isinstance(seed, int):
@@ -141,28 +135,15 @@ class PersistentExternalCommandPolicy:
         self._seed = seed
 
     def predict(self, observation: Observation, *, denoising_steps: int | None) -> ActionChunk:
-        request = {
-            "schema": "benchstudio.policy_request.v1",
-            "operation": "predict",
-            "seed": self._seed,
-            "observation": _jsonable_observation(observation),
-            "denoising_steps": denoising_steps,
-        }
-        if self.require_denoising_attestation:
-            if type(denoising_steps) is not int or denoising_steps < 1:
-                raise DenoisingAttestationError("attested prediction requires a positive step count")
-            request["request_id"] = uuid4().hex
-        response = self._request(request)
-        if self.require_denoising_attestation:
-            metadata = response.get("metadata")
-            attestation = metadata.get("denoising_attestation") if isinstance(metadata, dict) else None
-            if (
-                not isinstance(attestation, dict)
-                or attestation.get("request_id") != request["request_id"]
-                or type(attestation.get("executed_steps")) is not int
-                or attestation["executed_steps"] != denoising_steps
-            ):
-                raise DenoisingAttestationError("missing, mismatched, or stale denoising attestation")
+        response = self._request(
+            {
+                "schema": "benchstudio.policy_request.v1",
+                "operation": "predict",
+                "seed": self._seed,
+                "observation": _jsonable_observation(observation),
+                "denoising_steps": denoising_steps,
+            }
+        )
         return _action_chunk(response)
 
     def close(self) -> None:

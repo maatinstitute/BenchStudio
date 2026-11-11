@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from benchstudio.integrations.teleop_replay_timing import LogicalReplayClock, ReplayTimingRecording, ReplayTimingSample, build_replay_schedule, replay_schedule_duration_ms, resolve_command_time_ms
+from benchstudio.integrations import (
+    LogicalReplayClock,
+    ReplayTimingRecording,
+    ReplayTimingSample,
+    build_replay_schedule,
+    replay_schedule_duration_ms,
+    resolve_command_time_ms,
+)
 
 
 def recording():

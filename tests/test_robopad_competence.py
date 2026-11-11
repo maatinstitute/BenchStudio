@@ -4,7 +4,13 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from benchstudio.integrations.robopad_competence import checked_rotation_delta, compact_record, persist, replay_equal, termination
+from benchstudio.integrations import (
+    checked_rotation_delta,
+    compact_record,
+    persist,
+    replay_equal,
+    termination,
+)
 
 
 def test_persistence_serializes_numpy_scalars_and_arrays_without_object_arrays():

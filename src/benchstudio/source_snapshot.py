@@ -13,12 +13,7 @@ def verify_source_snapshot(manifest_path: Path, source_root: Path) -> dict[str, 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if not isinstance(manifest, dict) or manifest.get("schema") != "benchstudio_source_snapshot_v1":
         raise ValueError("unsupported source snapshot manifest")
-    report = verify_source_files(manifest.get("files"), source_root)
-    return {**report, "repository": manifest.get("repository"), "commit": manifest.get("commit")}
-
-
-def verify_source_files(files: dict[str, str], source_root: Path) -> dict[str, Any]:
-    """Shared digest verification for source snapshots and staged packages."""
+    files = manifest.get("files")
     if not isinstance(files, dict) or not files:
         raise ValueError("source snapshot files must be a non-empty mapping")
     mismatches: list[dict[str, str]] = []
@@ -43,9 +38,10 @@ def verify_source_files(files: dict[str, str], source_root: Path) -> dict[str, A
             mismatches.append({"path": relative, "reason": "digest_mismatch", "actual": actual})
     return {
         "schema": "benchstudio.source_snapshot_verification.v1",
+        "repository": manifest.get("repository"),
+        "commit": manifest.get("commit"),
         "source_root": str(root),
         "checked_files": checked,
         "mismatches": mismatches,
         "valid": not mismatches,
     }
-

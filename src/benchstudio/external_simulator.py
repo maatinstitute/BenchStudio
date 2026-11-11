@@ -59,7 +59,6 @@ class ExternalCommandSimulator:
         self._process: subprocess.Popen[str] | None = None
         self._done = False
         self._success = False
-        self.require_outcome_signals = False
 
     def reset(self, *, seed: int) -> Observation:
         if isinstance(seed, bool) or not isinstance(seed, int):
@@ -70,7 +69,6 @@ class ExternalCommandSimulator:
         )
         self._done = False
         self._success = False
-        self._require_outcome(response)
         self._update_state(response)
         return _observation(response)
 
@@ -85,13 +83,8 @@ class ExternalCommandSimulator:
         response = self._request(
             {"schema": "benchstudio.simulator_request.v1", "operation": "step", "action": action}
         )
-        self._require_outcome(response)
         self._update_state(response)
         return _observation(response)
-
-    def _require_outcome(self, response: dict[str, Any]) -> None:
-        if self.require_outcome_signals and not {"success", "done"}.issubset(response):
-            raise ValueError("qualified simulator must report explicit success and done signals")
 
     def is_done(self) -> bool:
         return self._done

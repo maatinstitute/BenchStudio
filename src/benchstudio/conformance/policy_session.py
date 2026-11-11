@@ -4,13 +4,11 @@ import asyncio
 import inspect
 import time
 from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import TimeoutError as FutureTimeoutError
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Literal
 
 from ..contracts import ActionChunk, Observation, Policy
-from ..external_policy import DenoisingAttestationError
 from .action_semantics import ActionSpec, validate_action
 
 
@@ -166,8 +164,6 @@ class PolicySession:
                     if len(self._prediction_cache) >= self.max_cache_entries:
                         self._prediction_cache.pop(next(iter(self._prediction_cache)))
                     self._prediction_cache[cache_key] = result
-        except DenoisingAttestationError:
-            raise
         except TimeoutError as exc:
             return self._rejected("prediction_timeout", str(exc), latency_ns=clock_ns() - started)
         except Exception as exc:  # noqa: BLE001 - adapter must expose policy failure
@@ -227,11 +223,9 @@ class PolicySession:
         timed_out = False
         try:
             return future.result(timeout=timeout_s)
-        except FutureTimeoutError as exc:
-            # Before Python 3.11 this is not the builtin TimeoutError, so re-raise
-            # as the builtin for predict() to classify it as prediction_timeout.
+        except TimeoutError:
             timed_out = True
-            raise TimeoutError(*exc.args) from exc
+            raise
         finally:
             pool.shutdown(wait=not timed_out, cancel_futures=timed_out)
 

@@ -5,7 +5,7 @@ import pytest
 pytest.importorskip("gymnasium")
 
 from benchstudio.contracts import ActionChunk  # noqa: E402
-from benchstudio.integrations.gymnasium import GymnasiumSimulator2
+from benchstudio.integrations import GymnasiumSimulator  # noqa: E402
 from benchstudio.runner import RunConfig, run_episodes  # noqa: E402
 
 

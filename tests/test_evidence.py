@@ -18,7 +18,7 @@ def test_ndjson_writer_returns_digest_and_count(tmp_path):
 
 
 def test_environment_fingerprint_records_optional_backend_versions(monkeypatch):
-    import benchstudio.evidence as evidence
+    from benchstudio import evidence
 
     versions = {
         "mujoco": "3.3.0",

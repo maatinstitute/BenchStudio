@@ -3,7 +3,7 @@ from types import SimpleNamespace as NS
 import numpy as np
 import pytest
 
-from benchstudio.integrations.robopad_reference_adapter import build_goals, extract_geometry
+from benchstudio.integrations import build_goals, extract_geometry
 
 
 def _fixture():

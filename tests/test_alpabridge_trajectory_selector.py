@@ -1,6 +1,12 @@
 import pytest
 
-from benchstudio.integrations.alpabridge_trajectory_selector import TrajectoryCandidate, TrajectoryReference, score_candidate, speed_scale, trajectory_region_score
+from benchstudio.integrations import (
+    TrajectoryCandidate,
+    TrajectoryReference,
+    score_candidate,
+    speed_scale,
+    trajectory_region_score,
+)
 
 
 def _straight(lateral=0.0, longitudinal=0.0):
