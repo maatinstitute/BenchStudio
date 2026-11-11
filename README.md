@@ -22,6 +22,12 @@ Inspect optional backend and model-adapter readiness before scheduling work:
 python -m benchstudio.cli --readiness
 ```
 
+Readiness now includes a hardware-memory snapshot. To reject estimated per-worker
+RAM/VRAM overcommit before constructing model/simulator adapters, declare
+`execution.resource_request` in a frozen campaign. See
+[resource preflight and the real MuJoCo slider baseline](docs/resource-preflight.md).
+
+
 Install an optional Genesis backend only in the environment that owns its
 runtime:
 
