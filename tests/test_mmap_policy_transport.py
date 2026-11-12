@@ -5,9 +5,8 @@ import pytest
 
 np = pytest.importorskip("numpy")
 
-from benchstudio.contracts import Observation
-from benchstudio.external_policy import PersistentExternalCommandPolicy
-
+from benchstudio.contracts import Observation  # noqa: E402
+from benchstudio.external_policy import PersistentExternalCommandPolicy  # noqa: E402
 
 _CHILD = '''import json, os, sys
 from benchstudio.local_tensors import open_local_tensors

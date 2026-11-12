@@ -12,10 +12,9 @@ import pytest
 mujoco = pytest.importorskip("mujoco")
 np = pytest.importorskip("numpy")
 
-from benchstudio.external_policy import PersistentExternalCommandPolicy
-from benchstudio.integrations.mujoco import MujocoSimulator
-from benchstudio.runner import RunConfig, run_episodes
-
+from benchstudio.external_policy import PersistentExternalCommandPolicy  # noqa: E402
+from benchstudio.integrations.mujoco import MujocoSimulator  # noqa: E402
+from benchstudio.runner import RunConfig, run_episodes  # noqa: E402
 
 _POLICY = '''import json, os, sys
 from benchstudio.local_tensors import open_local_tensors
@@ -25,7 +24,10 @@ for line in sys.stdin:
     if operation == "reset":
         response = {"status": "reset"}
     elif operation == "predict":
-        with open_local_tensors(message["observation"]["payload"], root=os.environ["BENCHSTUDIO_LOCAL_TENSOR_ROOT"]) as payload:
+        with open_local_tensors(
+            message["observation"]["payload"],
+            root=os.environ["BENCHSTUDIO_LOCAL_TENSOR_ROOT"],
+        ) as payload:
             image = payload["policy_batch"]["front"]
             response = {
                 "actions": [[0.0]],

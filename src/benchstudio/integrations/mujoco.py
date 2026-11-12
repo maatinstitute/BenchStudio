@@ -7,10 +7,10 @@ success criteria remain supplied by the caller.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 import importlib
 import math
 import time
+from collections.abc import Mapping
 from numbers import Real
 from pathlib import Path
 from typing import Any, Callable, Iterable

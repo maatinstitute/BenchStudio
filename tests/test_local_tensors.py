@@ -4,7 +4,7 @@ import json
 import pytest
 
 np = pytest.importorskip("numpy")
-from benchstudio.local_tensors import MappedTensorPublisher, open_local_tensors
+from benchstudio.local_tensors import MappedTensorPublisher, open_local_tensors  # noqa: E402
 
 
 def test_roundtrip_preserves_shape_dtype_and_bytes():

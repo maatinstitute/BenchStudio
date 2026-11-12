@@ -18,10 +18,10 @@ Required environment variable:
 from __future__ import annotations
 
 import json
-from contextlib import nullcontext
 import os
 import re
 import sys
+from contextlib import nullcontext
 from typing import Any
 
 
@@ -47,7 +47,10 @@ if not os.path.isdir(checkpoint):
         code="checkpoint_unavailable",
     )
 checkpoint_sha256 = os.environ.get("BENCHSTUDIO_LEROBOT_CHECKPOINT_SHA256")
-if not isinstance(checkpoint_sha256, str) or re.fullmatch(r"[0-9a-f]{64}", checkpoint_sha256) is None:
+if (
+    not isinstance(checkpoint_sha256, str)
+    or re.fullmatch(r"[0-9a-f]{64}", checkpoint_sha256) is None
+):
     _error(
         "BENCHSTUDIO_LEROBOT_CHECKPOINT_SHA256 must be lowercase SHA-256 hex",
         code="checkpoint_digest_invalid",
@@ -171,7 +174,10 @@ def _predict(request: dict[str, Any]) -> dict[str, Any]:
 for line in sys.stdin:
     try:
         request = json.loads(line)
-        if not isinstance(request, dict) or request.get("schema") != "benchstudio.policy_request.v1":
+        if (
+            not isinstance(request, dict)
+            or request.get("schema") != "benchstudio.policy_request.v1"
+        ):
             raise ValueError("unsupported BenchStudio policy request schema")
         operation = request.get("operation")
         if operation == "reset":

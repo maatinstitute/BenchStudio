@@ -117,7 +117,11 @@ def _checked_array_info(spec: Any, root: Path) -> tuple[Path, Any, tuple[int, ..
     if not isinstance(name, str) or not _FILENAME.fullmatch(name):
         raise ValueError("invalid local tensor filename")
     shape = spec["shape"]
-    if not isinstance(shape, list) or not shape or any(type(dim) is not int or dim < 1 for dim in shape):
+    if (
+        not isinstance(shape, list)
+        or not shape
+        or any(type(dim) is not int or dim < 1 for dim in shape)
+    ):
         raise ValueError("invalid local tensor shape")
     count = 1
     for dim in shape:
