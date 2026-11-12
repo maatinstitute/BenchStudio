@@ -16,6 +16,13 @@ shows how retained outcomes from a published study map to BenchStudio's paired
 analysis while preserving the boundary between historical evidence and new
 BenchStudio-produced runs.
 
+[**Outcome Recovery**](examples/outcome_recovery/README.md) shows how to
+specify matched nominal/intervention continuations with the existing
+BenchStudio campaign APIs. It can freeze a study without a simulator and
+accepts a caller-owned native evaluator for actual outcomes. It is a research
+application, **not** a separate execution framework or proof of recovery
+improvement. See [research application ownership](docs/research-applications.md).
+
 ## Quick start
 
 ```bash

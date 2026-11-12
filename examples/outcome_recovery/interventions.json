@@ -1,0 +1,11 @@
+[
+  {
+    "intervention_id": "controlled_object_displacement",
+    "transition_index": 5,
+    "kind": "object_translation",
+    "parameters": {
+      "object_id": "caller_must_select_valid_object",
+      "delta_xyz_m": [0.04, 0.0, 0.0]
+    }
+  }
+]

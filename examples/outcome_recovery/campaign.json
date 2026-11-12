@@ -1,0 +1,25 @@
+{
+  "schema": "benchstudio.campaign.v1",
+  "experiment": {
+    "name": "outcome_recovery_reference",
+    "protocol_revision": "example-v1",
+    "mode": "paired_counterfactual"
+  },
+  "task": {
+    "task_id": "caller_supplied_task",
+    "task_revision": "unqualified_example"
+  },
+  "environments": [
+    {
+      "id": "caller_owned_simulator",
+      "kind": "simulator",
+      "enabled": true
+    }
+  ],
+  "evaluation": {
+    "seeds": [100, 101],
+    "paired": true,
+    "missing_outcomes": "preserve",
+    "conditions": [{"id": "frozen_policy"}]
+  }
+}
