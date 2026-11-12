@@ -25,6 +25,15 @@ improvement. See [research application ownership](docs/research-applications.md)
 
 ## Quick start
 
+### Visual VLA execution on a constrained host
+
+See [local mmap tensor transport and the pinned SmolVLA + MuJoCo runner](docs/visual-vla-transport.md).
+The optional MuJoCo camera path produces real RGB frames; a persistent LeRobot
+policy can consume checkpoint-preprocessed numeric tensors through private
+same-host mmap files rather than JSON pixel lists. No model, asset, GPU memory,
+task-success, or normalization compatibility claim is made by these fixtures.
+
+
 ```bash
 python -m pytest
 python -m benchstudio.cli --episodes 3 --output runs/smoke

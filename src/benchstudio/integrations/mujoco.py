@@ -10,6 +10,7 @@ from __future__ import annotations
 import importlib
 import math
 import time
+from collections.abc import Mapping
 from numbers import Real
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -30,11 +31,22 @@ class MujocoSimulator:
         frame_skip: int = 1,
         success_fn: SuccessFn | None = None,
         initial_qpos: Iterable[float] | None = None,
+        camera_name: str | None = None,
+        camera_width: int = 256,
+        camera_height: int = 256,
+        observation_fn: Callable[[dict[str, Any]], Mapping[str, Any]] | None = None,
     ) -> None:
         if isinstance(max_steps, bool) or not isinstance(max_steps, int) or max_steps < 1:
             raise ValueError("max_steps must be positive")
         if isinstance(frame_skip, bool) or not isinstance(frame_skip, int) or frame_skip < 1:
             raise ValueError("frame_skip must be positive")
+        if camera_name is not None and (not isinstance(camera_name, str) or not camera_name):
+            raise ValueError("camera_name must be a non-empty string or None")
+        for name, value in (("camera_width", camera_width), ("camera_height", camera_height)):
+            if type(value) is not int or not 1 <= value <= 4096:
+                raise ValueError(f"{name} must be an integer between 1 and 4096")
+        if observation_fn is not None and not callable(observation_fn):
+            raise TypeError("observation_fn must be callable")
         self.xml_path = Path(xml_path)
         if not self.xml_path.is_file():
             raise FileNotFoundError(self.xml_path)
@@ -49,6 +61,16 @@ class MujocoSimulator:
         self._mujoco = mujoco
         self.model = mujoco.MjModel.from_xml_path(str(self.xml_path))
         self.data = mujoco.MjData(self.model)
+        self.camera_name = camera_name
+        self.observation_fn = observation_fn
+        self._renderer = None
+        if camera_name is not None:
+            if mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_CAMERA, camera_name) < 0:
+                raise ValueError(f"camera {camera_name!r} is not defined in the MJCF scene")
+            # Renderer creation is explicit: no hidden headless or physics fallback.
+            self._renderer = mujoco.Renderer(
+                self.model, height=camera_height, width=camera_width
+            )
         self.max_steps = max_steps
         self.frame_skip = frame_skip
         self.success_fn = success_fn
@@ -70,14 +92,23 @@ class MujocoSimulator:
 
     def observe(self) -> Observation:
         sim_time_s = float(self.data.time)
+        payload: dict[str, Any] = {
+            "qpos": tuple(float(value) for value in self.data.qpos),
+            "qvel": tuple(float(value) for value in self.data.qvel),
+            "ctrl": tuple(float(value) for value in self.data.ctrl),
+        }
+        if self._renderer is not None:
+            self._renderer.update_scene(self.data, camera=self.camera_name)
+            payload["images"] = {"front": self._renderer.render().copy()}
+        if self.observation_fn is not None:
+            prepared = self.observation_fn(payload)
+            if not isinstance(prepared, Mapping):
+                raise ValueError("observation_fn must return an observation mapping")
+            payload = dict(prepared)
         return Observation(
             sequence=self._step,
             sim_time_s=sim_time_s,
-            payload={
-                "qpos": tuple(float(value) for value in self.data.qpos),
-                "qvel": tuple(float(value) for value in self.data.qvel),
-                "ctrl": tuple(float(value) for value in self.data.ctrl),
-            },
+            payload=payload,
             source_timestamp=Timestamp(round(sim_time_s * 1_000_000_000), "sim_time"),
             received_monotonic_ns=time.monotonic_ns(),
         )
@@ -116,6 +147,9 @@ class MujocoSimulator:
         return self._success
 
     def close(self) -> None:
+        if self._renderer is not None:
+            self._renderer.close()
+            self._renderer = None
         self.data = None
         self.model = None
 
