@@ -1,0 +1,38 @@
+{
+  "schema": "benchstudio.refinement_refresh.paper_example.v1",
+  "study": {
+    "checkpoint": "HuggingFaceVLA/smolvla_base",
+    "predicted_chunk_length": 50,
+    "tasks": 8,
+    "conditions": 7,
+    "attempts_per_condition": 160,
+    "canonical_attempts": 1120,
+    "recorded_actions": 171805
+  },
+  "conditions": [
+    {"h": 1, "d": 2, "attempts": 160, "successes": 137, "actions": 24230},
+    {"h": 1, "d": 5, "attempts": 160, "successes": 136, "actions": 24404},
+    {"h": 1, "d": 10, "attempts": 160, "successes": 135, "actions": 24538},
+    {"h": 2, "d": 2, "attempts": 160, "successes": 139, "actions": 23844},
+    {"h": 2, "d": 5, "attempts": 160, "successes": 122, "actions": 26607},
+    {"h": 5, "d": 2, "attempts": 160, "successes": 138, "actions": 23186},
+    {"h": 5, "d": 5, "attempts": 160, "successes": 133, "actions": 24996}
+  ],
+  "prespecified_primary_comparison": {
+    "selected": {"h": 2, "d": 2},
+    "comparator": {"h": 2, "d": 5},
+    "paired_blocks": 160,
+    "selected_wins": 24,
+    "comparator_wins": 7,
+    "ties": 129,
+    "success_difference": 0.10625,
+    "descriptive_interval": [0.04375, 0.16875]
+  },
+  "provenance": {
+    "source_repository": "https://github.com/amtellezfernandez/refinement-refresh-robot-policies",
+    "source_path": "experiments/runs/refinement_refresh_final_001/confirmation_completed.tar.gz",
+    "source_archive_sha256": "36c1d5f2dcaef85664ec7a1bfe7409c849b3be17831566e783d24a00ea4e8df0",
+    "canonical_episode_member": "confirmation_canonical_episodes.jsonl",
+    "canonical_episode_member_sha256": "ad1bc9ba7fd32d22455703b6fe2eeca2ab95f115e0eb03923598a04e9a44d916"
+  }
+}
