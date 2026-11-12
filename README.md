@@ -9,6 +9,13 @@ auditable run artifacts. Policy adapters and simulator adapters are deliberately
 small so RoboChallenge or another benchmark can retain authority over scoring,
 safety limits, and physical robot execution.
 
+## Research examples
+
+The [refinement-versus-refresh SmolVLA case study](examples/refinement_refresh/)
+shows how retained outcomes from a published study map to BenchStudio's paired
+analysis while preserving the boundary between historical evidence and new
+BenchStudio-produced runs.
+
 ## Quick start
 
 ```bash
