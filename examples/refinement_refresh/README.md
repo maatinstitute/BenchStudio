@@ -8,6 +8,20 @@
 - **Topics:** deployment-time compute allocation, post-training adaptation, vision-language-action policies, inference compute, test-time compute, action chunking, refinement, replanning, and closed-loop robot control
 - **Paper:** [`paper.pdf`](paper.pdf)
 
+## Cite the paper
+
+```bibtex
+@misc{tellezfernandez2026refinement,
+  author = {T{\'e}llez Fern{\'a}ndez, Alba Mar{\'i}a},
+  title = {Refinement versus Refresh: Deployment-Time Compute Allocation for Chunked Robot Policies},
+  year = {2026},
+  note = {Accepted at Post-Training Adaptation of Robot Foundation Models, a NeurIPS 2026 workshop},
+  url = {https://github.com/maatinstitute/BenchStudio/tree/main/examples/refinement_refresh}
+}
+```
+
+Use the arXiv identifier as the canonical citation once it is assigned.
+
 This page is the public reproducibility entry point for the paper and its
 SmolVLA/LIBERO case study.
 
