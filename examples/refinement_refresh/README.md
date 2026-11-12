@@ -1,4 +1,15 @@
-# Refinement versus refresh: a SmolVLA worked example
+# Refinement versus Refresh: Deployment-Time Compute Allocation for Chunked Robot Policies
+
+## Paper metadata
+
+- **Author:** [Alba María Téllez Fernández](https://amtellezfernandez.com/)
+- **Affiliation:** [MAAT Institute](https://maatinstitute.com/)
+- **Workshop topic:** *Post-Training Adaptation of Robot Foundation Models*, a NeurIPS 2026 workshop
+- **Topics:** deployment-time compute allocation, post-training adaptation, vision-language-action policies, inference compute, test-time compute, action chunking, refinement, replanning, and closed-loop robot control
+- **Paper:** [`paper.pdf`](paper.pdf)
+
+This page is the public reproducibility entry point for the paper and its
+SmolVLA/LIBERO case study.
 
 This directory shows how the paper *Refinement versus Refresh: Deployment-Time
 Compute Allocation for Chunked Robot Policies* uses BenchStudio's paired-outcome
@@ -14,8 +25,6 @@ The deployment controls in this case are:
 
 Other policy families may expose different refinement controls. Their values
 must be compared within a model and under that model's own cost boundary.
-
-The camera-ready manuscript is available as [`paper.pdf`](paper.pdf).
 
 ## What is included
 

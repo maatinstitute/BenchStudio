@@ -599,6 +599,6 @@ semantics of the evaluation.
 ```
 
 BenchStudio includes utilities for reproducing the joint generation-effort and
-execution-prefix evaluation used in the RoboPAD paper, while keeping model and
-simulator outcome authority external. See the companion study at
-https://github.com/amtellezfernandez/refinement-refresh-robot-policies.
+execution-prefix evaluation used in the companion paper, while keeping model
+and simulator outcome authority external. See the
+[worked example, paper, and paired outcomes](examples/refinement_refresh/).
