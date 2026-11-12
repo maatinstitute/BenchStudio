@@ -29,8 +29,10 @@
     "descriptive_interval": [0.04375, 0.16875]
   },
   "provenance": {
-    "source_repository": "https://github.com/amtellezfernandez/refinement-refresh-robot-policies",
-    "source_path": "experiments/runs/refinement_refresh_final_001/confirmation_completed.tar.gz",
+    "publication_repository": "https://github.com/maatinstitute/BenchStudio",
+    "paper_path": "examples/refinement_refresh/paper.pdf",
+    "canonical_outcomes_path": "examples/refinement_refresh/confirmation_outcomes.jsonl",
+    "historical_source_archive_path": "experiments/runs/refinement_refresh_final_001/confirmation_completed.tar.gz",
     "source_archive_sha256": "36c1d5f2dcaef85664ec7a1bfe7409c849b3be17831566e783d24a00ea4e8df0",
     "canonical_episode_member": "confirmation_canonical_episodes.jsonl",
     "canonical_episode_member_sha256": "ad1bc9ba7fd32d22455703b6fe2eeca2ab95f115e0eb03923598a04e9a44d916"
