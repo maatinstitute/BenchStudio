@@ -1,7 +1,7 @@
 # Refinement versus refresh: a SmolVLA worked example
 
-This directory shows how the paper *Refinement versus Refresh: Compute
-Allocation for Closed-Loop Robot Policies* uses BenchStudio's paired-outcome
+This directory shows how the paper *Refinement versus Refresh: Deployment-Time
+Compute Allocation for Chunked Robot Policies* uses BenchStudio's paired-outcome
 analysis. The study is a worked example of an evaluation procedure, not evidence
 that the reported configuration transfers to other checkpoints, policies,
 tasks, simulators, or physical robots.
@@ -12,8 +12,10 @@ The deployment controls in this case are:
 - `h`: actions executed before obtaining a new observation and generating again;
 - `K = 50`: predicted actions per chunk, held fixed throughout the study.
 
-Other policy families may expose different generation controls. Their values
+Other policy families may expose different refinement controls. Their values
 must be compared within a model and under that model's own cost boundary.
+
+The camera-ready manuscript is available as [`paper.pdf`](paper.pdf).
 
 ## What is included
 
@@ -61,5 +63,6 @@ later analyses to confirmatory status.
 
 Re-executing the study requires the pinned native policy and simulator stack.
 BenchStudio should become the common campaign and evidence layer only after an
-explicit native-path parity qualification. Until then, the paper repository
-remains the authority for the original records.
+explicit native-path parity qualification. Until then, the retained native-runtime records and their digests
+remain the authority for the original outcomes; this directory is the maintained public
+entry point for the paper and its reproducible aggregate example.
