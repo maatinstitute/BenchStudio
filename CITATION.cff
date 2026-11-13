@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "If you use ReVa, please cite this software and the benchmark, policy, simulator, and datasets used in your evaluation."
+message: "If you use ReVa, cite this software and the benchmark, policy, simulator, and datasets used in your evaluation. If you use the refinement_refresh worked example, also cite its companion paper."
 title: "ReVa: Evidence-aware evaluation infrastructure for embodied AI"
 type: software
 version: 0.1.1

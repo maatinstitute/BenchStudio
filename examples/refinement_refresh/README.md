@@ -1,4 +1,4 @@
-# Refinement versus Refresh: Deployment-Time Compute Allocation for Chunked Robot Policies
+# Refinement vs. Replanning: Inference Compute Allocation in Robot Policies
 
 ## Paper metadata
 
@@ -8,12 +8,17 @@
 - **Topics:** deployment-time compute allocation, post-training adaptation, vision-language-action policies, inference compute, test-time compute, action chunking, refinement, replanning, and closed-loop robot control
 - **Paper:** [`paper.pdf`](paper.pdf)
 
-## Cite the paper
+## Citation requirement
+
+If you use this worked example, its outcome records, its comparison design, or
+its verification results, cite the paper below. If ReVa also supports your
+software workflow, cite ReVa separately through the repository's
+[`CITATION.cff`](../../CITATION.cff).
 
 ```bibtex
 @misc{tellezfernandez2026refinement,
   author = {T{\'e}llez Fern{\'a}ndez, Alba Mar{\'i}a},
-  title = {Refinement versus Refresh: Deployment-Time Compute Allocation for Chunked Robot Policies},
+  title = {Refinement vs. Replanning: Inference Compute Allocation in Robot Policies},
   year = {2026},
   note = {Accepted at Post-Training Adaptation of Robot Foundation Models, a NeurIPS 2026 workshop},
   url = {https://github.com/maatinstitute/ReVa/tree/main/examples/refinement_refresh}
@@ -25,9 +30,8 @@ Use the arXiv identifier as the canonical citation once it is assigned.
 This page is the public reproducibility entry point for the paper and its
 SmolVLA/LIBERO case study.
 
-This directory shows how the paper *Refinement versus Refresh: Deployment-Time
-Compute Allocation for Chunked Robot Policies* uses ReVa's paired-outcome
-analysis. The study is a worked example of an evaluation procedure, not evidence
+This directory shows how the paper *Refinement vs. Replanning: Inference
+Compute Allocation in Robot Policies* uses ReVa's paired-outcome analysis. The study is a worked example of an evaluation procedure, not evidence
 that the reported configuration transfers to other checkpoints, policies,
 tasks, simulators, or physical robots.
 

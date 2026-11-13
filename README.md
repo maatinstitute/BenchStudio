@@ -146,5 +146,7 @@ semantics of the evaluation.
 
 ReVa includes utilities for reproducing the joint generation-effort and
 execution-prefix evaluation used in the companion paper, while keeping model
-and simulator outcome authority external. See the
-[worked example, paper, and paired outcomes](examples/refinement_refresh/).
+and simulator outcome authority external. If you use that study design, its
+paired outcomes, or the `refinement_refresh` worked example, cite both ReVa and
+the paper using the ready-to-copy entries in the
+[worked example](examples/refinement_refresh/).
