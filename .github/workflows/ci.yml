@@ -6,8 +6,13 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
+    name: Test Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -28,6 +33,7 @@ jobs:
       - run: uv run --locked python -m compileall -q src tests examples/external_runtime
 
   portable-core:
+    name: Portable core on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -48,3 +54,13 @@ jobs:
           tests/test_authoring.py
           tests/test_campaigns.py
           tests/test_core_import_without_numpy.py
+
+  workflow-security:
+    name: Audit GitHub Actions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+      - run: uvx zizmor==1.32.0 --persona=pedantic .
