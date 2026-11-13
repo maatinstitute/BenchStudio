@@ -15,13 +15,13 @@ task-success, or normalization compatibility claim is made by these fixtures.
 
 ```bash
 uv run --locked python -m pytest
-uv run --locked python -m reva.cli --episodes 3 --output runs/smoke
+reva smoke
 ```
 
 Inspect optional backend and model-adapter readiness before scheduling work:
 
 ```bash
-uv run --locked python -m reva.cli --readiness
+reva readiness
 ```
 
 Readiness now includes a hardware-memory snapshot. To reject estimated per-worker

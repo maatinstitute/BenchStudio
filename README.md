@@ -83,19 +83,20 @@ The dependency-free mock path checks the scheduler, evidence writer, and report
 pipeline without claiming simulator or model validity:
 
 ```bash
-uv run --locked python -m reva.cli --episodes 3 --output runs/smoke
-uv run --locked python -m reva.cli --verify-artifact runs/smoke
+uv tool install reva
+reva smoke
+reva verify runs/smoke
 ```
 
-`--verify-artifact` checks the standalone rollout bundle written by the simple
-smoke path. `--audit-output` is reserved for a frozen campaign directory, whose
+`reva verify` checks the standalone rollout bundle written by `reva smoke`.
+`--audit-output` is reserved for a frozen campaign directory, whose
 plan, attempt ledger, and runtime receipts support campaign-level claims.
 
 Inspect optional simulator and model-adapter availability before scheduling a
 real evaluation:
 
 ```bash
-uv run --locked python -m reva.cli --readiness
+reva readiness
 ```
 
 ## Documentation
@@ -136,7 +137,7 @@ semantics of the evaluation.
   author  = {Tellez Fernandez, Alba Maria},
   title   = {ReVa: Evidence-aware evaluation infrastructure for embodied AI},
   year    = {2026},
-  version = {0.1.0},
+  version = {0.1.1},
   url     = {https://github.com/maatinstitute/ReVa}
 }
 ```

@@ -5,6 +5,7 @@ import json
 import os
 import signal
 import socket
+import sys
 from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
@@ -85,8 +86,27 @@ def _scheduler_signal_boundary():
         signal.signal(signal.SIGTERM, previous)
 
 
+def _expand_short_command(argv: list[str]) -> list[str]:
+    """Translate the small public CLI into the existing advanced interface."""
+    if argv == ["smoke"]:
+        return ["--episodes", "3", "--output", "runs/smoke"]
+    if len(argv) == 2 and argv[0] == "smoke":
+        return ["--episodes", "3", "--output", argv[1]]
+    if len(argv) == 2 and argv[0] == "verify":
+        return ["--verify-artifact", argv[1]]
+    if argv == ["readiness"]:
+        return ["--readiness"]
+    return argv
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run a ReVa temporal-fidelity evaluation.")
+    parser = argparse.ArgumentParser(
+        description="Run a ReVa evaluation.",
+        epilog=(
+            "Quick commands: 'reva smoke [OUTPUT]', 'reva verify OUTPUT', "
+            "and 'reva readiness'."
+        ),
+    )
     parser.add_argument("--episodes", type=int, default=1)
     parser.add_argument("--output", type=Path, default=Path("runs/smoke"))
     parser.add_argument("--action-prefix", type=int, default=2)
@@ -394,7 +414,7 @@ def main() -> int:
         type=Path,
         help="PEM public key used to verify --manifest-signature.",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(_expand_short_command(sys.argv[1:]))
     if args.verify_archive is not None:
         result = verify_campaign_archive(
             args.verify_archive.read_bytes(), expected_sha256=args.trusted_archive_sha256
