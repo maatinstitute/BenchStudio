@@ -608,6 +608,6 @@ termination signals, extras, and environment step timing. Isaac Lab remains
 the owner of physics, environment lifecycle, and task scoring.
 
 Any future source migration must preserve the original repository's notices,
-third-party licenses, and historical evidence. The current BenchStudio
-repository remains private and proprietary; this file is an engineering
-provenance record, not a relicensing grant.
+third-party licenses, and historical evidence. BenchStudio is publicly available
+under its source-available research license; this provenance record does not
+relicense any upstream or third-party material.

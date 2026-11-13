@@ -621,9 +621,8 @@ interface. Hardware control, emergency stops, benchmark scoring, and AGPL
 `urdf-os` code remain outside this repository.
 
 See [docs/architecture.md](docs/architecture.md) for the integration boundary.
-See [docs/implementation-audit.md](docs/implementation-audit.md) for the
-verified current state and the external integrations that remain intentionally
-unclaimed.
+The hosted CI matrix verifies the supported Python versions, portable core,
+installed distribution, authoring types, and workflow security on every change.
 
 ## Citation
 
