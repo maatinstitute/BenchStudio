@@ -4,6 +4,7 @@ import io
 import json
 import sys
 import zipfile
+from pathlib import Path
 
 import pytest
 
@@ -251,6 +252,127 @@ def test_campaign_executor_commits_infrastructure_failure_and_does_not_retry(tmp
     record = json.loads((tmp_path / "campaign" / "attempt-results.jsonl").read_text().strip())
     assert record["status"] == "infrastructure_failure"
     assert executor.audit().attempts_complete is True
+
+
+def test_simulator_cluster_can_preserve_and_recover_an_interrupted_attempt(tmp_path):
+    plan = CampaignPlanner(
+        run_id="interrupted-run",
+        scenario_id="task",
+        conditions=[{"denoising_steps": 2, "action_prefix": 1}],
+        seeds=[1],
+    ).freeze()
+    output = tmp_path / "campaign"
+    partial = output / "attempts" / "attempt-000000"
+    partial.mkdir(parents=True)
+    (partial / "partial-trace.jsonl").write_text('{"step": 1}\n', encoding="utf-8")
+
+    executor = CampaignExecutor(
+        plan,
+        output,
+        lambda _: MockPolicy(),
+        lambda _: MockSimulator(),
+        recover_interrupted=True,
+    )
+    result = executor.run()
+
+    assert result.committed_attempt_ids == ("attempt-000000",)
+    preserved = (
+        output
+        / "interrupted-attempts"
+        / "attempt-000000"
+        / "partial-000001"
+    )
+    assert (preserved / "partial-trace.jsonl").is_file()
+    receipt = json.loads((preserved / "preservation-receipt.json").read_text())
+    assert receipt["attempt_id"] == "attempt-000000"
+    record = json.loads((output / "attempt-results.jsonl").read_text())
+    assert record["recovered_interrupted_attempts"] == 1
+    archive = executor.archive(tmp_path / "campaign.zip")
+    assert verify_campaign_archive(Path(archive["path"]).read_bytes())["valid"] is True
+
+
+def test_interrupted_attempt_recovery_is_rejected_for_physical_environments(tmp_path):
+    plan = CampaignPlanner(
+        run_id="physical-recovery",
+        scenario_id="task",
+        conditions=[{"x": 1}],
+        seeds=[1],
+        environment_ids=["robot"],
+        protocol={
+            "S": {
+                "environments": [
+                    {
+                        "id": "robot",
+                        "kind": "physical",
+                        "enabled": True,
+                        "requires_authorization": True,
+                        "retry_policy": "none",
+                    }
+                ]
+            }
+        },
+    ).freeze()
+    with pytest.raises(ValueError, match="disabled for physical"):
+        CampaignExecutor(
+            plan,
+            tmp_path / "campaign",
+            lambda _: MockPolicy(),
+            lambda _: MockSimulator(),
+            recover_interrupted=True,
+        )
+
+
+@pytest.mark.skipif(not hasattr(__import__("signal"), "SIGTERM"), reason="SIGTERM unavailable")
+def test_scheduler_sigterm_releases_lease_and_allows_preserved_retry(tmp_path):
+    import os
+    import signal
+
+    from benchstudio.cli import _SchedulerTermination, _scheduler_signal_boundary
+
+    class TerminatingPolicy(MockPolicy):
+        def predict(self, observation, *, denoising_steps):
+            os.kill(os.getpid(), signal.SIGTERM)
+
+    plan = CampaignPlanner(
+        run_id="preempted-run",
+        scenario_id="task",
+        conditions=[{"denoising_steps": 2, "action_prefix": 1}],
+        seeds=[1],
+    ).freeze()
+    output = tmp_path / "campaign"
+    leases = WorkerLeaseManager(output / "leases")
+    executor = CampaignExecutor(
+        plan,
+        output,
+        lambda _: TerminatingPolicy(),
+        lambda _: MockSimulator(),
+        worker_id="preempted-worker",
+        lease_manager=leases,
+    )
+
+    with pytest.raises(_SchedulerTermination):
+        with _scheduler_signal_boundary():
+            executor.run()
+
+    assert not (output / "leases" / "attempt-000000.lease").exists()
+    assert not (output / "attempt-results.jsonl").exists()
+    recovered = CampaignExecutor(
+        plan,
+        output,
+        lambda _: MockPolicy(),
+        lambda _: MockSimulator(),
+        worker_id="replacement-worker",
+        lease_manager=leases,
+        recover_interrupted=True,
+    ).run()
+    assert recovered.committed_attempt_ids == ("attempt-000000",)
+    assert (
+        output
+        / "interrupted-attempts"
+        / "attempt-000000"
+        / "partial-000001"
+        / "preservation-receipt.json"
+    ).is_file()
 
 
 def test_campaign_executor_reports_runner_failure_status_as_failed_attempt(tmp_path):

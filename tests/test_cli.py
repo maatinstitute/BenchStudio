@@ -1,4 +1,8 @@
 import json
+import os
+import signal
+
+import pytest
 
 from benchstudio.campaigns import (
     AttemptLedger,
@@ -9,7 +13,7 @@ from benchstudio.campaigns import (
     make_plan,
     write_plan,
 )
-from benchstudio.cli import main
+from benchstudio.cli import _SchedulerTermination, _scheduler_signal_boundary, main
 
 
 def test_cli_compiles_campaign_spec(monkeypatch, tmp_path, capsys):
@@ -38,6 +42,16 @@ def test_cli_compiles_campaign_spec(monkeypatch, tmp_path, capsys):
     assert main() == 0
     assert json.loads(plan_path.read_text(encoding="utf-8"))["run_id"] == "cli-run"
     assert "compiled_plan=" in capsys.readouterr().out
+
+
+@pytest.mark.skipif(not hasattr(signal, "SIGTERM"), reason="SIGTERM is unavailable")
+def test_scheduler_signal_boundary_converts_sigterm_and_restores_handler():
+    previous = signal.getsignal(signal.SIGTERM)
+    with pytest.raises(_SchedulerTermination) as caught:
+        with _scheduler_signal_boundary():
+            os.kill(os.getpid(), signal.SIGTERM)
+    assert caught.value.signum == signal.SIGTERM
+    assert signal.getsignal(signal.SIGTERM) is previous
 
 
 def test_cli_verifies_robopad_outcome_plan(monkeypatch, tmp_path, capsys):
