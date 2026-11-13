@@ -70,6 +70,29 @@ jobs:
       - run: uv sync --locked --extra dev
       - run: uv run --locked mypy
 
+  package:
+    name: Build and install package
+    runs-on: ubuntu-latest
+    env:
+      UV_PYTHON: "3.10"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+        with:
+          enable-cache: true
+      - run: uv build
+      - run: uv venv --python 3.10 "${RUNNER_TEMP}/benchstudio-wheel"
+      - run: >-
+          uv pip install
+          --python "${RUNNER_TEMP}/benchstudio-wheel/bin/python"
+          dist/*.whl
+      - run: >-
+          "${RUNNER_TEMP}/benchstudio-wheel/bin/python"
+          scripts/smoke_installed_package.py
+      - run: "${RUNNER_TEMP}/benchstudio-wheel/bin/benchstudio-run --help"
+
   workflow-security:
     name: Audit GitHub Actions
     runs-on: ubuntu-latest

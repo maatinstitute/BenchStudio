@@ -18,7 +18,10 @@ class BlockNumpy(importlib.abc.MetaPathFinder):
 sys.meta_path.insert(0, BlockNumpy())
 import benchstudio
 from benchstudio.analysis import parity
+from benchstudio.cli import main
+
 assert parity.PolicyParityReport(0, 0, ()).equivalent
+assert callable(main)
 """
     result = subprocess.run(
         [sys.executable, "-c", script],
