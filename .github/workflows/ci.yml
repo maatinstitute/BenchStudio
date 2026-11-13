@@ -4,7 +4,9 @@ permissions: {}
 
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -27,9 +29,7 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --locked --extra dev
-      - run: uv run --locked ruff check --output-format=github .
       - run: uv run --locked python -m pytest -q
-      - run: uv run --locked python -m pytest -q tests/test_ci_smoke.py
       - run: uv run --locked python -m compileall -q src tests examples/external_runtime
 
   portable-core:
@@ -48,15 +48,14 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --locked --extra dev
-      - run: uv run --locked ruff check --output-format=github .
       - run: >-
           uv run --locked python -m pytest -q
           tests/test_authoring.py
           tests/test_campaigns.py
           tests/test_core_import_without_numpy.py
 
-  authoring-types:
-    name: Type-check authoring API
+  code-quality:
+    name: Code quality and authoring types
     runs-on: ubuntu-latest
     env:
       UV_PYTHON: "3.10"
@@ -68,6 +67,7 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --locked --extra dev
+      - run: uv run --locked ruff check --output-format=github .
       - run: uv run --locked mypy
 
   package:
