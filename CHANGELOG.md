@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 — 2026-11-13
+
+- Standardizes the public brand as ReVa.
+- Documents `import reva as rv` as the concise Python convention.
+- Keeps the PyPI distribution, import namespace, and CLI lowercase as `reva`.
+
 ## 0.1.0 — 2026-11-11
 
 First public tagged research release.
