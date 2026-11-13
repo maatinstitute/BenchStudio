@@ -137,7 +137,7 @@ semantics of the evaluation.
   author  = {Tellez Fernandez, Alba Maria},
   title   = {ReVa: Evidence-aware evaluation infrastructure for embodied AI},
   year    = {2026},
-  version = {0.1.0},
+  version = {0.1.1},
   url     = {https://github.com/maatinstitute/ReVa}
 }
 ```
