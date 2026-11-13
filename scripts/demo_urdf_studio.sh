@@ -34,7 +34,7 @@ if [[ -e "$OUTPUT" ]]; then
     echo "Requested output already exists; using: $OUTPUT"
 fi
 
-STAGING=$(mktemp -d /tmp/benchstudio-so101-cube.XXXXXX)
+STAGING=$(mktemp -d /tmp/ival-so101-cube.XXXXXX)
 RECOVERY_STAGING=""
 cleanup() {
     rm -rf "$STAGING"
@@ -49,7 +49,7 @@ cp -R "$URDF_STUDIO_ROOT/web/public/demo/assets" "$STAGING/assets"
     "$URDF_STUDIO_ROOT/third_party/so-arm100/Simulation/SO101/so101_new_calib.urdf" \
     "$STAGING/robot.urdf"
 
-echo "BenchStudio × URDF Studio"
+echo "IVal × URDF Studio"
 echo "robot=SO-101 task=cube-lift simulators=$SIMULATORS"
 echo "source=$URDF_STUDIO_ROOT"
 
@@ -80,13 +80,13 @@ if [[ "$HAS_MUJOCO" == true ]]; then
             --output "$EPISODE_DIR/contact-analysis.json"
     done
 
-    RECOVERY_EPISODE_INDEX=${BENCHSTUDIO_RECOVERY_EPISODE_INDEX:-2}
+    RECOVERY_EPISODE_INDEX=${IVAL_RECOVERY_EPISODE_INDEX:-2}
     RECOVERY_MANIFEST="$OUTPUT/manifests/episode-$RECOVERY_EPISODE_INDEX.json"
     if [[ -f "$RECOVERY_MANIFEST" ]]; then
         RECOVERY_ROOT="$OUTPUT/recovery/episode-$RECOVERY_EPISODE_INDEX"
         FAILED_DIR="$RECOVERY_ROOT/attempt-0"
         RECOVERED_DIR="$RECOVERY_ROOT/attempt-1"
-        RECOVERY_STAGING=$(mktemp -d /tmp/benchstudio-so101-recovery.XXXXXX)
+        RECOVERY_STAGING=$(mktemp -d /tmp/ival-so101-recovery.XXXXXX)
         "$URDF_STUDIO_PYTHON" "$ROOT/scripts/build_recovery_fixture.py" prepare \
             --source "$OUTPUT/scenario" \
             --output "$RECOVERY_STAGING/scenario" \

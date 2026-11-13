@@ -2,7 +2,7 @@ import json
 import unittest
 from pathlib import Path
 
-from benchstudio.analysis.agreement import DIMENSIONS, compare, metrics, validate
+from ival.analysis.agreement import DIMENSIONS, compare, metrics, validate
 
 
 def synthetic(identifier):

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from benchstudio.conformance import proper_rotation, swept_box_intersects
+from ival.conformance import proper_rotation, swept_box_intersects
 
 
 def _check(start, end, extent=(0, 0, 0), orient=None, margin=0):

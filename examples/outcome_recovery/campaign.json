@@ -1,5 +1,5 @@
 {
-  "schema": "benchstudio.campaign.v1",
+  "schema": "ival.campaign.v1",
   "experiment": {
     "name": "outcome_recovery_reference",
     "protocol_revision": "example-v1",

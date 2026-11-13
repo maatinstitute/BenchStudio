@@ -16,9 +16,9 @@ class BlockNumpy(importlib.abc.MetaPathFinder):
         return None
 
 sys.meta_path.insert(0, BlockNumpy())
-import benchstudio
-from benchstudio.analysis import parity
-from benchstudio.cli import main
+import ival
+from ival.analysis import parity
+from ival.cli import main
 
 assert parity.PolicyParityReport(0, 0, ()).equivalent
 assert callable(main)

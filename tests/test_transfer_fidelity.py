@@ -1,6 +1,6 @@
 import json
 
-from benchstudio.analysis import (
+from ival.analysis import (
     load_transfer_records,
     summarize_transfer_fidelity,
     write_transfer_fidelity_report,
@@ -46,7 +46,7 @@ def test_transfer_fidelity_preserves_missingness_and_estimates_paired_gap():
     )
     assert report.failure_category_agreement_rate == 0.5
     payload = report.to_dict()
-    assert payload["schema"] == "benchstudio_transfer_fidelity_report_v1"
+    assert payload["schema"] == "ival_transfer_fidelity_report_v1"
     assert payload["success_gap_confidence_interval"] == list(
         report.success_gap_confidence_interval
     )
@@ -85,7 +85,7 @@ def test_transfer_fidelity_artifact_round_trip(tmp_path):
     output = tmp_path / "transfer.json"
     write_transfer_fidelity_report(report, output)
     payload = json.loads(output.read_text(encoding="utf-8"))
-    assert payload["schema"] == "benchstudio_transfer_fidelity_report_v1"
+    assert payload["schema"] == "ival_transfer_fidelity_report_v1"
     assert payload["complete_pairs"] == 1
 
 
@@ -114,7 +114,7 @@ def test_transfer_fidelity_rejects_invalid_outcomes_and_ages():
 
 
 def test_transfer_gap_rejects_non_boolean_outcomes():
-    from benchstudio.analysis import estimate_transfer_gap
+    from ival.analysis import estimate_transfer_gap
 
     gap = estimate_transfer_gap([True, "yes"], [False, True])
     assert gap.valid is False

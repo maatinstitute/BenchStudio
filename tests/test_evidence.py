@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import json
 
-from benchstudio.compare import build_comparison_report
-from benchstudio.evidence import NdjsonWriter, environment_fingerprint, verify_artifact_manifest
-from benchstudio.mock import MockPolicy, MockSimulator
-from benchstudio.runner import RunConfig, run_episodes
+from ival.compare import build_comparison_report
+from ival.evidence import NdjsonWriter, environment_fingerprint, verify_artifact_manifest
+from ival.mock import MockPolicy, MockSimulator
+from ival.runner import RunConfig, run_episodes
 
 
 def test_ndjson_writer_returns_digest_and_count(tmp_path):
@@ -18,10 +18,10 @@ def test_ndjson_writer_returns_digest_and_count(tmp_path):
 
 
 def test_environment_fingerprint_records_optional_backend_versions(monkeypatch):
-    from benchstudio import evidence
+    from ival import evidence
 
     versions = {
-        "benchstudio": "0.1.0",
+        "ival": "0.1.0",
         "mujoco": "3.3.0",
         "gymnasium": "1.0.0",
         "genesis-world": "1.4.0",
@@ -39,7 +39,7 @@ def test_environment_fingerprint_records_optional_backend_versions(monkeypatch):
     monkeypatch.setattr(evidence.metadata, "version", fake_version)
     fingerprint = environment_fingerprint("isaaclab")
     assert fingerprint["backend_id"] == "isaaclab"
-    assert fingerprint["packages"]["benchstudio"] == "0.1.0"
+    assert fingerprint["packages"]["ival"] == "0.1.0"
     assert fingerprint["packages"]["gymnasium"] == "1.0.0"
     assert fingerprint["packages"]["isaaclab"] == "2.0.0"
 
@@ -155,7 +155,7 @@ def test_artifact_manifest_requires_external_trust_anchor(tmp_path):
 def test_artifact_manifest_can_check_independent_trusted_digest(tmp_path):
     run_dir = tmp_path / "run"
     run_episodes(MockPolicy(), MockSimulator(), RunConfig(episodes=1), run_dir)
-    from benchstudio.evidence import sha256_file
+    from ival.evidence import sha256_file
 
     digest = sha256_file(run_dir / "artifact-manifest.json")
     result = verify_artifact_manifest(run_dir, trusted_manifest_sha256=digest)
@@ -186,7 +186,7 @@ def test_artifact_manifest_verifier_rejects_path_escape(tmp_path):
     (run_dir / "artifact-manifest.json").write_text(
         json.dumps(
             {
-                "schema": "benchstudio_artifact_manifest_v1",
+                "schema": "ival_artifact_manifest_v1",
                 "status": "completed",
                 "files": {"../outside": {"sha256": "0" * 64, "bytes": 1}},
             }
@@ -203,7 +203,7 @@ def test_artifact_manifest_verifier_rejects_malformed_file_entry(tmp_path):
     (run_dir / "artifact-manifest.json").write_text(
         json.dumps(
             {
-                "schema": "benchstudio_artifact_manifest_v1",
+                "schema": "ival_artifact_manifest_v1",
                 "status": "completed",
                 "files": {"trace.jsonl": {"sha256": "not-a-digest", "bytes": "1"}},
             }
@@ -224,7 +224,7 @@ def test_artifact_manifest_creation_rejects_symlinks(tmp_path):
     target.write_text("outside", encoding="utf-8")
     (root / "trace.jsonl").symlink_to(target)
     with pytest.raises(ValueError, match="contains symlink"):
-        from benchstudio.evidence import build_artifact_manifest
+        from ival.evidence import build_artifact_manifest
 
         build_artifact_manifest(root, status="completed")
 
@@ -239,7 +239,7 @@ def test_artifact_manifest_verifier_rejects_symlinked_bound_file(tmp_path):
     (run_dir / "artifact-manifest.json").write_text(
         json.dumps(
             {
-                "schema": "benchstudio_artifact_manifest_v1",
+                "schema": "ival_artifact_manifest_v1",
                 "status": "completed",
                 "files": {"linked.txt": {"sha256": "0" * 64, "bytes": 7}},
             }

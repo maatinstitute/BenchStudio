@@ -1,7 +1,7 @@
 
 import pytest
 
-import benchstudio.campaigns.robopad_assay_claims as claims
+import ival.campaigns.robopad_assay_claims as claims
 
 
 @pytest.fixture

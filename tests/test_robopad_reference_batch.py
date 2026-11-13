@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from benchstudio.campaigns.robopad_reference_batch import NAMES, dispatch, reserve, slots
+from ival.campaigns.robopad_reference_batch import NAMES, dispatch, reserve, slots
 
 
 def test_exact_remaining_slots_and_duplicate_claim(tmp_path):
@@ -22,7 +22,7 @@ def test_partial_reservation_failure_remains_claimed(tmp_path):
     claims = tmp_path / "claims"
     reserved: list[str] = []
     with patch(
-        "benchstudio.campaigns.robopad_reference_batch.json.dump",
+        "ival.campaigns.robopad_reference_batch.json.dump",
         side_effect=OSError("write failed"),
     ):
         with pytest.raises(OSError):

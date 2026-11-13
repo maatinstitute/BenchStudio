@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from importlib.metadata import distribution
 
-from benchstudio import PairedStudy, condition_grid, simulator_environment
+from ival import PairedStudy, condition_grid, simulator_environment
 
 
 def main() -> None:
-    metadata = distribution("benchstudio")
+    metadata = distribution("ival")
     assert metadata.version == "0.1.0"
     assert metadata.metadata["License-Expression"] == "LicenseRef-Research-Use-1.1"
 

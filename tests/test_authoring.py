@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from benchstudio.authoring import PairedStudy, condition_grid, simulator_environment
+from ival.authoring import PairedStudy, condition_grid, simulator_environment
 
 
 def test_condition_grid_compiles_to_paired_frozen_plan(tmp_path):

@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from benchstudio.integrations import (
+from ival.integrations import (
     AlpaBridgeTelemetryWriter,
     load_alpabridge_telemetry,
     route_arc_length_m,

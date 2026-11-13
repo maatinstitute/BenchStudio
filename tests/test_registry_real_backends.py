@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import pytest
 
-from benchstudio.adapters import default_registry
-from benchstudio.contracts import ActionChunk
-from benchstudio.runner import RunConfig, run_episodes
+from ival.adapters import default_registry
+from ival.contracts import ActionChunk
+from ival.runner import RunConfig, run_episodes
 
 
 class _ZeroMuJoCoPolicy:

@@ -3,7 +3,7 @@
 import copy
 import unittest
 
-from benchstudio.analysis.observation_age_audit import digest, validate_inputs
+from ival.analysis.observation_age_audit import digest, validate_inputs
 
 
 class InputAuditTests(unittest.TestCase):

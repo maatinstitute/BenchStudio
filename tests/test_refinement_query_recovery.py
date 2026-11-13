@@ -1,6 +1,6 @@
 import pytest
 
-from benchstudio.analysis.refinement_query_recovery import (
+from ival.analysis.refinement_query_recovery import (
     QUERY_RECOVERY_PROTOCOL,
     audit_query_recovery,
     query_answer_check,

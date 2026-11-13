@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from benchstudio.integrations import (
+from ival.integrations import (
     distance_to_polyline,
     effective_ramp_target_mps,
     ramp_scale,

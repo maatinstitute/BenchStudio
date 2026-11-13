@@ -4,7 +4,7 @@ import json
 import subprocess
 import sys
 
-from benchstudio.campaigns import AttemptLedger, load_frozen_campaign_plan
+from ival.campaigns import AttemptLedger, load_frozen_campaign_plan
 
 
 def test_independent_process_shards_commit_one_complete_campaign(tmp_path):
@@ -14,7 +14,7 @@ def test_independent_process_shards_commit_one_complete_campaign(tmp_path):
     spec.write_text(
         json.dumps(
             {
-                "schema": "benchstudio.campaign.v1",
+                "schema": "ival.campaign.v1",
                 "experiment": {"name": "process-cluster"},
                 "task": {"task_id": "task"},
                 "environments": [{"id": "sim", "kind": "simulator"}],
@@ -31,7 +31,7 @@ def test_independent_process_shards_commit_one_complete_campaign(tmp_path):
         [
             sys.executable,
             "-m",
-            "benchstudio.cli",
+            "ival.cli",
             "--campaign-spec",
             str(spec),
             "--plan-output",
@@ -47,7 +47,7 @@ def test_independent_process_shards_commit_one_complete_campaign(tmp_path):
             [
                 sys.executable,
                 "-m",
-                "benchstudio.cli",
+                "ival.cli",
                 "--frozen-plan",
                 str(plan),
                 "--execute-mock",

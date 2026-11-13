@@ -1,9 +1,9 @@
 {
-  "package_id": "benchstudio-so101-cube-lift",
+  "package_id": "ival-so101-cube-lift",
   "version": "1.0.0",
   "description": "URDF Studio SO-101 cube-lift evaluation scene.",
   "provenance": {
-    "source": "benchstudio-urdf-studio-connector"
+    "source": "ival-urdf-studio-connector"
   },
   "artifacts": [],
   "world": {

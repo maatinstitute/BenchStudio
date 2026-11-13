@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from benchstudio.integrations import GenesisSimulator
+from ival.integrations import GenesisSimulator
 
 
 class _FakeScene:

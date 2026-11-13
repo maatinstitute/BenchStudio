@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from benchstudio.integrations.robopad_supervisor import (
+from ival.integrations.robopad_supervisor import (
     select_timeout,
     supervise,
 )
@@ -116,8 +116,8 @@ def test_external_signal_cleans_owned_child_and_restores_handler(tmp_path):
 
 def test_lingering_group_is_not_success(tmp_path):
     with (
-        patch("benchstudio.integrations.robopad_supervisor.os.killpg", return_value=None),
-        patch("benchstudio.integrations.robopad_supervisor.stop_group") as stop,
+        patch("ival.integrations.robopad_supervisor.os.killpg", return_value=None),
+        patch("ival.integrations.robopad_supervisor.stop_group") as stop,
     ):
         result = _run_child("print('done')", tmp_path)
     assert result["status"] == "lingering_process_group"

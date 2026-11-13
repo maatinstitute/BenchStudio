@@ -4,8 +4,8 @@ import sys
 
 import pytest
 
-from benchstudio.contracts import Observation, Timestamp
-from benchstudio.external_policy import (
+from ival.contracts import Observation, Timestamp
+from ival.external_policy import (
     ExternalCommandPolicy,
     PersistentExternalCommandPolicy,
 )

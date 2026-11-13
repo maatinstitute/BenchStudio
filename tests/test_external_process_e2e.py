@@ -3,12 +3,12 @@ from __future__ import annotations
 import json
 import sys
 
-from benchstudio.adapters import default_registry
-from benchstudio.campaigns import CampaignExecutor, compile_campaign_spec
-from benchstudio.external_policy import PersistentExternalCommandPolicy
-from benchstudio.external_simulator import ExternalCommandSimulator
-from benchstudio.model_adapters import default_model_registry
-from benchstudio.runner import RunConfig, run_episodes
+from ival.adapters import default_registry
+from ival.campaigns import CampaignExecutor, compile_campaign_spec
+from ival.external_policy import PersistentExternalCommandPolicy
+from ival.external_simulator import ExternalCommandSimulator
+from ival.model_adapters import default_model_registry
+from ival.runner import RunConfig, run_episodes
 
 
 def test_persistent_external_policy_and_simulator_complete_closed_loop_run(tmp_path):
@@ -92,7 +92,7 @@ for line in sys.stdin:
 """
     plan = compile_campaign_spec(
         {
-            "schema": "benchstudio.campaign.v1",
+            "schema": "ival.campaign.v1",
             "experiment": {"name": "registry-external-process"},
             "model": {
                 "adapter": "smolvla",

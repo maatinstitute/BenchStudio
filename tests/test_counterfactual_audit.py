@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from benchstudio.analysis import audit_counterfactual_outcomes
-from benchstudio.campaigns import CampaignPlanner, Intervention, compile_counterfactual_plan
+from ival.analysis import audit_counterfactual_outcomes
+from ival.campaigns import CampaignPlanner, Intervention, compile_counterfactual_plan
 
 
 def _plan():

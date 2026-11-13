@@ -7,15 +7,15 @@ import sys
 
 import pytest
 
-from benchstudio.analysis import (
+from ival.analysis import (
     compare_observation_streams,
     compare_policy_outputs,
     compare_policy_trace_files,
     write_parity_report,
 )
-from benchstudio.campaigns import WorkerLeaseManager
-from benchstudio.contracts import Observation
-from benchstudio.integrations import (
+from ival.campaigns import WorkerLeaseManager
+from ival.contracts import Observation
+from ival.integrations import (
     POLICY_TRACE_SCHEMA,
     RoboChallengeAction,
     RoboChallengeObservation,
@@ -27,8 +27,8 @@ from benchstudio.integrations import (
     run_replay_conformance,
     validate_robochallenge_message,
 )
-from benchstudio.integrations.policy_trace import PolicyTraceRow
-from benchstudio.mock import MockPolicy
+from ival.integrations.policy_trace import PolicyTraceRow
+from ival.mock import MockPolicy
 
 
 def test_worker_lease_is_exclusive_and_owner_bound(tmp_path):
@@ -79,7 +79,7 @@ def test_parity_reports_are_serializable_evidence(tmp_path):
     path = tmp_path / "parity.json"
     write_parity_report(path, policy=policy_report, metadata={"checkpoint": "sha256:x"})
     payload = json.loads(path.read_text(encoding="utf-8"))
-    assert payload["schema"] == "benchstudio_parity_report_v1"
+    assert payload["schema"] == "ival_parity_report_v1"
     assert payload["policy"]["equivalent"] is True
 
 
@@ -403,7 +403,7 @@ def test_worldepisode_binding_is_explicit_about_fallback_profile():
     result = preflight_worldepisode({"episode_id": "episode-1", "schema": "worldepisode"})
     assert result.valid
     assert result.profile in {
-        "benchstudio_minimal_worldepisode_profile",
+        "ival_minimal_worldepisode_profile",
         "worldepisode_reference_validator",
     }
 
@@ -413,7 +413,7 @@ def test_worldepisode_strict_fallback_requires_semantic_contract():
         {"episode_id": "episode-1", "schema": "worldepisode"}, strict=True
     )
     assert result.valid is False
-    assert result.profile == "benchstudio_strict_worldepisode_profile"
+    assert result.profile == "ival_strict_worldepisode_profile"
     assert {item["code"] for item in result.diagnostics} >= {
         "missing_clock_graph",
         "unbound_world_revision",
@@ -486,7 +486,7 @@ def test_worldepisode_preflight_binds_frozen_identity_and_fails_closed_on_bad_pa
     }
     invalid = preflight_worldepisode([], expected_episode_id="episode-1")
     assert invalid.valid is False
-    assert invalid.profile == "benchstudio_invalid_worldepisode_profile"
+    assert invalid.profile == "ival_invalid_worldepisode_profile"
 
 
 def test_worldepisode_preflight_accepts_canonical_nested_identity():

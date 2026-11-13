@@ -7,9 +7,9 @@ import argparse
 import json
 from pathlib import Path
 
-from benchstudio.campaigns import CampaignExecutor, CampaignPlanner
-from benchstudio.compare import build_campaign_comparison_report
-from benchstudio.mock import MockPolicy, MockSimulator
+from ival.campaigns import CampaignExecutor, CampaignPlanner
+from ival.compare import build_campaign_comparison_report
+from ival.mock import MockPolicy, MockSimulator
 
 
 class BoundaryFixtureSimulator(MockSimulator):

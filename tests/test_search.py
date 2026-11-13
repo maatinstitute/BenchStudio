@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from benchstudio.campaigns import (
+from ival.campaigns import (
     PerturbationDimension,
     SearchEvaluation,
     audit_search_results,

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import json
 
-from benchstudio.evidence import (
+from ival.evidence import (
     build_artifact_manifest,
     verify_artifact_manifest,
     write_manifest_trust_anchor,
 )
-from benchstudio.evidence_signing import (
+from ival.evidence_signing import (
     generate_ed25519_keypair,
     sign_manifest,
     verify_manifest_signature,
@@ -75,7 +75,7 @@ def test_manifest_signature_verifier_rejects_invalid_digest_and_key_id(tmp_path)
     signature_path.write_text(
         json.dumps(
             {
-                "schema": "benchstudio_manifest_signature_v1",
+                "schema": "ival_manifest_signature_v1",
                 "algorithm": "ed25519",
                 "manifest_sha256": "not-a-digest",
                 "signature_base64": "AA==",

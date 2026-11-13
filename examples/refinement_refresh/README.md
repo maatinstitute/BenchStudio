@@ -16,7 +16,7 @@
   title = {Refinement versus Refresh: Deployment-Time Compute Allocation for Chunked Robot Policies},
   year = {2026},
   note = {Accepted at Post-Training Adaptation of Robot Foundation Models, a NeurIPS 2026 workshop},
-  url = {https://github.com/maatinstitute/BenchStudio/tree/main/examples/refinement_refresh}
+  url = {https://github.com/maatinstitute/IVal/tree/main/examples/refinement_refresh}
 }
 ```
 
@@ -26,7 +26,7 @@ This page is the public reproducibility entry point for the paper and its
 SmolVLA/LIBERO case study.
 
 This directory shows how the paper *Refinement versus Refresh: Deployment-Time
-Compute Allocation for Chunked Robot Policies* uses BenchStudio's paired-outcome
+Compute Allocation for Chunked Robot Policies* uses IVal's paired-outcome
 analysis. The study is a worked example of an evaluation procedure, not evidence
 that the reported configuration transfers to other checkpoints, policies,
 tasks, simulators, or physical robots.
@@ -51,12 +51,12 @@ copied here.
 `expected_summary.json` records the published totals and the SHA-256 identities
 of the source archive and its canonical episode member. The historical episodes
 were produced by the study's pinned native LeRobot/LIBERO runtime. They are not
-BenchStudio-produced runs, and this example does not establish native-runtime
+IVal-produced runs, and this example does not establish native-runtime
 parity.
 
 ## Reproduce the reported totals
 
-From a BenchStudio checkout:
+From a IVal checkout:
 
 ```bash
 uv sync --locked
@@ -71,7 +71,7 @@ The check reconstructs:
 - 24 paired wins, seven paired losses, and 129 ties;
 - a success difference of 0.10625 for the prespecified primary comparison.
 
-BenchStudio also reports its exact discordance interval. The paper's
+IVal also reports its exact discordance interval. The paper's
 `[0.04375, 0.16875]` interval is retained separately because it used a
 specified task-conditional bootstrap. The two intervals answer the same
 comparison under different uncertainty constructions and must not be silently
@@ -85,7 +85,7 @@ therefore verifies the frozen aggregate and paired identities without promoting
 later analyses to confirmatory status.
 
 Re-executing the study requires the pinned native policy and simulator stack.
-BenchStudio should become the common campaign and evidence layer only after an
+IVal should become the common campaign and evidence layer only after an
 explicit native-path parity qualification. Until then, the retained native-runtime records and their digests
 remain the authority for the original outcomes; this directory is the maintained public
 entry point for the paper and its reproducible aggregate example.

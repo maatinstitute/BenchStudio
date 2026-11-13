@@ -5,7 +5,7 @@ import urllib.error
 
 import pytest
 
-from benchstudio.campaigns import (
+from ival.campaigns import (
     CampaignExecutor,
     CampaignPlanner,
     HttpArtifactStore,
@@ -36,7 +36,7 @@ def test_local_artifact_store_rejects_bad_digest(tmp_path):
 
 
 def test_local_artifact_store_retrieves_and_verifies_campaign_archive(tmp_path):
-    from benchstudio.mock import MockPolicy, MockSimulator
+    from ival.mock import MockPolicy, MockSimulator
 
     plan = CampaignPlanner(
         run_id="retrieve", scenario_id="task", conditions=[{"x": 1}], seeds=[1]
@@ -58,7 +58,7 @@ def test_publish_campaign_archive_returns_verified_reference(tmp_path):
     campaign.mkdir()
     (campaign / "campaign-plan.json").write_text("{}\n", encoding="utf-8")
     reference = publish_campaign_archive(campaign, LocalArtifactStore(tmp_path / "store"))
-    assert reference.schema == "benchstudio.campaign_archive.v1"
+    assert reference.schema == "ival.campaign_archive.v1"
     assert len(reference.digest_sha256) == 64
     assert reference.bytes > 0
 

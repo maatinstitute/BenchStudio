@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from benchstudio.analysis import (
+from ival.analysis import (
     OutcomeLedger,
     OutcomeRecord,
     audit_outcome_provenance,
@@ -19,7 +19,7 @@ def test_authoritative_outcome_requires_declared_scorer_identity():
 
 
 def test_supplementary_outcomes_cannot_be_used_as_authoritative_scores():
-    record = OutcomeRecord("attempt-1", True, "supplementary", "benchstudio-diagnostic")
+    record = OutcomeRecord("attempt-1", True, "supplementary", "ival-diagnostic")
     audit = audit_outcome_provenance([record])
     assert audit.valid
     assert not audit.authoritative_scorer_declared

@@ -15,7 +15,7 @@ def test_mock_recovery_checkpoint_resumes_without_duplicate_attempts(tmp_path):
         check=True,
     )
     report = json.loads(result.stdout)
-    assert report["schema"] == "benchstudio.recovery_checkpoint.v1"
+    assert report["schema"] == "ival.recovery_checkpoint.v1"
     assert report["first_batch"] == {"committed": 2, "missing": 2}
     assert report["resumed_batch"] == {
         "committed": 2,

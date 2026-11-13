@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from benchstudio.conformance import (
+from ival.conformance import (
     ActionSpec,
     AdapterCapabilities,
     ScenarioContract,
@@ -15,7 +15,7 @@ from benchstudio.conformance import (
     validate_observation,
     validate_scenario_pair,
 )
-from benchstudio.contracts import Observation, Timestamp
+from ival.contracts import Observation, Timestamp
 
 
 def test_action_validation_rejects_semantic_shape_and_nonfinite_values():

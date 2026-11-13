@@ -1,6 +1,6 @@
 import pytest
 
-from benchstudio.analysis import ResourceBudget, ResourcePoint, audit_resources, pareto_frontier
+from ival.analysis import ResourceBudget, ResourcePoint, audit_resources, pareto_frontier
 
 
 def test_pareto_frontier_retains_success_latency_compute_tradeoffs():

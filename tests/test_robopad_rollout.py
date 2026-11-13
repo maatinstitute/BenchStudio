@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from benchstudio.integrations.robopad_rollout import RolloutFailure, rollout
+from ival.integrations.robopad_rollout import RolloutFailure, rollout
 
 
 class _World:

@@ -1,6 +1,6 @@
 import json
 
-from benchstudio.demo_dashboard import build_demo_dashboard
+from ival.demo_dashboard import build_demo_dashboard
 
 
 def _write_json(path, value):
@@ -106,7 +106,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     _write_json(
         evidence / "urdf-studio" / "simulator-debug.json",
         {
-            "schema": "benchstudio.simulator_debug.v1",
+            "schema": "ival.simulator_debug.v1",
             "shared_parameters": {
                 "physics_timestep_s": 0.0002,
                 "control_hz": 50.0,
@@ -179,7 +179,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
             / f"episode-{episode_index}"
             / "contact-analysis.json",
             {
-                "schema": "benchstudio.contact_grasp_analysis.v1",
+                "schema": "ival.contact_grasp_analysis.v1",
                 "episode_index": episode_index,
                 "seed": seed,
                 "backend": "mujoco",
@@ -238,7 +238,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     _write_json(
         evidence / "urdf-studio" / "recovery.json",
         {
-            "schema": "benchstudio.robot_recovery.v1",
+            "schema": "ival.robot_recovery.v1",
             "backend": "mujoco",
             "episode_index": 2,
             "seed": 43,
@@ -292,7 +292,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     _write_json(
         evidence / "urdf-studio" / "study-manifest.json",
         {
-            "schema": "benchstudio.study_manifest.v1",
+            "schema": "ival.study_manifest.v1",
             "study_id": "so101-cube-grasp-cross-sim-v1",
             "episode_count": 100,
             "manifest_sha256": "d" * 64,
@@ -315,7 +315,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
         encoding="utf-8"
     )
 
-    assert "BenchStudio — Evaluation Workbench" in workbench
+    assert "IVal — Evaluation Workbench" in workbench
     assert "100 EPISODES × 3 SIMULATORS" in workbench
     assert "Coverage matrix" in workbench
     assert workbench.count('class="coverage-row"') == 100
@@ -362,7 +362,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert "100 ms · 10 Hz" in workbench
     assert "not calibrated hardware force" in workbench
 
-    assert "BenchStudio — Study control room" in document
+    assert "IVal — Study control room" in document
     assert "location.replace('./')" in document
     assert "Batch authorization" in document
     assert "Scientific verdict" not in document

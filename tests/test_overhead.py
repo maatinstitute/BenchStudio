@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from benchstudio.analysis import (
+from ival.analysis import (
     TimingProvenance,
     audit_execution_overhead,
     load_execution_overhead,
@@ -66,7 +66,7 @@ def test_execution_overhead_round_trips_as_a_campaign_evidence_artifact(tmp_path
     write_execution_overhead(report, path)
     loaded = load_execution_overhead(path)
     assert loaded == report
-    assert json.loads(path.read_text())["schema"] == "benchstudio_execution_overhead_v1"
+    assert json.loads(path.read_text())["schema"] == "ival_execution_overhead_v1"
 
 
 def test_execution_overhead_loader_rejects_coercible_malformed_reports(tmp_path):
@@ -74,7 +74,7 @@ def test_execution_overhead_loader_rejects_coercible_malformed_reports(tmp_path)
     path.write_text(
         json.dumps(
             {
-                "schema": "benchstudio_execution_overhead_v1",
+                "schema": "ival_execution_overhead_v1",
                 "report": {
                     "matched_samples": "2",
                     "baseline_deadline_misses": 0,

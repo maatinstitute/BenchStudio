@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from benchstudio.conformance import (
+from ival.conformance import (
     AlignmentEndpoint,
     AlignmentJointRule,
     AlignmentMapping,

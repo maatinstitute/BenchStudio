@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from benchstudio.integrations import FixedReference
+from ival.integrations import FixedReference
 
 
 def _controller(held):

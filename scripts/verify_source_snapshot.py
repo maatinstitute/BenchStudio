@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify a BenchStudio source-snapshot manifest against a local checkout."""
+"""Verify a IVal source-snapshot manifest against a local checkout."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ def main() -> int:
     parser.add_argument("source_root", type=Path)
     args = parser.parse_args()
     try:
-        from benchstudio.source_snapshot import verify_source_snapshot
+        from ival.source_snapshot import verify_source_snapshot
 
         result = verify_source_snapshot(args.manifest, args.source_root)
     except (OSError, json.JSONDecodeError, ValueError) as exc:

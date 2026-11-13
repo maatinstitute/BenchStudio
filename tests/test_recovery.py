@@ -1,6 +1,6 @@
 import json
 
-from benchstudio.analysis import (
+from ival.analysis import (
     load_recovery_records,
     summarize_recovery_outcomes,
     write_recovery_report,
@@ -57,5 +57,5 @@ def test_recovery_report_round_trips_records_and_summary(tmp_path):
     output = tmp_path / "recovery-report.json"
     write_recovery_report(report, output)
     payload = json.loads(output.read_text(encoding="utf-8"))
-    assert payload["schema"] == "benchstudio_recovery_report_v1"
+    assert payload["schema"] == "ival_recovery_report_v1"
     assert payload["matched_pairs"] == 1

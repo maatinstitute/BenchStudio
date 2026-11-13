@@ -1,4 +1,4 @@
-from benchstudio.analysis.alpabridge_review import (
+from ival.analysis.alpabridge_review import (
     critical_event_bundle,
     frame_bookmarks,
     has_intervention,

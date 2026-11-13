@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from benchstudio import ModelCapabilityProfile
-from benchstudio.analysis import (
+from ival import ModelCapabilityProfile
+from ival.analysis import (
     ClaimType,
     ResourceBudget,
     audit_resources,

@@ -1,7 +1,7 @@
 import math
 import unittest
 
-from benchstudio.analysis.metadata_conditioning import (
+from ival.analysis.metadata_conditioning import (
     condition_prompt,
     prompt_mode_metadata,
     validate_metadata,

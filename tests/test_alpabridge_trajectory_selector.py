@@ -1,6 +1,6 @@
 import pytest
 
-from benchstudio.integrations import (
+from ival.integrations import (
     TrajectoryCandidate,
     TrajectoryReference,
     score_candidate,

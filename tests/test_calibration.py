@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from benchstudio.calibration import CalibrationRecord, compare_calibrations
+from ival.calibration import CalibrationRecord, compare_calibrations
 
 
 def _record(**overrides):

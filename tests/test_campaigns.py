@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from benchstudio.campaigns import (
+from ival.campaigns import (
     AttemptLedger,
     CampaignPlanner,
     Intervention,
