@@ -126,56 +126,6 @@ wheels = [
 ]
 
 [[package]]
-name = "reva"
-version = "0.1.0"
-source = { editable = "." }
-
-[package.optional-dependencies]
-dev = [
-    { name = "cryptography" },
-    { name = "mypy" },
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
-    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "pillow" },
-    { name = "pytest" },
-    { name = "ruff" },
-]
-genesis = [
-    { name = "genesis-world", version = "1.4.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "genesis-world", version = "1.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-]
-gymnasium = [
-    { name = "gymnasium" },
-]
-mujoco = [
-    { name = "mujoco", version = "3.17.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "mujoco", version = "4.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-]
-signing = [
-    { name = "cryptography" },
-]
-yaml = [
-    { name = "pyyaml" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "cryptography", marker = "extra == 'dev'", specifier = ">=41" },
-    { name = "cryptography", marker = "extra == 'signing'", specifier = ">=41" },
-    { name = "genesis-world", marker = "extra == 'genesis'", specifier = ">=1.4,<2" },
-    { name = "gymnasium", marker = "extra == 'gymnasium'", specifier = ">=0.29" },
-    { name = "mujoco", marker = "extra == 'mujoco'", specifier = ">=3.0" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = "==1.18.2" },
-    { name = "numpy", marker = "extra == 'dev'", specifier = ">=1.24" },
-    { name = "pillow", marker = "extra == 'dev'", specifier = ">=10" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4" },
-    { name = "pyyaml", marker = "extra == 'yaml'", specifier = ">=6.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
-]
-provides-extras = ["dev", "yaml", "mujoco", "gymnasium", "genesis", "signing"]
-
-[[package]]
 name = "cffi"
 version = "2.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -3047,6 +2997,56 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/04/49/51ddaba3cdf6a494665867f36c1282786ff077950b16355a6125a3a01893/quadrants-1.4.0-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:691120b10e101be20b2f5286a0aa31335ffda8d508d8d09100f2ddc69f4c3119", size = 40537592, upload-time = "2026-11-04T14:46:50.498Z" },
     { url = "https://files.pythonhosted.org/packages/ea/76/45a34e8da5d99952f40b94b4d5fe77e5132c5f0e37f36b0787c79f6b31b6/quadrants-1.4.0-cp314-cp314-win_amd64.whl", hash = "sha256:44ca07cb2253cec8173b39adeeebb262999a6bda4a7644f80f3fc5039670141a", size = 30026231, upload-time = "2026-11-04T14:43:29.508Z" },
 ]
+
+[[package]]
+name = "reva"
+version = "0.1.1"
+source = { editable = "." }
+
+[package.optional-dependencies]
+dev = [
+    { name = "cryptography" },
+    { name = "mypy" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
+    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "pillow" },
+    { name = "pytest" },
+    { name = "ruff" },
+]
+genesis = [
+    { name = "genesis-world", version = "1.4.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "genesis-world", version = "1.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+]
+gymnasium = [
+    { name = "gymnasium" },
+]
+mujoco = [
+    { name = "mujoco", version = "3.17.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "mujoco", version = "4.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+]
+signing = [
+    { name = "cryptography" },
+]
+yaml = [
+    { name = "pyyaml" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cryptography", marker = "extra == 'dev'", specifier = ">=41" },
+    { name = "cryptography", marker = "extra == 'signing'", specifier = ">=41" },
+    { name = "genesis-world", marker = "extra == 'genesis'", specifier = ">=1.4,<2" },
+    { name = "gymnasium", marker = "extra == 'gymnasium'", specifier = ">=0.29" },
+    { name = "mujoco", marker = "extra == 'mujoco'", specifier = ">=3.0" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = "==1.18.2" },
+    { name = "numpy", marker = "extra == 'dev'", specifier = ">=1.24" },
+    { name = "pillow", marker = "extra == 'dev'", specifier = ">=10" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4" },
+    { name = "pyyaml", marker = "extra == 'yaml'", specifier = ">=6.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
+]
+provides-extras = ["dev", "yaml", "mujoco", "gymnasium", "genesis", "signing"]
 
 [[package]]
 name = "rich"

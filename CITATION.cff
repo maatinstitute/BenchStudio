@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use ReVa, please cite this software and the benchmark, policy, simulator, and datasets used in your evaluation."
 title: "ReVa: Evidence-aware evaluation infrastructure for embodied AI"
 type: software
-version: 0.1.0
+version: 0.1.1
 date-released: 2026-11-11
 authors:
   - family-names: "Tellez Fernandez"
