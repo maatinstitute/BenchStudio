@@ -183,6 +183,9 @@ bash scripts/verify_local_ci.sh
 
 ## Campaign compilation and execution
 
+For SLURM arrays and Kubernetes Indexed Jobs, including the shared-filesystem
+contract and resume procedure, see [cluster execution](cluster-execution.md).
+
 Compile a declarative campaign before execution (the CLI input is JSON):
 
 ```bash

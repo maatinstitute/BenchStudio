@@ -913,6 +913,7 @@ def test_worker_lease_renewal_remains_owner_bound(tmp_path):
     leases = WorkerLeaseManager(tmp_path / "leases", lease_seconds=1, clock_ns=clock)
     lease = leases.acquire("attempt-1", "worker-a")
     assert lease is not None
+    now[0] += 500_000_000
     renewed = leases.renew(lease)
     assert renewed.expires_at_ns > lease.expires_at_ns
     with __import__("pytest").raises(ValueError, match="owner"):
