@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from pathlib import Path
 from typing import Any, Iterable
 
 SCIENCE_SEEDS = (123, 456, 789, 1011, 1213)
@@ -116,7 +117,7 @@ def build_plan(
     return payload
 
 
-def load_outcome_plan(path: "Path") -> tuple[dict[str, object], str]:
+def load_outcome_plan(path: Path) -> tuple[dict[str, object], str]:
     """Load a RoboPAD outcome plan and verify its self-contained contract.
 
     The plan is a preflight artifact, not an execution request.  BenchStudio

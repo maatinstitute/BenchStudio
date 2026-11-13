@@ -25,6 +25,17 @@ improvement. See [research application ownership](docs/research-applications.md)
 
 ## Quick start
 
+For a reproducible contributor environment, use the committed `uv.lock`:
+
+```bash
+uv sync --extra dev
+uv run ruff check .
+uv run python -m pytest
+```
+
+An editable pip installation remains supported with
+`python -m pip install -e '.[dev]'`.
+
 ### Visual VLA execution on a constrained host
 
 See [local mmap tensor transport and the pinned SmolVLA + MuJoCo runner](docs/visual-vla-transport.md).

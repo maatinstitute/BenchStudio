@@ -1,5 +1,4 @@
 import hashlib
-import json
 
 from benchstudio.scenarios.world_rollout import (
     WorldRolloutCheckerProfile,

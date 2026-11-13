@@ -226,7 +226,6 @@ def build_demo_dashboard(input_dir: Path, output_path: Path) -> Path:
     simulators = study.get("simulators", [])
     simulators = simulators if isinstance(simulators, list) else []
     per_sim = int(study.get("episodes_per_simulator", 100) or 100)
-    planned = per_sim * len(simulators)
     study_id = html.escape(str(study.get("study_id", "unidentified-study")))
     study_title = html.escape(str(study.get("title", "Robot evaluation")))
     policy_digest = hashlib.sha256(policy_path.read_bytes()).hexdigest() if policy_path.is_file() else "not-loaded"
