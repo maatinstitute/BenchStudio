@@ -18,7 +18,12 @@ append-only ledger remain identical to a local run.
 - For preemptible simulator jobs, pass `--recover-interrupted`. A `SIGTERM`
   releases the active lease; the next run preserves the incomplete directory
   under `interrupted-attempts/` before rerunning the same frozen attempt.
+- Preemption recovery uses one process worker per scheduler task (`--workers 1`,
+  the default), so signal ownership and lease release remain unambiguous.
 - Interrupted-attempt recovery is rejected for physical environments.
+- Final audit rejects Python or package-version drift between workers assigned
+  to the same declared environment. Different declared environments remain
+  separate comparison strata.
 - Run audit, archive, and publication once, after every shard succeeds.
 
 Independent node-local disks and object storage do not provide the shared lock

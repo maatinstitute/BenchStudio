@@ -21,6 +21,7 @@ def test_environment_fingerprint_records_optional_backend_versions(monkeypatch):
     from benchstudio import evidence
 
     versions = {
+        "benchstudio": "0.1.0",
         "mujoco": "3.3.0",
         "gymnasium": "1.0.0",
         "genesis-world": "1.4.0",
@@ -31,11 +32,14 @@ def test_environment_fingerprint_records_optional_backend_versions(monkeypatch):
     }
 
     def fake_version(name):
+        if name not in versions:
+            raise evidence.metadata.PackageNotFoundError(name)
         return versions[name]
 
     monkeypatch.setattr(evidence.metadata, "version", fake_version)
     fingerprint = environment_fingerprint("isaaclab")
     assert fingerprint["backend_id"] == "isaaclab"
+    assert fingerprint["packages"]["benchstudio"] == "0.1.0"
     assert fingerprint["packages"]["gymnasium"] == "1.0.0"
     assert fingerprint["packages"]["isaaclab"] == "2.0.0"
 

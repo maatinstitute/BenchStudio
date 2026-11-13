@@ -64,6 +64,61 @@ def test_campaign_executor_uses_frozen_attempts_and_resumes_idempotently(tmp_pat
     }
 
 
+def test_campaign_audit_rejects_cross_worker_software_drift(tmp_path):
+    from benchstudio.analysis import audit_campaign_directory
+    from benchstudio.runtime_receipts import (
+        build_runtime_receipt,
+        load_runtime_receipt,
+        write_runtime_receipt,
+    )
+
+    plan = CampaignPlanner(
+        run_id="software-drift",
+        scenario_id="task",
+        conditions=[{"x": 1}],
+        seeds=[1, 2],
+    ).freeze()
+    output = tmp_path / "campaign"
+    executor = CampaignExecutor(
+        plan, output, lambda _: MockPolicy(), lambda _: MockSimulator()
+    )
+    executor.run()
+
+    attempt_dir = output / "attempts" / "attempt-000001"
+    receipt_path = attempt_dir / "runtime-receipt.json"
+    receipt = load_runtime_receipt(receipt_path)
+    environment = dict(receipt["environment"])
+    environment["packages"] = {**environment["packages"], "torch": "different-version"}
+    replacement = build_runtime_receipt(
+        run_id=receipt["run_id"],
+        attempt_id=receipt["attempt_id"],
+        plan_digest_sha256=receipt["plan_digest_sha256"],
+        worker_id=receipt["worker_id"],
+        status=receipt["status"],
+        started_monotonic_ns=receipt["started_monotonic_ns"],
+        completed_monotonic_ns=receipt["completed_monotonic_ns"],
+        backend_id=receipt["backend_id"],
+        environment=environment,
+    )
+    write_runtime_receipt(receipt_path, replacement)
+    artifact_manifest = build_artifact_manifest(attempt_dir, status="completed")
+    artifact_manifest_path = attempt_dir / "artifact-manifest.json"
+    artifact_manifest_path.write_text(
+        json.dumps(artifact_manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    write_manifest_trust_anchor(
+        artifact_manifest_path,
+        output / "attempts" / "attempt-000001.artifact-manifest.sha256",
+    )
+
+    audit = executor.audit()
+    assert audit.evidence_verified is False
+    assert any("runtime software differs" in issue for issue in audit.evidence_issues)
+    offline_audit = audit_campaign_directory(output)
+    assert offline_audit.evidence_verified is False
+    assert any("runtime software differs" in issue for issue in offline_audit.evidence_issues)
+
+
 def test_campaign_executor_preflights_frozen_nested_worldepisode_binding(tmp_path):
     plan = CampaignPlanner(
         run_id="worldepisode-run",

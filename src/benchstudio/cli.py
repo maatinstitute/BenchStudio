@@ -907,6 +907,8 @@ def main() -> int:
                 parser.error("--shard-index and --shard-count must be supplied together")
             if args.recover_interrupted and args.shard_index is None:
                 parser.error("--recover-interrupted requires scheduler shard coordinates")
+            if args.recover_interrupted and args.workers != 1:
+                parser.error("--recover-interrupted requires --workers 1")
             selected_attempt_ids = None
             if args.shard_index is not None and args.shard_count is not None:
                 try:

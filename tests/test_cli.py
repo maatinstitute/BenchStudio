@@ -1392,6 +1392,27 @@ def test_cli_cluster_shards_share_one_plan_and_resume_one_campaign(monkeypatch, 
         load_frozen_campaign_plan(plan_path),
     ).missing_attempt_ids
 
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--frozen-plan",
+            str(plan_path),
+            "--output",
+            str(output),
+            "--execute-mock",
+            "--shard-index",
+            "0",
+            "--shard-count",
+            "2",
+            "--workers",
+            "2",
+            "--recover-interrupted",
+        ],
+    )
+    with pytest.raises(SystemExit):
+        main()
+
 
 def test_cli_can_select_http_artifact_publication(monkeypatch, tmp_path, capsys):
     spec_path = tmp_path / "campaign.json"

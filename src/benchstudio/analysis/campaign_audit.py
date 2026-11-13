@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
@@ -213,6 +214,7 @@ def audit_campaign_directory(
     records = ledger.records
     by_attempt = {record.get("attempt_id"): record for record in records}
     evidence_issues: list[str] = []
+    runtime_environments: list[tuple[str, str, dict[str, Any]]] = []
     if execution_overhead is None:
         overhead_path = root / "execution-overhead.json"
         if overhead_path.is_file():
@@ -242,6 +244,9 @@ def audit_campaign_directory(
             evidence_issues.append(f"{attempt_id}: runtime receipt is invalid")
             continue
         receipt = load_runtime_receipt(receipt_path)
+        runtime_environments.append(
+            (attempt.key.environment_id, attempt_id, receipt["environment"])
+        )
         if receipt.get("status") != record.get("status"):
             evidence_issues.append(
                 f"{attempt_id}: runtime receipt status does not match ledger status"
@@ -255,6 +260,7 @@ def audit_campaign_directory(
                 evidence_issues.append(
                     f"{attempt_id}: runtime receipt {field} does not match frozen plan"
                 )
+    evidence_issues.extend(_runtime_environment_issues(runtime_environments))
     claim_evidence = dict(evidence or {})
     claim_evidence["trusted_artifacts"] = not evidence_issues
     outcome_records = None
@@ -274,6 +280,28 @@ def audit_campaign_directory(
         evidence_issues=evidence_issues,
         execution_overhead=execution_overhead,
     )
+
+
+def _runtime_environment_issues(
+    rows: Iterable[tuple[str, str, dict[str, Any]]],
+) -> tuple[str, ...]:
+    """Reject software drift within one declared campaign environment."""
+    baselines: dict[str, tuple[str, str]] = {}
+    issues: list[str] = []
+    for environment_id, attempt_id, environment in rows:
+        comparable = {
+            "python": environment.get("python"),
+            "packages": environment.get("packages"),
+            "backend_id": environment.get("backend_id"),
+        }
+        identity = json.dumps(comparable, sort_keys=True, separators=(",", ":"))
+        baseline = baselines.setdefault(environment_id, (attempt_id, identity))
+        if identity != baseline[1]:
+            issues.append(
+                f"{attempt_id}: runtime software differs from {baseline[0]} "
+                f"within environment {environment_id}"
+            )
+    return tuple(issues)
 
 
 def _plan_benchmark_validity(
