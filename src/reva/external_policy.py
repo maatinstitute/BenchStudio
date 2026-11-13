@@ -34,6 +34,7 @@ class ExternalCommandPolicy:
         timeout_s: float = 30.0,
         cwd: str | None = None,
         environment: Mapping[str, str] | None = None,
+        runtime_controls: Mapping[str, Any] | None = None,
     ) -> None:
         if not command or any(not isinstance(part, str) or not part for part in command):
             raise ValueError("command must contain non-empty strings")
@@ -43,6 +44,7 @@ class ExternalCommandPolicy:
         self.timeout_s = timeout_s
         self.cwd = cwd
         self.environment = dict(environment or {})
+        self.runtime_controls = _validate_runtime_controls(runtime_controls)
         self._seed: int | None = None
 
     def reset(self, *, seed: int) -> None:
@@ -57,6 +59,7 @@ class ExternalCommandPolicy:
             "seed": self._seed,
             "observation": _jsonable_observation(observation),
             "denoising_steps": denoising_steps,
+            "runtime_controls": self.runtime_controls,
         }
         environment = os.environ.copy()
         environment.update(self.environment)
@@ -114,6 +117,7 @@ class PersistentExternalCommandPolicy:
         tensor_directory: str | None = None,
         max_tensor_bytes: int = 256 * 1024 * 1024,
         device: str | None = None,
+        runtime_controls: Mapping[str, Any] | None = None,
     ) -> None:
         if not command or any(not isinstance(part, str) or not part for part in command):
             raise ValueError("command must contain non-empty strings")
@@ -141,6 +145,7 @@ class PersistentExternalCommandPolicy:
         self.timeout_s = timeout_s
         self.cwd = cwd
         self.environment = dict(environment or {})
+        self.runtime_controls = _validate_runtime_controls(runtime_controls)
         self._process: subprocess.Popen[str] | None = None
         self._seed: int | None = None
 
@@ -153,6 +158,7 @@ class PersistentExternalCommandPolicy:
                 "schema": "reva.policy_request.v1",
                 "operation": "reset",
                 "seed": seed,
+                "runtime_controls": self.runtime_controls,
             }
         )
         _validate_policy_status(response)
@@ -165,6 +171,7 @@ class PersistentExternalCommandPolicy:
             "seed": self._seed,
             "observation": _jsonable_observation(observation),
             "denoising_steps": denoising_steps,
+            "runtime_controls": self.runtime_controls,
         }
         if self._local_tensors is None:
             return _action_chunk(self._request(request))
@@ -256,7 +263,7 @@ def external_command_capabilities() -> ModelCapabilityProfile:
         supports_closed_loop=True,
         supports_action_chunks=True,
         supported_metrics=("success", "latency", "resource_use"),
-        runtime_controls=("timeout_s", "command", "environment"),
+        runtime_controls=("timeout_s", "command", "environment", "runtime_controls"),
         timing_signals=("host_monotonic",),
     )
 
@@ -277,6 +284,18 @@ def _validate_command_options(
         not isinstance(key, str) or not isinstance(value, str) for key, value in environment.items()
     ):
         raise ValueError("environment keys and values must be strings")
+
+
+def _validate_runtime_controls(value: Mapping[str, Any] | None) -> dict[str, Any]:
+    controls = dict(value or {})
+    if any(not isinstance(name, str) or not name for name in controls):
+        raise ValueError("runtime_controls keys must be non-empty strings")
+    if any(
+        item is not None and not isinstance(item, (str, int, float, bool))
+        for item in controls.values()
+    ):
+        raise ValueError("runtime_controls values must be JSON scalar values")
+    return controls
 
 
 def persistent_external_command_capabilities() -> ModelCapabilityProfile:
@@ -315,92 +334,12 @@ def external_vla_capabilities(model_id: str) -> ModelCapabilityProfile:
         runtime_controls=(
             "timeout_s", "command", "environment", "persistent_process",
             "tensor_transport", "tensor_directory", "max_tensor_bytes", "device",
+            "runtime_controls",
         ),
         timing_signals=("host_monotonic",),
         supports_variable_action_horizon=True,
     )
 
-
-def running_tensor_external_policy(
-    command: Sequence[str],
-    *,
-    state_order: int,
-    state_width: int,
-    recurrence_form: str = "recurrent",
-    state_dtype_bytes: int = 4,
-    environment: Mapping[str, str] | None = None,
-    **kwargs: Any,
-) -> PersistentExternalCommandPolicy:
-    """Create a persistent bridge for a RunningTensor-backed robot policy."""
-    for name, value, minimum in (
-        ("state_order", state_order, 2),
-        ("state_width", state_width, 1),
-        ("state_dtype_bytes", state_dtype_bytes, 1),
-    ):
-        if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
-            raise ValueError(f"{name} must be an integer >= {minimum}")
-    if state_order > 8:
-        raise ValueError("state_order must be <= 8")
-    if state_width > 1_000_000:
-        raise ValueError("state_width must be <= 1000000")
-    if recurrence_form not in {"recurrent", "parallel"}:
-        raise ValueError("recurrence_form must be recurrent or parallel")
-    runtime_environment = dict(environment or {})
-    state_bytes = (state_width**state_order) * state_dtype_bytes
-    if state_bytes > 2**63 - 1:
-        raise ValueError("declared recurrent state exceeds signed 64-bit byte range")
-    declared = {
-        "REVA_RECURRENT_STATE_ORDER": str(state_order),
-        "REVA_RECURRENT_STATE_WIDTH": str(state_width),
-        "REVA_RECURRENT_STATE_DTYPE_BYTES": str(state_dtype_bytes),
-        "REVA_RECURRENT_STATE_BYTES": str(state_bytes),
-        "REVA_RECURRENCE_FORM": recurrence_form,
-    }
-    conflicts = {
-        key
-        for key, value in declared.items()
-        if key in runtime_environment and runtime_environment[key] != value
-    }
-    if conflicts:
-        raise ValueError(
-            "environment conflicts with frozen RunningTensor controls: "
-            + ", ".join(sorted(conflicts))
-        )
-    runtime_environment.update(declared)
-    return PersistentExternalCommandPolicy(
-        command,
-        environment=runtime_environment,
-        **kwargs,
-    )
-
-
-def running_tensor_capabilities() -> ModelCapabilityProfile:
-    """Describe the auditable boundary for a RunningTensor-backed policy."""
-    return ModelCapabilityProfile(
-        model_id="running_tensor_external_policy",
-        family="custom",
-        input_modalities=("state", "image", "language", "proprioception"),
-        output_representation="action_chunk",
-        supports_closed_loop=True,
-        supports_action_chunks=True,
-        supported_metrics=(
-            "success",
-            "latency",
-            "resource_use",
-            "recurrent_state_bytes",
-        ),
-        runtime_controls=(
-            "state_order",
-            "state_width",
-            "state_dtype_bytes",
-            "recurrence_form",
-            "command",
-            "environment",
-            "device",
-        ),
-        timing_signals=("host_monotonic",),
-        supports_variable_action_horizon=True,
-    )
 
 
 def _jsonable_observation(observation: Observation) -> dict[str, Any]:
