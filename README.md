@@ -28,13 +28,13 @@ improvement. See [research application ownership](docs/research-applications.md)
 For a reproducible contributor environment, use the committed `uv.lock`:
 
 ```bash
-uv sync --extra dev
-uv run ruff check .
-uv run python -m pytest
+uv sync --locked --extra dev
+uv run --locked ruff check .
+uv run --locked python -m pytest
 ```
 
-An editable pip installation remains supported with
-`python -m pip install -e '.[dev]'`.
+`uv sync --locked --extra dev` installs BenchStudio editably with the locked
+contributor dependencies.
 
 ### Author a paired study
 
@@ -79,14 +79,14 @@ task-success, or normalization compatibility claim is made by these fixtures.
 
 
 ```bash
-python -m pytest
-python -m benchstudio.cli --episodes 3 --output runs/smoke
+uv run --locked python -m pytest
+uv run --locked python -m benchstudio.cli --episodes 3 --output runs/smoke
 ```
 
 Inspect optional backend and model-adapter readiness before scheduling work:
 
 ```bash
-python -m benchstudio.cli --readiness
+uv run --locked python -m benchstudio.cli --readiness
 ```
 
 Readiness now includes a hardware-memory snapshot. To reject estimated per-worker
@@ -99,7 +99,7 @@ Install an optional Genesis backend only in the environment that owns its
 runtime:
 
 ```bash
-python -m pip install 'benchstudio[genesis]'
+uv sync --locked --extra genesis
 ```
 
 The Genesis adapter requires explicit scene, action, and observation callbacks;
@@ -109,7 +109,7 @@ Verify an existing run artifact offline, optionally against a digest held by
 an independent reviewer or CI system:
 
 ```bash
-python -m benchstudio.cli --verify-artifact runs/smoke \
+uv run --locked python -m benchstudio.cli --verify-artifact runs/smoke \
   --trusted-manifest-sha256 <manifest-sha256>
 ```
 
@@ -119,7 +119,7 @@ Signed manifests can be verified with `--manifest-signature` and
 Verify a retained source snapshot against a local source checkout:
 
 ```bash
-python scripts/verify_source_snapshot.py \
+uv run --locked python scripts/verify_source_snapshot.py \
   docs/source-snapshots/alpabridge-27c96e6.json \
   /path/to/AlpaBridge
 ```
@@ -132,7 +132,7 @@ Audit canonical RoboChallenge observe-only records without interpreting their
 opaque payloads or claiming task success:
 
 ```bash
-python -m benchstudio.cli --robochallenge-records robochallenge.jsonl \
+uv run --locked python -m benchstudio.cli --robochallenge-records robochallenge.jsonl \
   --robochallenge-output robochallenge-audit.json
 ```
 
@@ -147,7 +147,7 @@ records without simulating physics or scoring.
 Run the checked-in observe/acknowledge/audit transport checkpoint with:
 
 ```bash
-PYTHONPATH=src python examples/run_robochallenge_mock.py
+uv run --locked python examples/run_robochallenge_mock.py
 ```
 
 This validates subprocess transport and payload identity only; execution and
@@ -157,7 +157,7 @@ Audit a completed frozen campaign directory without constructing or rerunning
 its model and simulator adapters:
 
 ```bash
-python -m benchstudio.cli --audit-output runs/campaign
+uv run --locked python -m benchstudio.cli --audit-output runs/campaign
 ```
 
 Use `--claim-type paired_comparison` or `--claim-type real_world_transfer` to
@@ -166,7 +166,7 @@ apply the corresponding stricter claim prerequisites during the audit.
 The end-to-end frozen-campaign CI gate can be run directly with:
 
 ```bash
-python -m pytest -q tests/test_ci_smoke.py
+uv run --locked python -m pytest -q tests/test_ci_smoke.py
 ```
 
 For a presentation-ready local demo, including the existing URDF Studio SO-101
@@ -239,7 +239,7 @@ bash scripts/verify_local_ci.sh
 Compile a declarative campaign before execution (the CLI input is JSON):
 
 ```bash
-python -m benchstudio.cli --campaign-spec campaign.json --plan-output campaign-plan.json
+uv run --locked python -m benchstudio.cli --campaign-spec campaign.json --plan-output campaign-plan.json
 ```
 
 An end-to-end frozen campaign example, including nested WorldEpisode identity
@@ -247,7 +247,7 @@ binding, is provided at
 `examples/campaigns/mock-worldepisode.json`:
 
 ```bash
-python -m benchstudio.cli \
+uv run --locked python -m benchstudio.cli \
   --campaign-spec examples/campaigns/mock-worldepisode.json \
   --execute-mock --workers 2 --audit \
   --output runs/mock-worldepisode
@@ -267,7 +267,7 @@ reproducibility, statistical, or timing evidence has not been supplied.
 The same gate can be run against an existing campaign directory:
 
 ```bash
-python -m benchstudio.cli --audit-output runs/campaign \
+uv run --locked python -m benchstudio.cli --audit-output runs/campaign \
   --acceptance-output runs/campaign/acceptance.json \
   --acceptance-evidence acceptance-evidence.json
 ```
@@ -281,7 +281,7 @@ Compiled mock campaigns can also be audited and packaged as immutable evidence
 bundles:
 
 ```bash
-python -m benchstudio.cli --campaign-spec campaign.json --execute-mock \
+uv run --locked python -m benchstudio.cli --campaign-spec campaign.json --execute-mock \
   --audit --archive-output runs/campaign.zip
 ```
 
@@ -289,7 +289,7 @@ Scenario archives can be independently verified before extraction or campaign
 scheduling:
 
 ```bash
-python -m benchstudio.cli --verify-scenario-archive scenario.zip \
+uv run --locked python -m benchstudio.cli --verify-scenario-archive scenario.zip \
   --trusted-scenario-archive-sha256 <archive-sha256>
 ```
 
@@ -297,21 +297,21 @@ When a campaign declares adapter IDs, execute those frozen registry entries
 directly (optional dependencies are checked before work is scheduled):
 
 ```bash
-python -m benchstudio.cli --campaign-spec campaign.json --execute-registry
+uv run --locked python -m benchstudio.cli --campaign-spec campaign.json --execute-registry
 ```
 
 Frozen attempts can be distributed across local lease-owning workers while
 retaining one append-only campaign ledger:
 
 ```bash
-python -m benchstudio.cli --campaign-spec campaign.json --execute-mock --workers 4
+uv run --locked python -m benchstudio.cli --campaign-spec campaign.json --execute-mock --workers 4
 ```
 
 The same command can publish the deterministic bundle to a local
 content-addressed artifact store:
 
 ```bash
-python -m benchstudio.cli --campaign-spec campaign.json --execute-mock \
+uv run --locked python -m benchstudio.cli --campaign-spec campaign.json --execute-mock \
   --artifact-store runs/artifacts
 ```
 
@@ -329,7 +329,7 @@ archive structure before extraction.
 The same flow is available from the CLI:
 
 ```bash
-python -m benchstudio.cli --fetch-artifact SHA256 \
+uv run --locked python -m benchstudio.cli --fetch-artifact SHA256 \
   --artifact-store runs/artifacts --extract-output runs/retrieved-campaign
 ```
 
@@ -359,7 +359,7 @@ The process-backed registry path is runnable without a model package or
 simulator installation:
 
 ```bash
-python -m benchstudio.cli \
+uv run --locked python -m benchstudio.cli \
   --campaign-spec examples/campaigns/external-process.json \
   --execute-registry --workers 2 --audit \
   --output runs/external-process
@@ -383,7 +383,7 @@ An archived external SmolVLA/LIBERO deployment pilot can be checked without
 loading its weights or runtime:
 
 ```bash
-python -m benchstudio.cli \
+uv run --locked python -m benchstudio.cli \
   --smolvla-manifest /path/to/real_smolvla/manifest.json \
   --smolvla-summary /path/to/real_smolvla/results/summary.json \
   --smolvla-output smolvla-evidence.json
@@ -412,14 +412,14 @@ analysis.
 Matched transfer records can be analyzed and serialized directly:
 
 ```bash
-python -m benchstudio.cli --transfer-records transfer.jsonl \
+uv run --locked python -m benchstudio.cli --transfer-records transfer.jsonl \
   --transfer-output transfer-report.json
 ```
 
 Run the checked-in matched-backend transfer fixture with:
 
 ```bash
-PYTHONPATH=src python examples/run_mock_transfer.py --output runs/mock-transfer
+uv run --locked python examples/run_mock_transfer.py --output runs/mock-transfer
 ```
 
 It exercises frozen-plan compatibility, paired campaign loading, and transfer
@@ -429,7 +429,7 @@ external.
 Exercise resumable frozen-plan recovery with:
 
 ```bash
-PYTHONPATH=src python examples/run_mock_recovery.py --output runs/mock-recovery
+uv run --locked python examples/run_mock_recovery.py --output runs/mock-recovery
 ```
 
 The checkpoint runs a partial batch, resumes the same plan, and reports
@@ -438,7 +438,7 @@ committed, skipped, missing, and independently audited attempts.
 Exercise parallel lease-owning workers with:
 
 ```bash
-PYTHONPATH=src python examples/run_mock_workers.py --output runs/mock-workers --workers 3
+uv run --locked python examples/run_mock_workers.py --output runs/mock-workers --workers 3
 ```
 
 This verifies shared lease ownership and exactly-once ledger accounting for a
@@ -449,7 +449,7 @@ Missing outcomes remain explicit and cause a non-zero validation status.
 Counterfactual branch records can be summarized similarly:
 
 ```bash
-python -m benchstudio.cli --recovery-records counterfactual-results.jsonl \
+uv run --locked python -m benchstudio.cli --recovery-records counterfactual-results.jsonl \
   --recovery-output recovery-report.json
 ```
 
@@ -461,7 +461,7 @@ Counterfactual plans can be compiled directly from an independently loaded
 frozen campaign plan:
 
 ```bash
-python -m benchstudio.cli \
+uv run --locked python -m benchstudio.cli \
   --frozen-plan campaign-plan.json \
   --counterfactual-interventions interventions.json \
   --counterfactual-output counterfactual-plan.json
@@ -471,8 +471,8 @@ Serialized counterexample discovery and confirmation plans can be checked
 independently before use:
 
 ```bash
-python -m benchstudio.cli --validate-search-plan search-plan.json
-python -m benchstudio.cli --validate-confirmation-plan confirmation-plan.json
+uv run --locked python -m benchstudio.cli --validate-search-plan search-plan.json
+uv run --locked python -m benchstudio.cli --validate-confirmation-plan confirmation-plan.json
 ```
 
 Result artifacts can be audited independently against those frozen plans. The
@@ -483,17 +483,17 @@ The checked-in mock checkpoint can be run end to end with paired nominal and
 intervention branches:
 
 ```bash
-python examples/run_mock_robustness.py --output runs/mock-robustness
+uv run --locked python examples/run_mock_robustness.py --output runs/mock-robustness
 ```
 
 It is evidence/protocol coverage only; the evaluator explicitly has no physics
 or official scoring authority.
 
 ```bash
-python -m benchstudio.cli \
+uv run --locked python -m benchstudio.cli \
   --search-results search-results.jsonl \
   --search-plan search-plan.json
-python -m benchstudio.cli \
+uv run --locked python -m benchstudio.cli \
   --confirmation-results confirmation-results.jsonl \
   --confirmation-plan confirmation-plan.json
 ```
@@ -515,7 +515,7 @@ repository root:
 
 ```bash
 sha256sum examples/traces/mock-reference-policy.jsonl
-python -m benchstudio.cli \
+uv run --locked python -m benchstudio.cli \
   --campaign-spec examples/campaigns/trace-policy.json \
   --plan-output /tmp/benchstudio-trace-plan.json \
   --output /tmp/benchstudio-trace-campaign \
@@ -530,7 +530,7 @@ For the Refinement/Refresh research campaign, BenchStudio can import the
 upstream frozen plan directly instead of regenerating its schedule:
 
 ```bash
-python -m benchstudio.cli \
+uv run --locked python -m benchstudio.cli \
   --refinement-plan /path/to/pilot_evaluation.json \
   --refinement-run-id smolvla-pilot \
   --plan-output /tmp/smolvla-pilot-benchstudio-plan.json
@@ -553,7 +553,7 @@ The imported plan can also pass through the standard resumable executor with
 deterministic adapters for a protocol checkpoint:
 
 ```bash
-python -m benchstudio.cli \
+uv run --locked python -m benchstudio.cli \
   --refinement-plan /path/to/pilot_evaluation.json \
   --refinement-run-id smolvla-pilot \
   --plan-output /tmp/smolvla-pilot-benchstudio-plan.json \
@@ -567,7 +567,7 @@ RoboPAD outcome preflight artifacts can also be verified without launching
 training or evaluation:
 
 ```bash
-python -m benchstudio.cli --outcome-plan /path/to/smolvla-outcome-plan.json
+uv run --locked python -m benchstudio.cli --outcome-plan /path/to/smolvla-outcome-plan.json
 ```
 
 This checks the `smolvla_outcome_plan_v1` payload digest, cell identities,
@@ -579,7 +579,7 @@ from their evidence directories. Missing attempts stay missing, and malformed
 attempt summaries are reported as execution failures:
 
 ```bash
-python -m benchstudio.cli \
+uv run --locked python -m benchstudio.cli \
   --compare-campaign sim=runs/sim \
   --compare-campaign real=runs/real \
   --comparison-scenario-id arrange_fruits \
@@ -609,7 +609,7 @@ An existing frozen plan can also be loaded directly for recovery or execution,
 without recompiling the source specification:
 
 ```bash
-python -m benchstudio.cli --frozen-plan campaign-plan.json \
+uv run --locked python -m benchstudio.cli --frozen-plan campaign-plan.json \
   --execute-mock --output runs/recovered --audit
 ```
 

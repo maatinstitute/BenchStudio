@@ -12,7 +12,7 @@ unqualified recovery results.
 ## 1. Freeze the design without executing anything
 
 ```bash
-python examples/outcome_recovery/run.py \
+uv run --locked python examples/outcome_recovery/run.py \
   --plan-only --output runs/outcome-recovery-plan
 ```
 
@@ -26,7 +26,7 @@ ones for the selected environment.
 ## 2. Execute with a trusted native evaluator
 
 ```bash
-python examples/outcome_recovery/run.py \
+uv run --locked python examples/outcome_recovery/run.py \
   --frozen-plan /path/to/your/campaign-plan.json \
   --interventions /path/to/your/interventions.json \
   --evaluator your_project.native_eval:evaluate \
