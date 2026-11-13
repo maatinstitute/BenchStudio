@@ -16,7 +16,7 @@ def _manifest():
         created_at=datetime.now(timezone.utc).isoformat(),
         interface=WorldInterfaceSpec(("rgb",), "joint_position", 20, "base_link"),
         world_snapshot=WorldSnapshot("<robot/>", {"joint": 0.0}, scenario_duration_ms=1000),
-        provenance={"owner": "REVA", "tags": ["demo", "scene"]},
+        provenance={"owner": "ReVa", "tags": ["demo", "scene"]},
     )
 
 

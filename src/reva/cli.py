@@ -86,7 +86,7 @@ def _scheduler_signal_boundary():
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run a REVA temporal-fidelity evaluation.")
+    parser = argparse.ArgumentParser(description="Run a ReVa temporal-fidelity evaluation.")
     parser.add_argument("--episodes", type=int, default=1)
     parser.add_argument("--output", type=Path, default=Path("runs/smoke"))
     parser.add_argument("--action-prefix", type=int, default=2)

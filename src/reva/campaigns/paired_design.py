@@ -20,7 +20,7 @@ def compile_balanced_paired_plan(
     """Compile complete matched condition blocks from a frozen design grid.
 
     The ordering uses SHA-256 keyed sorting, mirroring the upstream research
-    runner's deterministic schedule while producing REVA attempts.
+    runner's deterministic schedule while producing ReVa attempts.
     """
     conditions = tuple(dict(condition) for condition in conditions)
     identities = [

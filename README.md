@@ -1,6 +1,6 @@
-# REVA
+# ReVa
 
-REVA is a source-available evaluation library for testing whether
+ReVa is a source-available evaluation library for testing whether
 embodied-AI results remain comparable across inference schedules, simulators,
 and physical execution paths.
 
@@ -12,13 +12,13 @@ safety limits, and physical robot execution.
 ## Research examples
 
 The [refinement-versus-refresh SmolVLA case study](examples/refinement_refresh/)
-shows how retained outcomes from a published study map to REVA's paired
+shows how retained outcomes from a published study map to ReVa's paired
 analysis while preserving the boundary between historical evidence and new
-REVA-produced runs.
+ReVa-produced runs.
 
 [**Outcome Recovery**](examples/outcome_recovery/README.md) shows how to
 specify matched nominal/intervention continuations with the existing
-REVA campaign APIs. It can freeze a study without a simulator and
+ReVa campaign APIs. It can freeze a study without a simulator and
 accepts a caller-owned native evaluator for actual outcomes. It is a research
 application, **not** a separate execution framework or proof of recovery
 improvement. See [research application ownership](docs/research-applications.md).
@@ -33,13 +33,20 @@ uv run --locked ruff check .
 uv run --locked python -m pytest
 ```
 
-`uv sync --locked --extra dev` installs REVA editably with the locked
+`uv sync --locked --extra dev` installs ReVa editably with the locked
 contributor dependencies.
+
+The distribution and import namespace are lowercase. Use the short alias `rv`
+in Python when it improves readability:
+
+```python
+import reva as rv
+```
 
 ### Author a paired study
 
 The Python authoring helpers reduce condition-matrix boilerplate while still
-compiling through REVA's strict campaign validator:
+compiling through ReVa's strict campaign validator:
 
 ```python
 from pathlib import Path
@@ -119,7 +126,7 @@ installed distribution, authoring types, and workflow security on every change.
 
 ## Citation
 
-If REVA supports your research, cite the version you used through
+If ReVa supports your research, cite the version you used through
 GitHub's **Cite this repository** menu or [`CITATION.cff`](CITATION.cff). Also
 cite the benchmark, simulator, policy, and datasets that supply the scientific
 semantics of the evaluation.
@@ -127,14 +134,14 @@ semantics of the evaluation.
 ```bibtex
 @software{reva_2026,
   author  = {Tellez Fernandez, Alba Maria},
-  title   = {REVA: Evidence-aware evaluation infrastructure for embodied AI},
+  title   = {ReVa: Evidence-aware evaluation infrastructure for embodied AI},
   year    = {2026},
   version = {0.1.0},
-  url     = {https://github.com/maatinstitute/REVA}
+  url     = {https://github.com/maatinstitute/ReVa}
 }
 ```
 
-REVA includes utilities for reproducing the joint generation-effort and
+ReVa includes utilities for reproducing the joint generation-effort and
 execution-prefix evaluation used in the companion paper, while keeping model
 and simulator outcome authority external. See the
 [worked example, paper, and paired outcomes](examples/refinement_refresh/).

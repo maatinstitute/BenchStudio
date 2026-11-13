@@ -2,7 +2,7 @@
 
 This ports the reusable registry machinery from AlpaBridge's
 ``driver/policy_registry.py``. Product-specific model factories are injected by
-the owning runtime; REVA keeps the registry, precondition, and
+the owning runtime; ReVa keeps the registry, precondition, and
 configuration semantics dependency-free.
 """
 

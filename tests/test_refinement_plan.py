@@ -42,7 +42,7 @@ def test_expected_count_and_full_factorial():
 
 
 def test_refinement_source_golden_vector_is_byte_identical():
-    """Keep the REVA planner aligned with the source planner."""
+    """Keep the ReVa planner aligned with the source planner."""
     plan = make_plan()
     # Generated from Refinement/Refresh experiments/make_evaluation_plan.py at
     # the source revision recorded in docs/source-attribution.md.

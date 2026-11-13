@@ -33,9 +33,9 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Repository = "https://github.com/maatinstitute/REVA"
-Documentation = "https://github.com/maatinstitute/REVA/tree/main/docs"
-Issues = "https://github.com/maatinstitute/REVA/issues"
+Repository = "https://github.com/maatinstitute/ReVa"
+Documentation = "https://github.com/maatinstitute/ReVa/tree/main/docs"
+Issues = "https://github.com/maatinstitute/ReVa/issues"
 
 [project.optional-dependencies]
 dev = [

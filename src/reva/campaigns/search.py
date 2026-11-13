@@ -324,7 +324,7 @@ def execute_search_plan(
 ) -> tuple[SearchCaseResult, ...]:
     """Evaluate every frozen search case and optionally persist search evidence.
 
-    The evaluator owns simulator/model execution. REVA owns case order,
+    The evaluator owns simulator/model execution. ReVa owns case order,
     identity, failure digest normalization, and the immutable result record.
     A failed case may provide a digest over its trace; when omitted, a stable
     digest over the case and evaluator metadata is generated.

@@ -1,4 +1,4 @@
-"""REVA temporal-fidelity evaluation core."""
+"""ReVa temporal-fidelity evaluation core."""
 
 from .adapters import (
     AdapterDescriptor,

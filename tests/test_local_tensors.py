@@ -1,4 +1,4 @@
-"""Optional numpy tests; core REVA imports without numpy."""
+"""Optional numpy tests; core ReVa imports without numpy."""
 import json
 
 import pytest

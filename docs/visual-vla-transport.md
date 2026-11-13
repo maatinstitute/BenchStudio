@@ -1,10 +1,10 @@
 # Local visual VLA execution (research preview)
 
-REVA's existing `MujocoSimulator` can optionally render a named camera.
+ReVa's existing `MujocoSimulator` can optionally render a named camera.
 Each `Observation` contains the original joint state plus
 `payload["images"]["front"]` as a `uint8` H×W×3 array. Rendering is **disabled
 by default**. The caller must choose a camera, size, graphics backend and
-checkpoint-specific observation mapping; REVA does **not** infer LeRobot
+checkpoint-specific observation mapping; ReVa does **not** infer LeRobot
 normalization, state vectors or task success criteria.
 
 ## Same-host mmap transport
@@ -61,7 +61,7 @@ achieved. A faster transport does not itself reduce model-weight residency.
 ## Execute a real checkpoint (only with qualified assets)
 
 `examples/resource_preflight/run_visual_smolvla.py` is an optional example
-that uses the normal REVA `run_episodes` runner with a real MuJoCo
+that uses the normal ReVa `run_episodes` runner with a real MuJoCo
 scene and the existing LeRobot SmolVLA external process. It requires:
 
 - a local immutable checkpoint and externally validated digest;
@@ -73,7 +73,7 @@ scene and the existing LeRobot SmolVLA external process. It requires:
 Both callback source digests and the scene digest are retained in the normal
 run manifest. The example rejects incomplete assets and does not use a
 synthetic `success=True` fallback. On a Linux machine with the external LeRobot
-environment and REVA both installed:
+environment and ReVa both installed:
 
 ```bash
 uv run --locked python examples/resource_preflight/run_visual_smolvla.py \

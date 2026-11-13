@@ -1,4 +1,4 @@
-"""Real MuJoCo camera -> mmap policy -> REVA episode, when GL is present.
+"""Real MuJoCo camera -> mmap policy -> ReVa episode, when GL is present.
 
 This uses a diagnostic external policy, NOT a trained checkpoint or VLA score.
 """

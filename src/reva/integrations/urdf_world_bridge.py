@@ -2,7 +2,7 @@
 
 This module extracts the serializable contract boundary from ``urdf-ops``.
 The service, Pydantic models, HTTP transport, and robot authority remain
-owned by URDF Studio; REVA can validate recorded wire evidence without
+owned by URDF Studio; ReVa can validate recorded wire evidence without
 starting that runtime.
 """
 

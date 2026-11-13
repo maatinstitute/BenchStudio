@@ -1,6 +1,6 @@
-"""Outcome-recovery reference application built on REVA's campaign API.
+"""Outcome-recovery reference application built on ReVa's campaign API.
 
-Planning needs only REVA. Native execution requires a caller-owned, pinned
+Planning needs only ReVa. Native execution requires a caller-owned, pinned
 simulator/policy evaluator; the example does not approximate task success.
 """
 

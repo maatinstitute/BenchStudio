@@ -1,7 +1,7 @@
-# REVA workflow reference
+# ReVa workflow reference
 
 These commands cover optional runtimes, artifact verification, campaign
-execution, recovery, and integration fixtures. Run them from a REVA
+execution, recovery, and integration fixtures. Run them from a ReVa
 checkout after creating the locked environment described in the main README.
 
 ## Visual VLA execution on a constrained host
@@ -38,7 +38,7 @@ uv sync --locked --extra genesis
 ```
 
 The Genesis adapter requires explicit scene, action, and observation callbacks;
-REVA does not infer task controllers or claim Genesis scoring authority.
+ReVa does not infer task controllers or claim Genesis scoring authority.
 
 ## Artifact and source verification
 
@@ -130,14 +130,14 @@ dynamics; the upstream checkout remains unchanged. The control room binds the
 waypoint policy by SHA-256 and exposes its timed events for inspection.
 The default demo requests both MuJoCo and Genesis with the same frozen inputs;
 the simulator matrix reports evaluated, failed, or unavailable backends without
-turning missing runs into zero scores. REVA adds campaign accounting,
+turning missing runs into zero scores. ReVa adds campaign accounting,
 robustness evidence, matched transfer, and the RoboChallenge transport audit,
 then serves the robot episode batch and evidence in the Eval Control Room at
 `http://127.0.0.1:8765`. The generated files
 under `/tmp/reva-demo` remain inspectable evidence artifacts. If that
 directory already exists, the script creates a timestamped sibling rather than
-overwriting it. These fixtures demonstrate REVA's execution and audit
-boundaries; they are not physical-robot or model-quality results. REVA
+overwriting it. These fixtures demonstrate ReVa's execution and audit
+boundaries; they are not physical-robot or model-quality results. ReVa
 auto-detects a sibling `urdf-studio` checkout. Otherwise set
 `URDF_STUDIO_ROOT=/path/to/urdf-studio`. Limit or reorder the requested backends
 with `IVAL_SIMULATORS=mujoco`, `genesis`, or `mujoco,genesis`.
@@ -151,7 +151,7 @@ failure is a first-class result: each episode records cube displacement and
 lift, sampled contact and bilateral-retention frames, gripper target tracking,
 failure timing, source hashes, and a bounded root-cause classification.
 
-The ordinary rollout trace remains sampled at 50 Hz. REVA therefore
+The ordinary rollout trace remains sampled at 50 Hz. ReVa therefore
 runs a deterministic diagnostic replay that inspects every 0.2 ms MuJoCo
 physics step (5 kHz) and retains every robot-cube contact: geom pair, world
 position and frame, penetration, friction, solver force and torque, cube pose
@@ -294,10 +294,10 @@ The comparison also verifies that the frozen task, model, execution semantics,
 conditions, seeds, and initial-state identities match; backend declarations may
 differ because that is the transfer being measured.
 
-Model runtimes can also be kept outside REVA behind the registered
+Model runtimes can also be kept outside ReVa behind the registered
 `external_command` adapter. It sends one JSON request per inference and
 requires a JSON response containing an `actions` array, preserving the model
-runtime's ownership while retaining REVA timing and evidence capture.
+runtime's ownership while retaining ReVa timing and evidence capture.
 
 For loaded checkpoints and accelerator-backed policies, use the registered
 `persistent_external_command` adapter. It keeps one JSON-line process alive for
@@ -329,7 +329,7 @@ LeRobot environment that owns the checkpoint. Set
 `IVAL_LEROBOT_CHECKPOINT_SHA256` to its reviewed lowercase SHA-256
 identity, and provide a frozen `observation.payload.policy_batch` mapping.
 Only the digest is returned in action metadata; the private checkpoint path is
-not copied into REVA evidence. REVA does not install LeRobot,
+not copied into ReVa evidence. ReVa does not install LeRobot,
 download weights, or infer image preprocessing; those choices remain owned by
 the external runtime and must be frozen in the campaign protocol.
 
@@ -486,7 +486,7 @@ or benchmark performance.
 
 ## Refinement and refresh study imports
 
-For the Refinement/Refresh research campaign, REVA can import the
+For the Refinement/Refresh research campaign, ReVa can import the
 upstream frozen plan directly instead of regenerating its schedule:
 
 ```bash
@@ -557,7 +557,7 @@ The expanded foundation adds two opt-in layers:
   and records results in an append-only ledger keyed by `run_id`, `pair_id`,
   `condition_id`, and `attempt_id`.
 
-These layers keep campaign methodology and evidence ownership in REVA
+These layers keep campaign methodology and evidence ownership in ReVa
 while leaving physics engines, dataset conversion, hardware control, and
 official benchmark scoring in their source repositories.
 

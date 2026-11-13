@@ -1,6 +1,6 @@
 # Research applications, not research-specific core APIs
 
-REVA's core is intended to evaluate systems (robot policies, world models,
+ReVa's core is intended to evaluate systems (robot policies, world models,
 agent workflows, or composed systems) with one execution/evidence contract.
 Studies may reside in `examples/` and use the same `reva` package.
 **Outcome Recovery** (`examples/outcome_recovery/`) is the first such application:
@@ -22,8 +22,8 @@ Their long-term ownership should follow the distinction below:
 | Recovery-specific rollout and initialization | Outcome Recovery recipe unless generic behavior is extracted | Same reset, step, success, and partial-failure semantics |
 | Outcome-conditioning plans and schedules | Outcome-conditioning study recipe | Frozen training/evaluation schedules and record hashes |
 | Compute-allocation plans | Compute-allocation study recipe | Historical schedule hash, holdout membership, parity |
-| Counterfactual planning, frozen plans, and campaign execution | REVA core | Stable public contracts and existing tests |
-| Simulator adapters | REVA optional integrations | Native environment semantics and explicit capabilities |
+| Counterfactual planning, frozen plans, and campaign execution | ReVa core | Stable public contracts and existing tests |
+| Simulator adapters | ReVa optional integrations | Native environment semantics and explicit capabilities |
 
 This inventory is **a migration plan, not a claim that these responsibilities
 were moved in this change**. Do not rename or drop historical frozen-plan schema

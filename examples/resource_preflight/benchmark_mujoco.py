@@ -1,4 +1,4 @@
-"""Run a genuine MuJoCo stepping baseline through REVA's existing runner.
+"""Run a genuine MuJoCo stepping baseline through ReVa's existing runner.
 
 It measures the execution path, not VLA accuracy or physics parity with Isaac Sim.
 Install with: uv sync --locked --extra mujoco

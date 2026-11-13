@@ -1,10 +1,10 @@
-REVA
+ReVa
 
 Copyright (c) 2026 Alba Maria Tellez Fernandez
 
 PROPRIETARY — ALL RIGHTS RESERVED. See LICENSE.
 
-REVA contains original implementation informed by the author's
+ReVa contains original implementation informed by the author's
 AlpaBridge and URDF Studio projects. No third-party datasets, checkpoints,
 robot drivers, simulator binaries, or AGPL-licensed urdf-os source are copied
 into this repository.

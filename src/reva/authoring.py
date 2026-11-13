@@ -111,7 +111,7 @@ class PairedStudy:
     evaluation_options: Mapping[str, Any] = field(default_factory=dict)
 
     def to_spec(self) -> dict[str, Any]:
-        """Return the canonical declarative mapping consumed by REVA."""
+        """Return the canonical declarative mapping consumed by ReVa."""
         reserved = {"seeds", "conditions", "paired", "repetitions", "resource_budget"}
         conflict = reserved & set(self.evaluation_options)
         if conflict:

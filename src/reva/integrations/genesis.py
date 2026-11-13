@@ -1,6 +1,6 @@
 """Dependency-lazy adapter for Genesis World scenes.
 
-Genesis owns scene physics and robot safety. REVA only binds the scene
+Genesis owns scene physics and robot safety. ReVa only binds the scene
 to its observation/action/timing evidence contract through explicit callbacks;
 it never guesses how a task-specific controller should consume an action.
 """
@@ -21,7 +21,7 @@ SceneFn = Callable[[Any], None]
 
 
 class GenesisSimulator:
-    """Adapt a configured Genesis ``Scene`` to the REVA contract."""
+    """Adapt a configured Genesis ``Scene`` to the ReVa contract."""
 
     simulator_id = "genesis_simulator"
 

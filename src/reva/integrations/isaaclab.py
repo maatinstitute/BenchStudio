@@ -15,7 +15,7 @@ SuccessFn = Callable[[Any, Any, bool, bool, Mapping[str, Any]], bool]
 
 
 class IsaacLabSimulator:
-    """Adapt one vectorized Isaac Lab environment to REVA."""
+    """Adapt one vectorized Isaac Lab environment to ReVa."""
 
     simulator_id = "isaaclab_simulator"
 

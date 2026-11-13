@@ -14,7 +14,7 @@ SuccessFn = Callable[[Any, float, bool, bool, Mapping[str, Any]], bool]
 
 
 class GymnasiumSimulator:
-    """Translate a Gymnasium environment into REVA's simulator contract.
+    """Translate a Gymnasium environment into ReVa's simulator contract.
 
     The adapter preserves Gymnasium's terminated/truncated distinction in its
     internal lifecycle state and accepts either an explicit success callback or

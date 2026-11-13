@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify a REVA source-snapshot manifest against a local checkout."""
+"""Verify a ReVa source-snapshot manifest against a local checkout."""
 
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
-# REVA architecture
+# ReVa architecture
 
-REVA owns measurement and provenance, not robot authority.
+ReVa owns measurement and provenance, not robot authority.
 
 ```text
 policy adapter -> temporal scheduler -> simulator adapter
@@ -18,11 +18,11 @@ side.
 Independent model runtimes may use the built-in `external_command` adapter. It
 invokes a supplied executable without a shell, sends a versioned JSON request
 for each inference, and accepts only a JSON action-chunk response. This is a
-process boundary, not a claim that REVA owns the model runtime.
+process boundary, not a claim that ReVa owns the model runtime.
 
 The simulator registry provides a corresponding persistent JSON-line bridge
 with `reset`, `observe`, `step`, and `close` operations. The external process
-retains physics and safety authority; REVA records the resulting
+retains physics and safety authority; ReVa records the resulting
 observations, actions, timing, and evidence.
 
 The evidence schema is intentionally JSON-compatible and does not persist raw
@@ -82,7 +82,7 @@ exercise the message boundary without pretending to provide physics, safety,
 or official scoring. Those authorities remain external.
 
 The WorldEpisode integration is an adapter boundary: if the reference
-validator is installed, REVA delegates to it; otherwise it returns a
+validator is installed, ReVa delegates to it; otherwise it returns a
 clearly labeled minimal-profile result rather than claiming full WorldEpisode
 conformance. Replay timing includes a sourced zero-order-hold fixture based on
 the upstream adapter-conformance cases, with no claim of contact-rich physics

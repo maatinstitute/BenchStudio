@@ -53,7 +53,7 @@ def audit_evaluation_acceptance(
 ) -> EvaluationAcceptanceReport:
     """Evaluate every acceptance gate without treating absent evidence as success.
 
-    The campaign audit supplies facts that REVA can establish locally;
+    The campaign audit supplies facts that ReVa can establish locally;
     callers must explicitly provide parity, recovery, reproducibility, and
     statistical evidence produced by their respective protocols.
     """

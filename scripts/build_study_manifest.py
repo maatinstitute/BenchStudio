@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Freeze the planned episode identities and object poses for a REVA study."""
+"""Freeze the planned episode identities and object poses for a ReVa study."""
 
 from __future__ import annotations
 
