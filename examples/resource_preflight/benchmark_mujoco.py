@@ -1,7 +1,7 @@
 """Run a genuine MuJoCo stepping baseline through BenchStudio's existing runner.
 
 It measures the execution path, not VLA accuracy or physics parity with Isaac Sim.
-Install with: python -m pip install -e '.[mujoco]'
+Install with: uv sync --locked --extra mujoco
 """
 
 from __future__ import annotations

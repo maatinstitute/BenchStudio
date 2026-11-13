@@ -76,7 +76,7 @@ synthetic `success=True` fallback. On a Linux machine with the external LeRobot
 environment and BenchStudio both installed:
 
 ```bash
-python examples/resource_preflight/run_visual_smolvla.py \
+uv run --locked python examples/resource_preflight/run_visual_smolvla.py \
   --scene /path/to/scene.xml --camera-name front \
   --checkpoint /path/to/pinned/smolvla \
   --checkpoint-sha256 <independently-reviewed-64-hex-digest> \

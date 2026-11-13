@@ -59,8 +59,8 @@ parity.
 From a BenchStudio checkout:
 
 ```bash
-python -m pip install -e .
-python examples/refinement_refresh/verify.py
+uv sync --locked
+uv run --locked python examples/refinement_refresh/verify.py
 ```
 
 The check reconstructs:

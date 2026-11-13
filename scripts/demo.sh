@@ -15,23 +15,25 @@ if [[ -e "$OUTPUT" ]]; then
 fi
 
 mkdir -p "$OUTPUT"
-export PYTHONPATH="$ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
 
 echo "[1/5] Frozen campaign execution"
-python -m benchstudio.cli \
+uv run --project "$ROOT" --locked python -m benchstudio.cli \
   --campaign-spec "$ROOT/examples/campaigns/mock-worldepisode.json" \
   --plan-output "$OUTPUT/campaign-plan.json" \
   --execute-mock --workers 2 --audit \
   --output "$OUTPUT/campaign"
 
 echo "[2/5] Robustness and recovery evidence"
-python "$ROOT/examples/run_mock_robustness.py" --output "$OUTPUT/robustness"
+uv run --project "$ROOT" --locked python \
+    "$ROOT/examples/run_mock_robustness.py" --output "$OUTPUT/robustness"
 
 echo "[3/5] Matched transfer-fidelity fixture"
-python "$ROOT/examples/run_mock_transfer.py" --output "$OUTPUT/transfer"
+uv run --project "$ROOT" --locked python \
+    "$ROOT/examples/run_mock_transfer.py" --output "$OUTPUT/transfer"
 
 echo "[4/5] RoboChallenge observe/action transport boundary"
-python "$ROOT/examples/run_robochallenge_mock.py" >"$OUTPUT/robochallenge-report.json"
+uv run --project "$ROOT" --locked python "$ROOT/examples/run_robochallenge_mock.py" \
+    >"$OUTPUT/robochallenge-report.json"
 cat "$OUTPUT/robochallenge-report.json"
 
 if [[ -d "$URDF_STUDIO_ROOT/backend" ]]; then
@@ -43,7 +45,7 @@ else
     echo "      Set URDF_STUDIO_ROOT to enable the SO-101 cube-lift evaluation."
 fi
 
-python -m benchstudio.demo_dashboard \
+uv run --project "$ROOT" --locked python -m benchstudio.demo_dashboard \
   --input "$OUTPUT" \
   --output "$OUTPUT/index.html"
 
@@ -56,5 +58,5 @@ if [[ "$SERVE" == "--serve" ]]; then
     echo "Opening the visual control room at http://127.0.0.1:8765"
     echo "Press Ctrl-C to stop the demo server."
     cd "$OUTPUT"
-    python -m http.server 8765 --bind 127.0.0.1
+    uv run --project "$ROOT" --locked python -m http.server 8765 --bind 127.0.0.1
 fi

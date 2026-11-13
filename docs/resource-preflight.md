@@ -7,7 +7,7 @@ physics engine, a tensor offloader, or a general GPU memory allocator.
 
 ## Inspect hardware
 
-`python -m benchstudio.cli --readiness` reports simulator/model dependencies and
+`uv run --locked python -m benchstudio.cli --readiness` reports simulator/model dependencies and
 adds a `hardware` object. The zero-dependency probe reads Linux MemAvailable,
 respects cgroup v2 `memory.max`/`memory.current` when present, and attempts to
 read NVIDIA GPU free/total memory via `nvidia-smi`. On other systems, available
@@ -50,9 +50,9 @@ bound into its configuration digest and frozen campaign digest.
 ## Establish a real physics baseline
 
 ```bash
-python -m pip install -e '.[mujoco]'
-python -m benchstudio.cli --readiness
-python examples/resource_preflight/benchmark_mujoco.py \
+uv sync --locked --extra mujoco
+uv run --locked python -m benchstudio.cli --readiness
+uv run --locked python examples/resource_preflight/benchmark_mujoco.py \
   --episodes 3 --steps 500 --estimated-host-mib 128 \
   --output runs/resource-slider
 ```
