@@ -36,6 +36,35 @@ uv run python -m pytest
 An editable pip installation remains supported with
 `python -m pip install -e '.[dev]'`.
 
+### Author a paired study
+
+The Python authoring helpers reduce condition-matrix boilerplate while still
+compiling through BenchStudio's strict campaign validator:
+
+```python
+from pathlib import Path
+
+from benchstudio import PairedStudy, condition_grid, simulator_environment
+
+study = PairedStudy(
+    name="refinement-refresh",
+    task_id="held-out-task",
+    conditions=condition_grid(
+        generation_effort=[2, 5],
+        actions_before_refresh=[2, 5],
+    ),
+    seeds=(11, 12, 13),
+    environments=(simulator_environment("native-simulator"),),
+)
+
+plan = study.freeze()
+plan.write(Path("frozen-plan.json"))
+```
+
+The helpers do not execute a policy, infer scoring semantics, or authorize a
+physical robot. The resulting plan uses the same identities, protocol envelope,
+validation, and digest as a hand-written campaign specification.
+
 ### Visual VLA execution on a constrained host
 
 See [local mmap tensor transport and the pinned SmolVLA + MuJoCo runner](docs/visual-vla-transport.md).
