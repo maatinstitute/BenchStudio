@@ -120,7 +120,7 @@ def build_plan(
 def load_outcome_plan(path: Path) -> tuple[dict[str, object], str]:
     """Load a RoboPAD outcome plan and verify its self-contained contract.
 
-    The plan is a preflight artifact, not an execution request.  REVA
+    The plan is a preflight artifact, not an execution request.  ReVa
     records the source-file digest while preserving the source plan's own
     canonical payload digest and cell identities.
     """

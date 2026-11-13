@@ -1,6 +1,6 @@
 # Cluster execution
 
-REVA runs a cluster campaign from one frozen plan. Scheduler jobs select
+ReVa runs a cluster campaign from one frozen plan. Scheduler jobs select
 disjoint deterministic shards while writing evidence to one shared campaign
 directory. The plan digest, attempt identities, runtime receipts, leases, and
 append-only ledger remain identical to a local run.
@@ -11,7 +11,7 @@ append-only ledger remain identical to a local run.
   advisory locks are reliable on every worker (for example, a correctly
   configured Lustre, GPFS, or NFS mount).
 - Install the same locked environment on every node with `uv sync --locked`.
-- Let the scheduler set GPU visibility. REVA validates declared resource
+- Let the scheduler set GPU visibility. ReVa validates declared resource
   requirements but does not allocate GPUs.
 - Use one shard per scheduler task. A retried task uses the same shard index and
   resumes from committed evidence.

@@ -52,7 +52,7 @@ def build_audited_evaluation_report(
 
 
 def render_html_report(report: dict[str, Any]) -> str:
-    title = html.escape(str(report.get("title", "REVA evaluation")))
+    title = html.escape(str(report.get("title", "ReVa evaluation")))
     payload = html.escape(json.dumps(report, indent=2, sort_keys=True))
     return (
         "<!doctype html>\n<html><head><meta charset='utf-8'>"

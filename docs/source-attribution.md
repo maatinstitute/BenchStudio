@@ -36,7 +36,7 @@
   `634985720723ecba023fbc48b99186a0c6d55f90cbbfe5cd791e5212d74e2407`, and
   `71da3c8737d37bd2e116c9647c2a172dfb32dca32c05272dec2fa4c14aa0db91`.
 
-REVA uses source-backed adapters and explicit independent boundaries for
+ReVa uses source-backed adapters and explicit independent boundaries for
 the following projects. Product runtimes are not vendored into this repository.
 
 The AlpaBridge source revision used by the ports is retained in
@@ -71,7 +71,7 @@ the canonical semantic validator.
   the source-generated vector.
   `load_refinement_source_plan()` and `compile_refinement_source_plan()` also
   import an existing upstream JSON plan without regenerating or reordering its
-  rows; the imported REVA plan records both the source-file and source-
+  rows; the imported ReVa plan records both the source-file and source-
   schedule digests.
 - Refinement/Refresh annotation agreement: `reva.analysis.agreement`
   is a direct port of `review/agreement.py` at upstream commit
@@ -169,7 +169,7 @@ the canonical semantic validator.
   respectively, `b8bedc9cf2f0f93dda8203e48ad61cfeddd3662f6b3cdb6b7beec5138230593e`
   and `5c27df4d02e56ab1b116eb1b0786ff892e673d27fd517918ab185082b2485ba2`.
   Their invariants are carried into `tests/test_responsiveness.py` and
-  `tests/test_outcome_plan.py`. REVA exposes the ports through its
+  `tests/test_outcome_plan.py`. ReVa exposes the ports through its
   analysis and campaign packages; external training, checkpoint, simulator,
   and official outcome authority remain outside the repository.
 - RoboPAD path geometry: `reva.conformance.path_geometry` ports the
@@ -574,7 +574,7 @@ the canonical semantic validator.
   quota policy, and original/physics RGB frame names; MuJoCo/reference rollout
   execution remains external.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
-  `urdf-ops`: REVA exposes independent contracts for scenario identity,
+  `urdf-ops`: ReVa exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment
   mapping. The `PolicySession` boundary is informed by AlpaBridge's session,
   modality, readiness, and latency behavior; it is a dependency-free contract,
@@ -584,14 +584,14 @@ the canonical semantic validator.
   Product-specific runtimes remain external.
 
 The RoboChallenge observe-only adapter and
-`examples/external_runtime/robochallenge_mock.py` are REVA-owned
+`examples/external_runtime/robochallenge_mock.py` are ReVa-owned
 transport fixtures, not a port of the RoboChallenge client. They preserve
 opaque payload bytes and protocol digests for boundary testing while leaving
 execution, safety, and official scoring with the external platform.
 
 The optional `reva.integrations.mujoco` adapter uses MuJoCo's public
 Python API when the user installs the `mujoco` extra. It does not vendor the
-runtime or assign official benchmark scoring authority to REVA.
+runtime or assign official benchmark scoring authority to ReVa.
 
 The optional `reva.integrations.gymnasium` adapter follows Gymnasium's
 public five-value `step` protocol and remains a generic environment boundary;
@@ -599,7 +599,7 @@ it does not claim LIBERO or another benchmark's task/scoring semantics.
 
 The optional `reva.integrations.genesis` adapter targets the public
 Genesis World scene lifecycle and is dependency-lazy. Install the `genesis`
-extra in the environment that owns Genesis; REVA retains only the
+extra in the environment that owns Genesis; ReVa retains only the
 temporal/evidence boundary and does not vendor Genesis or its assets.
 
 The optional `reva.integrations.isaaclab` adapter follows the public
@@ -608,6 +608,6 @@ termination signals, extras, and environment step timing. Isaac Lab remains
 the owner of physics, environment lifecycle, and task scoring.
 
 Any future source migration must preserve the original repository's notices,
-third-party licenses, and historical evidence. REVA is publicly available
+third-party licenses, and historical evidence. ReVa is publicly available
 under its source-available research license; this provenance record does not
 relicense any upstream or third-party material.

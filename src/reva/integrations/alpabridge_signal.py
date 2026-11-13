@@ -2,7 +2,7 @@
 
 This ports the reusable input-to-signal boundary from AlpaBridge's
 ``simulator/alpasim_signal.py``.  It intentionally does not construct an
-AlpaSim/REVA scenario or own simulator execution.
+AlpaSim/ReVa scenario or own simulator execution.
 """
 
 from __future__ import annotations

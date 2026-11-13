@@ -1,6 +1,6 @@
 # Resource-aware execution preflight (research preview)
 
-REVA can now reject declared memory footprints that cannot fit a worker **before**
+ReVa can now reject declared memory footprints that cannot fit a worker **before**
 constructing either a policy or a simulator in `CampaignExecutor`. This is a
 conservative admission check for the existing campaign scheduler, not a new
 physics engine, a tensor offloader, or a general GPU memory allocator.
@@ -42,7 +42,7 @@ explicitly. There is no implicit physics, model, image, or CPU fallback.
 The requested footprint is checked against a point-in-time hardware snapshot.
 For `run_parallel(N)`, declared per-worker RAM/VRAM capacity bounds N before
 launching workers. Capacity is not reserved or coordinated across independent
-REVA processes. Hardware may change between admission and allocation;
+ReVa processes. Hardware may change between admission and allocation;
 OOM remains possible. `ResourcePlan.to_dict()` explicitly records this limit.
 The same preflight evidence is serialized in each run's existing manifest and
 bound into its configuration digest and frozen campaign digest.

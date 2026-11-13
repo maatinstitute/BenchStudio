@@ -1,4 +1,4 @@
-"""Exercise the reference application against REVA's actual public contracts."""
+"""Exercise the reference application against ReVa's actual public contracts."""
 
 from __future__ import annotations
 

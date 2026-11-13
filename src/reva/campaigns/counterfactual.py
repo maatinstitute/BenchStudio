@@ -214,7 +214,7 @@ def execute_counterfactual_plan(
 ) -> tuple[CounterfactualBranchResult, ...]:
     """Execute nominal and intervention branches through an external evaluator.
 
-    The evaluator owns simulator state and disturbance application. REVA
+    The evaluator owns simulator state and disturbance application. ReVa
     controls branch order, frozen lineage, result serialization, and paired
     accounting; it never infers a missing outcome as failure.
     """

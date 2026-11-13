@@ -20,7 +20,7 @@ class ExternalCommandPolicy:
 
     The command is executed without a shell. Its stdout must be one JSON
     object containing an ``actions`` array and optional ``metadata`` mapping.
-    This keeps model-runtime ownership outside REVA while preserving a
+    This keeps model-runtime ownership outside ReVa while preserving a
     deterministic, auditable adapter boundary.
     """
 

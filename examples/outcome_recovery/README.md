@@ -3,7 +3,7 @@
 **Question:** After a fixed action prefix, does an interactive policy recover from a
 controlled perturbation compared with the matched nominal continuation?
 
-This example demonstrates **how to express that study with REVA's existing
+This example demonstrates **how to express that study with ReVa's existing
 campaign and counterfactual APIs**, not a second simulator, policy runner,
 result format, or standalone scientific framework. The public example contains
 no private checkpoint, episode traces, training data, simulator assets, or
@@ -85,10 +85,10 @@ first define an explicit repeated-control policy and statistical unit.
 
 ## Ownership
 
-REVA owns frozen campaign identity, branch ordering, evidence serialization,
+ReVa owns frozen campaign identity, branch ordering, evidence serialization,
 and paired-contract checks. The **native evaluator belongs to the scientific
 study** until there is a broadly useful upstream or shared integration to
-reuse. Do not copy source-specific research controllers into the REVA
+reuse. Do not copy source-specific research controllers into the ReVa
 core. This example is the destination for study-specific recipes, while
 immutable historical results and manuscripts remain in their original
 research repository.

@@ -3,7 +3,7 @@
 
 URDF Studio's portable episode video is intentionally a schematic object view.
 This connector rebuilds the exact staged scenario with the upstream backend and
-replays its recorded joint/object states, so REVA can show the robot
+replays its recorded joint/object states, so ReVa can show the robot
 without owning a second robot model or simulation implementation.
 """
 

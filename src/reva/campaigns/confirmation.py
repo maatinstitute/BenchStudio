@@ -331,7 +331,7 @@ def execute_confirmation_plan(
 ) -> tuple[ConfirmationCaseResult, ...]:
     """Evaluate independent holdout cases without changing the search plan.
 
-    The evaluator owns simulator/model execution. REVA records whether
+    The evaluator owns simulator/model execution. ReVa records whether
     the discovered failure reproduced, links each result to the frozen source
     search digest, and keeps the confirmation evidence separate from discovery.
     """

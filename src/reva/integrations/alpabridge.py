@@ -32,7 +32,7 @@ class AlpaBridgeTelemetryWriter:
     """Source-compatible v3 telemetry writer without the AlpaSim runtime.
 
     The owning driver can use this for deterministic evidence production;
-    REVA remains responsible for offline validation through
+    ReVa remains responsible for offline validation through
     :func:`audit_alpabridge_telemetry`.
     """
 

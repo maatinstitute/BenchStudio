@@ -49,7 +49,7 @@ cp -R "$URDF_STUDIO_ROOT/web/public/demo/assets" "$STAGING/assets"
     "$URDF_STUDIO_ROOT/third_party/so-arm100/Simulation/SO101/so101_new_calib.urdf" \
     "$STAGING/robot.urdf"
 
-echo "REVA × URDF Studio"
+echo "ReVa × URDF Studio"
 echo "robot=SO-101 task=cube-lift simulators=$SIMULATORS"
 echo "source=$URDF_STUDIO_ROOT"
 

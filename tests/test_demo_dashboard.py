@@ -315,7 +315,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
         encoding="utf-8"
     )
 
-    assert "REVA — Evaluation Workbench" in workbench
+    assert "ReVa — Evaluation Workbench" in workbench
     assert "100 EPISODES × 3 SIMULATORS" in workbench
     assert "Coverage matrix" in workbench
     assert workbench.count('class="coverage-row"') == 100
@@ -362,7 +362,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert "100 ms · 10 Hz" in workbench
     assert "not calibrated hardware force" in workbench
 
-    assert "REVA — Study control room" in document
+    assert "ReVa — Study control room" in document
     assert "location.replace('./')" in document
     assert "Batch authorization" in document
     assert "Scientific verdict" not in document

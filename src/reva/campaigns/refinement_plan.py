@@ -3,7 +3,7 @@
 This module is a deliberate port of
 ``experiments/make_evaluation_plan.py`` from the Refinement/Refresh project.
 Keep the canonicalization, keyed ordering, schema, and write semantics aligned
-with that source; REVA owns the adapter that turns a plan into frozen
+with that source; ReVa owns the adapter that turns a plan into frozen
 campaign attempts.
 """
 
@@ -159,7 +159,7 @@ def write_plan(path: Path, plan: dict[str, Any], *, force: bool = False) -> None
 def compile_refinement_campaign_plan(
     *, run_id: str, scheduling_seed: int = DEFAULT_SCHEDULING_SEED
 ) -> FrozenCampaignPlan:
-    """Adapt the source-backed schedule into REVA's frozen plan type."""
+    """Adapt the source-backed schedule into ReVa's frozen plan type."""
     source_plan = make_plan(scheduling_seed)
     attempts: list[PlannedAttempt] = []
     for row in source_plan["schedule"]:
@@ -244,7 +244,7 @@ def compile_refinement_source_plan(
     run_id: str | None = None,
     execution_protocol: Mapping[str, Any] | None = None,
 ) -> FrozenCampaignPlan:
-    """Compile the exact schedule from an upstream plan into REVA.
+    """Compile the exact schedule from an upstream plan into ReVa.
 
     This is the consolidation path: it consumes the source artifact's rows
     directly and never regenerates or reorders them.

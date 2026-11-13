@@ -1,6 +1,6 @@
 """Optional MuJoCo simulator adapter.
 
-The dependency is imported only when an adapter instance is created. REVA
+The dependency is imported only when an adapter instance is created. ReVa
 owns the temporal/evidence boundary here; task scoring and model-specific
 success criteria remain supplied by the caller.
 """

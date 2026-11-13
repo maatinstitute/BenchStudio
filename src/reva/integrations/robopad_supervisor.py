@@ -1,7 +1,7 @@
 """RoboPAD's bounded development-child supervisor contract.
 
 This module owns only the process-boundary safeguards. Campaign scheduling,
-manifest construction, and the child runtime remain external to REVA.
+manifest construction, and the child runtime remain external to ReVa.
 """
 
 from __future__ import annotations
