@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import fcntl
 import json
 import os
-from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
+from .file_lock import exclusive_file_lock
 from .frozen_plan import AttemptKey, FrozenCampaignPlan
 
 
@@ -20,19 +19,12 @@ class AttemptLedger:
         self._planned = {attempt.key.attempt_id: attempt.key for attempt in plan.attempts}
         self._seen: set[str] = set()
         path.parent.mkdir(parents=True, exist_ok=True)
-        self.lock_path.touch(exist_ok=True)
         with self._locked():
             self._seen = self._load_seen()
 
-    @contextmanager
     def _locked(self):
         """Serialize ledger reads and commits across worker processes."""
-        with self.lock_path.open("r+", encoding="utf-8") as lock_handle:
-            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
-            try:
-                yield
-            finally:
-                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
+        return exclusive_file_lock(self.lock_path)
 
     def _load_seen(self) -> set[str]:
         seen: set[str] = set()

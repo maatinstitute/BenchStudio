@@ -65,6 +65,10 @@ The helpers do not execute a policy, infer scoring semantics, or authorize a
 physical robot. The resulting plan uses the same identities, protocol envelope,
 validation, and digest as a hand-written campaign specification.
 
+The authoring and frozen-plan core is checked on Linux, macOS, and Windows.
+Simulator adapters and external-process integrations retain their own platform
+requirements and must be qualified in the environment that executes them.
+
 ### Visual VLA execution on a constrained host
 
 See [local mmap tensor transport and the pinned SmolVLA + MuJoCo runner](docs/visual-vla-transport.md).
