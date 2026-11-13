@@ -7,7 +7,7 @@ physics engine, a tensor offloader, or a general GPU memory allocator.
 
 ## Inspect hardware
 
-`uv run --locked python -m reva.cli --readiness` reports simulator/model dependencies and
+`reva readiness` reports simulator/model dependencies and
 adds a `hardware` object. The zero-dependency probe reads Linux MemAvailable,
 respects cgroup v2 `memory.max`/`memory.current` when present, and attempts to
 read NVIDIA GPU free/total memory via `nvidia-smi`. On other systems, available
@@ -51,7 +51,7 @@ bound into its configuration digest and frozen campaign digest.
 
 ```bash
 uv sync --locked --extra mujoco
-uv run --locked python -m reva.cli --readiness
+reva readiness
 uv run --locked python examples/resource_preflight/benchmark_mujoco.py \
   --episodes 3 --steps 500 --estimated-host-mib 128 \
   --output runs/resource-slider

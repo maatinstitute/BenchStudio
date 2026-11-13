@@ -13,7 +13,43 @@ from reva.campaigns import (
     make_plan,
     write_plan,
 )
-from reva.cli import _SchedulerTermination, _scheduler_signal_boundary, main
+from reva.cli import (
+    _SchedulerTermination,
+    _expand_short_command,
+    _scheduler_signal_boundary,
+    main,
+)
+
+
+def test_short_commands_expand_to_advanced_interface():
+    assert _expand_short_command(["smoke"]) == [
+        "--episodes",
+        "3",
+        "--output",
+        "runs/smoke",
+    ]
+    assert _expand_short_command(["smoke", "custom/run"]) == [
+        "--episodes",
+        "3",
+        "--output",
+        "custom/run",
+    ]
+    assert _expand_short_command(["verify", "custom/run"]) == [
+        "--verify-artifact",
+        "custom/run",
+    ]
+    assert _expand_short_command(["readiness"]) == ["--readiness"]
+
+
+def test_short_smoke_and_verify_commands(monkeypatch, tmp_path, capsys):
+    run_dir = tmp_path / "smoke"
+    monkeypatch.setattr("sys.argv", ["reva", "smoke", str(run_dir)])
+    assert main() == 0
+    assert "episodes=3" in capsys.readouterr().out
+
+    monkeypatch.setattr("sys.argv", ["reva", "verify", str(run_dir)])
+    assert main() == 0
+    assert '"valid": true' in capsys.readouterr().out
 
 
 def test_cli_compiles_campaign_spec(monkeypatch, tmp_path, capsys):
