@@ -163,6 +163,8 @@ from .external_policy import (
     external_command_capabilities,
     external_vla_capabilities,
     persistent_external_command_capabilities,
+    running_tensor_capabilities,
+    running_tensor_external_policy,
 )
 from .external_simulator import ExternalCommandSimulator
 from .measurement import ResourceSampler, delta_resources, sample_resources
@@ -325,6 +327,8 @@ __all__ = [
     "external_command_capabilities",
     "external_vla_capabilities",
     "persistent_external_command_capabilities",
+    "running_tensor_capabilities",
+    "running_tensor_external_policy",
     "ExternalCommandSimulator",
     "generate_ed25519_keypair",
     "sign_manifest",

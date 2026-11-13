@@ -537,3 +537,32 @@ def test_campaign_spec_accepts_pinned_scenario_revision_and_digest():
         }
     )
     assert plan.protocol["S"]["task"]["task_revision"] == "rev-1"
+
+
+def test_campaign_spec_freezes_model_controls_per_condition():
+    plan = compile_campaign_spec(
+        {
+            "schema": "reva.campaign.v1",
+            "experiment": {"name": "recurrent-state-order"},
+            "model": {"adapter": "running_tensor"},
+            "task": {"task_id": "task"},
+            "environments": [{"id": "sim", "kind": "simulator"}],
+            "evaluation": {
+                "seeds": [1],
+                "paired": True,
+                "conditions": [
+                    {
+                        "id": "order-3",
+                        "model_controls": {
+                            "state_order": 3,
+                            "state_width": 128,
+                        },
+                    }
+                ],
+            },
+        }
+    )
+    assert plan.attempts[0].metadata["condition"]["model_controls"] == {
+        "state_order": 3,
+        "state_width": 128,
+    }

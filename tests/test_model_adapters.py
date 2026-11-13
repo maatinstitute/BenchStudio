@@ -11,6 +11,7 @@ from reva.model_adapters import (
     ModelDependency,
     default_model_registry,
 )
+from reva.external_policy import running_tensor_external_policy
 
 
 def test_default_model_registry_is_ready():
@@ -43,6 +44,37 @@ def test_default_model_registry_exposes_named_vla_protocol_bridges():
         assert registry.readiness(adapter_id)["ready"] is True
         assert descriptor.capabilities.family == "vla"
         assert descriptor.capabilities.supports_variable_action_horizon is True
+
+
+def test_default_model_registry_exposes_running_tensor_bridge():
+    registry = default_model_registry(discover_external=False)
+    descriptor = registry.get("running_tensor")
+    assert registry.readiness("running_tensor")["ready"] is True
+    assert "recurrent_state_bytes" in descriptor.capabilities.supported_metrics
+    assert "state_order" in descriptor.capabilities.runtime_controls
+
+
+def test_running_tensor_bridge_freezes_state_geometry_in_runtime_environment():
+    policy = running_tensor_external_policy(
+        ["python", "policy.py"],
+        state_order=3,
+        state_width=128,
+        state_dtype_bytes=2,
+    )
+    assert policy.environment["REVA_RECURRENT_STATE_ORDER"] == "3"
+    assert policy.environment["REVA_RECURRENT_STATE_WIDTH"] == "128"
+    assert policy.environment["REVA_RECURRENT_STATE_BYTES"] == str(128**3 * 2)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (("state_order", 1), ("state_width", 0), ("state_dtype_bytes", 0)),
+)
+def test_running_tensor_bridge_rejects_invalid_state_geometry(field, value):
+    controls = {"state_order": 3, "state_width": 128, "state_dtype_bytes": 2}
+    controls[field] = value
+    with pytest.raises(ValueError, match=field):
+        running_tensor_external_policy(["python", "policy.py"], **controls)
 
 
 def test_default_model_registry_exposes_digest_bound_trace_policy():

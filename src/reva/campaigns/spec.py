@@ -109,6 +109,12 @@ def _validate_condition_controls(conditions: list[dict[str, Any]]) -> None:
             or max_cache_entries < 1
         ):
             raise ValueError(f"{label}.max_cache_entries must be a positive integer")
+        model_controls = condition.get("model_controls")
+        if model_controls is not None:
+            if not isinstance(model_controls, dict) or not model_controls:
+                raise ValueError(f"{label}.model_controls must be a non-empty mapping")
+            if any(not isinstance(name, str) or not name for name in model_controls):
+                raise ValueError(f"{label}.model_controls keys must be non-empty strings")
 
 
 def _validate_protocol_sections(spec: dict[str, Any]) -> None:

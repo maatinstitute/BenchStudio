@@ -109,6 +109,8 @@ reva readiness
   runtime checks before execution.
 - [Visual VLA transport](docs/visual-vla-transport.md): local image transport and
   the external SmolVLA boundary.
+- [RunningTensor policies](docs/running-tensor.md): freeze recurrent-state
+  geometry and evaluate an independently implemented RunningTensor backbone.
 - [Research applications](docs/research-applications.md): how worked studies use
   the shared execution and evidence APIs.
 - [Source attribution](docs/source-attribution.md): upstream provenance and

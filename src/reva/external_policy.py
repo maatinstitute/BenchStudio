@@ -321,6 +321,88 @@ def external_vla_capabilities(model_id: str) -> ModelCapabilityProfile:
     )
 
 
+def running_tensor_external_policy(
+    command: Sequence[str],
+    *,
+    state_order: int,
+    state_width: int,
+    recurrence_form: str = "recurrent",
+    state_dtype_bytes: int = 4,
+    environment: Mapping[str, str] | None = None,
+    **kwargs: Any,
+) -> PersistentExternalCommandPolicy:
+    """Create a persistent bridge for a RunningTensor-backed robot policy."""
+    for name, value, minimum in (
+        ("state_order", state_order, 2),
+        ("state_width", state_width, 1),
+        ("state_dtype_bytes", state_dtype_bytes, 1),
+    ):
+        if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
+            raise ValueError(f"{name} must be an integer >= {minimum}")
+    if state_order > 8:
+        raise ValueError("state_order must be <= 8")
+    if state_width > 1_000_000:
+        raise ValueError("state_width must be <= 1000000")
+    if recurrence_form not in {"recurrent", "parallel"}:
+        raise ValueError("recurrence_form must be recurrent or parallel")
+    runtime_environment = dict(environment or {})
+    state_bytes = (state_width**state_order) * state_dtype_bytes
+    if state_bytes > 2**63 - 1:
+        raise ValueError("declared recurrent state exceeds signed 64-bit byte range")
+    declared = {
+        "REVA_RECURRENT_STATE_ORDER": str(state_order),
+        "REVA_RECURRENT_STATE_WIDTH": str(state_width),
+        "REVA_RECURRENT_STATE_DTYPE_BYTES": str(state_dtype_bytes),
+        "REVA_RECURRENT_STATE_BYTES": str(state_bytes),
+        "REVA_RECURRENCE_FORM": recurrence_form,
+    }
+    conflicts = {
+        key
+        for key, value in declared.items()
+        if key in runtime_environment and runtime_environment[key] != value
+    }
+    if conflicts:
+        raise ValueError(
+            "environment conflicts with frozen RunningTensor controls: "
+            + ", ".join(sorted(conflicts))
+        )
+    runtime_environment.update(declared)
+    return PersistentExternalCommandPolicy(
+        command,
+        environment=runtime_environment,
+        **kwargs,
+    )
+
+
+def running_tensor_capabilities() -> ModelCapabilityProfile:
+    """Describe the auditable boundary for a RunningTensor-backed policy."""
+    return ModelCapabilityProfile(
+        model_id="running_tensor_external_policy",
+        family="custom",
+        input_modalities=("state", "image", "language", "proprioception"),
+        output_representation="action_chunk",
+        supports_closed_loop=True,
+        supports_action_chunks=True,
+        supported_metrics=(
+            "success",
+            "latency",
+            "resource_use",
+            "recurrent_state_bytes",
+        ),
+        runtime_controls=(
+            "state_order",
+            "state_width",
+            "state_dtype_bytes",
+            "recurrence_form",
+            "command",
+            "environment",
+            "device",
+        ),
+        timing_signals=("host_monotonic",),
+        supports_variable_action_horizon=True,
+    )
+
+
 def _jsonable_observation(observation: Observation) -> dict[str, Any]:
     source_timestamp = observation.source_timestamp
     return {
