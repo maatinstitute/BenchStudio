@@ -143,6 +143,7 @@ from .search import (
     minimize_counterexample,
     validate_search_plan,
 )
+from .sharding import shard_attempt_ids
 from .spec import compile_campaign_spec
 from .worker import LeaseHeartbeat, WorkerLease, WorkerLeaseManager
 
@@ -153,6 +154,7 @@ __all__ = [
     "WorkerLease",
     "WorkerLeaseManager",
     "LeaseHeartbeat",
+    "shard_attempt_ids",
     "compile_balanced_paired_plan",
     "build_outcome_plan",
     "load_outcome_plan",

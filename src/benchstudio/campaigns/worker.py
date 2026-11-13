@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
+from .file_lock import exclusive_file_lock
+
 
 @dataclass(frozen=True)
 class WorkerLease:
@@ -46,22 +48,16 @@ class WorkerLeaseManager:
         now = self.clock_ns()
         _validate_timestamp(now, "clock_ns()")
         lease = WorkerLease(attempt_id, worker_id, now + int(self.lease_seconds * 1_000_000_000))
-        try:
-            with path.open("x", encoding="utf-8") as handle:
+        with exclusive_file_lock(self._lock_path(attempt_id)):
+            current = self._read_lease(path, attempt_id) if path.exists() else None
+            if path.exists() and current is None:
+                return None
+            if current is not None and current.expires_at_ns > now:
+                return None
+            with path.open("w", encoding="utf-8") as handle:
                 json.dump(lease.__dict__, handle, sort_keys=True)
                 handle.flush()
                 os.fsync(handle.fileno())
-        except FileExistsError:
-            current = self._read_lease(path, attempt_id)
-            if current is None:
-                return None
-            if current.expires_at_ns > now:
-                return None
-            try:
-                path.unlink()
-            except FileNotFoundError:
-                pass
-            return self.acquire(attempt_id, worker_id)
         return lease
 
     def renew(self, lease: WorkerLease) -> WorkerLease:
@@ -70,22 +66,23 @@ class WorkerLeaseManager:
         _validate_identity(lease.worker_id, "worker_id")
         _validate_timestamp(lease.expires_at_ns, "expires_at_ns")
         path = self._path(lease.attempt_id)
-        current = self._read_lease(path, lease.attempt_id)
-        if current is None:
-            raise ValueError("lease file is missing or invalid")
-        if current.worker_id != lease.worker_id:
-            raise ValueError("only the lease owner may renew a worker lease")
-        now = self.clock_ns()
-        _validate_timestamp(now, "clock_ns()")
-        renewed = WorkerLease(
-            lease.attempt_id,
-            lease.worker_id,
-            max(current.expires_at_ns, now) + int(self.lease_seconds * 1_000_000_000),
-        )
-        with path.open("w", encoding="utf-8") as handle:
-            json.dump(renewed.__dict__, handle, sort_keys=True)
-            handle.flush()
-            os.fsync(handle.fileno())
+        with exclusive_file_lock(self._lock_path(lease.attempt_id)):
+            current = self._read_lease(path, lease.attempt_id)
+            if current is None:
+                raise ValueError("lease file is missing or invalid")
+            if current.worker_id != lease.worker_id:
+                raise ValueError("only the lease owner may renew a worker lease")
+            now = self.clock_ns()
+            _validate_timestamp(now, "clock_ns()")
+            renewed = WorkerLease(
+                lease.attempt_id,
+                lease.worker_id,
+                now + int(self.lease_seconds * 1_000_000_000),
+            )
+            with path.open("w", encoding="utf-8") as handle:
+                json.dump(renewed.__dict__, handle, sort_keys=True)
+                handle.flush()
+                os.fsync(handle.fileno())
         return renewed
 
     def release(self, lease: WorkerLease) -> None:
@@ -93,16 +90,20 @@ class WorkerLeaseManager:
         _validate_identity(lease.worker_id, "worker_id")
         _validate_timestamp(lease.expires_at_ns, "expires_at_ns")
         path = self._path(lease.attempt_id)
-        current = self._read_lease(path, lease.attempt_id)
-        if current is None:
-            raise ValueError("lease file is missing or invalid")
-        if current.worker_id != lease.worker_id:
-            raise ValueError("only the lease owner may release a worker lease")
-        path.unlink()
+        with exclusive_file_lock(self._lock_path(lease.attempt_id)):
+            current = self._read_lease(path, lease.attempt_id)
+            if current is None:
+                raise ValueError("lease file is missing or invalid")
+            if current.worker_id != lease.worker_id:
+                raise ValueError("only the lease owner may release a worker lease")
+            path.unlink()
 
     def _path(self, attempt_id: str) -> Path:
         safe = "".join(char if char.isalnum() or char in "-_" else "_" for char in attempt_id)
         return self.root / f"{safe}.lease"
+
+    def _lock_path(self, attempt_id: str) -> Path:
+        return self._path(attempt_id).with_suffix(".lease.lock")
 
     @staticmethod
     def _read_lease(path: Path, attempt_id: str) -> WorkerLease | None:

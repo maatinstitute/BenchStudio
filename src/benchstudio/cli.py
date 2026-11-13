@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import socket
 from dataclasses import replace
 from pathlib import Path
 
@@ -24,12 +26,14 @@ from .campaigns import (
     HttpArtifactStore,
     Intervention,
     LocalArtifactStore,
+    WorkerLeaseManager,
     compile_campaign_spec,
     compile_counterfactual_plan,
     compile_refinement_source_plan,
     load_campaign_document,
     load_frozen_campaign_plan,
     load_outcome_plan,
+    shard_attempt_ids,
     retrieve_campaign_archive,
     verify_campaign_archive,
 )
@@ -181,6 +185,20 @@ def main() -> int:
         type=_positive_int,
         default=1,
         help="Number of lease-owning workers for a compiled campaign (default: 1).",
+    )
+    parser.add_argument(
+        "--shard-index",
+        type=int,
+        help="Zero-based scheduler shard index for a frozen campaign plan.",
+    )
+    parser.add_argument(
+        "--shard-count",
+        type=_positive_int,
+        help="Total scheduler shards sharing the same frozen plan and output directory.",
+    )
+    parser.add_argument(
+        "--worker-id",
+        help="Stable scheduler worker identity recorded in runtime receipts.",
     )
     parser.add_argument(
         "--readiness",
@@ -855,6 +873,28 @@ def main() -> int:
             f"digest={plan.plan_digest_sha256}"
         )
         if args.execute_mock or args.execute_registry:
+            if (args.shard_index is None) != (args.shard_count is None):
+                parser.error("--shard-index and --shard-count must be supplied together")
+            selected_attempt_ids = None
+            if args.shard_index is not None and args.shard_count is not None:
+                try:
+                    selected_attempt_ids = shard_attempt_ids(
+                        plan,
+                        shard_index=args.shard_index,
+                        shard_count=args.shard_count,
+                    )
+                except ValueError as exc:
+                    parser.error(str(exc))
+                if (
+                    args.audit
+                    or args.archive_output is not None
+                    or args.artifact_store is not None
+                    or args.artifact_url is not None
+                ):
+                    parser.error(
+                        "audit, archive, and artifact publication require the completed campaign; "
+                        "run them once after all shards finish"
+                    )
             if args.execute_registry:
                 environments = plan.protocol.get("S", {}).get("environments", [])
                 enabled_without_adapter = [
@@ -884,19 +924,48 @@ def main() -> int:
                 simulator_factory,
                 adapter_registry=default_registry(),
                 model_registry=model_registry,
+                worker_id=(
+                    args.worker_id
+                    or (
+                        f"{socket.gethostname()}-{os.getpid()}-shard-{args.shard_index}"
+                        if selected_attempt_ids is not None
+                        else None
+                    )
+                ),
+                lease_manager=(
+                    WorkerLeaseManager(args.output / "leases")
+                    if selected_attempt_ids is not None or args.worker_id is not None
+                    else None
+                ),
             )
-            summary = executor.run_parallel(args.workers) if args.workers > 1 else executor.run()
+            summary = (
+                executor.run_parallel(args.workers, selected_attempt_ids)
+                if args.workers > 1
+                else executor.run(selected_attempt_ids)
+            )
+            selected_missing = (
+                set(summary.missing_attempt_ids)
+                if selected_attempt_ids is None
+                else set(summary.missing_attempt_ids).intersection(selected_attempt_ids)
+            )
             campaign_status = (
                 "failed"
-                if summary.failed_attempt_ids or summary.missing_attempt_ids
+                if summary.failed_attempt_ids or selected_missing
                 else "completed"
             )
             print(
                 f"campaign_status={campaign_status} "
                 f"committed={len(summary.committed_attempt_ids)} "
                 f"failed={len(summary.failed_attempt_ids)} "
-                f"missing={len(summary.missing_attempt_ids)}"
+                f"missing={len(selected_missing)} "
+                f"scope={'campaign' if selected_attempt_ids is None else 'shard'} "
+                f"campaign_missing={len(summary.missing_attempt_ids)}"
             )
+            if selected_attempt_ids is not None:
+                print(
+                    f"shard={args.shard_index}/{args.shard_count} "
+                    f"assigned={len(selected_attempt_ids)} worker_id={executor.worker_id}"
+                )
             if args.audit:
                 audit = executor.audit()
                 print(

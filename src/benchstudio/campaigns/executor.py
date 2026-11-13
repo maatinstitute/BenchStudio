@@ -19,6 +19,7 @@ from ..hardware import (
 from ..measurement import ResourceSampler
 from ..runner import RunConfig, run_episodes
 from ..runtime_receipts import load_runtime_receipt, verify_runtime_receipt
+from .file_lock import exclusive_file_lock
 from .frozen_plan import FrozenCampaignPlan, PlannedAttempt, load_frozen_campaign_plan
 from .ledger import AttemptLedger
 from .worker import LeaseHeartbeat, WorkerLeaseManager
@@ -136,15 +137,16 @@ class CampaignExecutor:
             raise ValueError(f"unknown cancelled attempts: {sorted(unknown)}")
         self.output.mkdir(parents=True, exist_ok=True)
         plan_path = self.output / "campaign-plan.json"
-        if plan_path.is_file():
-            try:
-                existing_plan = load_frozen_campaign_plan(plan_path)
-            except ValueError as exc:
-                raise ValueError("existing campaign plan is invalid") from exc
-            if existing_plan != plan:
-                raise ValueError("existing campaign plan does not match frozen plan")
-        else:
-            self.plan.write(plan_path)
+        with exclusive_file_lock(self.output / "campaign-plan.lock"):
+            if plan_path.is_file():
+                try:
+                    existing_plan = load_frozen_campaign_plan(plan_path)
+                except ValueError as exc:
+                    raise ValueError("existing campaign plan is invalid") from exc
+                if existing_plan != plan:
+                    raise ValueError("existing campaign plan does not match frozen plan")
+            else:
+                self.plan.write(plan_path)
         self.ledger = AttemptLedger(self.output / "attempt-results.jsonl", plan)
 
     def run(self, attempt_ids: Iterable[str] | None = None) -> CampaignExecutionSummary:
@@ -343,7 +345,9 @@ class CampaignExecutor:
                 f"attempt {attempt.key.attempt_id} runtime receipt worker identity is invalid"
             )
 
-    def run_parallel(self, workers: int) -> CampaignExecutionSummary:
+    def run_parallel(
+        self, workers: int, attempt_ids: Iterable[str] | None = None
+    ) -> CampaignExecutionSummary:
         """Run pending attempts with multiple lease-owning workers.
 
         Each worker gets its own executor and refreshes the shared append-only
@@ -351,6 +355,7 @@ class CampaignExecutor:
         leases decide ownership and make this safe to resume after a worker
         exits.
         """
+        selected_ids = None if attempt_ids is None else tuple(attempt_ids)
         if workers < 1:
             raise ValueError("workers must be positive")
         if (
@@ -363,7 +368,7 @@ class CampaignExecutor:
                 f"{self.resource_plan.max_parallel_workers}"
             )
         if workers == 1:
-            return self.run()
+            return self.run(selected_ids)
         lease_root = (
             self.lease_manager.root if self.lease_manager is not None else self.output / "leases"
         )
@@ -388,7 +393,7 @@ class CampaignExecutor:
                 policy_kwargs_factory=self.policy_kwargs_factory,
                 hardware_snapshot=self.hardware_snapshot,
             )
-            return worker.run()
+            return worker.run(selected_ids)
 
         with ThreadPoolExecutor(max_workers=workers) as pool:
             results = tuple(pool.map(execute, range(workers)))

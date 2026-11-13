@@ -1,9 +1,11 @@
 import json
 
 from benchstudio.campaigns import (
+    AttemptLedger,
     LocalArtifactStore,
     build_outcome_plan,
     load_campaign_document,
+    load_frozen_campaign_plan,
     make_plan,
     write_plan,
 )
@@ -1309,6 +1311,72 @@ def test_cli_can_execute_compiled_campaign_with_mock_backend(monkeypatch, tmp_pa
     assert "campaign_status=completed" in captured.out
     assert "audit_status=qualified" in captured.out
     assert "artifact_sha256=" in captured.out
+
+
+def test_cli_cluster_shards_share_one_plan_and_resume_one_campaign(monkeypatch, tmp_path, capsys):
+    spec_path = tmp_path / "campaign.json"
+    plan_path = tmp_path / "plan.json"
+    output = tmp_path / "run"
+    spec_path.write_text(
+        json.dumps(
+            {
+                "schema": "benchstudio.campaign.v1",
+                "experiment": {"name": "cluster-cli"},
+                "task": {"task_id": "task"},
+                "environments": [{"id": "sim", "kind": "simulator"}],
+                "evaluation": {
+                    "seeds": [1, 2, 3, 4],
+                    "paired": True,
+                    "conditions": [{"denoising_steps": 2, "action_prefix": 1}],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "benchstudio-run",
+            "--campaign-spec",
+            str(spec_path),
+            "--plan-output",
+            str(plan_path),
+        ],
+    )
+    assert main() == 0
+
+    for index in range(2):
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "benchstudio-run",
+                "--frozen-plan",
+                str(plan_path),
+                "--output",
+                str(output),
+                "--execute-mock",
+                "--shard-index",
+                str(index),
+                "--shard-count",
+                "2",
+                "--worker-id",
+                f"job-{index}",
+            ],
+        )
+        assert main() == 0
+        captured = capsys.readouterr().out
+        assert "campaign_status=completed committed=2 failed=0 missing=0 scope=shard" in captured
+        assert f"shard={index}/2 assigned=2 worker_id=job-{index}" in captured
+
+    records = [
+        json.loads(line)
+        for line in (output / "attempt-results.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert len(records) == 4
+    assert not AttemptLedger(
+        output / "attempt-results.jsonl",
+        load_frozen_campaign_plan(plan_path),
+    ).missing_attempt_ids
 
 
 def test_cli_can_select_http_artifact_publication(monkeypatch, tmp_path, capsys):
