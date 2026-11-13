@@ -571,8 +571,11 @@ class CampaignExecutor:
         )
 
     def _audit_evidence_issues(self) -> tuple[str, ...]:
+        from ..analysis.campaign_audit import _runtime_environment_issues
+
         records = {record.get("attempt_id"): record for record in self.ledger.records}
         issues: list[str] = []
+        runtime_environments: list[tuple[str, str, dict[str, Any]]] = []
         for attempt in self.plan.attempts:
             attempt_id = attempt.key.attempt_id
             record = records.get(attempt_id)
@@ -593,12 +596,16 @@ class CampaignExecutor:
             try:
                 self._verify_runtime_receipt(attempt, attempt_dir)
                 receipt = load_runtime_receipt(attempt_dir / "runtime-receipt.json")
+                runtime_environments.append(
+                    (attempt.key.environment_id, attempt_id, receipt["environment"])
+                )
                 if receipt.get("status") != record.get("status"):
                     issues.append(
                         f"{attempt_id}: runtime receipt status does not match ledger status"
                     )
             except RuntimeError as exc:
                 issues.append(str(exc))
+        issues.extend(_runtime_environment_issues(runtime_environments))
         return tuple(issues)
 
     def outcome_ledger(self) -> Any:

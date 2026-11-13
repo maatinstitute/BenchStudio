@@ -1,5 +1,35 @@
 from benchstudio.analysis import ClaimType, OutcomeRecord, audit_campaign
+from benchstudio.analysis.campaign_audit import _runtime_environment_issues
 from benchstudio.campaigns import CampaignPlanner, compile_campaign_spec
+
+
+def test_runtime_environment_audit_detects_software_drift_within_one_environment():
+    issues = _runtime_environment_issues(
+        [
+            (
+                "sim",
+                "attempt-1",
+                {"python": "3.12.12", "packages": {"torch": "2.7.1"}, "backend_id": "libero"},
+            ),
+            (
+                "sim",
+                "attempt-2",
+                {"python": "3.12.12", "packages": {"torch": "2.8.0"}, "backend_id": "libero"},
+            ),
+        ]
+    )
+    assert issues == (
+        "attempt-2: runtime software differs from attempt-1 within environment sim",
+    )
+
+
+def test_runtime_environment_audit_keeps_declared_environments_separate():
+    assert _runtime_environment_issues(
+        [
+            ("sim-a", "attempt-1", {"python": "3.11", "packages": {}, "backend_id": "a"}),
+            ("sim-b", "attempt-2", {"python": "3.12", "packages": {}, "backend_id": "b"}),
+        ]
+    ) == ()
 
 
 def test_campaign_audit_derives_supported_claim_from_verified_complete_ledger():
