@@ -65,7 +65,8 @@ The helpers do not execute a policy, infer scoring semantics, or authorize a
 physical robot. The resulting plan uses the same identities, protocol envelope,
 validation, and digest as a hand-written campaign specification.
 
-The authoring and frozen-plan core is checked on Linux, macOS, and Windows.
+The authoring and frozen-plan core is checked on Linux, macOS, and Windows;
+the full suite is checked on Python 3.10 through 3.13.
 Simulator adapters and external-process integrations retain their own platform
 requirements and must be qualified in the environment that executes them.
 
