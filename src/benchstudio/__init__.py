@@ -60,6 +60,7 @@ from .calibration import (
     calibration_from_environment,
     compare_calibrations,
 )
+from .authoring import PairedStudy, condition_grid, simulator_environment
 from .campaigns import (
     ArtifactReader,
     ArtifactReference,
@@ -235,6 +236,9 @@ __all__ = [
     "AttemptKey",
     "AttemptLedger",
     "CampaignPlanner",
+    "PairedStudy",
+    "condition_grid",
+    "simulator_environment",
     "compile_balanced_paired_plan",
     "CampaignExecutionSummary",
     "CampaignExecutor",
