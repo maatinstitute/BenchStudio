@@ -1,6 +1,6 @@
 import pytest
 
-from ival.integrations import (
+from reva.integrations import (
     TrajectoryCandidate,
     TrajectoryReference,
     score_candidate,

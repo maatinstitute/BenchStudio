@@ -1,6 +1,6 @@
-"""Outcome-recovery reference application built on IVal's campaign API.
+"""Outcome-recovery reference application built on REVA's campaign API.
 
-Planning needs only IVal. Native execution requires a caller-owned, pinned
+Planning needs only REVA. Native execution requires a caller-owned, pinned
 simulator/policy evaluator; the example does not approximate task success.
 """
 
@@ -15,7 +15,7 @@ import re
 from pathlib import Path
 from typing import Any, Callable
 
-from ival.campaigns import (
+from reva.campaigns import (
     CounterfactualEvaluation,
     Intervention,
     compile_campaign_spec,
@@ -157,7 +157,7 @@ def assess_pairs(plan: Any, results: Any) -> dict[str, Any]:
             paired_losses += int(left.success and not right.success)
     valid = not issues and complete_pairs == len(pairs)
     return {
-        "schema": "ival.outcome_recovery_contract.v1",
+        "schema": "reva.outcome_recovery_contract.v1",
         "contract_valid": valid,
         "scope": "paired_record_metadata_only_native_execution_not_independently_verified",
         "planned_pairs": len(pairs),
@@ -211,7 +211,7 @@ def main(argv: list[str] | None = None) -> int:
     nominal.write(args.output / "campaign-plan.json")
     counterfactual.write(args.output / "counterfactual-plan.json")
     provenance = {
-        "schema": "ival.outcome_recovery_example.v1",
+        "schema": "reva.outcome_recovery_example.v1",
         "mode": "plan_only" if evaluator is None else "external_native_evaluator",
         "campaign_plan_sha256": nominal.plan_digest_sha256,
         "counterfactual_plan_sha256": counterfactual.plan_digest_sha256,
@@ -234,7 +234,7 @@ def main(argv: list[str] | None = None) -> int:
         report = assess_pairs(counterfactual, results)
     except Exception as exc:
         report = {
-            "schema": "ival.outcome_recovery_contract.v1",
+            "schema": "reva.outcome_recovery_contract.v1",
             "contract_valid": False,
             "issues": [f"evaluation_failed:{type(exc).__name__}:{exc}"],
             "scope": "no_scientific_outcome_claim",

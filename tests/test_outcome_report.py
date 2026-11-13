@@ -2,7 +2,7 @@ import hashlib
 import json
 import unittest
 
-from ival.analysis.outcome_report import (
+from reva.analysis.outcome_report import (
     analyze_primary,
     clopper_pearson,
     discordance_interval,

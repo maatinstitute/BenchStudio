@@ -8,15 +8,15 @@ from pathlib import Path
 
 import pytest
 
-from ival.adapters import default_registry
-from ival.analysis import (
+from reva.adapters import default_registry
+from reva.analysis import (
     ClaimType,
     OutcomeRecord,
     TimingProvenance,
     audit_execution_overhead,
     write_execution_overhead,
 )
-from ival.campaigns import (
+from reva.campaigns import (
     CampaignArchiveError,
     CampaignExecutor,
     CampaignPlanner,
@@ -31,9 +31,9 @@ from ival.campaigns import (
     verify_campaign_archive,
     write_campaign_archive,
 )
-from ival.evidence import build_artifact_manifest, write_manifest_trust_anchor
-from ival.mock import MockPolicy, MockSimulator
-from ival.model_adapters import default_model_registry
+from reva.evidence import build_artifact_manifest, write_manifest_trust_anchor
+from reva.mock import MockPolicy, MockSimulator
+from reva.model_adapters import default_model_registry
 
 
 def test_campaign_executor_uses_frozen_attempts_and_resumes_idempotently(tmp_path):
@@ -65,8 +65,8 @@ def test_campaign_executor_uses_frozen_attempts_and_resumes_idempotently(tmp_pat
 
 
 def test_campaign_audit_rejects_cross_worker_software_drift(tmp_path):
-    from ival.analysis import audit_campaign_directory
-    from ival.runtime_receipts import (
+    from reva.analysis import audit_campaign_directory
+    from reva.runtime_receipts import (
         build_runtime_receipt,
         load_runtime_receipt,
         write_runtime_receipt,
@@ -382,7 +382,7 @@ def test_scheduler_sigterm_releases_lease_and_allows_preserved_retry(tmp_path):
     import os
     import signal
 
-    from ival.cli import _SchedulerTermination, _scheduler_signal_boundary
+    from reva.cli import _SchedulerTermination, _scheduler_signal_boundary
 
     class TerminatingPolicy(MockPolicy):
         def predict(self, observation, *, denoising_steps):
@@ -536,7 +536,7 @@ def test_campaign_executor_refuses_tampered_resumed_attempt(tmp_path):
 def test_campaign_executor_preserves_environment_identity_in_evidence(tmp_path):
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "paired-environments"},
             "task": {"task_id": "mock-task"},
             "environments": [
@@ -602,7 +602,7 @@ def test_campaign_executor_persists_environment_calibration(tmp_path):
     }
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "calibrated"},
             "task": {"task_id": "task"},
             "environments": [{"id": "sim", "kind": "simulator", "calibration": calibration}],
@@ -632,7 +632,7 @@ def test_campaign_executor_persists_benchmark_validity(tmp_path):
     }
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "validity-evidence"},
             "task": {"task_id": "task"},
             "environments": [{"id": "sim", "kind": "simulator"}],
@@ -657,7 +657,7 @@ def test_campaign_executor_persists_checkpoint_pinned_model_reference(tmp_path):
     checkpoint = "sha256:" + "a" * 64
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "checkpoint-evidence"},
             "model": {
                 "adapter": "mock",
@@ -686,8 +686,8 @@ def test_campaign_executor_persists_checkpoint_pinned_model_reference(tmp_path):
 
 
 def test_imported_source_plan_binds_checkpoint_to_attempt_manifest():
-    from ival.campaigns.executor import _model_reference
-    from ival.campaigns.frozen_plan import FrozenCampaignPlan
+    from reva.campaigns.executor import _model_reference
+    from reva.campaigns.frozen_plan import FrozenCampaignPlan
 
     plan = FrozenCampaignPlan(
         run_id="source-reference-test",
@@ -714,10 +714,10 @@ def test_imported_source_plan_binds_checkpoint_to_attempt_manifest():
 
 
 def test_imported_source_plan_can_use_registry_execution_envelope(tmp_path):
-    from ival.campaigns.refinement_plan import compile_refinement_source_plan
+    from reva.campaigns.refinement_plan import compile_refinement_source_plan
 
     source_path = tmp_path / "source-plan.json"
-    from ival.campaigns.refinement_plan import make_plan, write_plan
+    from reva.campaigns.refinement_plan import make_plan, write_plan
 
     write_plan(source_path, make_plan())
     plan = compile_refinement_source_plan(
@@ -857,7 +857,7 @@ def test_campaign_executor_audit_reads_persisted_authoritative_outcomes(tmp_path
 def test_campaign_executor_rejects_unsatisfied_frozen_backend_requirement(tmp_path):
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "backend-gated"},
             "task": {"task_id": "task"},
             "environments": [
@@ -888,7 +888,7 @@ def test_campaign_executor_rejects_unsatisfied_frozen_backend_requirement(tmp_pa
 def test_campaign_executor_can_instantiate_declared_adapter(tmp_path):
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "registry-backed"},
             "task": {"task_id": "task"},
             "environments": [{"id": "sim", "kind": "simulator", "adapter": "mock"}],
@@ -915,7 +915,7 @@ def test_campaign_executor_can_instantiate_declared_adapter(tmp_path):
 def test_campaign_executor_can_instantiate_declared_model_adapter(tmp_path):
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "model-registry-backed"},
             "model": {"adapter": "mock"},
             "task": {"task_id": "task"},
@@ -939,7 +939,7 @@ def test_campaign_executor_can_instantiate_declared_model_adapter(tmp_path):
 def test_campaign_executor_can_run_external_command_model_adapter(tmp_path):
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "external-model"},
             "model": {
                 "adapter": "external_command",
@@ -983,7 +983,7 @@ def test_campaign_executor_can_run_external_command_simulator_adapter(tmp_path):
     )
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "external-simulator"},
             "task": {"task_id": "task"},
             "environments": [
@@ -1013,7 +1013,7 @@ def test_campaign_executor_can_run_external_command_simulator_adapter(tmp_path):
 def test_registry_backed_manifest_records_model_capabilities(tmp_path):
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "capability-evidence"},
             "model": {"adapter": "mock"},
             "task": {"task_id": "task"},
@@ -1042,7 +1042,7 @@ def test_registry_backed_manifest_records_model_capabilities(tmp_path):
 def test_registry_backed_manifest_records_simulator_dependencies(tmp_path):
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "simulator-dependency-evidence"},
             "model": {"adapter": "mock"},
             "task": {"task_id": "task"},
@@ -1155,7 +1155,7 @@ def test_campaign_executor_publishes_content_addressed_artifact(tmp_path):
     executor = CampaignExecutor(plan, output, lambda _: MockPolicy(), lambda _: MockSimulator())
     executor.run()
     reference = executor.publish_artifact(LocalArtifactStore(tmp_path / "store"))
-    assert reference["schema"] == "ival.campaign_archive.v1"
+    assert reference["schema"] == "reva.campaign_archive.v1"
     assert len(reference["digest_sha256"]) == 64
 
 

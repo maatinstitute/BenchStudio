@@ -1,6 +1,6 @@
-from ival.analysis import ClaimType, OutcomeRecord, audit_campaign
-from ival.analysis.campaign_audit import _runtime_environment_issues
-from ival.campaigns import CampaignPlanner, compile_campaign_spec
+from reva.analysis import ClaimType, OutcomeRecord, audit_campaign
+from reva.analysis.campaign_audit import _runtime_environment_issues
+from reva.campaigns import CampaignPlanner, compile_campaign_spec
 
 
 def test_runtime_environment_audit_detects_software_drift_within_one_environment():
@@ -119,7 +119,7 @@ def test_campaign_audit_rejects_paired_claim_with_incompatible_calibration():
 
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "paired-calibration"},
             "task": {"task_id": "task"},
             "environments": [

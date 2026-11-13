@@ -1,6 +1,6 @@
 import pytest
 
-from ival.analysis import clopper_pearson_interval, discordance_interval
+from reva.analysis import clopper_pearson_interval, discordance_interval
 
 
 def test_exact_paired_discordance_interval_is_bounded_and_nonzero():

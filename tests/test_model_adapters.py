@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from ival.campaigns import compile_campaign_spec
-from ival.contracts import ModelCapabilityProfile
-from ival.mock import MockPolicy
-from ival.model_adapters import (
+from reva.campaigns import compile_campaign_spec
+from reva.contracts import ModelCapabilityProfile
+from reva.mock import MockPolicy
+from reva.model_adapters import (
     ModelAdapterDescriptor,
     ModelAdapterRegistry,
     ModelDependency,
@@ -68,7 +68,7 @@ def test_model_registry_reports_missing_dependency():
                 supports_action_chunks=True,
                 supported_metrics=("success",),
             ),
-            dependencies=(ModelDependency("missing", "ival_missing_model_package"),),
+            dependencies=(ModelDependency("missing", "reva_missing_model_package"),),
         )
     )
     assert registry.readiness("missing")["ready"] is False
@@ -77,7 +77,7 @@ def test_model_registry_reports_missing_dependency():
 
 
 def test_model_registry_readiness_reports_dependency_version(monkeypatch):
-    import ival.model_adapters as model_adapters
+    import reva.model_adapters as model_adapters
 
     monkeypatch.setattr(model_adapters.metadata, "version", lambda _name: "1.2.3")
     registry = ModelAdapterRegistry()
@@ -123,7 +123,7 @@ def test_model_registry_readiness_reports_broken_optional_import(monkeypatch):
         )
     )
     monkeypatch.setattr(
-        "ival.model_adapters._module_available",
+        "reva.model_adapters._module_available",
         lambda _name: (_ for _ in ()).throw(ImportError("transitive dependency missing")),
     )
     readiness = registry.readiness("broken")
@@ -183,7 +183,7 @@ def test_model_registry_rejects_malformed_capability_types(overrides):
 def test_model_registry_gates_declared_execution_strategy():
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "async-model"},
             "model": {"adapter": "mock"},
             "task": {"task_id": "task"},
@@ -204,7 +204,7 @@ def test_model_registry_gates_declared_execution_strategy():
 def test_model_registry_binds_declared_capabilities_to_adapter():
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "capability-binding"},
             "model": {
                 "adapter": "mock",

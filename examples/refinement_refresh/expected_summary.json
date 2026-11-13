@@ -1,5 +1,5 @@
 {
-  "schema": "ival.refinement_refresh.paper_example.v1",
+  "schema": "reva.refinement_refresh.paper_example.v1",
   "study": {
     "checkpoint": "HuggingFaceVLA/smolvla_base",
     "predicted_chunk_length": 50,
@@ -29,7 +29,7 @@
     "descriptive_interval": [0.04375, 0.16875]
   },
   "provenance": {
-    "publication_repository": "https://github.com/maatinstitute/IVal",
+    "publication_repository": "https://github.com/maatinstitute/REVA",
     "paper_path": "examples/refinement_refresh/paper.pdf",
     "canonical_outcomes_path": "examples/refinement_refresh/confirmation_outcomes.jsonl",
     "historical_source_archive_path": "experiments/runs/refinement_refresh_final_001/confirmation_completed.tar.gz",

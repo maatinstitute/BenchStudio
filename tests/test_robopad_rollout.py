@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from ival.integrations.robopad_rollout import RolloutFailure, rollout
+from reva.integrations.robopad_rollout import RolloutFailure, rollout
 
 
 class _World:

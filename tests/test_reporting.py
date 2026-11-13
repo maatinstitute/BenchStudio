@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-from ival import (
+from reva import (
     build_audited_evaluation_report,
     build_evaluation_report,
     render_html_report,
     write_html_report,
 )
-from ival.analysis import (
+from reva.analysis import (
     ClaimType,
     OutcomeRecord,
     audit_campaign,
     audit_evaluation_acceptance,
     summarize_paired_outcomes,
 )
-from ival.campaigns import CampaignPlanner
+from reva.campaigns import CampaignPlanner
 
 
 def test_paired_summary_reports_missingness_and_uncertainty():
@@ -74,4 +74,4 @@ def test_audited_report_includes_claim_provenance_and_uncertainty():
     assert report["claim_decisions"][0]["status"] == "supported"
     assert report["campaign"]["outcome_provenance"]["authoritative_scorer_declared"]
     assert report["outcomes"]["paired_statistics"]["matched_pairs"] == 1
-    assert report["acceptance"]["schema"] == "ival_evaluation_acceptance_v1"
+    assert report["acceptance"]["schema"] == "reva_evaluation_acceptance_v1"

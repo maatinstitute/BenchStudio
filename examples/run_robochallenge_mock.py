@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from ival.integrations.robochallenge import audit_robochallenge_wire_records
+from reva.integrations.robochallenge import audit_robochallenge_wire_records
 
 
 def _request(process: subprocess.Popen[str], request: dict[str, Any]) -> dict[str, Any]:
@@ -71,7 +71,7 @@ def main() -> int:
         report = audit_robochallenge_wire_records(records)
         report.update(
             {
-                "schema": "ival.robochallenge_mock_checkpoint.v1",
+                "schema": "reva.robochallenge_mock_checkpoint.v1",
                 "transport": "mock_subprocess",
                 "payload_digests": {
                     "observation": hashlib.sha256(observation).hexdigest(),

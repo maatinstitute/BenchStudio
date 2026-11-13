@@ -4,7 +4,7 @@ import sys
 
 import pytest
 
-from ival.external_simulator import ExternalCommandSimulator, _observation
+from reva.external_simulator import ExternalCommandSimulator, _observation
 
 
 def test_external_command_simulator_preserves_reset_step_state():
@@ -32,7 +32,7 @@ def test_external_command_simulator_preserves_reset_step_state():
 
 
 def test_external_command_simulator_is_registered_and_ready():
-    from ival.adapters import default_registry
+    from reva.adapters import default_registry
 
     registry = default_registry(discover_external=False)
     readiness = registry.readiness("external_command")

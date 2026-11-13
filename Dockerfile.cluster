@@ -3,13 +3,13 @@ FROM python:3.12.12-slim-bookworm@sha256:593bd06efe90efa80dc4eee3948be7c0fde4134
 
 COPY --from=uv /uv /uvx /usr/local/bin/
 
-ENV PATH="/opt/ival/.venv/bin:${PATH}" \
+ENV PATH="/opt/reva/.venv/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy
 
-WORKDIR /opt/ival
+WORKDIR /opt/reva
 
 COPY pyproject.toml uv.lock README.md LICENSE NOTICE ./
 COPY src ./src
@@ -21,10 +21,10 @@ RUN if [ -n "$IVAL_EXTRA" ]; then \
       uv sync --locked --no-dev; \
     fi \
     && uv cache clean \
-    && groupadd --gid 10001 ival \
-    && useradd --uid 10001 --gid 10001 --no-create-home ival \
-    && chown -R 10001:10001 /opt/ival
+    && groupadd --gid 10001 reva \
+    && useradd --uid 10001 --gid 10001 --no-create-home reva \
+    && chown -R 10001:10001 /opt/reva
 
 USER 10001:10001
-ENTRYPOINT ["ival"]
+ENTRYPOINT ["reva"]
 CMD ["--help"]

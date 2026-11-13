@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from ival.integrations import (
+from reva.integrations import (
     DriverPolicy,
     PolicyRegistry,
     load_external_policy_modules,
@@ -63,4 +63,4 @@ def test_external_module_loader_is_explicit_and_fatal_for_missing_modules(monkey
     assert load_external_policy_modules() == ()
     assert load_external_policy_modules("json, ,copy") == ("json", "copy")
     with pytest.raises(ModuleNotFoundError):
-        load_external_policy_modules("ival.module_that_does_not_exist")
+        load_external_policy_modules("reva.module_that_does_not_exist")

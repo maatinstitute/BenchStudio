@@ -4,7 +4,7 @@ import copy
 
 import pytest
 
-from ival.analysis import summarize_refinement_results
+from reva.analysis import summarize_refinement_results
 
 
 def fixture():

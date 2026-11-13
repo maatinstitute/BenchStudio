@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from ival.analysis import audit_score_coverage, missing_outcome_bounds
-from ival.conformance import (
+from reva.analysis import audit_score_coverage, missing_outcome_bounds
+from reva.conformance import (
     EmbodimentRef,
     LifecycleState,
     LifecycleTracker,

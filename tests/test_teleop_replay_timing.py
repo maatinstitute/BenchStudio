@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ival.integrations import (
+from reva.integrations import (
     LogicalReplayClock,
     ReplayTimingRecording,
     ReplayTimingSample,

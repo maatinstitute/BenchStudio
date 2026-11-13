@@ -7,15 +7,15 @@ import sys
 
 import pytest
 
-from ival.analysis import (
+from reva.analysis import (
     compare_observation_streams,
     compare_policy_outputs,
     compare_policy_trace_files,
     write_parity_report,
 )
-from ival.campaigns import WorkerLeaseManager
-from ival.contracts import Observation
-from ival.integrations import (
+from reva.campaigns import WorkerLeaseManager
+from reva.contracts import Observation
+from reva.integrations import (
     POLICY_TRACE_SCHEMA,
     RoboChallengeAction,
     RoboChallengeObservation,
@@ -27,8 +27,8 @@ from ival.integrations import (
     run_replay_conformance,
     validate_robochallenge_message,
 )
-from ival.integrations.policy_trace import PolicyTraceRow
-from ival.mock import MockPolicy
+from reva.integrations.policy_trace import PolicyTraceRow
+from reva.mock import MockPolicy
 
 
 def test_worker_lease_is_exclusive_and_owner_bound(tmp_path):
@@ -68,7 +68,7 @@ def test_policy_parity_detects_instrumentation_output_changes():
     report = compare_policy_outputs(
         MockPolicy(), MockPolicy(), observations, seed=1, denoising_steps=2
     )
-    assert report.equivalent
+    assert report.equrevaent
     assert report.identical_actions == 2
 
 
@@ -79,8 +79,8 @@ def test_parity_reports_are_serializable_evidence(tmp_path):
     path = tmp_path / "parity.json"
     write_parity_report(path, policy=policy_report, metadata={"checkpoint": "sha256:x"})
     payload = json.loads(path.read_text(encoding="utf-8"))
-    assert payload["schema"] == "ival_parity_report_v1"
-    assert payload["policy"]["equivalent"] is True
+    assert payload["schema"] == "reva_parity_report_v1"
+    assert payload["policy"]["equrevaent"] is True
 
 
 def test_policy_parity_records_instrumentation_failures():
@@ -91,7 +91,7 @@ def test_policy_parity_records_instrumentation_failures():
     report = compare_policy_outputs(
         MockPolicy(), FailingPolicy(), [Observation(0, 0.0)], seed=1, denoising_steps=2
     )
-    assert report.equivalent is False
+    assert report.equrevaent is False
     assert report.mismatches[0]["actual_error"] == "RuntimeError: instrumentation failure"
 
 
@@ -156,13 +156,13 @@ def test_policy_trace_files_compare_action_and_observation_bindings(tmp_path):
     ]
     reference.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
     instrumented.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
-    assert compare_policy_trace_files(reference, instrumented).equivalent
+    assert compare_policy_trace_files(reference, instrumented).equrevaent
     changed = dict(rows[1], actions=[3])
     instrumented.write_text(
         json.dumps(rows[0]) + "\n" + json.dumps(changed) + "\n", encoding="utf-8"
     )
     report = compare_policy_trace_files(reference, instrumented)
-    assert report.equivalent is False
+    assert report.equrevaent is False
     assert report.mismatches[0]["kind"] == "trace_row_mismatch"
 
 
@@ -182,7 +182,7 @@ def test_observation_parity_rejects_reused_sequence_ids():
         Observation(0, 0.0, payload={"camera": 1}),
     ]
     report = compare_observation_streams(reference, instrumented)
-    assert report.equivalent is False
+    assert report.equrevaent is False
     assert report.duplicate_sequences == (0,)
     assert report.mismatches == (
         {"sequence": 0, "kind": "duplicate_sequence", "expected_count": 1, "actual_count": 2},
@@ -403,7 +403,7 @@ def test_worldepisode_binding_is_explicit_about_fallback_profile():
     result = preflight_worldepisode({"episode_id": "episode-1", "schema": "worldepisode"})
     assert result.valid
     assert result.profile in {
-        "ival_minimal_worldepisode_profile",
+        "reva_minimal_worldepisode_profile",
         "worldepisode_reference_validator",
     }
 
@@ -413,7 +413,7 @@ def test_worldepisode_strict_fallback_requires_semantic_contract():
         {"episode_id": "episode-1", "schema": "worldepisode"}, strict=True
     )
     assert result.valid is False
-    assert result.profile == "ival_strict_worldepisode_profile"
+    assert result.profile == "reva_strict_worldepisode_profile"
     assert {item["code"] for item in result.diagnostics} >= {
         "missing_clock_graph",
         "unbound_world_revision",
@@ -486,7 +486,7 @@ def test_worldepisode_preflight_binds_frozen_identity_and_fails_closed_on_bad_pa
     }
     invalid = preflight_worldepisode([], expected_episode_id="episode-1")
     assert invalid.valid is False
-    assert invalid.profile == "ival_invalid_worldepisode_profile"
+    assert invalid.profile == "reva_invalid_worldepisode_profile"
 
 
 def test_worldepisode_preflight_accepts_canonical_nested_identity():

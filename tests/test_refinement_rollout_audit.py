@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from ival.analysis.refinement_query_recovery import canonical_sha
-from ival.analysis.refinement_rollout_audit import check_initial_state, episode_key, reconcile_rollout_journal, reconcile_rollout_manifest
+from reva.analysis.refinement_query_recovery import canonical_sha
+from reva.analysis.refinement_rollout_audit import check_initial_state, episode_key, reconcile_rollout_journal, reconcile_rollout_manifest
 
 
 def _fixture(tmp_path):

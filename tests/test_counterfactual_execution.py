@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from ival.analysis import audit_counterfactual_outcomes, summarize_recovery_outcomes
-from ival.campaigns import (
+from reva.analysis import audit_counterfactual_outcomes, summarize_recovery_outcomes
+from reva.campaigns import (
     CampaignPlanner,
     CounterfactualEvaluation,
     Intervention,

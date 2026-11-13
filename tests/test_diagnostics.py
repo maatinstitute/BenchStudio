@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from ival.analysis import bookmark_critical_events
-from ival.campaigns import CounterfactualCell, Intervention, validate_counterfactual_pair
-from ival.conformance import audit_deadlines
+from reva.analysis import bookmark_critical_events
+from reva.campaigns import CounterfactualCell, Intervention, validate_counterfactual_pair
+from reva.conformance import audit_deadlines
 
 
 def test_deadline_audit_distinguishes_misses_and_incomplete_runs():

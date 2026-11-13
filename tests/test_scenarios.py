@@ -5,8 +5,8 @@ import zipfile
 
 import pytest
 
-from ival.campaigns import CampaignPlanner
-from ival.scenarios import (
+from reva.campaigns import CampaignPlanner
+from reva.scenarios import (
     ScenarioArchiveError,
     ScenarioPack,
     build_scenario_archive,

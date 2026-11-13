@@ -5,11 +5,11 @@ import pytest
 
 np = pytest.importorskip("numpy")
 
-from ival.contracts import Observation  # noqa: E402
-from ival.external_policy import PersistentExternalCommandPolicy  # noqa: E402
+from reva.contracts import Observation  # noqa: E402
+from reva.external_policy import PersistentExternalCommandPolicy  # noqa: E402
 
 _CHILD = '''import json, os, sys
-from ival.local_tensors import open_local_tensors
+from reva.local_tensors import open_local_tensors
 for line in sys.stdin:
     req = json.loads(line)
     op = req["operation"]

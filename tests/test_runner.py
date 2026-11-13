@@ -4,12 +4,12 @@ import json
 
 import pytest
 
-from ival.analysis import ResourceBudget
-from ival.conformance import ActionSpec
-from ival.contracts import ActionChunk
-from ival.evidence import verify_artifact_manifest
-from ival.mock import MockPolicy, MockSimulator
-from ival.runner import RunConfig, run_episodes
+from reva.analysis import ResourceBudget
+from reva.conformance import ActionSpec
+from reva.contracts import ActionChunk
+from reva.evidence import verify_artifact_manifest
+from reva.mock import MockPolicy, MockSimulator
+from reva.runner import RunConfig, run_episodes
 
 
 def test_run_emits_reproducible_artifact_set(tmp_path):
@@ -233,7 +233,7 @@ def test_invalid_simulator_observation_is_recorded_as_conformance_failure(tmp_pa
     class InvalidSimulator(MockSimulator):
         def reset(self, *, seed):
             observation = super().reset(seed=seed)
-            from ival.contracts import Observation
+            from reva.contracts import Observation
 
             return Observation(-1, float("nan"), payload=observation.payload)
 

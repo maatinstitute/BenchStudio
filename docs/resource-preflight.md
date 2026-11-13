@@ -1,13 +1,13 @@
 # Resource-aware execution preflight (research preview)
 
-IVal can now reject declared memory footprints that cannot fit a worker **before**
+REVA can now reject declared memory footprints that cannot fit a worker **before**
 constructing either a policy or a simulator in `CampaignExecutor`. This is a
 conservative admission check for the existing campaign scheduler, not a new
 physics engine, a tensor offloader, or a general GPU memory allocator.
 
 ## Inspect hardware
 
-`uv run --locked python -m ival.cli --readiness` reports simulator/model dependencies and
+`uv run --locked python -m reva.cli --readiness` reports simulator/model dependencies and
 adds a `hardware` object. The zero-dependency probe reads Linux MemAvailable,
 respects cgroup v2 `memory.max`/`memory.current` when present, and attempts to
 read NVIDIA GPU free/total memory via `nvidia-smi`. On other systems, available
@@ -16,7 +16,7 @@ than assumed to fit. NVIDIA telemetry does not detect non-NVIDIA GPUs.
 
 ## Freeze an explicit estimate into a campaign
 
-Add the following to the existing `ival.campaign.v1` specification:
+Add the following to the existing `reva.campaign.v1` specification:
 
 ```json
 {
@@ -42,7 +42,7 @@ explicitly. There is no implicit physics, model, image, or CPU fallback.
 The requested footprint is checked against a point-in-time hardware snapshot.
 For `run_parallel(N)`, declared per-worker RAM/VRAM capacity bounds N before
 launching workers. Capacity is not reserved or coordinated across independent
-IVal processes. Hardware may change between admission and allocation;
+REVA processes. Hardware may change between admission and allocation;
 OOM remains possible. `ResourcePlan.to_dict()` explicitly records this limit.
 The same preflight evidence is serialized in each run's existing manifest and
 bound into its configuration digest and frozen campaign digest.
@@ -51,7 +51,7 @@ bound into its configuration digest and frozen campaign digest.
 
 ```bash
 uv sync --locked --extra mujoco
-uv run --locked python -m ival.cli --readiness
+uv run --locked python -m reva.cli --readiness
 uv run --locked python examples/resource_preflight/benchmark_mujoco.py \
   --episodes 3 --steps 500 --estimated-host-mib 128 \
   --output runs/resource-slider

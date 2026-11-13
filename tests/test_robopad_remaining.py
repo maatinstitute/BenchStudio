@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from ival.integrations.robopad_remaining import remaining_worlds, retain_frame
+from reva.integrations.robopad_remaining import remaining_worlds, retain_frame
 
 
 def test_remaining_world_scope_is_fixed_and_nonretryable():

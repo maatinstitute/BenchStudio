@@ -15,7 +15,7 @@ def test_mock_workers_checkpoint_commits_every_attempt_once(tmp_path):
         check=True,
     )
     report = json.loads(result.stdout)
-    assert report["schema"] == "ival.worker_checkpoint.v1"
+    assert report["schema"] == "reva.worker_checkpoint.v1"
     assert report["workers"] == 3
     assert report["planned"] == 8
     assert report["committed"] == 8

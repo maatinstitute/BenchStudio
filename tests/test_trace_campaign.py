@@ -3,11 +3,11 @@ from __future__ import annotations
 import hashlib
 import json
 
-from ival.adapters import default_registry
-from ival.campaigns import CampaignExecutor, compile_campaign_spec
-from ival.integrations import observation_digest_sha256
-from ival.mock import MockSimulator
-from ival.model_adapters import default_model_registry
+from reva.adapters import default_registry
+from reva.campaigns import CampaignExecutor, compile_campaign_spec
+from reva.integrations import observation_digest_sha256
+from reva.mock import MockSimulator
+from reva.model_adapters import default_model_registry
 
 
 def test_frozen_trace_policy_campaign_preserves_observation_binding(tmp_path):
@@ -20,7 +20,7 @@ def test_frozen_trace_policy_campaign_preserves_observation_binding(tmp_path):
         "".join(
             json.dumps(
                 {
-                    "schema": "ival.policy_trace.v1",
+                    "schema": "reva.policy_trace.v1",
                     "sequence": observation.sequence,
                     "actions": [1],
                     "metadata": {"schedule": "reference"},
@@ -35,7 +35,7 @@ def test_frozen_trace_policy_campaign_preserves_observation_binding(tmp_path):
     )
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "trace-parity-campaign"},
             "model": {
                 "adapter": "trace",

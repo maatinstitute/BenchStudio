@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-OUTPUT=${1:-"$ROOT/runs/ival-demo"}
+OUTPUT=${1:-"$ROOT/runs/reva-demo"}
 SERVE=${2:-""}
 SIMULATORS=${IVAL_SIMULATORS:-${IVAL_SIMULATOR:-mujoco,genesis}}
 URDF_STUDIO_ROOT=${URDF_STUDIO_ROOT:-"$(cd "$ROOT/.." && pwd)/urdf-studio"}
@@ -17,7 +17,7 @@ fi
 mkdir -p "$OUTPUT"
 
 echo "[1/5] Frozen campaign execution"
-uv run --project "$ROOT" --locked python -m ival.cli \
+uv run --project "$ROOT" --locked python -m reva.cli \
   --campaign-spec "$ROOT/examples/campaigns/mock-worldepisode.json" \
   --plan-output "$OUTPUT/campaign-plan.json" \
   --execute-mock --workers 2 --audit \
@@ -45,7 +45,7 @@ else
     echo "      Set URDF_STUDIO_ROOT to enable the SO-101 cube-lift evaluation."
 fi
 
-uv run --project "$ROOT" --locked python -m ival.demo_dashboard \
+uv run --project "$ROOT" --locked python -m reva.demo_dashboard \
   --input "$OUTPUT" \
   --output "$OUTPUT/index.html"
 

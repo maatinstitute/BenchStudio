@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from ival.analysis import (
+from reva.analysis import (
     summarize_selective_responsiveness,
 )
 

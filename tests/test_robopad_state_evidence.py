@@ -3,7 +3,7 @@ import json
 import numpy as np
 import pytest
 
-from ival.integrations.robopad_state_evidence import json_numpy
+from reva.integrations.robopad_state_evidence import json_numpy
 
 
 def test_simulator_scalar_and_array_metadata():

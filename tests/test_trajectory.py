@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ival.trajectory import compare_trajectories
+from reva.trajectory import compare_trajectories
 
 
 def test_trajectory_comparison_localizes_joint_split(tmp_path):

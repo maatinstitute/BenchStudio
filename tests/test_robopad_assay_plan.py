@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from ival.campaigns.robopad_assay_plan import (
+from reva.campaigns.robopad_assay_plan import (
     CONSUMED,
     all_slots,
     load_reference_attempt,
@@ -12,7 +12,7 @@ from ival.campaigns.robopad_assay_plan import (
     sha,
     suffix_seed,
 )
-from ival.integrations.robopad_reference_cache import select_prefix
+from reva.integrations.robopad_reference_cache import select_prefix
 
 
 def test_slots_and_noise():
@@ -100,7 +100,7 @@ def test_provenance_and_replay_rejected(tmp_path):
 
 
 def test_cache_preserves_held_source_and_rejects_short_or_mutable_inputs():
-    from ival.integrations.robopad_reference_cache import cache_executed_source
+    from reva.integrations.robopad_reference_cache import cache_executed_source
 
     caches = {
         source: cache_executed_source(source, np.full((20, 7), value), "a" * 64)

@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 
-from ival.conformance import (
+from reva.conformance import (
     ActionSpec,
     ModalityFrame,
     PolicySession,
     SessionStatus,
 )
-from ival.contracts import ActionChunk, Observation
+from reva.contracts import ActionChunk, Observation
 
 
 @dataclass

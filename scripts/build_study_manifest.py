@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Freeze the planned episode identities and object poses for a IVal study."""
+"""Freeze the planned episode identities and object poses for a REVA study."""
 
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ def build_manifest(study: dict) -> dict:
             "status": "preflight" if index < len(pilot_seeds) else "not_scheduled",
         })
     payload = {
-        "schema": "ival.study_manifest.v1",
+        "schema": "reva.study_manifest.v1",
         "study_id": study_id,
         "simulator": "mujoco",
         "episode_count": count,

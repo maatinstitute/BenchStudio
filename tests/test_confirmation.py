@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from ival.campaigns import (
+from reva.campaigns import (
     ConfirmationEvaluation,
     SearchCandidate,
     audit_confirmation_results,

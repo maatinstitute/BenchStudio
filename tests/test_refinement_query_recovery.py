@@ -1,6 +1,6 @@
 import pytest
 
-from ival.analysis.refinement_query_recovery import (
+from reva.analysis.refinement_query_recovery import (
     QUERY_RECOVERY_PROTOCOL,
     audit_query_recovery,
     query_answer_check,

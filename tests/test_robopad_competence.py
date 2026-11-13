@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from ival.integrations import (
+from reva.integrations import (
     checked_rotation_delta,
     compact_record,
     persist,

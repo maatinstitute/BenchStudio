@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from ival.integrations.robopad_cell_store import CellStore
+from reva.integrations.robopad_cell_store import CellStore
 
 
 def test_aux_semantic_digest_is_independent_of_output_directory(tmp_path):

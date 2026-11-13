@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from ival.campaigns import (
+from reva.campaigns import (
     PerturbationDimension,
     SearchEvaluation,
     audit_search_results,

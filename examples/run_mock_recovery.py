@@ -7,8 +7,8 @@ import argparse
 import json
 from pathlib import Path
 
-from ival.campaigns import CampaignExecutor, CampaignPlanner
-from ival.mock import MockPolicy, MockSimulator
+from reva.campaigns import CampaignExecutor, CampaignPlanner
+from reva.mock import MockPolicy, MockSimulator
 
 
 def main() -> int:
@@ -36,7 +36,7 @@ def main() -> int:
     resumed = resumed_executor.run()
     audit = resumed_executor.audit()
     report = {
-        "schema": "ival.recovery_checkpoint.v1",
+        "schema": "reva.recovery_checkpoint.v1",
         "plan_digest_sha256": plan.plan_digest_sha256,
         "first_batch": {
             "committed": len(first.committed_attempt_ids),

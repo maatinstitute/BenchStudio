@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from ival.replay import ReplayPolicy, ReplaySimulator, load_joint_sequence
-from ival.runner import RunConfig, run_episodes
+from reva.replay import ReplayPolicy, ReplaySimulator, load_joint_sequence
+from reva.runner import RunConfig, run_episodes
 
 
-def test_replay_trace_can_drive_ival(tmp_path):
+def test_replay_trace_can_drive_reva(tmp_path):
     trace = tmp_path / "trace.ndjson"
     trace.write_text(
         '{"stream":"robot_joints","state":{"joint_positions":{"j1":0.1}}}\n'

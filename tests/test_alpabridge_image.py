@@ -4,7 +4,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from ival.integrations import (
+from reva.integrations import (
     build_rectifier,
     default_target_config,
     rectification_disabled,

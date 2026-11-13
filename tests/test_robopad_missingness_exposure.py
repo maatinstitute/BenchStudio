@@ -2,8 +2,8 @@ import itertools
 
 import pytest
 
-from ival.analysis.missingness import robopad_paired_bounds
-from ival.analysis.robopad_exposure import audit_splits, demo_family
+from reva.analysis.missingness import robopad_paired_bounds
+from reva.analysis.robopad_exposure import audit_splits, demo_family
 
 
 def test_paired_bounds_match_all_possible_completions():

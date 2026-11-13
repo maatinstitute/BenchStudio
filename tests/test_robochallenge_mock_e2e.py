@@ -16,7 +16,7 @@ def test_robochallenge_mock_runs_observe_acknowledge_audit_loop():
         check=True,
     )
     report = json.loads(completed.stdout)
-    assert report["schema"] == "ival.robochallenge_mock_checkpoint.v1"
+    assert report["schema"] == "reva.robochallenge_mock_checkpoint.v1"
     assert report["valid"] is True
     assert report["observation_count"] == 1
     assert report["action_acknowledgment_count"] == 1

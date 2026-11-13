@@ -1,6 +1,6 @@
 # Source attribution
 
-- `ival.analysis.alpabridge_review` is a direct dependency-free port of
+- `reva.analysis.alpabridge_review` is a direct dependency-free port of
   `alpabridge.audit.review` from the AlpaBridge research repository. It
   preserves the upstream severity profiles, intervention classification,
   frame bookmarks, paired bookmarks, and critical-event context bundles;
@@ -8,13 +8,13 @@
   source digest is `ede906c260529bede52e395ecffac4d01009b45de8b0cee0766f0ef494e3049b`
   and the upstream review-test digest is
   `86a50a99fcff62d47f6084ea6927934d71c11906e75882f6106002ff42baa6b6`.
-- `ival.integrations.alpabridge_signal` ports the dependency-light
+- `reva.integrations.alpabridge_signal` ports the dependency-light
   route-waypoint, structured-hazard, visibility-risk, dynamics-risk, and
   usable-route normalization boundary from
   `src/alpabridge/simulator/alpasim_signal.py`. The AlpaSim Scenario model,
   serving runtime, and physics authority remain external. Source digest:
   `3a18ae0293f8c9aa738a787f17fb9b0ba363833c790e61ec9fa1503ec6f04838`.
-- `ival.scenarios.world_scene_package` ports the URDF Studio
+- `reva.scenarios.world_scene_package` ports the URDF Studio
   `WorldScenePackage` manifest, digest, validation, and file-backed version
   registry boundary from `backend/models/world_scene_package.py` and
   `backend/services/world_registry.py`. It preserves runtime targets,
@@ -26,7 +26,7 @@
   `1d9cf5c2604409dc90ba231eb7d65f87a5edd76c914b938bf4c1587acf9683a5`.
   Registry listing also preserves latest-version selection, owner/tag/query
   filtering, runtime-target summaries, and metadata trust-level derivation.
-- `ival.scenarios.world_rollout` ports the dependency-free URDF Studio
+- `reva.scenarios.world_rollout` ports the dependency-free URDF Studio
   rollout campaign/checker-profile, artifact-digest, bounded NDJSON trace and
   decision import, and decision-counting boundary from
   `backend/models/world_rollouts.py` and `backend/services/world_rollouts.py`.
@@ -36,7 +36,7 @@
   `634985720723ecba023fbc48b99186a0c6d55f90cbbfe5cd791e5212d74e2407`, and
   `71da3c8737d37bd2e116c9647c2a172dfb32dca32c05272dec2fa4c14aa0db91`.
 
-IVal uses source-backed adapters and explicit independent boundaries for
+REVA uses source-backed adapters and explicit independent boundaries for
 the following projects. Product runtimes are not vendored into this repository.
 
 The AlpaBridge source revision used by the ports is retained in
@@ -55,7 +55,7 @@ the canonical semantic validator.
   published validator/preflight boundary. The replay fixture identifies
   `tools/replay_adapter_conformance.py` as its source basis and deliberately
   does not claim physics replay coverage.
-- Refinement vs Refresh: `ival.campaigns.refinement_plan` is a direct
+- Refinement vs Refresh: `reva.campaigns.refinement_plan` is a direct
   source-backed port of `experiments/make_evaluation_plan.py` at upstream commit
   `8c92e66c7ab19403822cb87908253260666fb3a6`. The source file digest is
   `a393a13580345b1a9fd31ba8cc4c02bb195807191570d330368f5fe53f165a5c` and its
@@ -71,9 +71,9 @@ the canonical semantic validator.
   the source-generated vector.
   `load_refinement_source_plan()` and `compile_refinement_source_plan()` also
   import an existing upstream JSON plan without regenerating or reordering its
-  rows; the imported IVal plan records both the source-file and source-
+  rows; the imported REVA plan records both the source-file and source-
   schedule digests.
-- Refinement/Refresh annotation agreement: `ival.analysis.agreement`
+- Refinement/Refresh annotation agreement: `reva.analysis.agreement`
   is a direct port of `review/agreement.py` at upstream commit
   `8c92e66c7ab19403822cb87908253260666fb3a6`; source digest
   `cbdc7ece57801c0c1bf32dcbd3cd2b5cdac521aafd8c739385d10b5ac26af0f2` and
@@ -84,7 +84,7 @@ the canonical semantic validator.
   The port preserves frozen scope, evidence/locator/rationale requirements,
   label validation, kappa/agreement metrics, and disagreement records.
 - Refinement/Refresh observation-age audit:
-  `ival.analysis.observation_age_audit` is a direct port of
+  `reva.analysis.observation_age_audit` is a direct port of
   `experiments/tooling/audit_observation_age.py` at upstream commit
   `8c92e66c7ab19403822cb87908253260666fb3a6`; source digest
   `ffb18ad855d035d91b2eda60939426cb50c7618dcb45c77363619247bd718b75` and
@@ -93,7 +93,7 @@ the canonical semantic validator.
   The port preserves refresh cadence, held-observation identity, recursive
   field-hash reconciliation, paired episode identities, and first-divergence
   reporting; historical runtime data and policy-quality claims remain external.
-- Refinement/Refresh paired protocol primitives: `ival.analysis.
+- Refinement/Refresh paired protocol primitives: `reva.analysis.
   refinement_protocol` extracts the dependency-free identity, keyed-seed,
   array/observation hashing, success-envelope, journal, development-schedule,
   balanced schedule-selection, and parity-report functions from
@@ -105,13 +105,13 @@ the canonical semantic validator.
   The port preserves the upstream fail-closed condition-block, schedule-digest,
   task/state/seed-balance, and complete-pair selection checks. CUDA/LeRobot
   rollout execution and checkpoint ownership remain external.
-- Refinement/Refresh development gates: `ival.analysis.
+- Refinement/Refresh development gates: `reva.analysis.
   refinement_protocol` also ports the dependency-free `compare_arrays`,
   `image_variants`, and code-identity `profiler_counts` gates from
   `experiments/tooling/development_gates.py` at the same upstream commit;
   the CUDA model and simulator execution surrounding those gates remains
   external.
-- Refinement/Refresh result analysis: `ival.analysis.result_metrics`
+- Refinement/Refresh result analysis: `reva.analysis.result_metrics`
   is a direct port of `experiments/real_smolvla/result_metrics.py` from the
   same upstream commit. The source digest is
   `1b493b3643c89831757f7a3a5c75632b43512390d8eac12e6b1ce4960756d867`, and
@@ -119,19 +119,19 @@ the canonical semantic validator.
   `f5fa8606d93263f5af0bd8799c640b62c83c2b139ea68da2598d227d96e06698`.
   The port preserves completed-outcome reconciliation, task/group identity
   checks, ledger-version timing provenance, and control-to-neural accounting.
-- Refinement/Refresh archived deployment evidence: `ival.analysis.
+- Refinement/Refresh archived deployment evidence: `reva.analysis.
   smolvla_deployment` validates the retained `real_smolvla/manifest.json` and
   `results/summary.json` evidence boundary using the same pinned checkpoint,
   LeRobot revision, control/neural accounting, and timing limitations declared
   by the upstream archive. It records the input-file digests, but does not copy
   model weights, load LeRobot, infer pairing, or claim a new live execution.
-- Refinement/Refresh ledger verification: `ival.analysis.ledger_validation`
+- Refinement/Refresh ledger verification: `reva.analysis.ledger_validation`
   is a source-backed port of `experiments/real_smolvla/validate_ledger.py` at
   the same upstream commit. It preserves strict array hashes, complete v3
   contract checks, producer/environment action agreement, same-condition
   replay checks, and initial-state-only paired comparisons. NumPy is lazy and
   optional until hashed array records are validated.
-- Refinement/Refresh query recovery: `ival.analysis.refinement_query_recovery`
+- Refinement/Refresh query recovery: `reva.analysis.refinement_query_recovery`
   ports the dependency-free direct-record query recovery boundary from
   `experiments/tooling/analyze_execution.py` at the same upstream commit;
   source digest `5dddcedec6bc6ef76dd207759cdb951afc0ec4d5bdce15be8811ad18f29634ea`
@@ -140,20 +140,20 @@ the canonical semantic validator.
   It preserves the fixed query/projection protocol, all-attempt wall-time
   denominator, explicit zero-success undefined status, and unknown-field
   behavior. Full rollout reconciliation and model execution remain external.
-- Refinement/Refresh rollout manifest audit: `ival.analysis.
+- Refinement/Refresh rollout manifest audit: `reva.analysis.
   refinement_rollout_audit` ports the dependency-free `episode_key` and
   `reconcile_rollout_manifest` boundary from the same
   `experiments/tooling/analyze_execution.py` source and test digests above.
   The port preserves declared-population binding, schedule/runtime digests,
   paired-cell completeness, completion totals, and aggregate-success checks;
   action-journal reconciliation and rollout execution remain external.
-- Refinement/Refresh rollout journal audit: `ival.analysis.
+- Refinement/Refresh rollout journal audit: `reva.analysis.
   refinement_rollout_audit` also ports `check_initial_state` and
   `reconcile_rollout_journal` from the same source boundary. It preserves
   content-addressed numeric states, keyed noise/generation cadence,
   producer-to-environment action binding, terminal flags, termination reasons,
   and completion records; simulator execution remains external.
-- Refinement/Refresh microbenchmark validation: `ival.analysis.
+- Refinement/Refresh microbenchmark validation: `reva.analysis.
   refinement_microbenchmark` ports `validate_microbenchmark` from
   `experiments/tooling/analyze_execution.py` at the same upstream commit;
   source digest `5dddcedec6bc6ef76dd207759cdb951afc0ec4d5bdce15be8811ad18f29634ea`
@@ -162,17 +162,17 @@ the canonical semantic validator.
   It preserves declared allocation, paired on/off action and timing hashes,
   shared-noise keys, instrumentation hook counts, action-artifact identity,
   and measurement-only output selection; model execution remains external.
-- RoboPAD: `ival.analysis.responsiveness` is a source-backed port of
-  `experiments/metrics.py`, and `ival.campaigns.outcome_plan` is a
+- RoboPAD: `reva.analysis.responsiveness` is a source-backed port of
+  `experiments/metrics.py`, and `reva.campaigns.outcome_plan` is a
   source-backed port of `experiments/outcome_plan.py`, from upstream commit
   `4ecd468cc67cc40681ca2af9097b7ade5825fadd`. The source digests are,
   respectively, `b8bedc9cf2f0f93dda8203e48ad61cfeddd3662f6b3cdb6b7beec5138230593e`
   and `5c27df4d02e56ab1b116eb1b0786ff892e673d27fd517918ab185082b2485ba2`.
   Their invariants are carried into `tests/test_responsiveness.py` and
-  `tests/test_outcome_plan.py`. IVal exposes the ports through its
+  `tests/test_outcome_plan.py`. REVA exposes the ports through its
   analysis and campaign packages; external training, checkpoint, simulator,
   and official outcome authority remain outside the repository.
-- RoboPAD path geometry: `ival.conformance.path_geometry` ports the
+- RoboPAD path geometry: `reva.conformance.path_geometry` ports the
   conservative swept-box segment/slab screen from
   `experiments/icra_path_geometry.py` and its proper-rotation validation
   boundary from `experiments/icra_reference_pose.py` at upstream commit
@@ -181,7 +181,7 @@ the canonical semantic validator.
   `1a281a6b43c32e3e8c79ac57eb28f765e1677a0e7e1b646c909cc139a9d17c79`.
   The port is an intervention preflight only; full robot geometry, tracking
   error, and physical safety remain external.
-- RoboPAD fixed reference controller: `ival.integrations.FixedReference`
+- RoboPAD fixed reference controller: `reva.integrations.FixedReference`
   is a source-backed port of `experiments/icra_reference.py` at the same
   upstream commit. Source digest is
   `3ed7717336846e0ef18841f7193984d0d095d9b55016f23a0568f0f8b68d5f84`, and
@@ -190,7 +190,7 @@ the canonical semantic validator.
   The fixed horizon, source-held conditioning, action clipping, and defensive
   copy semantics are preserved; waypoint derivation and execution authority
   remain external.
-- RoboPAD competence evidence: `ival.integrations.robopad_competence`
+- RoboPAD competence evidence: `reva.integrations.robopad_competence`
   ports the dependency-light persistence, termination, exact replay comparison,
   stale-goal rotation guard, and compact-record helpers from
   `experiments/icra_reference_competence.py` at upstream commit
@@ -200,7 +200,7 @@ the canonical semantic validator.
   `bce4cd71464e83feed06807825cd015ff3cc7c29e235cc34420cb2f12c60fc73`.
   The port preserves bounded evidence writes and exact replay semantics;
   physical rollout execution and source geometry remain external.
-- RoboPAD source geometry adapter: `ival.integrations.
+- RoboPAD source geometry adapter: `reva.integrations.
   robopad_reference_adapter` ports the read-only geometry extraction,
   transformed grasp transfer, conservative goal construction, and frozen
   stage-goal mapping from `experiments/icra_reference_adapter.py` at upstream
@@ -217,7 +217,7 @@ the canonical semantic validator.
   source basis is `experiments/outcome_campaign.py` at upstream commit
   `4ecd468cc67cc40681ca2af9097b7ade5825fadd`, source digest
   `d19822c6928fb374359a0abdf5d72749aa4fec9cb8c29d068be7689933953c12`.
-- RoboPAD conservative outcome analysis: `ival.analysis.outcome_report`
+- RoboPAD conservative outcome analysis: `reva.analysis.outcome_report`
   is a direct port of `experiments/outcome_report.py` at upstream commit
   `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
   `687f8ed573248651c25fcf45616804d6fad5cfbecb0000b4dbd0cb4a62e760bf` and
@@ -230,7 +230,7 @@ the canonical semantic validator.
   verifies a source-generated complete matrix, exact point estimate, interval,
   and canonical report digest.
 - RoboPAD deterministic outcome exposure scheduling:
-  `ival.campaigns.outcome_schedule` is a direct port of
+  `reva.campaigns.outcome_schedule` is a direct port of
   `experiments/outcome_schedule.py` at upstream commit
   `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
   `36dfa5060d0cb0161b09f02c43954300a237f0a5898ab91342ad6e7e23e1ec9b` and
@@ -241,14 +241,14 @@ the canonical semantic validator.
   `tests/test_outcome_schedule.py::test_robopad_source_golden_vector_is_byte_identical`
   locks a source-generated seed-123 schedule digest and first exposure vector
   so the port's serialized behavior remains parity-tested against RoboPAD.
-- RoboPAD outcome-plan verification: `ival.campaigns.load_outcome_plan`
+- RoboPAD outcome-plan verification: `reva.campaigns.load_outcome_plan`
   and `verify_outcome_plan` consume the source-backed
   `smolvla_outcome_plan_v1` preflight artifact, preserving its payload digest,
   training/evaluation cell identities, reserved continuation counts, and
   policy-query denominators. This is an evidence/preflight boundary only;
   training, checkpoint, simulator, and official outcome authority remain
   external.
-- RoboPAD evaluation-branch integrity: `ival.analysis.outcome_eval` is a
+- RoboPAD evaluation-branch integrity: `reva.analysis.outcome_eval` is a
   direct port of `experiments/outcome_eval.py` at upstream commit
   `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
   `a630bdec6559a86fae0f8a7c1c13619c9a4398d0249bc2201ddde7fd0972ce5e` and
@@ -257,8 +257,8 @@ the canonical semantic validator.
   The port preserves arm prompt roles, pre-policy/contact exclusions, first
   attainment semantics, and independent replay checks for evaluation branches.
 - RoboPAD outcome metadata and prompt conditioning:
-  `ival.analysis.metadata_conditioning` and
-  `ival.analysis.outcome_prompt` are direct ports of
+  `reva.analysis.metadata_conditioning` and
+  `reva.analysis.outcome_prompt` are direct ports of
   `experiments/metadata_conditioning.py` and `experiments/outcome_prompt.py`
   at upstream commit `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source
   digests are `be0e7d9c3587893e548ae0ba57309e47ebbf3f3c0fd2e80eeb85181afc8bdef2`
@@ -268,7 +268,7 @@ the canonical semantic validator.
   The ports preserve bounded metadata vocabularies, explicit unknown labels,
   training-versus-inference prompt separation, and desired-success semantics.
 - RoboPAD development-only receipt safeguards:
-  `ival.analysis.development_receipts` is a direct port of
+  `reva.analysis.development_receipts` is a direct port of
   `experiments/outcome_development.py` at upstream commit
   `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
   `8d7bd15c273684bd992d57141d6ac880f5d169655103c57429455ecf44a06fd3` and
@@ -276,7 +276,7 @@ the canonical semantic validator.
   `4199155ff47a1a2854a366e1b577ed870709190b8447595595f569fe8c3e6716`.
   The port preserves fail-closed development-only/science-ineligible flags,
   zero/one-update checks, digest identities, and atomic receipt publication.
-- RoboPAD hashed dataset-manifest resolution: `ival.analysis.
+- RoboPAD hashed dataset-manifest resolution: `reva.analysis.
   dataset_manifest` is a direct port of `experiments/outcome_dataset.py` at
   upstream commit `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
   `05bc2d9e274050c2fe137573ec04a4c0acbeebd1a31e9978e15d3791d0cebad9` and
@@ -285,7 +285,7 @@ the canonical semantic validator.
   The port preserves path containment, SHA-256 binding for observations,
   actions, and outcome evidence, fixed 50-action windows, split/lineage
   checks, and explicit unknown-outcome exclusions.
-- AlpaBridge: `ival.integrations.alpasim_metrics` is a direct
+- AlpaBridge: `reva.integrations.alpasim_metrics` is a direct
   dependency-free port of `src/alpabridge/neutral/alpasim_metrics.py` from
   upstream commit `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`. Its source digest
   is `4e55083695485f7405f1bc6992699b16a747665513bd24036ddd29e67acc182c`.
@@ -293,13 +293,13 @@ the canonical semantic validator.
   threshold gates, run-count accounting, and explicit distinction between
   sensor-realistic evidence and official policy benchmark scores. It does not
   import AlpaSim or claim official scoring authority.
-- AlpaBridge lifecycle: `ival.integrations.alpabridge_lifecycle` is a
+- AlpaBridge lifecycle: `reva.integrations.alpabridge_lifecycle` is a
   direct port of `src/alpabridge/simulator/lifecycle_service.py` from upstream
   commit `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`, source digest
   `cd380c740ef5957d3f980188a3b726c33504cf1662c566684cf30bbf06f9cf24`.
   The port preserves structured lifecycle events, hardened late-message
   handling, cleanup/isolation behavior, and strict-mode failure evidence.
-- AlpaBridge camera calibration: `ival.integrations.
+- AlpaBridge camera calibration: `reva.integrations.
   alpabridge_camera_calibration` is a direct port of
   `src/alpabridge/driver/camera_calibration.py` at upstream commit
   `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`; source digest
@@ -308,25 +308,25 @@ the canonical semantic validator.
   per-axis scaling of pixel intrinsics to delivered frames, raw camera-proto
   retention, and graceful handling of incomplete rigs. AlpaSim protobufs and
   driver serving remain external.
-- AlpaBridge policy registry: `ival.integrations.alpabridge_policy_registry`
+- AlpaBridge policy registry: `reva.integrations.alpabridge_policy_registry`
   ports the reusable registry/precondition/configuration core from
   `src/alpabridge/driver/policy_registry.py` at commit
   `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`; source digest
   `b4c4fb44bf95e296363866aec2f19ea096b817f837dd423ed7a39651108780da`.
   AlpaSim-specific factories remain injected by the owning runtime.
 - AlpaBridge telemetry production: `AlpaBridgeTelemetryWriter` in
-  `ival.integrations.alpabridge` ports the dependency-free writer and
+  `reva.integrations.alpabridge` ports the dependency-free writer and
   summary behavior from `src/alpabridge/driver/driver_service.py` at upstream
   commit `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`; source digest
   `d8db8d0dc6a296edcd7e52793b3b03da60414457b416a2cc3829926db1d81b6f`.
   The AlpaSim gRPC driver and model execution remain external.
 - AlpaBridge route geometry: `route_arc_length_m` in
-  `ival.integrations.alpabridge` is the dependency-free route-extent
+  `reva.integrations.alpabridge` is the dependency-free route-extent
   extraction from `src/alpabridge/driver/driver_service.py` at the same
   upstream commit; source-test digest
   `58367c9cd0eebf40ad77c826b56c4a3306ace532e5ee6f2dc254c0f9f84c016e`.
   The full driver-service digest above remains authoritative.
-- AlpaBridge route-follower geometry: `ival.integrations.alpabridge_route`
+- AlpaBridge route-follower geometry: `reva.integrations.alpabridge_route`
   ports the dependency-free speed-ramp, per-scene target scaling, no-braking
   guard, route sampling, straight-trajectory, clamped segment-distance, and
   nearest-polyline helpers from
@@ -345,7 +345,7 @@ the canonical semantic validator.
   `bf67ad43c767bf81d3f07e45af1a3e7990b48d925cd776195311573043a3621d`;
   their conformance-test digest is
   `4a5003fe9f5b9c53371192f8451338a64174d0585942a9d2930a46e38bc7d589`.
-- AlpaBridge trajectory selection: `ival.integrations.
+- AlpaBridge trajectory selection: `reva.integrations.
   alpabridge_trajectory_selector` ports the speed-scaled 3-second/5-second
   reference-region scoring and candidate selection from
   `src/alpabridge/simulator/trajectory_selector.py` at the same upstream
@@ -355,7 +355,7 @@ the canonical semantic validator.
   `c80281fd146ace1a3c57141c2473d7c93569b846ec5f14eb2e5459bd99d980e6`.
   The simulator-backed maneuver generation and execution authority remain
   external.
-- AlpaBridge camera-frame preparation: `ival.integrations.alpabridge_image`
+- AlpaBridge camera-frame preparation: `reva.integrations.alpabridge_image`
   ports the cover-resize/center-crop utility from
   `src/alpabridge/simulator/image_ops.py` and the fail-soft optional
   rectification boundary from `src/alpabridge/simulator/camera_rectification.py`
@@ -365,7 +365,7 @@ the canonical semantic validator.
   source-test digests are `5a9dabca2690acaab75f36be5717d6d0638e100ec747541490a963ae12fe8cf7`
   and `a7faa208c70bdfd414c496a16322c277627f54bf8fae5ff07a7610b13628a891`.
   The external f-theta transform remains optional and is never vendored here.
-- AlpaBridge pose-reanchored inference cache: `ival.integrations.
+- AlpaBridge pose-reanchored inference cache: `reva.integrations.
   alpabridge_inference_cache` ports
   `src/alpabridge/simulator/inference_rate_cache.py` at upstream commit
   `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`; source digest
@@ -375,7 +375,7 @@ the canonical semantic validator.
   The port preserves cadence throttling, per-session isolation, world-frame
   trajectory re-anchoring, quaternion yaw extraction, and explicit cache
   eviction; policy inference and vehicle authority remain external.
-- AlpaBridge/AlpaSim prediction contract: `ival.integrations.
+- AlpaBridge/AlpaSim prediction contract: `reva.integrations.
   alpabridge_contract` extracts the dependency-light prediction-shape,
   trajectory-resampling, pose-history, camera-fingerprint, and corrected-speed
   boundaries from `src/alpabridge/simulator/alpasim_contract.py` at upstream
@@ -391,7 +391,7 @@ the canonical semantic validator.
   from `alpasim_contract.py`, preserving session reset, pose/camera lag checks,
   timestamp advancement, frozen-image detection, and structured diagnostics.
   Its source/test provenance is the same pair recorded above.
-- SmolVLA driving contract: `ival.integrations.
+- SmolVLA driving contract: `reva.integrations.
   smolvla_driving_contract` ports
   `src/alpabridge/simulator/smolvla_driving_contract.py` at upstream commit
   `27c96e6118a6d0137fe9b1774f227b07ef3d9aa2`; source digest
@@ -403,7 +403,7 @@ the canonical semantic validator.
   inference signals; SmolVLA weights and serving remain external.
 - The same AlpaSim contract also preserves scene/session/seed runtime metadata
   and timestamp-sorted pose history for downstream evidence binding.
-- URDF Studio / `urdf-ops`: `ival.conformance.dataset_alignment` ports
+- URDF Studio / `urdf-ops`: `reva.conformance.dataset_alignment` ports
   the dataset-alignment registry boundary from `backend/services/
   dataset_alignment.py` at upstream commit
   `561dc335cc7808f62d098dbaf7e05111ae444b28`. The source service digest is
@@ -414,14 +414,14 @@ the canonical semantic validator.
   persistent registry round-trips, representation filtering, and fail-closed
   unnamed/mismatched dataset validation while injecting the owning runtime's
   kinematic fingerprint resolver.
-- URDF Studio / `urdf-ops` replay timing: `ival.integrations.
+- URDF Studio / `urdf-ops` replay timing: `reva.integrations.
   teleop_replay_timing` extracts the source service's timestamp selection,
   monotonic schedule construction, logical clock, and wall-clock clock. The
   source file is `backend/services/teleop_replay.py` at commit
   `561dc335cc7808f62d098dbaf7e05111ae444b28`, digest
   `bdc27b654f8dd12c27f81e4b3e0ce898408b623bcc9ef129f4e4f8502b212190`.
   Gateway execution and robot-state validation remain external to this core.
-- URDF Studio / `urdf-ops` world bridge: `ival.integrations.
+- URDF Studio / `urdf-ops` world bridge: `reva.integrations.
   urdf_world_bridge` extracts the dependency-free wire contract from
   `backend/world_bridge/types.py`, `event_codec.py`, and `worldd_client.py`
   at upstream commit `561dc335cc7808f62d098dbaf7e05111ae444b28`. Source
@@ -431,7 +431,7 @@ the canonical semantic validator.
   It preserves event/transition mappings, strict wire parsing, timestamp
   conversion, finite joint-state validation, and command acknowledgment
   semantics; the Pydantic service and robot authority remain external.
-- RoboPAD bounded child supervision: `ival.integrations.robopad_supervisor`
+- RoboPAD bounded child supervision: `reva.integrations.robopad_supervisor`
   is a direct source-backed port of `experiments/icra_assay_supervisor.py` at
   upstream commit `4ecd468cc67cc40681ca2af9097b7ade5825fadd`. The source digest
   is `658e2e73f04651178056a18a775fcac333da3ed114715d858338508b6263ddd2`, and
@@ -441,12 +441,12 @@ the canonical semantic validator.
   timeout escalation, exclusive attempted-run logs, reviewed parent envelopes,
   and atomic bounded receipts. It deliberately does not import RoboPAD's
   campaign manifest, child runtime, or claims authority.
-- RoboPAD fixed assay allocation and source cache: `ival.campaigns.
+- RoboPAD fixed assay allocation and source cache: `reva.campaigns.
   robopad_assay_plan` directly ports `experiments/icra_assay_plan.py` at
   upstream commit `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
   `d4683e2f81e1ac0f332fb3c92c6d06ac39128f3242a5443107e14926d61c565f` and
   source-test digest `743a2649bcf5a3a3cdf31df32d1385c4eb4268228c5208f35b4b50873c0e253f`.
-  `ival.integrations.robopad_reference_cache` ports
+  `reva.integrations.robopad_reference_cache` ports
   `experiments/icra_reference_cache.py`; source digest
   `6cdc72219d25b9a0c08ec2bc8ba0d9f39fc2acb34b640b4fc42b77a3054d2939` and
   source-test digest `d0c7b5a183abec174cc745d8bca531992b79755c44a2df85d5faec5e3a31b83f`.
@@ -455,21 +455,21 @@ the canonical semantic validator.
   semantics, held-source selection, and immutable retained actions; NumPy
   trace decoding remains lazy and physical/source authority remains external.
 - RoboPAD paired missing-outcome bounds: `robopad_paired_bounds` in
-  `ival.analysis.missingness` directly ports
+  `reva.analysis.missingness` directly ports
   `experiments/icra_missing_outcomes.py` at upstream commit
   `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
   `3ea733beb3193eaa0b8ea936214583731355f9a0ad274efbb55560ef141a8a78` and
   source-test digest `be926548e7e0e856c1ed722bcf05e6b02422e9ccb08bf3a65f6689fc8f99df9c`.
   It preserves fixed denominators, binary-completion bounds, explicit unknown
   arms, and the absence of sampling-uncertainty claims.
-- RoboPAD exposure quarantine: `ival.analysis.robopad_exposure` ports
+- RoboPAD exposure quarantine: `reva.analysis.robopad_exposure` ports
   the family identity and split-audit boundary from `experiments/icra_exposure.py`
   at the same upstream commit; source digest
   `2bdea057d0c14679c9013a445ffa3dad7d2296f3ed0e55d6c300e2e7865ae1ce` and
   source-test digest `3c3d76ce31057826752027e824b0e0701e1af7506b7dfac10dc649f8dd0a6362`.
   The audit remains explicitly provisional and freshness-ineligible; dataset
   bytes, aliases, and broader parent coverage are not certified.
-- RoboPAD reference batch controls: `ival.campaigns.
+- RoboPAD reference batch controls: `reva.campaigns.
   robopad_reference_batch` ports the reservation, staged-input verification,
   and sequential no-retry dispatch boundary from
   `experiments/icra_reference_batch.py` at upstream commit
@@ -479,12 +479,12 @@ the canonical semantic validator.
   It preserves all-existing preflight, immutable partial claims, staged hash
   ceilings, terminal child accounting, wall-time admission, and stop-on-failure;
   it does not launch RoboPAD runtimes or claim scientific validity.
-- RoboPAD evidence codec/store: `ival.integrations.
+- RoboPAD evidence codec/store: `reva.integrations.
   robopad_evidence_codec` directly ports `experiments/icra_evidence_codec.py`
   at upstream commit `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
   `48c32db3190667ffd3dbcc0ad900672fe5e6b79c7cabb8f32ac8859a79c52d19` and
   source-test digest `9b1681db4550062ab24ba5ca8599b3c247a59c7c02aa7811272acdf994e17bd6`.
-  `ival.integrations.robopad_evidence_store` ports
+  `reva.integrations.robopad_evidence_store` ports
   `experiments/icra_evidence_store.py`; source digest
   `405602183782f8f79e5275509bb077b8d04fa339c8b6ba16b82ee99c5600449b` and
   source-test digest `ef9e9765654d4288617bb13c2580e2a9bc5ebce0142e533e4ce005d3f723d724`.
@@ -492,7 +492,7 @@ the canonical semantic validator.
   encoding, persisted-byte rechecks, quota reserves, hard-link commit
   visibility, orphan accounting, and fail-closed no-retry state. NumPy remains
   optional until these integration boundaries are used.
-- RoboPAD state-evidence serialization: `ival.integrations.
+- RoboPAD state-evidence serialization: `reva.integrations.
   robopad_state_evidence.json_numpy` ports the dependency-light report
   serializer from `experiments/icra_state_evidence_probe.py` at upstream commit
   `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
@@ -501,7 +501,7 @@ the canonical semantic validator.
   It preserves explicit NumPy scalar/array JSON conversion and rejects unknown
   metadata instead of stringifying it. The simulator restoration, physics
   inspection, and no-action probe remain external.
-- RoboPAD intervention preflight: `ival.conformance.
+- RoboPAD intervention preflight: `reva.conformance.
   robopad_intervention` ports the fixed distractor grid from
   `experiments/icra_b_candidates.py` and the conservative support/contact
   screen from `experiments/icra_b_physics.py` at upstream commit
@@ -513,7 +513,7 @@ the canonical semantic validator.
   The port preserves outcome-free state proposals, untouched-coordinate
   guarantees, support inset/penetration thresholds, and contact rejection;
   policy search, simulator restoration, and dynamic stability remain external.
-- RoboPAD visual balance: `ival.analysis.robopad_visual_balance` ports
+- RoboPAD visual balance: `reva.analysis.robopad_visual_balance` ports
   `experiments/icra_visual_balance.py` at upstream commit
   `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
   `9230cd1f898dbfe7651e4c5e1d0f9e8b901da8ff826a83d55483f73838e92534` and
@@ -522,7 +522,7 @@ the canonical semantic validator.
   stable deterministic pair selection, explicit physical-validity handling,
   and outcome-free matching. Image provenance and simulator execution remain
   caller-owned.
-- RoboPAD assay reservations: `ival.campaigns.robopad_assay_claims`
+- RoboPAD assay reservations: `reva.campaigns.robopad_assay_claims`
   directly ports `experiments/icra_assay_claims.py` at upstream commit
   `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
   `36217f6f2db6e60d0ef2b2de5618f4e3917c51a6c9bcefa0b5325b3322337c51` and
@@ -530,21 +530,21 @@ the canonical semantic validator.
   It preserves canonical fixed run allocation, exclusive no-retry claims,
   binding-hash receipts, no-resume start markers, canonical JSON/regular-file
   checks, and post-start tamper detection. This is reservation evidence, not
-  scientific claim scoring; the latter remains in `ival.analysis.claims`.
+  scientific claim scoring; the latter remains in `reva.analysis.claims`.
 - RoboPAD restored initialization and runtime-plan contracts:
-  `ival.integrations.robopad_initialization` ports the reviewed
+  `reva.integrations.robopad_initialization` ports the reviewed
   `initialize_restored_pose` boundary from `experiments/icra_assay_initialization.py`
   at upstream commit `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
   `2b0b70f3b7a1a244d73e9f777e3c77a1a4f40f0f7384a5e539a71ccb20a33124` and
   source-test digest `dd713e25d4a5da821bfd8bd50e1212aacaa898c3011ac5bfd44f11f743adfba9`.
-  `ival.campaigns.robopad_runtime_plan` extracts the dependency-light
+  `reva.campaigns.robopad_runtime_plan` extracts the dependency-light
   fixed child-run, replay-order, allocation-manifest, and resource-limit
   contracts from `experiments/icra_assay_runtime.py`; source digest
   `421e1878d25874473cc76b5a264bf7dedc73261a0471725631ef1d20633dc791` and
   source-test digest `7566a00c11dfd4a636a0e5296424adad61f9e0ce188e6bdff3cd76cb88b79e22`.
   The ports preserve no-action initialization checks and fixed plan identity;
   simulator/runtime launch, policy execution, and physical authority remain external.
-- RoboPAD cell-store runtime extension: `ival.integrations.CellStore`
+- RoboPAD cell-store runtime extension: `reva.integrations.CellStore`
   ports the semantic digest, bounded auxiliary-array, partial-action-journal,
   pending-execution-unknown, and terminal-receipt portions of
   `experiments/icra_assay_runtime.py` at the same upstream commit and source
@@ -553,7 +553,7 @@ the canonical semantic validator.
   `7566a00c11dfd4a636a0e5296424adad61f9e0ce188e6bdff3cd76cb88b79e22`.
   The extension reuses the ported bounded evidence store, retains partial
   failures without retry semantics, and does not launch the external runtime.
-- RoboPAD rollout semantics: `ival.integrations.robopad_rollout` ports
+- RoboPAD rollout semantics: `reva.integrations.robopad_rollout` ports
   `experiments/icra_rollout.py` at upstream commit
   `4ecd468cc67cc40681ca2af9097b7ade5825fadd`; source digest
   `6c9b6f65c8c6e13951d83d2c4c6886c72d094fc58be792a90b169ae772a4aa25` and
@@ -562,7 +562,7 @@ the canonical semantic validator.
   queries, native-success gating, explicit wall-clock/environment-terminal
   outcomes, and pending-action execution-unknown evidence; environment,
   policy, and persistence authorities remain external.
-- RoboPAD remaining reference evidence: `ival.integrations.robopad_remaining`
+- RoboPAD remaining reference evidence: `reva.integrations.robopad_remaining`
   ports the dependency-light scope, bounded persistence, scalar conversion, and
   dense/terminal frame-retention helpers from
   `experiments/icra_reference_remaining.py` at upstream commit
@@ -574,7 +574,7 @@ the canonical semantic validator.
   quota policy, and original/physics RGB frame names; MuJoCo/reference rollout
   execution remains external.
 - URDF Studio, AlpaBridge, RoboPAD, refinement/refresh experiments, and
-  `urdf-ops`: IVal exposes independent contracts for scenario identity,
+  `urdf-ops`: REVA exposes independent contracts for scenario identity,
   lifecycle, campaign accounting, counterfactual lineage, and embodiment
   mapping. The `PolicySession` boundary is informed by AlpaBridge's session,
   modality, readiness, and latency behavior; it is a dependency-free contract,
@@ -584,30 +584,30 @@ the canonical semantic validator.
   Product-specific runtimes remain external.
 
 The RoboChallenge observe-only adapter and
-`examples/external_runtime/robochallenge_mock.py` are IVal-owned
+`examples/external_runtime/robochallenge_mock.py` are REVA-owned
 transport fixtures, not a port of the RoboChallenge client. They preserve
 opaque payload bytes and protocol digests for boundary testing while leaving
 execution, safety, and official scoring with the external platform.
 
-The optional `ival.integrations.mujoco` adapter uses MuJoCo's public
+The optional `reva.integrations.mujoco` adapter uses MuJoCo's public
 Python API when the user installs the `mujoco` extra. It does not vendor the
-runtime or assign official benchmark scoring authority to IVal.
+runtime or assign official benchmark scoring authority to REVA.
 
-The optional `ival.integrations.gymnasium` adapter follows Gymnasium's
+The optional `reva.integrations.gymnasium` adapter follows Gymnasium's
 public five-value `step` protocol and remains a generic environment boundary;
 it does not claim LIBERO or another benchmark's task/scoring semantics.
 
-The optional `ival.integrations.genesis` adapter targets the public
+The optional `reva.integrations.genesis` adapter targets the public
 Genesis World scene lifecycle and is dependency-lazy. Install the `genesis`
-extra in the environment that owns Genesis; IVal retains only the
+extra in the environment that owns Genesis; REVA retains only the
 temporal/evidence boundary and does not vendor Genesis or its assets.
 
-The optional `ival.integrations.isaaclab` adapter follows the public
+The optional `reva.integrations.isaaclab` adapter follows the public
 manager-based environment reset/step contract, including vectorized resets,
 termination signals, extras, and environment step timing. Isaac Lab remains
 the owner of physics, environment lifecycle, and task scoring.
 
 Any future source migration must preserve the original repository's notices,
-third-party licenses, and historical evidence. IVal is publicly available
+third-party licenses, and historical evidence. REVA is publicly available
 under its source-available research license; this provenance record does not
 relicense any upstream or third-party material.
