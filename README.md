@@ -77,8 +77,12 @@ pipeline without claiming simulator or model validity:
 
 ```bash
 uv run --locked python -m benchstudio.cli --episodes 3 --output runs/smoke
-uv run --locked python -m benchstudio.cli --audit-output runs/smoke
+uv run --locked python -m benchstudio.cli --verify-artifact runs/smoke
 ```
+
+`--verify-artifact` checks the standalone rollout bundle written by the simple
+smoke path. `--audit-output` is reserved for a frozen campaign directory, whose
+plan, attempt ledger, and runtime receipts support campaign-level claims.
 
 Inspect optional simulator and model-adapter availability before scheduling a
 real evaluation:
