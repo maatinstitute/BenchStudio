@@ -15,6 +15,10 @@ append-only ledger remain identical to a local run.
   requirements but does not allocate GPUs.
 - Use one shard per scheduler task. A retried task uses the same shard index and
   resumes from committed evidence.
+- For preemptible simulator jobs, pass `--recover-interrupted`. A `SIGTERM`
+  releases the active lease; the next run preserves the incomplete directory
+  under `interrupted-attempts/` before rerunning the same frozen attempt.
+- Interrupted-attempt recovery is rejected for physical environments.
 - Run audit, archive, and publication once, after every shard succeeds.
 
 Independent node-local disks and object storage do not provide the shared lock
@@ -53,6 +57,7 @@ uv run --locked python -m benchstudio.cli \
   --shard-index "$SHARD_INDEX" \
   --shard-count "$SHARD_COUNT" \
   --worker-id "$WORKER_ID" \
+  --recover-interrupted \
   --output /shared/study/run
 ```
 
@@ -76,6 +81,7 @@ uv run --locked python -m benchstudio.cli \
   --shard-index "$SLURM_ARRAY_TASK_ID" \
   --shard-count "$SLURM_ARRAY_TASK_COUNT" \
   --worker-id "${SLURM_JOB_ID}-${SLURM_ARRAY_TASK_ID}" \
+  --recover-interrupted \
   --output /shared/study/run
 ```
 
@@ -110,6 +116,7 @@ spec:
             - "8"
             - --worker-id
             - $(JOB_NAME)-$(JOB_COMPLETION_INDEX)
+            - --recover-interrupted
             - --output
             - /shared/study/run
           env:

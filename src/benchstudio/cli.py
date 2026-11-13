@@ -3,7 +3,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import signal
 import socket
+from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
 
@@ -61,6 +63,26 @@ def _mock_policy_factory(_attempt):
 
 def _mock_simulator_factory(_attempt):
     return MockSimulator()
+
+
+class _SchedulerTermination(BaseException):
+    def __init__(self, signum: int) -> None:
+        self.signum = signum
+
+
+@contextmanager
+def _scheduler_signal_boundary():
+    """Release executor leases when a scheduler asks the worker to stop."""
+    previous = signal.getsignal(signal.SIGTERM)
+
+    def terminate(signum, _frame):
+        raise _SchedulerTermination(signum)
+
+    signal.signal(signal.SIGTERM, terminate)
+    try:
+        yield
+    finally:
+        signal.signal(signal.SIGTERM, previous)
 
 
 def main() -> int:
@@ -199,6 +221,14 @@ def main() -> int:
     parser.add_argument(
         "--worker-id",
         help="Stable scheduler worker identity recorded in runtime receipts.",
+    )
+    parser.add_argument(
+        "--recover-interrupted",
+        action="store_true",
+        help=(
+            "Preserve partial simulator evidence and rerun that frozen attempt; "
+            "disabled for physical environments."
+        ),
     )
     parser.add_argument(
         "--readiness",
@@ -875,6 +905,8 @@ def main() -> int:
         if args.execute_mock or args.execute_registry:
             if (args.shard_index is None) != (args.shard_count is None):
                 parser.error("--shard-index and --shard-count must be supplied together")
+            if args.recover_interrupted and args.shard_index is None:
+                parser.error("--recover-interrupted requires scheduler shard coordinates")
             selected_attempt_ids = None
             if args.shard_index is not None and args.shard_count is not None:
                 try:
@@ -937,12 +969,21 @@ def main() -> int:
                     if selected_attempt_ids is not None or args.worker_id is not None
                     else None
                 ),
+                recover_interrupted=args.recover_interrupted,
             )
-            summary = (
-                executor.run_parallel(args.workers, selected_attempt_ids)
-                if args.workers > 1
-                else executor.run(selected_attempt_ids)
-            )
+            try:
+                with _scheduler_signal_boundary():
+                    summary = (
+                        executor.run_parallel(args.workers, selected_attempt_ids)
+                        if args.workers > 1
+                        else executor.run(selected_attempt_ids)
+                    )
+            except _SchedulerTermination as exc:
+                print(
+                    f"campaign_status=interrupted signal={exc.signum} "
+                    f"worker_id={executor.worker_id}"
+                )
+                return 128 + exc.signum
             selected_missing = (
                 set(summary.missing_attempt_ids)
                 if selected_attempt_ids is None

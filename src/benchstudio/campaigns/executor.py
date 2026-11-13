@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
@@ -93,6 +94,7 @@ class CampaignExecutor:
         model_registry: "ModelAdapterRegistry | None" = None,
         policy_kwargs_factory: PolicyKwargsFactory | None = None,
         hardware_snapshot: HardwareSnapshot | None = None,
+        recover_interrupted: bool = False,
     ) -> None:
         self.plan = plan
         self.output = output
@@ -110,6 +112,11 @@ class CampaignExecutor:
         self.lease_manager = lease_manager
         self.cancelled_attempts = frozenset(cancelled_attempts)
         self.resource_sampler_factory = resource_sampler_factory
+        if not isinstance(recover_interrupted, bool):
+            raise ValueError("recover_interrupted must be boolean")
+        if recover_interrupted and _has_physical_environment(plan):
+            raise ValueError("interrupted-attempt recovery is disabled for physical environments")
+        self.recover_interrupted = recover_interrupted
         if adapter_registry is not None:
             issues = adapter_registry.validate_plan(plan)
             if issues:
@@ -205,6 +212,7 @@ class CampaignExecutor:
                     leased_out.append(attempt_id)
                     continue
             attempt_dir = self.output / "attempts" / attempt_id
+            recovered_interrupted_attempts = 0
             heartbeat = (
                 LeaseHeartbeat(self.lease_manager, lease)
                 if lease is not None and self.lease_manager is not None
@@ -216,12 +224,16 @@ class CampaignExecutor:
                 if attempt_dir.exists():
                     summary_path = attempt_dir / "summary.json"
                     if not summary_path.is_file():
-                        raise RuntimeError(
-                            f"attempt {attempt_id} has partial evidence and "
-                            "cannot be silently retried"
-                        )
-                    summary = json.loads(summary_path.read_text(encoding="utf-8"))
-                else:
+                        if not self.recover_interrupted:
+                            raise RuntimeError(
+                                f"attempt {attempt_id} has partial evidence and "
+                                "cannot be silently retried"
+                            )
+                        self._preserve_interrupted_attempt(attempt, attempt_dir)
+                        recovered_interrupted_attempts = 1
+                    else:
+                        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+                if not attempt_dir.exists():
                     condition = attempt.metadata.get("condition", {})
                     config = RunConfig(
                         run_id=attempt.key.run_id,
@@ -282,6 +294,7 @@ class CampaignExecutor:
                         "attempt_summary_path": str(attempt_dir / "summary.json"),
                         "evidence_verified": True,
                         "resource_budget_audit": summary.get("resource_budget_audit"),
+                        "recovered_interrupted_attempts": recovered_interrupted_attempts,
                     },
                 )
                 if not committed_now:
@@ -392,6 +405,7 @@ class CampaignExecutor:
                 model_registry=self.model_registry,
                 policy_kwargs_factory=self.policy_kwargs_factory,
                 hardware_snapshot=self.hardware_snapshot,
+                recover_interrupted=self.recover_interrupted,
             )
             return worker.run(selected_ids)
 
@@ -429,6 +443,32 @@ class CampaignExecutor:
             tuple(leased_out),
             tuple(cancelled),
         )
+
+    def _preserve_interrupted_attempt(
+        self, attempt: PlannedAttempt, attempt_dir: Path
+    ) -> Path:
+        """Move partial simulator evidence aside before an explicit retry."""
+        root = self.output / "interrupted-attempts" / attempt.key.attempt_id
+        root.mkdir(parents=True, exist_ok=True)
+        sequence = 1
+        while (root / f"partial-{sequence:06d}").exists():
+            sequence += 1
+        preserved = root / f"partial-{sequence:06d}"
+        attempt_dir.replace(preserved)
+        receipt = {
+            "schema": "benchstudio.interrupted_attempt_preservation.v1",
+            "attempt_id": attempt.key.attempt_id,
+            "plan_digest_sha256": self.plan.plan_digest_sha256,
+            "worker_id": self.worker_id,
+            "reason": "scheduler_interruption_or_incomplete_attempt",
+        }
+        receipt_path = preserved / "preservation-receipt.json"
+        with receipt_path.open("x", encoding="utf-8") as handle:
+            json.dump(receipt, handle, sort_keys=True)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        return preserved
 
     def _policy_for_attempt(self, attempt: PlannedAttempt) -> Policy:
         if self.policy_factory is not None:
@@ -657,6 +697,15 @@ def _validate_execution_safety(plan: FrozenCampaignPlan) -> None:
             raise ValueError(
                 f"physical environment {environment_id} must disable automatic retries"
             )
+
+
+def _has_physical_environment(plan: FrozenCampaignPlan) -> bool:
+    section = (plan.protocol or {}).get("S", {})
+    environments = section.get("environments", []) if isinstance(section, dict) else []
+    return any(
+        isinstance(environment, dict) and environment.get("kind") == "physical"
+        for environment in environments
+    )
 
 
 def _validate_worldepisode_protocol(plan: FrozenCampaignPlan) -> None:
