@@ -36,7 +36,7 @@ from .campaigns import (
 from .compare import build_campaign_comparison_report
 from .evidence import verify_artifact_manifest
 from .hardware import probe_hardware
-from .integrations import audit_robochallenge_wire_records
+from .integrations.robochallenge import audit_robochallenge_wire_records
 from .mock import MockPolicy, MockSimulator
 from .model_adapters import default_model_registry
 from .runner import RunConfig, run_episodes

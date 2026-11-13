@@ -1,11 +1,5 @@
-include LICENSE README.md CONTRIBUTING.md CHANGELOG.md
+include LICENSE NOTICE README.md CONTRIBUTING.md CHANGELOG.md CITATION.cff
 prune tests
 prune docs
 prune examples
-include docs/research-preview.md
-include docs/distribution-verification.md
 include docs/source-attribution.md
-include examples/research_preview.py
-include scripts/check_distribution.py
-include docs/specialist-workflows.md
-include docs/public-release-readiness.md
