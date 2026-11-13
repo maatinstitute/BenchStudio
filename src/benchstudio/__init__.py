@@ -382,6 +382,8 @@ __all__ = [
     "extract_verified_campaign_archive",
     "write_campaign_archive",
     "minimize_counterexample",
+    "InferenceSmokeResult",
+    "measure_inference",
 ]
 
 from .inference_smoke import InferenceSmokeResult, measure_inference

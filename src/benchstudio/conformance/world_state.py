@@ -237,7 +237,6 @@ def validate_worldepisode_contract(record: dict[str, Any]) -> list[ValidationIss
                         f"action_space.channels[{index}].{field}",
                     )
                 )
-    world_revision = record.get("world_revision", {})
     world_revision_id = _revision_id(record)
     if not isinstance(world_revision_id, str) or not re.fullmatch(
         r"sha256:[0-9a-f]{64}", world_revision_id
