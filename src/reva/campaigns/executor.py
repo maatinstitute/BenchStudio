@@ -493,13 +493,12 @@ class CampaignExecutor:
         model_controls = condition.get("model_controls", {}) if isinstance(condition, dict) else {}
         if not isinstance(model_controls, dict):
             raise ValueError("attempt condition model_controls must be a mapping")
-        conflicts = set(kwargs) & set(model_controls)
-        if conflicts:
-            raise ValueError(
-                "model_controls conflict with model.adapter_config: "
-                + ", ".join(sorted(conflicts))
-            )
-        kwargs.update(model_controls)
+        if model_controls:
+            if "runtime_controls" in kwargs:
+                raise ValueError(
+                    "condition model_controls conflict with model.adapter_config.runtime_controls"
+                )
+            kwargs["runtime_controls"] = dict(model_controls)
         return self.model_registry.create(adapter_id, **kwargs)
 
     def _simulator_for_attempt(self, attempt: PlannedAttempt) -> Simulator:

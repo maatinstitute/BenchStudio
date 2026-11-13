@@ -970,7 +970,7 @@ def test_campaign_executor_can_run_external_command_model_adapter(tmp_path):
     assert result.missing_attempt_ids == ()
 
 
-def test_campaign_executor_applies_running_tensor_controls_per_attempt(tmp_path):
+def test_campaign_executor_passes_condition_controls_to_external_model(tmp_path):
     policy_program = """
 import json, os, sys
 for line in sys.stdin:
@@ -980,8 +980,8 @@ for line in sys.stdin:
         response = {
             "actions": [1, 1],
             "metadata": {
-                "state_order": int(os.environ["REVA_RECURRENT_STATE_ORDER"]),
-                "state_bytes": int(os.environ["REVA_RECURRENT_STATE_BYTES"]),
+                "temperature": request["runtime_controls"]["temperature"],
+                "mode": request["runtime_controls"]["mode"],
             },
         }
     else:
@@ -993,9 +993,9 @@ for line in sys.stdin:
     plan = compile_campaign_spec(
         {
             "schema": "reva.campaign.v1",
-            "experiment": {"name": "running-tensor-model-controls"},
+            "experiment": {"name": "external-model-controls"},
             "model": {
-                "adapter": "running_tensor",
+                "adapter": "persistent_external_command",
                 "adapter_config": {"command": [sys.executable, "-c", policy_program]},
             },
             "task": {"task_id": "task"},
@@ -1007,9 +1007,8 @@ for line in sys.stdin:
                     {
                         "action_prefix": 1,
                         "model_controls": {
-                            "state_order": 3,
-                            "state_width": 8,
-                            "state_dtype_bytes": 2,
+                            "temperature": 0.25,
+                            "mode": "deterministic",
                         },
                     }
                 ],
@@ -1030,8 +1029,8 @@ for line in sys.stdin:
         .read_text()
         .splitlines()
     ]
-    assert actions[0]["policy_metadata"]["state_order"] == 3
-    assert actions[0]["policy_metadata"]["state_bytes"] == 8**3 * 2
+    assert actions[0]["policy_metadata"]["temperature"] == 0.25
+    assert actions[0]["policy_metadata"]["mode"] == "deterministic"
 
 
 def test_campaign_executor_can_run_external_command_simulator_adapter(tmp_path):

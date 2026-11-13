@@ -224,8 +224,6 @@ def default_model_registry(*, discover_external: bool = True) -> ModelAdapterReg
         external_command_capabilities,
         external_vla_capabilities,
         persistent_external_command_capabilities,
-        running_tensor_capabilities,
-        running_tensor_external_policy,
     )
     from .integrations.policy_trace import TracePolicy
     from .mock import MockPolicy
@@ -283,14 +281,6 @@ def default_model_registry(*, discover_external: bool = True) -> ModelAdapterReg
             label="External JSON policy process",
             factory=ExternalCommandPolicy,
             capabilities=external_command_capabilities(),
-        )
-    )
-    registry.register(
-        ModelAdapterDescriptor(
-            adapter_id="running_tensor",
-            label="RunningTensor external policy bridge",
-            factory=running_tensor_external_policy,
-            capabilities=running_tensor_capabilities(),
         )
     )
     for adapter_id, label in (
