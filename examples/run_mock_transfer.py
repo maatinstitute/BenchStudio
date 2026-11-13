@@ -7,9 +7,9 @@ import argparse
 import json
 from pathlib import Path
 
-from ival.campaigns import CampaignExecutor, CampaignPlanner
-from ival.compare import build_campaign_comparison_report
-from ival.mock import MockPolicy, MockSimulator
+from reva.campaigns import CampaignExecutor, CampaignPlanner
+from reva.compare import build_campaign_comparison_report
+from reva.mock import MockPolicy, MockSimulator
 
 
 class BoundaryFixtureSimulator(MockSimulator):

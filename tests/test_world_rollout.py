@@ -1,12 +1,12 @@
 import hashlib
 
-from ival.scenarios.world_rollout import (
+from reva.scenarios.world_rollout import (
     WorldRolloutCheckerProfile,
     WorldRolloutModuleSpec,
     build_world_rollout_campaign,
     import_world_rollout_results,
 )
-from ival.scenarios.world_scene_package import WorldInterfaceSpec, WorldScenePackageManifest, WorldSnapshot
+from reva.scenarios.world_scene_package import WorldInterfaceSpec, WorldScenePackageManifest, WorldSnapshot
 
 
 def _package():

@@ -10,7 +10,7 @@ import argparse
 import json
 from pathlib import Path
 
-from ival.campaigns import (
+from reva.campaigns import (
     CounterfactualEvaluation,
     Intervention,
     compile_campaign_spec,

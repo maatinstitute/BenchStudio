@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from ival.analysis import load_smolvla_deployment_evidence
+from reva.analysis import load_smolvla_deployment_evidence
 
 
 def _manifest() -> dict:

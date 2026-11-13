@@ -1,4 +1,4 @@
-name: Publish IVal to PyPI
+name: Publish REVA to PyPI
 
 permissions: {}
 
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/project/ival/
+      url: https://pypi.org/project/reva/
     permissions:
       id-token: write # Required for PyPI Trusted Publishing through OIDC.
     steps:

@@ -1,4 +1,4 @@
-"""Exercise the reference application against IVal's actual public contracts."""
+"""Exercise the reference application against REVA's actual public contracts."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from ival.campaigns import (
+from reva.campaigns import (
     CounterfactualBranchResult,
     CounterfactualEvaluation,
     compile_campaign_spec,

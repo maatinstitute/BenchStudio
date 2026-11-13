@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from ival.campaigns import compile_campaign_spec
+from reva.campaigns import compile_campaign_spec
 
 
 def test_campaign_spec_compiles_to_frozen_plan():
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "temporal-transfer"},
             "task": {"task_id": "arrange"},
             "environments": [{"id": "sim", "kind": "simulator"}],
@@ -28,7 +28,7 @@ def test_campaign_spec_rejects_unpaired_design():
     with pytest.raises(ValueError, match="paired"):
         compile_campaign_spec(
             {
-                "schema": "ival.campaign.v1",
+                "schema": "reva.campaign.v1",
                 "experiment": {"name": "run"},
                 "task": {"task_id": "task"},
                 "environments": [{"id": "sim", "kind": "simulator"}],
@@ -41,7 +41,7 @@ def test_campaign_spec_rejects_unauthorized_enabled_physical_environment():
     with pytest.raises(ValueError, match="authorization"):
         compile_campaign_spec(
             {
-                "schema": "ival.campaign.v1",
+                "schema": "reva.campaign.v1",
                 "experiment": {"name": "run"},
                 "task": {"task_id": "task"},
                 "environments": [
@@ -56,7 +56,7 @@ def test_campaign_spec_rejects_physical_automatic_retry():
     with pytest.raises(ValueError, match="automatic retries"):
         compile_campaign_spec(
             {
-                "schema": "ival.campaign.v1",
+                "schema": "reva.campaign.v1",
                 "experiment": {"name": "physical"},
                 "task": {"task_id": "task"},
                 "environments": [
@@ -77,7 +77,7 @@ def test_campaign_spec_rejects_unknown_execution_strategy():
     with pytest.raises(ValueError, match="execution_strategy"):
         compile_campaign_spec(
             {
-                "schema": "ival.campaign.v1",
+                "schema": "reva.campaign.v1",
                 "experiment": {"name": "bad-strategy"},
                 "task": {"task_id": "task"},
                 "environments": [{"id": "sim", "kind": "simulator"}],
@@ -95,7 +95,7 @@ def test_campaign_spec_rejects_non_string_execution_strategy():
     with pytest.raises(ValueError, match="execution_strategy"):
         compile_campaign_spec(
             {
-                "schema": "ival.campaign.v1",
+                "schema": "reva.campaign.v1",
                 "experiment": {"name": "bad-strategy-type"},
                 "task": {"task_id": "task"},
                 "environments": [{"id": "sim", "kind": "simulator"}],
@@ -113,7 +113,7 @@ def test_strategy_type_error_is_rejected_before_model_capability_binding():
     with pytest.raises(ValueError, match="execution_strategy"):
         compile_campaign_spec(
             {
-                "schema": "ival.campaign.v1",
+                "schema": "reva.campaign.v1",
                 "experiment": {"name": "bad-strategy-profile"},
                 "model": {
                     "adapter": "mock",
@@ -144,7 +144,7 @@ def test_campaign_spec_rejects_invalid_repetition_counts(repetitions):
     with pytest.raises(ValueError, match="evaluation.repetitions"):
         compile_campaign_spec(
             {
-                "schema": "ival.campaign.v1",
+                "schema": "reva.campaign.v1",
                 "experiment": {"name": "invalid-repetitions"},
                 "task": {"task_id": "task"},
                 "environments": [{"id": "sim", "kind": "simulator"}],
@@ -174,7 +174,7 @@ def test_campaign_spec_rejects_invalid_condition_controls(condition, message):
     with pytest.raises(ValueError, match=message):
         compile_campaign_spec(
             {
-                "schema": "ival.campaign.v1",
+                "schema": "reva.campaign.v1",
                 "experiment": {"name": "invalid-condition"},
                 "task": {"task_id": "task"},
                 "environments": [{"id": "sim", "kind": "simulator"}],
@@ -192,7 +192,7 @@ def test_campaign_spec_rejects_non_integer_seeds(seeds):
     with pytest.raises(ValueError, match="evaluation.seeds"):
         compile_campaign_spec(
             {
-                "schema": "ival.campaign.v1",
+                "schema": "reva.campaign.v1",
                 "experiment": {"name": "invalid-seeds"},
                 "task": {"task_id": "task"},
                 "environments": [{"id": "sim", "kind": "simulator"}],
@@ -207,7 +207,7 @@ def test_campaign_spec_rejects_non_integer_seeds(seeds):
 
 def test_campaign_spec_rejects_non_frozen_confirmation_or_imputed_missingness():
     base = {
-        "schema": "ival.campaign.v1",
+        "schema": "reva.campaign.v1",
         "experiment": {"name": "run"},
         "task": {"task_id": "task"},
         "environments": [{"id": "sim", "kind": "simulator"}],
@@ -227,7 +227,7 @@ def test_campaign_spec_rejects_unpinned_model_checkpoint():
     with pytest.raises(ValueError, match="model.checkpoint"):
         compile_campaign_spec(
             {
-                "schema": "ival.campaign.v1",
+                "schema": "reva.campaign.v1",
                 "experiment": {"name": "run"},
                 "model": {"adapter": "mock", "checkpoint": "latest"},
                 "task": {"task_id": "task"},
@@ -252,7 +252,7 @@ def test_campaign_spec_rejects_scalar_model_capability_sequences(field):
     with pytest.raises(ValueError, match=f"model.capabilities.{field}"):
         compile_campaign_spec(
             {
-                "schema": "ival.campaign.v1",
+                "schema": "reva.campaign.v1",
                 "experiment": {"name": "typed-capabilities"},
                 "model": {"adapter": "mock", "capabilities": capabilities},
                 "task": {"task_id": "task"},
@@ -269,7 +269,7 @@ def test_campaign_spec_rejects_scalar_model_capability_sequences(field):
 def test_campaign_spec_freezes_enabled_environment_identity_and_protocol():
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "sim-real", "protocol_revision": "v1"},
             "model": {"adapter": "mock", "checkpoint": "sha256:" + "a" * 64},
             "task": {"task_id": "pick", "task_revision": "rev-1"},
@@ -292,7 +292,7 @@ def test_campaign_spec_freezes_enabled_environment_identity_and_protocol():
 def test_campaign_spec_freezes_worldepisode_binding_for_executor_preflight():
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "worldepisode-spec"},
             "task": {"task_id": "task"},
             "environments": [{"id": "sim", "kind": "simulator"}],
@@ -317,7 +317,7 @@ def test_campaign_spec_freezes_worldepisode_binding_for_executor_preflight():
 
 def test_campaign_spec_rejects_malformed_worldepisode_binding():
     base = {
-        "schema": "ival.campaign.v1",
+        "schema": "reva.campaign.v1",
         "experiment": {"name": "bad-worldepisode"},
         "task": {"task_id": "task"},
         "environments": [{"id": "sim", "kind": "simulator"}],
@@ -340,7 +340,7 @@ def test_campaign_spec_rejects_malformed_worldepisode_binding():
 def test_campaign_spec_freezes_execution_semantics_in_protocol_envelope():
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "execution-envelope"},
             "task": {"task_id": "task"},
             "environments": [{"id": "sim", "kind": "simulator"}],
@@ -370,7 +370,7 @@ def test_campaign_spec_freezes_execution_semantics_in_protocol_envelope():
 
 def test_campaign_spec_rejects_malformed_execution_semantics():
     base = {
-        "schema": "ival.campaign.v1",
+        "schema": "reva.campaign.v1",
         "experiment": {"name": "bad-execution"},
         "task": {"task_id": "task"},
         "environments": [{"id": "sim", "kind": "simulator"}],
@@ -385,7 +385,7 @@ def test_campaign_spec_rejects_malformed_execution_semantics():
 def test_campaign_spec_expands_enabled_multiple_environments():
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "paired"},
             "task": {"task_id": "pick"},
             "environments": [
@@ -407,7 +407,7 @@ def test_campaign_spec_rejects_resource_budget_before_execution():
     with pytest.raises(ValueError, match="max_attempts"):
         compile_campaign_spec(
             {
-                "schema": "ival.campaign.v1",
+                "schema": "reva.campaign.v1",
                 "experiment": {"name": "budgeted"},
                 "task": {"task_id": "task"},
                 "environments": [{"id": "sim", "kind": "simulator"}],
@@ -425,7 +425,7 @@ def test_campaign_spec_rejects_unknown_resource_budget_field():
     with pytest.raises(ValueError, match="unsupported resource budget"):
         compile_campaign_spec(
             {
-                "schema": "ival.campaign.v1",
+                "schema": "reva.campaign.v1",
                 "experiment": {"name": "budgeted"},
                 "task": {"task_id": "task"},
                 "environments": [{"id": "sim", "kind": "simulator"}],
@@ -443,7 +443,7 @@ def test_campaign_spec_rejects_incompatible_model_execution_strategy():
     with pytest.raises(ValueError, match="requires supports_async"):
         compile_campaign_spec(
             {
-                "schema": "ival.campaign.v1",
+                "schema": "reva.campaign.v1",
                 "experiment": {"name": "capability-gated"},
                 "model": {
                     "adapter": "mock",
@@ -473,7 +473,7 @@ def test_campaign_spec_rejects_incompatible_condition_execution_strategy():
     with pytest.raises(ValueError, match="execution_strategy async requires supports_async"):
         compile_campaign_spec(
             {
-                "schema": "ival.campaign.v1",
+                "schema": "reva.campaign.v1",
                 "experiment": {"name": "condition-capability-gated"},
                 "model": {
                     "adapter": "mock",
@@ -500,7 +500,7 @@ def test_campaign_spec_rejects_incompatible_condition_execution_strategy():
 
 def test_campaign_spec_rejects_malformed_frozen_adapter_configuration():
     base = {
-        "schema": "ival.campaign.v1",
+        "schema": "reva.campaign.v1",
         "experiment": {"name": "malformed"},
         "model": {"adapter": "mock"},
         "task": {"task_id": "task"},
@@ -525,7 +525,7 @@ def test_campaign_spec_rejects_malformed_frozen_adapter_configuration():
 def test_campaign_spec_accepts_pinned_scenario_revision_and_digest():
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "pinned"},
             "task": {
                 "task_id": "task",

@@ -3,8 +3,8 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from ival.integrations.robopad_evidence_codec import decode, digest, encode
-from ival.integrations.robopad_evidence_store import EvidenceStore
+from reva.integrations.robopad_evidence_codec import decode, digest, encode
+from reva.integrations.robopad_evidence_store import EvidenceStore
 
 
 def _identity(stream="original", step=0):

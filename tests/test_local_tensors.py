@@ -1,10 +1,10 @@
-"""Optional numpy tests; core IVal imports without numpy."""
+"""Optional numpy tests; core REVA imports without numpy."""
 import json
 
 import pytest
 
 np = pytest.importorskip("numpy")
-from ival.local_tensors import MappedTensorPublisher, open_local_tensors  # noqa: E402
+from reva.local_tensors import MappedTensorPublisher, open_local_tensors  # noqa: E402
 
 
 def test_roundtrip_preserves_shape_dtype_and_bytes():
@@ -13,7 +13,7 @@ def test_roundtrip_preserves_shape_dtype_and_bytes():
     try:
         with publisher.publish({"policy_batch": {"front": image, "state": [1, 2]}}) as payload:
             json.dumps(payload)
-            info = payload["policy_batch"]["front"]["__ival_local_array__"]
+            info = payload["policy_batch"]["front"]["__reva_local_array__"]
             assert len(json.dumps(payload)) < 600
             assert (publisher.root / info["filename"]).exists()
             with open_local_tensors(payload, root=str(publisher.root)) as output:
@@ -53,14 +53,14 @@ def test_local_tensor_rejects_tampering_and_path_escape():
     publisher = MappedTensorPublisher()
     try:
         with publisher.publish(np.arange(5, dtype=np.float32)) as descriptor:
-            name = descriptor["__ival_local_array__"]["filename"]
+            name = descriptor["__reva_local_array__"]["filename"]
             path = publisher.root / name
             with path.open("r+b") as f:
                 f.write(b"bogus")
             with pytest.raises(ValueError, match="digest mismatch"):
                 with open_local_tensors(descriptor, root=str(publisher.root)):
                     pass
-            descriptor["__ival_local_array__"]["filename"] = "../../secret.bin"
+            descriptor["__reva_local_array__"]["filename"] = "../../secret.bin"
             with pytest.raises(ValueError, match="filename"):
                 with open_local_tensors(descriptor, root=str(publisher.root)):
                     pass

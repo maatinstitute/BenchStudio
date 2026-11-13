@@ -1,7 +1,7 @@
-# IVal workflow reference
+# REVA workflow reference
 
 These commands cover optional runtimes, artifact verification, campaign
-execution, recovery, and integration fixtures. Run them from a IVal
+execution, recovery, and integration fixtures. Run them from a REVA
 checkout after creating the locked environment described in the main README.
 
 ## Visual VLA execution on a constrained host
@@ -15,13 +15,13 @@ task-success, or normalization compatibility claim is made by these fixtures.
 
 ```bash
 uv run --locked python -m pytest
-uv run --locked python -m ival.cli --episodes 3 --output runs/smoke
+uv run --locked python -m reva.cli --episodes 3 --output runs/smoke
 ```
 
 Inspect optional backend and model-adapter readiness before scheduling work:
 
 ```bash
-uv run --locked python -m ival.cli --readiness
+uv run --locked python -m reva.cli --readiness
 ```
 
 Readiness now includes a hardware-memory snapshot. To reject estimated per-worker
@@ -38,7 +38,7 @@ uv sync --locked --extra genesis
 ```
 
 The Genesis adapter requires explicit scene, action, and observation callbacks;
-IVal does not infer task controllers or claim Genesis scoring authority.
+REVA does not infer task controllers or claim Genesis scoring authority.
 
 ## Artifact and source verification
 
@@ -46,7 +46,7 @@ Verify an existing run artifact offline, optionally against a digest held by
 an independent reviewer or CI system:
 
 ```bash
-uv run --locked python -m ival.cli --verify-artifact runs/smoke \
+uv run --locked python -m reva.cli --verify-artifact runs/smoke \
   --trusted-manifest-sha256 <manifest-sha256>
 ```
 
@@ -71,7 +71,7 @@ Audit canonical RoboChallenge observe-only records without interpreting their
 opaque payloads or claiming task success:
 
 ```bash
-uv run --locked python -m ival.cli --robochallenge-records robochallenge.jsonl \
+uv run --locked python -m reva.cli --robochallenge-records robochallenge.jsonl \
   --robochallenge-output robochallenge-audit.json
 ```
 
@@ -98,7 +98,7 @@ Audit a completed frozen campaign directory without constructing or rerunning
 its model and simulator adapters:
 
 ```bash
-uv run --locked python -m ival.cli --audit-output runs/campaign
+uv run --locked python -m reva.cli --audit-output runs/campaign
 ```
 
 Use `--claim-type paired_comparison` or `--claim-type real_world_transfer` to
@@ -116,7 +116,7 @@ For a presentation-ready local demo, including the existing URDF Studio SO-101
 robot performing a cube-lift evaluation in MuJoCo, run:
 
 ```bash
-bash scripts/demo.sh /tmp/ival-demo --serve
+bash scripts/demo.sh /tmp/reva-demo --serve
 ```
 
 It executes four seeded URDF Studio episodes through its native MuJoCo runner,
@@ -130,14 +130,14 @@ dynamics; the upstream checkout remains unchanged. The control room binds the
 waypoint policy by SHA-256 and exposes its timed events for inspection.
 The default demo requests both MuJoCo and Genesis with the same frozen inputs;
 the simulator matrix reports evaluated, failed, or unavailable backends without
-turning missing runs into zero scores. IVal adds campaign accounting,
+turning missing runs into zero scores. REVA adds campaign accounting,
 robustness evidence, matched transfer, and the RoboChallenge transport audit,
 then serves the robot episode batch and evidence in the Eval Control Room at
 `http://127.0.0.1:8765`. The generated files
-under `/tmp/ival-demo` remain inspectable evidence artifacts. If that
+under `/tmp/reva-demo` remain inspectable evidence artifacts. If that
 directory already exists, the script creates a timestamped sibling rather than
-overwriting it. These fixtures demonstrate IVal's execution and audit
-boundaries; they are not physical-robot or model-quality results. IVal
+overwriting it. These fixtures demonstrate REVA's execution and audit
+boundaries; they are not physical-robot or model-quality results. REVA
 auto-detects a sibling `urdf-studio` checkout. Otherwise set
 `URDF_STUDIO_ROOT=/path/to/urdf-studio`. Limit or reorder the requested backends
 with `IVAL_SIMULATORS=mujoco`, `genesis`, or `mujoco,genesis`.
@@ -151,7 +151,7 @@ failure is a first-class result: each episode records cube displacement and
 lift, sampled contact and bilateral-retention frames, gripper target tracking,
 failure timing, source hashes, and a bounded root-cause classification.
 
-The ordinary rollout trace remains sampled at 50 Hz. IVal therefore
+The ordinary rollout trace remains sampled at 50 Hz. REVA therefore
 runs a deterministic diagnostic replay that inspects every 0.2 ms MuJoCo
 physics step (5 kHz) and retains every robot-cube contact: geom pair, world
 position and frame, penetration, friction, solver force and torque, cube pose
@@ -174,7 +174,7 @@ analyses, policy hashes, and the changed parameter are retained in
 
 ## Contributor verification
 
-Run the complete local CI-equivalent gate, including the full suite and
+Run the complete local CI-equrevaent gate, including the full suite and
 cross-version-friendly bytecode compilation, with:
 
 ```bash
@@ -189,7 +189,7 @@ contract and resume procedure, see [cluster execution](cluster-execution.md).
 Compile a declarative campaign before execution (the CLI input is JSON):
 
 ```bash
-uv run --locked python -m ival.cli --campaign-spec campaign.json --plan-output campaign-plan.json
+uv run --locked python -m reva.cli --campaign-spec campaign.json --plan-output campaign-plan.json
 ```
 
 An end-to-end frozen campaign example, including nested WorldEpisode identity
@@ -197,7 +197,7 @@ binding, is provided at
 `examples/campaigns/mock-worldepisode.json`:
 
 ```bash
-uv run --locked python -m ival.cli \
+uv run --locked python -m reva.cli \
   --campaign-spec examples/campaigns/mock-worldepisode.json \
   --execute-mock --workers 2 --audit \
   --output runs/mock-worldepisode
@@ -217,7 +217,7 @@ reproducibility, statistical, or timing evidence has not been supplied.
 The same gate can be run against an existing campaign directory:
 
 ```bash
-uv run --locked python -m ival.cli --audit-output runs/campaign \
+uv run --locked python -m reva.cli --audit-output runs/campaign \
   --acceptance-output runs/campaign/acceptance.json \
   --acceptance-evidence acceptance-evidence.json
 ```
@@ -233,7 +233,7 @@ Compiled mock campaigns can also be audited and packaged as immutable evidence
 bundles:
 
 ```bash
-uv run --locked python -m ival.cli --campaign-spec campaign.json --execute-mock \
+uv run --locked python -m reva.cli --campaign-spec campaign.json --execute-mock \
   --audit --archive-output runs/campaign.zip
 ```
 
@@ -241,7 +241,7 @@ Scenario archives can be independently verified before extraction or campaign
 scheduling:
 
 ```bash
-uv run --locked python -m ival.cli --verify-scenario-archive scenario.zip \
+uv run --locked python -m reva.cli --verify-scenario-archive scenario.zip \
   --trusted-scenario-archive-sha256 <archive-sha256>
 ```
 
@@ -249,21 +249,21 @@ When a campaign declares adapter IDs, execute those frozen registry entries
 directly (optional dependencies are checked before work is scheduled):
 
 ```bash
-uv run --locked python -m ival.cli --campaign-spec campaign.json --execute-registry
+uv run --locked python -m reva.cli --campaign-spec campaign.json --execute-registry
 ```
 
 Frozen attempts can be distributed across local lease-owning workers while
 retaining one append-only campaign ledger:
 
 ```bash
-uv run --locked python -m ival.cli --campaign-spec campaign.json --execute-mock --workers 4
+uv run --locked python -m reva.cli --campaign-spec campaign.json --execute-mock --workers 4
 ```
 
 The same command can publish the deterministic bundle to a local
 content-addressed artifact store:
 
 ```bash
-uv run --locked python -m ival.cli --campaign-spec campaign.json --execute-mock \
+uv run --locked python -m reva.cli --campaign-spec campaign.json --execute-mock \
   --artifact-store runs/artifacts
 ```
 
@@ -281,7 +281,7 @@ archive structure before extraction.
 The same flow is available from the CLI:
 
 ```bash
-uv run --locked python -m ival.cli --fetch-artifact SHA256 \
+uv run --locked python -m reva.cli --fetch-artifact SHA256 \
   --artifact-store runs/artifacts --extract-output runs/retrieved-campaign
 ```
 
@@ -294,10 +294,10 @@ The comparison also verifies that the frozen task, model, execution semantics,
 conditions, seeds, and initial-state identities match; backend declarations may
 differ because that is the transfer being measured.
 
-Model runtimes can also be kept outside IVal behind the registered
+Model runtimes can also be kept outside REVA behind the registered
 `external_command` adapter. It sends one JSON request per inference and
 requires a JSON response containing an `actions` array, preserving the model
-runtime's ownership while retaining IVal timing and evidence capture.
+runtime's ownership while retaining REVA timing and evidence capture.
 
 For loaded checkpoints and accelerator-backed policies, use the registered
 `persistent_external_command` adapter. It keeps one JSON-line process alive for
@@ -313,7 +313,7 @@ The process-backed registry path is runnable without a model package or
 simulator installation:
 
 ```bash
-uv run --locked python -m ival.cli \
+uv run --locked python -m reva.cli \
   --campaign-spec examples/campaigns/external-process.json \
   --execute-registry --workers 2 --audit \
   --output runs/external-process
@@ -329,7 +329,7 @@ LeRobot environment that owns the checkpoint. Set
 `IVAL_LEROBOT_CHECKPOINT_SHA256` to its reviewed lowercase SHA-256
 identity, and provide a frozen `observation.payload.policy_batch` mapping.
 Only the digest is returned in action metadata; the private checkpoint path is
-not copied into IVal evidence. IVal does not install LeRobot,
+not copied into REVA evidence. REVA does not install LeRobot,
 download weights, or infer image preprocessing; those choices remain owned by
 the external runtime and must be frozen in the campaign protocol.
 
@@ -337,7 +337,7 @@ An archived external SmolVLA/LIBERO deployment pilot can be checked without
 loading its weights or runtime:
 
 ```bash
-uv run --locked python -m ival.cli \
+uv run --locked python -m reva.cli \
   --smolvla-manifest /path/to/real_smolvla/manifest.json \
   --smolvla-summary /path/to/real_smolvla/results/summary.json \
   --smolvla-output smolvla-evidence.json
@@ -368,7 +368,7 @@ analysis.
 Matched transfer records can be analyzed and serialized directly:
 
 ```bash
-uv run --locked python -m ival.cli --transfer-records transfer.jsonl \
+uv run --locked python -m reva.cli --transfer-records transfer.jsonl \
   --transfer-output transfer-report.json
 ```
 
@@ -405,7 +405,7 @@ Missing outcomes remain explicit and cause a non-zero validation status.
 Counterfactual branch records can be summarized similarly:
 
 ```bash
-uv run --locked python -m ival.cli --recovery-records counterfactual-results.jsonl \
+uv run --locked python -m reva.cli --recovery-records counterfactual-results.jsonl \
   --recovery-output recovery-report.json
 ```
 
@@ -417,7 +417,7 @@ Counterfactual plans can be compiled directly from an independently loaded
 frozen campaign plan:
 
 ```bash
-uv run --locked python -m ival.cli \
+uv run --locked python -m reva.cli \
   --frozen-plan campaign-plan.json \
   --counterfactual-interventions interventions.json \
   --counterfactual-output counterfactual-plan.json
@@ -427,8 +427,8 @@ Serialized counterexample discovery and confirmation plans can be checked
 independently before use:
 
 ```bash
-uv run --locked python -m ival.cli --validate-search-plan search-plan.json
-uv run --locked python -m ival.cli --validate-confirmation-plan confirmation-plan.json
+uv run --locked python -m reva.cli --validate-search-plan search-plan.json
+uv run --locked python -m reva.cli --validate-confirmation-plan confirmation-plan.json
 ```
 
 Result artifacts can be audited independently against those frozen plans. The
@@ -446,10 +446,10 @@ It is evidence/protocol coverage only; the evaluator explicitly has no physics
 or official scoring authority.
 
 ```bash
-uv run --locked python -m ival.cli \
+uv run --locked python -m reva.cli \
   --search-results search-results.jsonl \
   --search-plan search-plan.json
-uv run --locked python -m ival.cli \
+uv run --locked python -m reva.cli \
   --confirmation-results confirmation-results.jsonl \
   --confirmation-plan confirmation-plan.json
 ```
@@ -457,7 +457,7 @@ uv run --locked python -m ival.cli \
 ## Trace parity
 
 Recorded policy traces can be used as a fail-closed parity reference. The
-`ival.integrations.TracePolicy` adapter binds each action to its expected
+`reva.integrations.TracePolicy` adapter binds each action to its expected
 observation digest, so altered preprocessing or state cannot silently reuse the
 recorded action sequence. `write_parity_report()` persists the policy and
 observation parity decisions as versioned JSON evidence.
@@ -473,10 +473,10 @@ repository root:
 
 ```bash
 sha256sum examples/traces/mock-reference-policy.jsonl
-uv run --locked python -m ival.cli \
+uv run --locked python -m reva.cli \
   --campaign-spec examples/campaigns/trace-policy.json \
-  --plan-output /tmp/ival-trace-plan.json \
-  --output /tmp/ival-trace-campaign \
+  --plan-output /tmp/reva-trace-plan.json \
+  --output /tmp/reva-trace-campaign \
   --execute-registry --audit
 ```
 
@@ -486,14 +486,14 @@ or benchmark performance.
 
 ## Refinement and refresh study imports
 
-For the Refinement/Refresh research campaign, IVal can import the
+For the Refinement/Refresh research campaign, REVA can import the
 upstream frozen plan directly instead of regenerating its schedule:
 
 ```bash
-uv run --locked python -m ival.cli \
+uv run --locked python -m reva.cli \
   --refinement-plan /path/to/pilot_evaluation.json \
   --refinement-run-id smolvla-pilot \
-  --plan-output /tmp/smolvla-pilot-ival-plan.json
+  --plan-output /tmp/smolvla-pilot-reva-plan.json
 ```
 
 The importer verifies the upstream `robopad.proposed_evaluation_plan` schema,
@@ -505,7 +505,7 @@ Callers with a separately frozen runtime envelope can pass it as
 `execution_protocol={"M": ..., "S": ..., "P": ...}` to
 `compile_refinement_source_plan()`. The envelope becomes part of the plan
 digest and can then be executed through the ordinary model/simulator registries.
-The CLI equivalent is `--refinement-execution-protocol protocol.json`; combine
+The CLI equrevaent is `--refinement-execution-protocol protocol.json`; combine
 it with `--execute-registry` only when the external adapters and their runtime
 dependencies are available.
 
@@ -513,10 +513,10 @@ The imported plan can also pass through the standard resumable executor with
 deterministic adapters for a protocol checkpoint:
 
 ```bash
-uv run --locked python -m ival.cli \
+uv run --locked python -m reva.cli \
   --refinement-plan /path/to/pilot_evaluation.json \
   --refinement-run-id smolvla-pilot \
-  --plan-output /tmp/smolvla-pilot-ival-plan.json \
+  --plan-output /tmp/smolvla-pilot-reva-plan.json \
   --execute-mock --workers 4 --output /tmp/smolvla-pilot-campaign --audit
 ```
 
@@ -527,7 +527,7 @@ Legacy outcome preflight artifacts can also be verified without launching
 training or evaluation:
 
 ```bash
-uv run --locked python -m ival.cli --outcome-plan /path/to/smolvla-outcome-plan.json
+uv run --locked python -m reva.cli --outcome-plan /path/to/smolvla-outcome-plan.json
 ```
 
 This checks the `smolvla_outcome_plan_v1` payload digest, cell identities,
@@ -541,7 +541,7 @@ from their evidence directories. Missing attempts stay missing, and malformed
 attempt summaries are reported as execution failures:
 
 ```bash
-uv run --locked python -m ival.cli \
+uv run --locked python -m reva.cli \
   --compare-campaign sim=runs/sim \
   --compare-campaign real=runs/real \
   --comparison-scenario-id arrange_fruits \
@@ -550,27 +550,27 @@ uv run --locked python -m ival.cli \
 
 The expanded foundation adds two opt-in layers:
 
-- `ival.conformance` checks observation validity, action representation,
+- `reva.conformance` checks observation validity, action representation,
   adapter timing capabilities, and scenario comparability at an integration
   boundary. It does not fabricate missing WorldEpisode metadata.
-- `ival.campaigns` freezes scenario/condition/seed/repetition matrices
+- `reva.campaigns` freezes scenario/condition/seed/repetition matrices
   and records results in an append-only ledger keyed by `run_id`, `pair_id`,
   `condition_id`, and `attempt_id`.
 
-These layers keep campaign methodology and evidence ownership in IVal
+These layers keep campaign methodology and evidence ownership in REVA
 while leaving physics engines, dataset conversion, hardware control, and
 official benchmark scoring in their source repositories.
 
 `CampaignExecutor` now makes a frozen plan authoritative: every planned
 attempt is executed once, committed with its plan digest, and skipped safely on
 resumption when already recorded. Existing partial attempt directories are
-refused rather than silently retried. Declarative `ival.campaign.v1`
+refused rather than silently retried. Declarative `reva.campaign.v1`
 maps compile into the same immutable plan format.
 
 An existing frozen plan can also be loaded directly for recovery or execution,
 without recompiling the source specification:
 
 ```bash
-uv run --locked python -m ival.cli --frozen-plan campaign-plan.json \
+uv run --locked python -m reva.cli --frozen-plan campaign-plan.json \
   --execute-mock --output runs/recovered --audit
 ```

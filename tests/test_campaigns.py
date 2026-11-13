@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from ival.campaigns import (
+from reva.campaigns import (
     AttemptLedger,
     CampaignPlanner,
     Intervention,

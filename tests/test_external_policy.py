@@ -4,8 +4,8 @@ import sys
 
 import pytest
 
-from ival.contracts import Observation, Timestamp
-from ival.external_policy import (
+from reva.contracts import Observation, Timestamp
+from reva.external_policy import (
     ExternalCommandPolicy,
     PersistentExternalCommandPolicy,
 )

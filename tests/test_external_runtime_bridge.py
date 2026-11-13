@@ -21,7 +21,7 @@ def test_lerobot_smolvla_bridge_fails_closed_without_checkpoint():
     )
     assert result.returncode == 2
     error = json.loads(result.stderr.splitlines()[0])
-    assert error["schema"] == "ival.policy_error.v1"
+    assert error["schema"] == "reva.policy_error.v1"
     assert error["code"] == "checkpoint_missing"
     assert "checkpoint" in error["error"].lower() or "runtime" in error["error"].lower()
 

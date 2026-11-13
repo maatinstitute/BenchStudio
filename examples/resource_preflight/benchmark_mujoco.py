@@ -1,4 +1,4 @@
-"""Run a genuine MuJoCo stepping baseline through IVal's existing runner.
+"""Run a genuine MuJoCo stepping baseline through REVA's existing runner.
 
 It measures the execution path, not VLA accuracy or physics parity with Isaac Sim.
 Install with: uv sync --locked --extra mujoco
@@ -12,10 +12,10 @@ import platform
 import time
 from pathlib import Path
 
-from ival.contracts import ActionChunk
-from ival.hardware import ResourceRequest, plan_execution_resources, probe_hardware
-from ival.integrations.mujoco import MujocoSimulator
-from ival.runner import RunConfig, run_episodes
+from reva.contracts import ActionChunk
+from reva.hardware import ResourceRequest, plan_execution_resources, probe_hardware
+from reva.integrations.mujoco import MujocoSimulator
+from reva.runner import RunConfig, run_episodes
 
 
 class ZeroMotorPolicy:
@@ -76,7 +76,7 @@ def main() -> int:
     steps = sum(episode["steps"] for episode in result["episodes"])
     simulated_seconds = steps * timestep
     print(json.dumps({
-        "schema": "ival.mujoco_resource_baseline.v1",
+        "schema": "reva.mujoco_resource_baseline.v1",
         "physics_backend": "mujoco",
         "mujoco_version": mujoco.__version__,
         "policy": "zero_motor_diagnostic_not_vla",

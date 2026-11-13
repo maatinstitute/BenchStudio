@@ -1,6 +1,6 @@
 import unittest
 
-from ival.analysis.outcome_eval import (
+from reva.analysis.outcome_eval import (
     boundary_outcome,
     first_attainment_step,
     inference_kwargs,

@@ -68,7 +68,7 @@ def prepare_variant(
     scenario_path.write_text(scenario_text, encoding="utf-8")
 
     condition = {
-        "schema": "ival.pilot_condition.v1",
+        "schema": "reva.pilot_condition.v1",
         "id": condition_id,
         "label": label,
         "changed_parameters": {

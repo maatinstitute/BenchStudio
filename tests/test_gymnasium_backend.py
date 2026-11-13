@@ -4,9 +4,9 @@ import pytest
 
 pytest.importorskip("gymnasium")
 
-from ival.contracts import ActionChunk  # noqa: E402
-from ival.integrations import GymnasiumSimulator  # noqa: E402
-from ival.runner import RunConfig, run_episodes  # noqa: E402
+from reva.contracts import ActionChunk  # noqa: E402
+from reva.integrations import GymnasiumSimulator  # noqa: E402
+from reva.runner import RunConfig, run_episodes  # noqa: E402
 
 
 class _CartPolePolicy:

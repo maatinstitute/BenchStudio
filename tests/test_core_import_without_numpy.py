@@ -16,11 +16,11 @@ class BlockNumpy(importlib.abc.MetaPathFinder):
         return None
 
 sys.meta_path.insert(0, BlockNumpy())
-import ival
-from ival.analysis import parity
-from ival.cli import main
+import reva
+from reva.analysis import parity
+from reva.cli import main
 
-assert parity.PolicyParityReport(0, 0, ()).equivalent
+assert parity.PolicyParityReport(0, 0, ()).equrevaent
 assert callable(main)
 """
     result = subprocess.run(

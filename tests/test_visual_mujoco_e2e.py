@@ -1,4 +1,4 @@
-"""Real MuJoCo camera -> mmap policy -> IVal episode, when GL is present.
+"""Real MuJoCo camera -> mmap policy -> REVA episode, when GL is present.
 
 This uses a diagnostic external policy, NOT a trained checkpoint or VLA score.
 """
@@ -12,12 +12,12 @@ import pytest
 mujoco = pytest.importorskip("mujoco")
 np = pytest.importorskip("numpy")
 
-from ival.external_policy import PersistentExternalCommandPolicy  # noqa: E402
-from ival.integrations.mujoco import MujocoSimulator  # noqa: E402
-from ival.runner import RunConfig, run_episodes  # noqa: E402
+from reva.external_policy import PersistentExternalCommandPolicy  # noqa: E402
+from reva.integrations.mujoco import MujocoSimulator  # noqa: E402
+from reva.runner import RunConfig, run_episodes  # noqa: E402
 
 _POLICY = '''import json, os, sys
-from ival.local_tensors import open_local_tensors
+from reva.local_tensors import open_local_tensors
 for line in sys.stdin:
     message = json.loads(line)
     operation = message["operation"]

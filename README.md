@@ -1,6 +1,6 @@
-# IVal
+# REVA
 
-IVal is a source-available evaluation library for testing whether
+REVA is a source-available evaluation library for testing whether
 embodied-AI results remain comparable across inference schedules, simulators,
 and physical execution paths.
 
@@ -12,13 +12,13 @@ safety limits, and physical robot execution.
 ## Research examples
 
 The [refinement-versus-refresh SmolVLA case study](examples/refinement_refresh/)
-shows how retained outcomes from a published study map to IVal's paired
+shows how retained outcomes from a published study map to REVA's paired
 analysis while preserving the boundary between historical evidence and new
-IVal-produced runs.
+REVA-produced runs.
 
 [**Outcome Recovery**](examples/outcome_recovery/README.md) shows how to
 specify matched nominal/intervention continuations with the existing
-IVal campaign APIs. It can freeze a study without a simulator and
+REVA campaign APIs. It can freeze a study without a simulator and
 accepts a caller-owned native evaluator for actual outcomes. It is a research
 application, **not** a separate execution framework or proof of recovery
 improvement. See [research application ownership](docs/research-applications.md).
@@ -33,18 +33,18 @@ uv run --locked ruff check .
 uv run --locked python -m pytest
 ```
 
-`uv sync --locked --extra dev` installs IVal editably with the locked
+`uv sync --locked --extra dev` installs REVA editably with the locked
 contributor dependencies.
 
 ### Author a paired study
 
 The Python authoring helpers reduce condition-matrix boilerplate while still
-compiling through IVal's strict campaign validator:
+compiling through REVA's strict campaign validator:
 
 ```python
 from pathlib import Path
 
-from ival import PairedStudy, condition_grid, simulator_environment
+from reva import PairedStudy, condition_grid, simulator_environment
 
 study = PairedStudy(
     name="refinement-refresh",
@@ -76,8 +76,8 @@ The dependency-free mock path checks the scheduler, evidence writer, and report
 pipeline without claiming simulator or model validity:
 
 ```bash
-uv run --locked python -m ival.cli --episodes 3 --output runs/smoke
-uv run --locked python -m ival.cli --verify-artifact runs/smoke
+uv run --locked python -m reva.cli --episodes 3 --output runs/smoke
+uv run --locked python -m reva.cli --verify-artifact runs/smoke
 ```
 
 `--verify-artifact` checks the standalone rollout bundle written by the simple
@@ -88,7 +88,7 @@ Inspect optional simulator and model-adapter availability before scheduling a
 real evaluation:
 
 ```bash
-uv run --locked python -m ival.cli --readiness
+uv run --locked python -m reva.cli --readiness
 ```
 
 ## Documentation
@@ -119,22 +119,22 @@ installed distribution, authoring types, and workflow security on every change.
 
 ## Citation
 
-If IVal supports your research, cite the version you used through
+If REVA supports your research, cite the version you used through
 GitHub's **Cite this repository** menu or [`CITATION.cff`](CITATION.cff). Also
 cite the benchmark, simulator, policy, and datasets that supply the scientific
 semantics of the evaluation.
 
 ```bibtex
-@software{ival_2026,
+@software{reva_2026,
   author  = {Tellez Fernandez, Alba Maria},
-  title   = {IVal: Evidence-aware evaluation infrastructure for embodied AI},
+  title   = {REVA: Evidence-aware evaluation infrastructure for embodied AI},
   year    = {2026},
   version = {0.1.0},
-  url     = {https://github.com/maatinstitute/IVal}
+  url     = {https://github.com/maatinstitute/REVA}
 }
 ```
 
-IVal includes utilities for reproducing the joint generation-effort and
+REVA includes utilities for reproducing the joint generation-effort and
 execution-prefix evaluation used in the companion paper, while keeping model
 and simulator outcome authority external. See the
 [worked example, paper, and paired outcomes](examples/refinement_refresh/).

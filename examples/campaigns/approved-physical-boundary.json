@@ -1,5 +1,5 @@
 {
-  "schema": "ival.campaign.v1",
+  "schema": "reva.campaign.v1",
   "experiment": {
     "name": "approved-physical-boundary",
     "protocol_revision": "v1",

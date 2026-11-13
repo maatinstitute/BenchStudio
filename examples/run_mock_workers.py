@@ -7,8 +7,8 @@ import argparse
 import json
 from pathlib import Path
 
-from ival.campaigns import CampaignExecutor, CampaignPlanner
-from ival.mock import MockPolicy, MockSimulator
+from reva.campaigns import CampaignExecutor, CampaignPlanner
+from reva.mock import MockPolicy, MockSimulator
 
 
 def main() -> int:
@@ -33,7 +33,7 @@ def main() -> int:
     result = executor.run_parallel(args.workers)
     audit = executor.audit()
     report = {
-        "schema": "ival.worker_checkpoint.v1",
+        "schema": "reva.worker_checkpoint.v1",
         "workers": args.workers,
         "planned": len(plan.attempts),
         "committed": len(result.committed_attempt_ids),

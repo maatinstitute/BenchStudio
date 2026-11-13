@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import pytest
 
-from ival.adapters import default_registry
-from ival.contracts import ActionChunk
-from ival.runner import RunConfig, run_episodes
+from reva.adapters import default_registry
+from reva.contracts import ActionChunk
+from reva.runner import RunConfig, run_episodes
 
 
 class _ZeroMuJoCoPolicy:

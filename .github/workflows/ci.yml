@@ -1,4 +1,4 @@
-name: IVal CI
+name: REVA CI
 
 permissions: {}
 
@@ -83,15 +83,15 @@ jobs:
         with:
           enable-cache: true
       - run: uv build
-      - run: uv venv --python 3.10 "${RUNNER_TEMP}/ival-wheel"
+      - run: uv venv --python 3.10 "${RUNNER_TEMP}/reva-wheel"
       - run: >-
           uv pip install
-          --python "${RUNNER_TEMP}/ival-wheel/bin/python"
+          --python "${RUNNER_TEMP}/reva-wheel/bin/python"
           dist/*.whl
       - run: >-
-          "${RUNNER_TEMP}/ival-wheel/bin/python"
+          "${RUNNER_TEMP}/reva-wheel/bin/python"
           scripts/smoke_installed_package.py
-      - run: "${RUNNER_TEMP}/ival-wheel/bin/ival --help"
+      - run: "${RUNNER_TEMP}/reva-wheel/bin/reva --help"
 
   workflow-security:
     name: Audit GitHub Actions

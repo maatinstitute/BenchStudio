@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from ival.campaigns import CampaignPlanner, load_frozen_campaign_plan, shard_attempt_ids
+from reva.campaigns import CampaignPlanner, load_frozen_campaign_plan, shard_attempt_ids
 
 
 def _plan():

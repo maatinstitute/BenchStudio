@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from ival.integrations import (
+from reva.integrations import (
     CameraCalibration,
     calibration_from_available_camera,
     calibrations_from_session_request,

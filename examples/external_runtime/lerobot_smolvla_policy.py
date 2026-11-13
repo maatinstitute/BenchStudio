@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""LeRobot-owned SmolVLA process for IVal's JSON-line policy bridge.
+"""LeRobot-owned SmolVLA process for REVA's JSON-line policy bridge.
 
-This file intentionally lives outside the IVal package. Run it from a
+This file intentionally lives outside the REVA package. Run it from a
 LeRobot environment with ``torch``, ``transformers``, and a local checkpoint.
-The IVal observation payload must contain a JSON-serializable
+The REVA observation payload must contain a JSON-serializable
 ``policy_batch`` mapping whose values are numeric arrays accepted by the
 checkpoint's LeRobot processor/configuration. Image tensors may be represented
 as nested channel-first or channel-last arrays after the caller's preprocessing
@@ -28,7 +28,7 @@ from typing import Any
 def _error(message: str, *, code: str = "external_runtime_error") -> None:
     print(
         json.dumps(
-            {"schema": "ival.policy_error.v1", "code": code, "error": message}
+            {"schema": "reva.policy_error.v1", "code": code, "error": message}
         ),
         file=sys.stderr,
     )
@@ -133,8 +133,8 @@ def _predict(request: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("observation.payload.policy_batch is required")
     tensor_root = os.environ.get("IVAL_LOCAL_TENSOR_ROOT")
     if tensor_root:
-        # Only the trusted local IVal process may publish descriptors.
-        from ival.local_tensors import open_local_tensors
+        # Only the trusted local REVA process may publish descriptors.
+        from reva.local_tensors import open_local_tensors
 
         input_context = open_local_tensors(payload["policy_batch"], root=tensor_root)
     else:
@@ -150,7 +150,7 @@ def _predict(request: dict[str, Any]) -> dict[str, Any]:
         values = action.detach().cpu().tolist()
         del batch
         del action
-    # LeRobot normally returns [batch, action_dim]; IVal consumes a
+    # LeRobot normally returns [batch, action_dim]; REVA consumes a
     # sequence of actions and applies its frozen action-prefix policy.
     if isinstance(values, list) and len(values) == 1 and isinstance(values[0], list):
         actions = [values[0]]
@@ -176,9 +176,9 @@ for line in sys.stdin:
         request = json.loads(line)
         if (
             not isinstance(request, dict)
-            or request.get("schema") != "ival.policy_request.v1"
+            or request.get("schema") != "reva.policy_request.v1"
         ):
-            raise ValueError("unsupported IVal policy request schema")
+            raise ValueError("unsupported REVA policy request schema")
         operation = request.get("operation")
         if operation == "reset":
             seed = request.get("seed")
@@ -199,7 +199,7 @@ for line in sys.stdin:
         print(
             json.dumps(
                 {
-                    "schema": "ival.policy_error.v1",
+                    "schema": "reva.policy_error.v1",
                     "error": f"{type(exc).__name__}: {exc}",
                 }
             ),

@@ -1,4 +1,4 @@
-from ival.analysis import (
+from reva.analysis import (
     ClaimType,
     OutcomeRecord,
     TimingProvenance,
@@ -6,7 +6,7 @@ from ival.analysis import (
     audit_evaluation_acceptance,
     audit_execution_overhead,
 )
-from ival.campaigns import CampaignPlanner
+from reva.campaigns import CampaignPlanner
 
 
 def _complete_audit():
@@ -60,4 +60,4 @@ def test_acceptance_report_passes_when_each_gate_has_explicit_evidence():
         execution_overhead=overhead,
     )
     assert report.passed is True
-    assert report.to_dict()["schema"] == "ival_evaluation_acceptance_v1"
+    assert report.to_dict()["schema"] == "reva_evaluation_acceptance_v1"

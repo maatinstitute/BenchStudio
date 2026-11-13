@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from ival.integrations import FixedReference
+from reva.integrations import FixedReference
 
 
 def _controller(held):

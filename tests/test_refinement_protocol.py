@@ -4,7 +4,7 @@ import io
 import numpy as np
 import pytest
 
-from ival.analysis.refinement_protocol import (
+from reva.analysis.refinement_protocol import (
     ATOL,
     CONDITIONS,
     RTOL,
@@ -22,7 +22,7 @@ from ival.analysis.refinement_protocol import (
     select_schedule,
     sha,
 )
-from ival.campaigns.refinement_plan import make_plan
+from reva.campaigns.refinement_plan import make_plan
 
 
 def test_schedule_and_noise_identity_are_source_compatible():

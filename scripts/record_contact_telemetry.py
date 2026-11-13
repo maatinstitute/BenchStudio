@@ -207,7 +207,7 @@ def record(
                 }
             write_record(
                 {
-                    "schema": "ival.mujoco_contact_sample.v1",
+                    "schema": "reva.mujoco_contact_sample.v1",
                     "t_s": t_s,
                     "physics_step": physics_steps,
                     "control_step": control_step,
@@ -227,7 +227,7 @@ def record(
 
     backend.step = instrumented_step
     try:
-        with tempfile.TemporaryDirectory(prefix="ival-contact-replay-") as temp_dir:
+        with tempfile.TemporaryDirectory(prefix="reva-contact-replay-") as temp_dir:
             replay_result = run_episode(
                 scenario=scenario,
                 manifest=manifest,
@@ -249,7 +249,7 @@ def record(
         final_position_error_m = math.sqrt(
             sum((float(a) - float(b)) ** 2 for a, b in zip(reference_position, replay_position))
         )
-    equivalent = (
+    equrevaent = (
         replay_report.get("success") == reference_report.get("success")
         and replay_report.get("stop_reason") == reference_report.get("stop_reason")
         and replay_report.get("steps") == reference_report.get("steps")
@@ -257,7 +257,7 @@ def record(
         and final_position_error_m <= 1e-9
     )
     summary = {
-        "schema": "ival.mujoco_contact_telemetry_summary.v1",
+        "schema": "reva.mujoco_contact_telemetry_summary.v1",
         "episode_index": manifest.episode_index,
         "seed": manifest.seed,
         "capture": {
@@ -285,8 +285,8 @@ def record(
             "maximum_penetration_m": peak_penetration_m,
             "robot_contact_geoms": sorted(contact_geom_names),
         },
-        "equivalence": {
-            "verified": equivalent,
+        "equrevaence": {
+            "verified": equrevaent,
             "success_matches": replay_report.get("success") == reference_report.get("success"),
             "stop_reason_matches": replay_report.get("stop_reason") == reference_report.get("stop_reason"),
             "steps_match": replay_report.get("steps") == reference_report.get("steps"),
@@ -327,9 +327,9 @@ def main() -> int:
     )
     print(
         f"contact_telemetry={args.output} records={summary['capture']['contact_records']} "
-        f"equivalent={summary['equivalence']['verified']}"
+        f"equrevaent={summary['equrevaence']['verified']}"
     )
-    return 0 if summary["equivalence"]["verified"] else 2
+    return 0 if summary["equrevaence"]["verified"] else 2
 
 
 if __name__ == "__main__":

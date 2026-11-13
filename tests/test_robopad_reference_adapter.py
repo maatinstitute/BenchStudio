@@ -3,7 +3,7 @@ from types import SimpleNamespace as NS
 import numpy as np
 import pytest
 
-from ival.integrations import build_goals, extract_geometry
+from reva.integrations import build_goals, extract_geometry
 
 
 def _fixture():

@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from ival.integrations import (
+from reva.integrations import (
     WorldBridgeEventType,
     WorldBridgeRolloutMode,
     parse_worldd_ack_payload,
@@ -79,7 +79,7 @@ def test_session_parser_converts_wire_timestamps_and_preserves_transition_mode()
                     "session_id": "s",
                     "transition_type": "transition.joint_command",
                     "timestamp_ns": 2_000_000,
-                    "source": "ival",
+                    "source": "reva",
                     "rollout_mode": "counterfactual",
                     "scenario_time_before_ms": 9,
                     "scenario_time_after_ms": 10,

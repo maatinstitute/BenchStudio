@@ -194,12 +194,12 @@ def analyze(
     max_lift = max(0.0, max_height - initial_position[2])
     telemetry_capture = contact_summary.get("capture", {})
     telemetry_contact = contact_summary.get("contact", {})
-    telemetry_equivalence = contact_summary.get("equivalence", {})
+    telemetry_equrevaence = contact_summary.get("equrevaence", {})
     telemetry_available = (
         isinstance(telemetry_capture, dict)
         and isinstance(telemetry_contact, dict)
-        and isinstance(telemetry_equivalence, dict)
-        and telemetry_equivalence.get("verified") is True
+        and isinstance(telemetry_equrevaence, dict)
+        and telemetry_equrevaence.get("verified") is True
     )
     first_contact_ms = contacts[0]["t_ms"] if contacts else None
     if telemetry_available and telemetry_contact.get("first_contact_s") is not None:
@@ -245,7 +245,7 @@ def analyze(
         explanation = "The cube lifted but did not satisfy the retained stability requirement."
 
     return {
-        "schema": "ival.contact_grasp_analysis.v1",
+        "schema": "reva.contact_grasp_analysis.v1",
         "episode_index": manifest.episode_index,
         "seed": manifest.seed,
         "backend": "mujoco",

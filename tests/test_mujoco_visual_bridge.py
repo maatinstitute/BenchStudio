@@ -6,7 +6,7 @@ import pytest
 mujoco = pytest.importorskip("mujoco")
 np = pytest.importorskip("numpy")
 
-from ival.integrations.mujoco import MujocoSimulator  # noqa: E402
+from reva.integrations.mujoco import MujocoSimulator  # noqa: E402
 
 
 def test_mujoco_camera_observations_have_rgb_and_state(tmp_path):

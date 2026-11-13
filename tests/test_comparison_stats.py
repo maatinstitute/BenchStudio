@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 
-from ival.campaigns import compile_campaign_spec
-from ival.compare import build_campaign_comparison_report, build_comparison_report
+from reva.campaigns import compile_campaign_spec
+from reva.compare import build_campaign_comparison_report, build_comparison_report
 
 
 def test_comparison_exposes_scheduled_and_completed_denominators():
@@ -54,7 +54,7 @@ def test_comparison_separates_execution_failures_from_task_outcomes():
 def test_campaign_comparison_loads_frozen_attempts_in_plan_order(tmp_path):
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "compare"},
             "task": {"task_id": "task"},
             "environments": [{"id": "sim", "kind": "simulator"}],
@@ -109,7 +109,7 @@ def test_campaign_comparison_preserves_malformed_attempts_as_failures(tmp_path):
 def test_comparison_rejects_mismatched_frozen_episode_identity(tmp_path):
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "identity-check"},
             "task": {"task_id": "task"},
             "environments": [{"id": "sim", "kind": "simulator"}],
@@ -168,7 +168,7 @@ def test_comparison_does_not_count_non_boolean_success_as_completed():
 def test_campaign_comparison_adds_transfer_fidelity_for_named_backends(tmp_path):
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "transfer-compare"},
             "task": {"task_id": "task"},
             "environments": [{"id": "sim", "kind": "simulator"}],
@@ -202,7 +202,7 @@ def test_campaign_comparison_adds_transfer_fidelity_for_named_backends(tmp_path)
         transfer_backends=("simulation", "physical"),
     )
     transfer = report["transfer_fidelity"]
-    assert transfer["schema"] == "ival_transfer_fidelity_report_v1"
+    assert transfer["schema"] == "reva_transfer_fidelity_report_v1"
     assert transfer["success_gap_physical_minus_simulation"] == -1.0
 
 
@@ -210,7 +210,7 @@ def test_campaign_comparison_rejects_mismatched_frozen_semantics(tmp_path):
     def spec(name, seed):
         return compile_campaign_spec(
             {
-                "schema": "ival.campaign.v1",
+                "schema": "reva.campaign.v1",
                 "experiment": {"name": name},
                 "model": {"adapter": "mock"},
                 "task": {"task_id": "task", "task_revision": "v1"},

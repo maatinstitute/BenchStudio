@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from ival.integrations import IsaacLabSimulator
+from reva.integrations import IsaacLabSimulator
 
 
 class _FakeIsaacEnv:

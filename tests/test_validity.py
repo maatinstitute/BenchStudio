@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from ival.validity import BenchmarkValidityRecord, audit_benchmark_validity
+from reva.validity import BenchmarkValidityRecord, audit_benchmark_validity
 
 
 def _record(**overrides):

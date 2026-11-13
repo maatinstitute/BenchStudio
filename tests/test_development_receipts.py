@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from ival.analysis.development_receipts import (
+from reva.analysis.development_receipts import (
     build_development_receipt,
     read_development_receipt,
     validate_development_receipt,

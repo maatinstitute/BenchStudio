@@ -3,8 +3,8 @@ import hashlib
 import numpy as np
 import pytest
 
-from ival.integrations.alpabridge_contract import prediction_trajectory_xy
-from ival.integrations.smolvla_driving_contract import SMOLVLA_DRIVING_SCHEMA_VERSION, TARGET_REPRESENTATION, trajectory_to_model_prediction, validate_manifest_row
+from reva.integrations.alpabridge_contract import prediction_trajectory_xy
+from reva.integrations.smolvla_driving_contract import SMOLVLA_DRIVING_SCHEMA_VERSION, TARGET_REPRESENTATION, trajectory_to_model_prediction, validate_manifest_row
 
 
 def _sha(value):

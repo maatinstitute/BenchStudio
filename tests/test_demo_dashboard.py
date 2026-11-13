@@ -1,6 +1,6 @@
 import json
 
-from ival.demo_dashboard import build_demo_dashboard
+from reva.demo_dashboard import build_demo_dashboard
 
 
 def _write_json(path, value):
@@ -106,7 +106,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     _write_json(
         evidence / "urdf-studio" / "simulator-debug.json",
         {
-            "schema": "ival.simulator_debug.v1",
+            "schema": "reva.simulator_debug.v1",
             "shared_parameters": {
                 "physics_timestep_s": 0.0002,
                 "control_hz": 50.0,
@@ -179,7 +179,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
             / f"episode-{episode_index}"
             / "contact-analysis.json",
             {
-                "schema": "ival.contact_grasp_analysis.v1",
+                "schema": "reva.contact_grasp_analysis.v1",
                 "episode_index": episode_index,
                 "seed": seed,
                 "backend": "mujoco",
@@ -226,7 +226,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
                         "tangential_impulse_ns": 0.0081,
                         "maximum_penetration_m": 0.00031,
                     },
-                    "equivalence": {"verified": True},
+                    "equrevaence": {"verified": True},
                 },
                 "limitations": [
                     "Contact reconstruction uses 50 Hz retained state snapshots; impacts shorter than 20 ms may occur between frames.",
@@ -238,7 +238,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     _write_json(
         evidence / "urdf-studio" / "recovery.json",
         {
-            "schema": "ival.robot_recovery.v1",
+            "schema": "reva.robot_recovery.v1",
             "backend": "mujoco",
             "episode_index": 2,
             "seed": 43,
@@ -292,7 +292,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     _write_json(
         evidence / "urdf-studio" / "study-manifest.json",
         {
-            "schema": "ival.study_manifest.v1",
+            "schema": "reva.study_manifest.v1",
             "study_id": "so101-cube-grasp-cross-sim-v1",
             "episode_count": 100,
             "manifest_sha256": "d" * 64,
@@ -315,7 +315,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
         encoding="utf-8"
     )
 
-    assert "IVal — Evaluation Workbench" in workbench
+    assert "REVA — Evaluation Workbench" in workbench
     assert "100 EPISODES × 3 SIMULATORS" in workbench
     assert "Coverage matrix" in workbench
     assert workbench.count('class="coverage-row"') == 100
@@ -362,7 +362,7 @@ def test_demo_dashboard_renders_artifact_values_and_urdf_studio_theme(tmp_path):
     assert "100 ms · 10 Hz" in workbench
     assert "not calibrated hardware force" in workbench
 
-    assert "IVal — Study control room" in document
+    assert "REVA — Study control room" in document
     assert "location.replace('./')" in document
     assert "Batch authorization" in document
     assert "Scientific verdict" not in document

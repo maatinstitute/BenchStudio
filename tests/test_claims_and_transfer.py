@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from ival import ModelCapabilityProfile
-from ival.analysis import (
+from reva import ModelCapabilityProfile
+from reva.analysis import (
     ClaimType,
     ResourceBudget,
     audit_resources,

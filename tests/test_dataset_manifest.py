@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from ival.analysis.dataset_manifest import resolve_manifest
+from reva.analysis.dataset_manifest import resolve_manifest
 
 
 def digest(path):

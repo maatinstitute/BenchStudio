@@ -9,7 +9,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from ival.analysis import summarize_paired_outcomes
+from reva.analysis import summarize_paired_outcomes
 
 HERE = Path(__file__).resolve().parent
 
@@ -57,7 +57,7 @@ def reproduce() -> dict[str, Any]:
             "comparator_wins": paired.wins_a,
             "ties": paired.ties,
             "success_difference": paired.success_gap_b_minus_a,
-            "ival_exact_interval": list(paired.success_gap_confidence_interval or ()),
+            "reva_exact_interval": list(paired.success_gap_confidence_interval or ()),
             "paper_descriptive_interval": expected["prespecified_primary_comparison"][
                 "descriptive_interval"
             ],

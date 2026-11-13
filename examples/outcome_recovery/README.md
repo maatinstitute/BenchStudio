@@ -3,7 +3,7 @@
 **Question:** After a fixed action prefix, does an interactive policy recover from a
 controlled perturbation compared with the matched nominal continuation?
 
-This example demonstrates **how to express that study with IVal's existing
+This example demonstrates **how to express that study with REVA's existing
 campaign and counterfactual APIs**, not a second simulator, policy runner,
 result format, or standalone scientific framework. The public example contains
 no private checkpoint, episode traces, training data, simulator assets, or
@@ -39,7 +39,7 @@ and **frozen protocol** as keyword arguments. It **must** return a
 For example:
 
 ```python
-from ival.campaigns import CounterfactualEvaluation
+from reva.campaigns import CounterfactualEvaluation
 
 def evaluate(cell, *, attempt, protocol):
     # Use attempt.task_seed, attempt.policy_seed, and the pinned
@@ -85,10 +85,10 @@ first define an explicit repeated-control policy and statistical unit.
 
 ## Ownership
 
-IVal owns frozen campaign identity, branch ordering, evidence serialization,
+REVA owns frozen campaign identity, branch ordering, evidence serialization,
 and paired-contract checks. The **native evaluator belongs to the scientific
 study** until there is a broadly useful upstream or shared integration to
-reuse. Do not copy source-specific research controllers into the IVal
+reuse. Do not copy source-specific research controllers into the REVA
 core. This example is the destination for study-specific recipes, while
 immutable historical results and manuscripts remain in their original
 research repository.

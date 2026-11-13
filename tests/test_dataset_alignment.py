@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ival.conformance import (
+from reva.conformance import (
     AlignmentEndpoint,
     AlignmentJointRule,
     AlignmentMapping,

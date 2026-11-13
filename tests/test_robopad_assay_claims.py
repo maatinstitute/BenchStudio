@@ -1,7 +1,7 @@
 
 import pytest
 
-import ival.campaigns.robopad_assay_claims as claims
+import reva.campaigns.robopad_assay_claims as claims
 
 
 @pytest.fixture

@@ -12,10 +12,10 @@ import re
 import sys
 from pathlib import Path
 
-from ival.external_policy import PersistentExternalCommandPolicy
-from ival.hardware import ResourceRequest, plan_execution_resources, probe_hardware
-from ival.integrations.mujoco import MujocoSimulator
-from ival.runner import RunConfig, run_episodes
+from reva.external_policy import PersistentExternalCommandPolicy
+from reva.hardware import ResourceRequest, plan_execution_resources, probe_hardware
+from reva.integrations.mujoco import MujocoSimulator
+from reva.runner import RunConfig, run_episodes
 
 
 def _callback(path: str):

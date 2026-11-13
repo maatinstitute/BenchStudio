@@ -1,14 +1,14 @@
 import json
 
-from ival.analysis import ClaimType, audit_campaign
-from ival.campaigns import CampaignExecutor, compile_campaign_spec
-from ival.mock import MockPolicy, MockSimulator
+from reva.analysis import ClaimType, audit_campaign
+from reva.campaigns import CampaignExecutor, compile_campaign_spec
+from reva.mock import MockPolicy, MockSimulator
 
 
 def test_frozen_campaign_ci_smoke_is_end_to_end(tmp_path):
     plan = compile_campaign_spec(
         {
-            "schema": "ival.campaign.v1",
+            "schema": "reva.campaign.v1",
             "experiment": {"name": "ci-smoke"},
             "model": {"adapter": "mock"},
             "task": {"task_id": "mock-task"},
