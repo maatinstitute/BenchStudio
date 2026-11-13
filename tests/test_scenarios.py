@@ -5,8 +5,8 @@ import zipfile
 
 import pytest
 
-from benchstudio.campaigns import CampaignPlanner
-from benchstudio.scenarios import (
+from ival.campaigns import CampaignPlanner
+from ival.scenarios import (
     ScenarioArchiveError,
     ScenarioPack,
     build_scenario_archive,

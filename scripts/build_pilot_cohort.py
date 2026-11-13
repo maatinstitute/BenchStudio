@@ -67,7 +67,7 @@ def build_cohort(run_root: Path, output: Path) -> dict:
             "analysis_path": str(analysis_path.relative_to(run_root)),
         })
     payload = {
-        "schema": "benchstudio.pilot_cohort.v1",
+        "schema": "ival.pilot_cohort.v1",
         "purpose": "parameter and instrumentation validation; not a population estimate",
         "entries": entries,
     }

@@ -2,7 +2,7 @@ import copy
 import tempfile
 import unittest
 
-from benchstudio.campaigns.outcome_schedule import (
+from ival.campaigns.outcome_schedule import (
     _digest,
     _payload,
     build_schedule,
@@ -37,7 +37,7 @@ def rows():
 
 class OutcomeScheduleTests(unittest.TestCase):
     def test_robopad_source_golden_vector_is_byte_identical(self):
-        """Keep the BenchStudio port aligned with RoboPAD's frozen algorithm."""
+        """Keep the IVal port aligned with RoboPAD's frozen algorithm."""
         receipt = build_schedule(rows(), seed=123, updates=4)
         # Generated from RoboPAD experiments/outcome_schedule.py at the source
         # revision recorded in docs/source-attribution.md.  This is a parity

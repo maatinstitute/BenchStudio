@@ -1,6 +1,6 @@
 import unittest
 
-from benchstudio.analysis.metadata_conditioning import (
+from ival.analysis.metadata_conditioning import (
     condition_prompt,
     format_metadata,
     validate_metadata,

@@ -207,7 +207,7 @@ def record(
                 }
             write_record(
                 {
-                    "schema": "benchstudio.mujoco_contact_sample.v1",
+                    "schema": "ival.mujoco_contact_sample.v1",
                     "t_s": t_s,
                     "physics_step": physics_steps,
                     "control_step": control_step,
@@ -227,7 +227,7 @@ def record(
 
     backend.step = instrumented_step
     try:
-        with tempfile.TemporaryDirectory(prefix="benchstudio-contact-replay-") as temp_dir:
+        with tempfile.TemporaryDirectory(prefix="ival-contact-replay-") as temp_dir:
             replay_result = run_episode(
                 scenario=scenario,
                 manifest=manifest,
@@ -257,7 +257,7 @@ def record(
         and final_position_error_m <= 1e-9
     )
     summary = {
-        "schema": "benchstudio.mujoco_contact_telemetry_summary.v1",
+        "schema": "ival.mujoco_contact_telemetry_summary.v1",
         "episode_index": manifest.episode_index,
         "seed": manifest.seed,
         "capture": {

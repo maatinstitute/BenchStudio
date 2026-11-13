@@ -1,14 +1,14 @@
 cff-version: 1.2.0
-message: "If you use BenchStudio, please cite this software and the benchmark, policy, simulator, and datasets used in your evaluation."
-title: "BenchStudio: Evidence-aware evaluation infrastructure for embodied AI"
+message: "If you use IVal, please cite this software and the benchmark, policy, simulator, and datasets used in your evaluation."
+title: "IVal: Evidence-aware evaluation infrastructure for embodied AI"
 type: software
 version: 0.1.0
 date-released: 2026-11-11
 authors:
   - family-names: "Tellez Fernandez"
     given-names: "Alba Maria"
-repository-code: "https://github.com/maatinstitute/BenchStudio"
-url: "https://github.com/maatinstitute/BenchStudio"
+repository-code: "https://github.com/maatinstitute/IVal"
+url: "https://github.com/maatinstitute/IVal"
 license: "LicenseRef-Research-Use-1.1"
 keywords:
   - evaluation

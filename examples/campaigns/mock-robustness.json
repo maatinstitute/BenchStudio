@@ -1,5 +1,5 @@
 {
-  "schema": "benchstudio.campaign.v1",
+  "schema": "ival.campaign.v1",
   "experiment": {
     "name": "mock-robustness-checkpoint",
     "protocol_revision": "mock-v1",
@@ -11,7 +11,7 @@
     "checkpoint": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
   },
   "task": {
-    "benchmark": "benchstudio-mock",
+    "benchmark": "ival-mock",
     "task_id": "pick-place-mock",
     "task_revision": "mock-v1",
     "outcome_source": "declared-mock"

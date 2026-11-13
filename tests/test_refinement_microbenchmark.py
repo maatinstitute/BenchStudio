@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from benchstudio.analysis.refinement_microbenchmark import validate_microbenchmark
+from ival.analysis.refinement_microbenchmark import validate_microbenchmark
 
 
 def test_microbenchmark_validator_reconciles_pairs_trials_and_artifact(tmp_path):

@@ -1,7 +1,7 @@
-from benchstudio.inference_smoke import measure_inference
+from ival.inference_smoke import measure_inference
 
 def test_measure_inference_records_success(monkeypatch):
-    monkeypatch.setattr("benchstudio.inference_smoke._gpu_free", lambda _=0: 123)
+    monkeypatch.setattr("ival.inference_smoke._gpu_free", lambda _=0: 123)
     result = measure_inference(lambda: {"action": 1})
     assert result.status == "completed"
     assert result.output_type == "dict"
@@ -10,7 +10,7 @@ def test_measure_inference_records_success(monkeypatch):
     assert result.elapsed_ns >= 0
 
 def test_measure_inference_records_failure(monkeypatch):
-    monkeypatch.setattr("benchstudio.inference_smoke._gpu_free", lambda _=0: None)
+    monkeypatch.setattr("ival.inference_smoke._gpu_free", lambda _=0: None)
     result = measure_inference(lambda: (_ for _ in ()).throw(RuntimeError("boom")))
     assert result.status == "failed"
     assert "boom" in result.error

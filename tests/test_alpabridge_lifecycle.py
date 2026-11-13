@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from benchstudio.integrations import (
+from ival.integrations import (
     SyntheticLifecycleService,
     run_synthetic_lifecycle_cycle,
 )

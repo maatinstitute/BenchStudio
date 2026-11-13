@@ -1,6 +1,6 @@
 # Cluster execution
 
-BenchStudio runs a cluster campaign from one frozen plan. Scheduler jobs select
+IVal runs a cluster campaign from one frozen plan. Scheduler jobs select
 disjoint deterministic shards while writing evidence to one shared campaign
 directory. The plan digest, attempt identities, runtime receipts, leases, and
 append-only ledger remain identical to a local run.
@@ -11,7 +11,7 @@ append-only ledger remain identical to a local run.
   advisory locks are reliable on every worker (for example, a correctly
   configured Lustre, GPFS, or NFS mount).
 - Install the same locked environment on every node with `uv sync --locked`.
-- Let the scheduler set GPU visibility. BenchStudio validates declared resource
+- Let the scheduler set GPU visibility. IVal validates declared resource
   requirements but does not allocate GPUs.
 - Use one shard per scheduler task. A retried task uses the same shard index and
   resumes from committed evidence.
@@ -35,11 +35,11 @@ needs a ReadWriteMany volume with working POSIX locks.
 The checked-in `Dockerfile.cluster` builds a pinned, nonroot core worker:
 
 ```bash
-docker build --file Dockerfile.cluster --tag benchstudio:cluster .
-docker run --rm benchstudio:cluster --help
+docker build --file Dockerfile.cluster --tag ival:cluster .
+docker run --rm ival:cluster --help
 ```
 
-Use `--build-arg BENCHSTUDIO_EXTRA=mujoco` (or another declared optional extra)
+Use `--build-arg IVAL_EXTRA=mujoco` (or another declared optional extra)
 when that backend belongs in the worker. VLA checkpoints, CUDA libraries, and
 simulator assets are model-specific; extend this image with their pinned native
 runtime instead of adding unverified dependencies at job startup.
@@ -47,7 +47,7 @@ runtime instead of adding unverified dependencies at job startup.
 ## Freeze before scheduling
 
 ```bash
-uv run --locked python -m benchstudio.cli \
+uv run --locked python -m ival.cli \
   --campaign-spec campaign.json \
   --plan-output /shared/study/campaign-plan.json
 ```
@@ -56,7 +56,7 @@ Do not compile the specification independently in each job. Every job loads the
 same serialized plan:
 
 ```bash
-uv run --locked python -m benchstudio.cli \
+uv run --locked python -m ival.cli \
   --frozen-plan /shared/study/campaign-plan.json \
   --execute-registry \
   --shard-index "$SHARD_INDEX" \
@@ -80,7 +80,7 @@ campaign-wide missing counts.
 #SBATCH --mem=32G
 set -euo pipefail
 
-uv run --locked python -m benchstudio.cli \
+uv run --locked python -m ival.cli \
   --frozen-plan /shared/study/campaign-plan.json \
   --execute-registry \
   --shard-index "$SLURM_ARRAY_TASK_ID" \
@@ -99,7 +99,7 @@ pass the completion index explicitly:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: benchstudio-study
+  name: ival-study
 spec:
   completions: 8
   parallelism: 8
@@ -109,8 +109,8 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: worker
-          image: your-registry/benchstudio:locked
-          command: ["benchstudio-run"]
+          image: your-registry/ival:locked
+          command: ["ival"]
           args:
             - --frozen-plan
             - /shared/study/campaign-plan.json
@@ -142,6 +142,6 @@ spec:
 After all tasks finish, audit the complete directory:
 
 ```bash
-uv run --locked python -m benchstudio.cli \
+uv run --locked python -m ival.cli \
   --audit-output /shared/study/run
 ```

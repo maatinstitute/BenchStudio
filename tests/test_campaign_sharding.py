@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from benchstudio.campaigns import CampaignPlanner, load_frozen_campaign_plan, shard_attempt_ids
+from ival.campaigns import CampaignPlanner, load_frozen_campaign_plan, shard_attempt_ids
 
 
 def _plan():

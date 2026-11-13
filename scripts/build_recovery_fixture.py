@@ -51,7 +51,7 @@ def prepare_probe(source: Path, output: Path, approach_duration_s: float) -> Non
             waypoint["time_s"] = round(float(waypoint["time_s"]) + shift_s, 6)
     policy_path.write_text(json.dumps(policy, indent=2) + "\n", encoding="utf-8")
     change = {
-        "schema": "benchstudio.robot_intervention.v1",
+        "schema": "ival.robot_intervention.v1",
         "kind": "slow_approach",
         "parameter": "policy.approach_duration_s",
         "baseline_value": baseline_duration_s,
@@ -143,7 +143,7 @@ def bind_pair(
         intervention_analysis, "motion", "horizontal_displacement_m"
     )
     payload = {
-        "schema": "benchstudio.robot_intervention_pair.v1",
+        "schema": "ival.robot_intervention_pair.v1",
         "backend": "mujoco",
         "episode_index": episode_index,
         "seed": manifest.get("seed"),

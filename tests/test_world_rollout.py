@@ -1,12 +1,12 @@
 import hashlib
 
-from benchstudio.scenarios.world_rollout import (
+from ival.scenarios.world_rollout import (
     WorldRolloutCheckerProfile,
     WorldRolloutModuleSpec,
     build_world_rollout_campaign,
     import_world_rollout_results,
 )
-from benchstudio.scenarios.world_scene_package import WorldInterfaceSpec, WorldScenePackageManifest, WorldSnapshot
+from ival.scenarios.world_scene_package import WorldInterfaceSpec, WorldScenePackageManifest, WorldSnapshot
 
 
 def _package():

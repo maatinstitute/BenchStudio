@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from benchstudio.campaigns import compile_campaign_spec
-from benchstudio.contracts import ModelCapabilityProfile
-from benchstudio.mock import MockPolicy
-from benchstudio.model_adapters import (
+from ival.campaigns import compile_campaign_spec
+from ival.contracts import ModelCapabilityProfile
+from ival.mock import MockPolicy
+from ival.model_adapters import (
     ModelAdapterDescriptor,
     ModelAdapterRegistry,
     ModelDependency,
@@ -68,7 +68,7 @@ def test_model_registry_reports_missing_dependency():
                 supports_action_chunks=True,
                 supported_metrics=("success",),
             ),
-            dependencies=(ModelDependency("missing", "benchstudio_missing_model_package"),),
+            dependencies=(ModelDependency("missing", "ival_missing_model_package"),),
         )
     )
     assert registry.readiness("missing")["ready"] is False
@@ -77,7 +77,7 @@ def test_model_registry_reports_missing_dependency():
 
 
 def test_model_registry_readiness_reports_dependency_version(monkeypatch):
-    import benchstudio.model_adapters as model_adapters
+    import ival.model_adapters as model_adapters
 
     monkeypatch.setattr(model_adapters.metadata, "version", lambda _name: "1.2.3")
     registry = ModelAdapterRegistry()
@@ -123,7 +123,7 @@ def test_model_registry_readiness_reports_broken_optional_import(monkeypatch):
         )
     )
     monkeypatch.setattr(
-        "benchstudio.model_adapters._module_available",
+        "ival.model_adapters._module_available",
         lambda _name: (_ for _ in ()).throw(ImportError("transitive dependency missing")),
     )
     readiness = registry.readiness("broken")
@@ -183,7 +183,7 @@ def test_model_registry_rejects_malformed_capability_types(overrides):
 def test_model_registry_gates_declared_execution_strategy():
     plan = compile_campaign_spec(
         {
-            "schema": "benchstudio.campaign.v1",
+            "schema": "ival.campaign.v1",
             "experiment": {"name": "async-model"},
             "model": {"adapter": "mock"},
             "task": {"task_id": "task"},
@@ -204,7 +204,7 @@ def test_model_registry_gates_declared_execution_strategy():
 def test_model_registry_binds_declared_capabilities_to_adapter():
     plan = compile_campaign_spec(
         {
-            "schema": "benchstudio.campaign.v1",
+            "schema": "ival.campaign.v1",
             "experiment": {"name": "capability-binding"},
             "model": {
                 "adapter": "mock",

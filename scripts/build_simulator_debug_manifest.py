@@ -65,7 +65,7 @@ def main() -> int:
         }
 
     payload = {
-        "schema": "benchstudio.simulator_debug.v1",
+        "schema": "ival.simulator_debug.v1",
         "scenario_id": scenario.scenario_id,
         "shared_parameters": {
             "physics_timestep_s": scenario.runtime.physics_timestep_s,

@@ -3,11 +3,11 @@ from __future__ import annotations
 import hashlib
 import json
 
-from benchstudio.adapters import default_registry
-from benchstudio.campaigns import CampaignExecutor, compile_campaign_spec
-from benchstudio.integrations import observation_digest_sha256
-from benchstudio.mock import MockSimulator
-from benchstudio.model_adapters import default_model_registry
+from ival.adapters import default_registry
+from ival.campaigns import CampaignExecutor, compile_campaign_spec
+from ival.integrations import observation_digest_sha256
+from ival.mock import MockSimulator
+from ival.model_adapters import default_model_registry
 
 
 def test_frozen_trace_policy_campaign_preserves_observation_binding(tmp_path):
@@ -20,7 +20,7 @@ def test_frozen_trace_policy_campaign_preserves_observation_binding(tmp_path):
         "".join(
             json.dumps(
                 {
-                    "schema": "benchstudio.policy_trace.v1",
+                    "schema": "ival.policy_trace.v1",
                     "sequence": observation.sequence,
                     "actions": [1],
                     "metadata": {"schedule": "reference"},
@@ -35,7 +35,7 @@ def test_frozen_trace_policy_campaign_preserves_observation_binding(tmp_path):
     )
     plan = compile_campaign_spec(
         {
-            "schema": "benchstudio.campaign.v1",
+            "schema": "ival.campaign.v1",
             "experiment": {"name": "trace-parity-campaign"},
             "model": {
                 "adapter": "trace",

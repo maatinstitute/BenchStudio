@@ -5,25 +5,25 @@ import pytest
 
 np = pytest.importorskip("numpy")
 
-from benchstudio.contracts import Observation  # noqa: E402
-from benchstudio.external_policy import PersistentExternalCommandPolicy  # noqa: E402
+from ival.contracts import Observation  # noqa: E402
+from ival.external_policy import PersistentExternalCommandPolicy  # noqa: E402
 
 _CHILD = '''import json, os, sys
-from benchstudio.local_tensors import open_local_tensors
+from ival.local_tensors import open_local_tensors
 for line in sys.stdin:
     req = json.loads(line)
     op = req["operation"]
     if op == "reset":
         print(json.dumps({"status": "reset"}), flush=True)
     elif op == "predict":
-        root = os.environ["BENCHSTUDIO_LOCAL_TENSOR_ROOT"]
+        root = os.environ["IVAL_LOCAL_TENSOR_ROOT"]
         with open_local_tensors(req["observation"]["payload"], root=root) as image_payload:
             pixels = image_payload["images"]["front"]
             response = {
                 "actions": [[float(pixels.mean())]],
                 "metadata": {
                     "shape": list(pixels.shape),
-                    "device": os.getenv("BENCHSTUDIO_LEROBOT_DEVICE"),
+                    "device": os.getenv("IVAL_LEROBOT_DEVICE"),
                 },
             }
         print(json.dumps(response), flush=True)
@@ -66,5 +66,5 @@ def test_mmap_rejects_conflicting_device_environment():
         PersistentExternalCommandPolicy(
             [sys.executable, "-c", _CHILD],
             device="cpu",
-            environment={"BENCHSTUDIO_LEROBOT_DEVICE": "cuda:0"},
+            environment={"IVAL_LEROBOT_DEVICE": "cuda:0"},
         )

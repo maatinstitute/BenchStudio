@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from benchstudio.analysis.robopad_visual_balance import image_distance, match_candidates
+from ival.analysis.robopad_visual_balance import image_distance, match_candidates
 
 
 def test_signed_rgb_distance_and_float_input_contract():

@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from benchstudio.integrations.alpabridge_inference_cache import (
+from ival.integrations.alpabridge_inference_cache import (
     CachedInference,
     PoseReanchoredInferenceCache,
     cache_context,

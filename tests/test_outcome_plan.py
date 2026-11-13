@@ -4,7 +4,7 @@ import pytest
 
 import json
 
-from benchstudio.campaigns import build_outcome_plan, load_outcome_plan
+from ival.campaigns import build_outcome_plan, load_outcome_plan
 
 
 def populations():

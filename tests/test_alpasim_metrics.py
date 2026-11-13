@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from benchstudio.integrations import build_alpasim_evidence, load_alpasim_metrics
+from ival.integrations import build_alpasim_evidence, load_alpasim_metrics
 
 
 def test_imports_alpasim_aggregate_text_metrics(tmp_path):

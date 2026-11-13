@@ -1,5 +1,5 @@
 {
-  "schema": "benchstudio.campaign.v1",
+  "schema": "ival.campaign.v1",
   "experiment": {
     "name": "checked-in-trace-policy-campaign",
     "protocol_revision": "v1",
@@ -13,7 +13,7 @@
     }
   },
   "task": {
-    "benchmark": "benchstudio-smoke",
+    "benchmark": "ival-smoke",
     "task_id": "trace-policy-task",
     "task_revision": "v1"
   },

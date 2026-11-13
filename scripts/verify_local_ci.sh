@@ -11,4 +11,4 @@ uv run --locked mypy
 uv run --locked python -m pytest -q
 uv run --locked python -m compileall -q src tests examples scripts
 
-echo "BenchStudio local CI gate passed"
+echo "IVal local CI gate passed"

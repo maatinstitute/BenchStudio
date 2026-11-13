@@ -245,7 +245,7 @@ def analyze(
         explanation = "The cube lifted but did not satisfy the retained stability requirement."
 
     return {
-        "schema": "benchstudio.contact_grasp_analysis.v1",
+        "schema": "ival.contact_grasp_analysis.v1",
         "episode_index": manifest.episode_index,
         "seed": manifest.seed,
         "backend": "mujoco",

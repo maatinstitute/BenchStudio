@@ -1,5 +1,5 @@
 {
-  "schema": "benchstudio_source_snapshot_v1",
+  "schema": "ival_source_snapshot_v1",
   "repository": "AlpaBridge",
   "remote": "https://github.com/amtellezfernandez/AlpaBridge.git",
   "commit": "27c96e6118a6d0137fe9b1774f227b07ef3d9aa2",

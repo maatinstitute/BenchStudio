@@ -10,7 +10,7 @@ import argparse
 import json
 from pathlib import Path
 
-from benchstudio.campaigns import (
+from ival.campaigns import (
     CounterfactualEvaluation,
     Intervention,
     compile_campaign_spec,

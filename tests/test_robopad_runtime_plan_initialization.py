@@ -3,8 +3,8 @@ from types import SimpleNamespace as NS
 import numpy as np
 import pytest
 
-from benchstudio.campaigns.robopad_runtime_plan import child_runs, validate_plan
-from benchstudio.integrations.robopad_initialization import (
+from ival.campaigns.robopad_runtime_plan import child_runs, validate_plan
+from ival.integrations.robopad_initialization import (
     VERSION,
     InitializationFailure,
     initialize_restored_pose,
@@ -117,7 +117,7 @@ def test_runtime_plan_requires_explicit_version_and_frozen_limits():
     config["allocation"] = [
         list(slot)
         for slot in __import__(
-            "benchstudio.campaigns.robopad_assay_plan", fromlist=["remaining_slots"]
+            "ival.campaigns.robopad_assay_plan", fromlist=["remaining_slots"]
         ).remaining_slots()
     ]
     assert len(validate_plan(config)) == 54

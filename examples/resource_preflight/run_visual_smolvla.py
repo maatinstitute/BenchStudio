@@ -12,10 +12,10 @@ import re
 import sys
 from pathlib import Path
 
-from benchstudio.external_policy import PersistentExternalCommandPolicy
-from benchstudio.hardware import ResourceRequest, plan_execution_resources, probe_hardware
-from benchstudio.integrations.mujoco import MujocoSimulator
-from benchstudio.runner import RunConfig, run_episodes
+from ival.external_policy import PersistentExternalCommandPolicy
+from ival.hardware import ResourceRequest, plan_execution_resources, probe_hardware
+from ival.integrations.mujoco import MujocoSimulator
+from ival.runner import RunConfig, run_episodes
 
 
 def _callback(path: str):
@@ -116,8 +116,8 @@ def main() -> int:
         device=args.device,
         timeout_s=120,
         environment={
-            "BENCHSTUDIO_LEROBOT_CHECKPOINT": str(args.checkpoint.resolve()),
-            "BENCHSTUDIO_LEROBOT_CHECKPOINT_SHA256": args.checkpoint_sha256,
+            "IVAL_LEROBOT_CHECKPOINT": str(args.checkpoint.resolve()),
+            "IVAL_LEROBOT_CHECKPOINT_SHA256": args.checkpoint_sha256,
         },
     )
     summary = run_episodes(

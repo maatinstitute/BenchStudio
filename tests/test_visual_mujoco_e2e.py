@@ -1,4 +1,4 @@
-"""Real MuJoCo camera -> mmap policy -> BenchStudio episode, when GL is present.
+"""Real MuJoCo camera -> mmap policy -> IVal episode, when GL is present.
 
 This uses a diagnostic external policy, NOT a trained checkpoint or VLA score.
 """
@@ -12,12 +12,12 @@ import pytest
 mujoco = pytest.importorskip("mujoco")
 np = pytest.importorskip("numpy")
 
-from benchstudio.external_policy import PersistentExternalCommandPolicy  # noqa: E402
-from benchstudio.integrations.mujoco import MujocoSimulator  # noqa: E402
-from benchstudio.runner import RunConfig, run_episodes  # noqa: E402
+from ival.external_policy import PersistentExternalCommandPolicy  # noqa: E402
+from ival.integrations.mujoco import MujocoSimulator  # noqa: E402
+from ival.runner import RunConfig, run_episodes  # noqa: E402
 
 _POLICY = '''import json, os, sys
-from benchstudio.local_tensors import open_local_tensors
+from ival.local_tensors import open_local_tensors
 for line in sys.stdin:
     message = json.loads(line)
     operation = message["operation"]
@@ -26,7 +26,7 @@ for line in sys.stdin:
     elif operation == "predict":
         with open_local_tensors(
             message["observation"]["payload"],
-            root=os.environ["BENCHSTUDIO_LOCAL_TENSOR_ROOT"],
+            root=os.environ["IVAL_LOCAL_TENSOR_ROOT"],
         ) as payload:
             image = payload["policy_batch"]["front"]
             response = {

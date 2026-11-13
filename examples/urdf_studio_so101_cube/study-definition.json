@@ -1,5 +1,5 @@
 {
-  "schema": "benchstudio.study_definition.v1",
+  "schema": "ival.study_definition.v1",
   "study_id": "so101-cube-grasp-cross-sim-v1",
   "title": "SO-101 cube grasp",
   "episodes_per_simulator": 100,

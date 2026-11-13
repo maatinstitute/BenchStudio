@@ -1,4 +1,4 @@
-from benchstudio.analysis import InferenceEvent, audit_inference_schedule
+from ival.analysis import InferenceEvent, audit_inference_schedule
 
 
 def _event(phase: str, step: int) -> InferenceEvent:

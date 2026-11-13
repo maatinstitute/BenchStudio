@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from benchstudio.integrations.alpabridge_signal import (
+from ival.integrations.alpabridge_signal import (
     dynamics_risk,
     filtered_route_points,
     route_waypoints_from_input,

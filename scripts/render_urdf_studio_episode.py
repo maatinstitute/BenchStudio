@@ -3,7 +3,7 @@
 
 URDF Studio's portable episode video is intentionally a schematic object view.
 This connector rebuilds the exact staged scenario with the upstream backend and
-replays its recorded joint/object states, so BenchStudio can show the robot
+replays its recorded joint/object states, so IVal can show the robot
 without owning a second robot model or simulation implementation.
 """
 
@@ -78,7 +78,7 @@ def render_episode(
     if not frames:
         raise ValueError(f"No replayable frames in {trace_path}")
 
-    with tempfile.TemporaryDirectory(prefix="benchstudio-robot-render-") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="ival-robot-render-") as temp_dir:
         visual_scenario_dir = Path(temp_dir) / "scenario"
         shutil.copytree(scenario_path.parent, visual_scenario_dir)
         visual_scenario_path = visual_scenario_dir / scenario_path.name

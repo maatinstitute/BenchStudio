@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from benchstudio.analysis import audit_score_coverage, missing_outcome_bounds
-from benchstudio.conformance import (
+from ival.analysis import audit_score_coverage, missing_outcome_bounds
+from ival.conformance import (
     EmbodimentRef,
     LifecycleState,
     LifecycleTracker,

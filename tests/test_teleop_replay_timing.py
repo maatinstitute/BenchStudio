@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from benchstudio.integrations import (
+from ival.integrations import (
     LogicalReplayClock,
     ReplayTimingRecording,
     ReplayTimingSample,

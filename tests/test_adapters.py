@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import pytest
 
-from benchstudio.adapters import (
+from ival.adapters import (
     AdapterDescriptor,
     AdapterRegistry,
     BackendCapabilities,
     Dependency,
     default_registry,
 )
-from benchstudio.mock import MockSimulator
+from ival.mock import MockSimulator
 
 
 def test_default_registry_is_ready_without_optional_simulators():
@@ -44,7 +44,7 @@ def test_registry_reports_missing_dependency_without_importing_backend():
             simulator_id="missing",
             label="Missing backend",
             factory=MockSimulator,
-            dependencies=(Dependency("not-installed", "benchstudio_package_that_does_not_exist"),),
+            dependencies=(Dependency("not-installed", "ival_package_that_does_not_exist"),),
         )
     )
     readiness = registry.readiness("missing")
@@ -55,7 +55,7 @@ def test_registry_reports_missing_dependency_without_importing_backend():
 
 
 def test_registry_readiness_reports_dependency_version(monkeypatch):
-    import benchstudio.adapters as adapters
+    import ival.adapters as adapters
 
     monkeypatch.setattr(adapters.metadata, "version", lambda _name: "9.8.7")
     registry = AdapterRegistry()
@@ -83,7 +83,7 @@ def test_registry_readiness_reports_broken_optional_import(monkeypatch):
         )
     )
     monkeypatch.setattr(
-        "benchstudio.adapters.module_available",
+        "ival.adapters.module_available",
         lambda _name: (_ for _ in ()).throw(ImportError("transitive dependency missing")),
     )
     readiness = registry.readiness("broken")
@@ -99,7 +99,7 @@ def test_duplicate_adapter_registration_is_rejected():
 
 def test_external_discovery_is_optional_and_diagnostic():
     registry = default_registry(discover_external=False)
-    assert registry.discover(group="benchstudio.no_such_group") == ()
+    assert registry.discover(group="ival.no_such_group") == ()
     assert registry.discovery_diagnostics == ()
 
 

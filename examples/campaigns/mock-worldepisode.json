@@ -1,5 +1,5 @@
 {
-  "schema": "benchstudio.campaign.v1",
+  "schema": "ival.campaign.v1",
   "experiment": {
     "name": "mock-worldepisode-checkpoint",
     "protocol_revision": "v1",
@@ -10,7 +10,7 @@
     "architecture": "deterministic-smoke"
   },
   "task": {
-    "benchmark": "benchstudio-smoke",
+    "benchmark": "ival-smoke",
     "task_id": "mock-task",
     "task_revision": "v1"
   },

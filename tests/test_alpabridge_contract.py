@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from benchstudio.integrations.alpabridge_contract import (
+from ival.integrations.alpabridge_contract import (
     corrected_speed_mps,
     make_model_prediction,
     pose_history_speed_mps,

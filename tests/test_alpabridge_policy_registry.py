@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from benchstudio.integrations import (
+from ival.integrations import (
     DriverPolicy,
     PolicyRegistry,
     load_external_policy_modules,
@@ -50,12 +50,12 @@ def test_build_enforces_checkpoint_requirements_before_factory():
 
 
 def test_environment_parsing_is_fail_closed(monkeypatch):
-    monkeypatch.setenv("BENCHSTUDIO_SCALAR", "nan")
-    assert read_positive_finite_float("BENCHSTUDIO_SCALAR", 8.0) == 8.0
-    monkeypatch.setenv("BENCHSTUDIO_TUPLE", "-2,0,1.5")
-    assert read_finite_float_tuple("BENCHSTUDIO_TUPLE", (1.0,)) == (-2.0, 0.0, 1.5)
-    monkeypatch.setenv("BENCHSTUDIO_TUPLE", "junk,2")
-    assert read_finite_float_tuple("BENCHSTUDIO_TUPLE", (1.0,)) == (1.0,)
+    monkeypatch.setenv("IVAL_SCALAR", "nan")
+    assert read_positive_finite_float("IVAL_SCALAR", 8.0) == 8.0
+    monkeypatch.setenv("IVAL_TUPLE", "-2,0,1.5")
+    assert read_finite_float_tuple("IVAL_TUPLE", (1.0,)) == (-2.0, 0.0, 1.5)
+    monkeypatch.setenv("IVAL_TUPLE", "junk,2")
+    assert read_finite_float_tuple("IVAL_TUPLE", (1.0,)) == (1.0,)
 
 
 def test_external_module_loader_is_explicit_and_fatal_for_missing_modules(monkeypatch):
@@ -63,4 +63,4 @@ def test_external_module_loader_is_explicit_and_fatal_for_missing_modules(monkey
     assert load_external_policy_modules() == ()
     assert load_external_policy_modules("json, ,copy") == ("json", "copy")
     with pytest.raises(ModuleNotFoundError):
-        load_external_policy_modules("benchstudio.module_that_does_not_exist")
+        load_external_policy_modules("ival.module_that_does_not_exist")

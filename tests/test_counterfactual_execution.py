@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from benchstudio.analysis import audit_counterfactual_outcomes, summarize_recovery_outcomes
-from benchstudio.campaigns import (
+from ival.analysis import audit_counterfactual_outcomes, summarize_recovery_outcomes
+from ival.campaigns import (
     CampaignPlanner,
     CounterfactualEvaluation,
     Intervention,

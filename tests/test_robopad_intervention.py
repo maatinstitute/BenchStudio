@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from benchstudio.conformance.robopad_intervention import (
+from ival.conformance.robopad_intervention import (
     irrelevant_candidates,
     screen_supported_body,
 )

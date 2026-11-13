@@ -7,7 +7,7 @@ import json
 import numpy as np
 import pytest
 
-from benchstudio.analysis import compare_refinement_ledgers, validate_refinement_ledger
+from ival.analysis import compare_refinement_ledgers, validate_refinement_ledger
 
 
 def array_record(value):

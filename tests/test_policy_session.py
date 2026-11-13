@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 
-from benchstudio.conformance import (
+from ival.conformance import (
     ActionSpec,
     ModalityFrame,
     PolicySession,
     SessionStatus,
 )
-from benchstudio.contracts import ActionChunk, Observation
+from ival.contracts import ActionChunk, Observation
 
 
 @dataclass

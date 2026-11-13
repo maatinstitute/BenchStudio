@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from benchstudio.campaigns import CampaignExecutor, CampaignPlanner, compile_campaign_spec
-from benchstudio.hardware import (
+from ival.campaigns import CampaignExecutor, CampaignPlanner, compile_campaign_spec
+from ival.hardware import (
     GPUMemory,
     HardwareSnapshot,
     ResourceAdmissionError,
@@ -14,7 +14,7 @@ from benchstudio.hardware import (
     _parse_nvidia_smi,
     plan_execution_resources,
 )
-from benchstudio.mock import MockPolicy, MockSimulator
+from ival.mock import MockPolicy, MockSimulator
 
 
 def _hardware(*, ram=256, gpu=96):
@@ -112,7 +112,7 @@ def test_preflight_is_frozen_into_existing_run_manifest(tmp_path):
         (tmp_path / "run" / "attempts" / "attempt-000000" / "manifest.json").read_text()
     )
     preflight = record["config"]["resource_preflight"]
-    assert preflight["schema"] == "benchstudio.resource_preflight.v1"
+    assert preflight["schema"] == "ival.resource_preflight.v1"
     assert preflight["hardware"]["logical_cpus"] == 8
     assert exe.audit().evidence_verified
 
@@ -131,7 +131,7 @@ def test_parallel_workers_must_fit_declared_capacity(tmp_path):
 
 def test_campaign_compiler_validates_resource_request():
     spec = {
-        "schema": "benchstudio.campaign.v1",
+        "schema": "ival.campaign.v1",
         "experiment": {"name": "resource"},
         "task": {"task_id": "task"},
         "environments": [{"id": "sim", "kind": "simulator"}],

@@ -1,14 +1,14 @@
 import json
 
-from benchstudio.analysis import ClaimType, audit_campaign
-from benchstudio.campaigns import CampaignExecutor, compile_campaign_spec
-from benchstudio.mock import MockPolicy, MockSimulator
+from ival.analysis import ClaimType, audit_campaign
+from ival.campaigns import CampaignExecutor, compile_campaign_spec
+from ival.mock import MockPolicy, MockSimulator
 
 
 def test_frozen_campaign_ci_smoke_is_end_to_end(tmp_path):
     plan = compile_campaign_spec(
         {
-            "schema": "benchstudio.campaign.v1",
+            "schema": "ival.campaign.v1",
             "experiment": {"name": "ci-smoke"},
             "model": {"adapter": "mock"},
             "task": {"task_id": "mock-task"},

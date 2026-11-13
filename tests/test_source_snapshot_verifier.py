@@ -18,7 +18,7 @@ def test_source_snapshot_verifier_checks_files_and_detects_tampering(tmp_path):
     manifest.write_text(
         json.dumps(
             {
-                "schema": "benchstudio_source_snapshot_v1",
+                "schema": "ival_source_snapshot_v1",
                 "repository": "example",
                 "commit": "abc",
                 "files": {"src/module.py": digest},

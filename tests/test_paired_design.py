@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from benchstudio.campaigns import compile_balanced_paired_plan
+from ival.campaigns import compile_balanced_paired_plan
 
 
 def test_balanced_paired_design_keeps_conditions_in_matched_blocks():
