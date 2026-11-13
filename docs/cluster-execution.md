@@ -21,6 +21,20 @@ Independent node-local disks and object storage do not provide the shared lock
 and ledger semantics required by this execution mode. Kubernetes therefore
 needs a ReadWriteMany volume with working POSIX locks.
 
+## Worker image
+
+The checked-in `Dockerfile.cluster` builds a pinned, nonroot core worker:
+
+```bash
+docker build --file Dockerfile.cluster --tag benchstudio:cluster .
+docker run --rm benchstudio:cluster --help
+```
+
+Use `--build-arg BENCHSTUDIO_EXTRA=mujoco` (or another declared optional extra)
+when that backend belongs in the worker. VLA checkpoints, CUDA libraries, and
+simulator assets are model-specific; extend this image with their pinned native
+runtime instead of adding unverified dependencies at job startup.
+
 ## Freeze before scheduling
 
 ```bash
@@ -85,7 +99,7 @@ spec:
       containers:
         - name: worker
           image: your-registry/benchstudio:locked
-          command: ["uv", "run", "--locked", "python", "-m", "benchstudio.cli"]
+          command: ["benchstudio-run"]
           args:
             - --frozen-plan
             - /shared/study/campaign-plan.json
@@ -107,6 +121,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 10001
 ```
 
 After all tasks finish, audit the complete directory:
